@@ -1,572 +1,811 @@
-
-import React, { useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+import React, { useState, useEffect } from "react";
+import { Link, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import GlassCard from "@/components/ui/custom/GlassCard";
-import Badge from "@/components/ui/custom/Badge";
-import EscrowDetails from "@/components/trades/EscrowDetails";
-import { ArrowLeft, MessageCircle, Send, Shield, Upload } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/custom/Badge";
+import { GlassCard } from "@/components/ui/custom/GlassCard";
+import {
+  ArrowLeftRight,
+  Calendar,
+  Package,
+  Shield,
+  Truck,
+  Lock,
+  AlertTriangle,
+  Copy,
+  CheckCircle,
+  XCircle,
+  ArrowRight,
+  ArrowLeft,
+  MessageSquare,
+  Loader2,
+} from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
+import { formatCurrency } from "@/utils/escrowCalculator";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import {
+  getTradeProposal,
+  addTradeMessage,
+  acceptTradeProposal,
+  declineTradeProposal,
+  payInitiatorEscrow,
+  payRecipientEscrow,
+  releaseTradeEscrow,
+  updateShippingInfo,
+} from "@/services/tradeService";
+import { TradeStatus, TradeProposal, TradeMessage } from "@/models/escrow";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
+import { useUser } from "@clerk/clerk-react";
+import { format } from 'date-fns';
+import { cn } from "@/lib/utils";
+import { CalendarIcon } from "@radix-ui/react-icons";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
-// Mock data for demo
-const mockTradeData = {
-  id: "trade-123",
-  status: "accepted" as const,
-  createdAt: "2023-05-15T10:30:00Z",
-  updatedAt: "2023-05-16T14:22:00Z",
-  initiator: {
-    userId: "user-1",
-    username: "Alex Morgan",
-    reputation: "trusted" as const,
-    tradeCount: 47,
-    successRate: 98.5,
-    offeringCards: [
-      {
-        id: "card-1",
-        name: "Charizard GX Rainbow Rare",
-        imageUrl: "https://images.unsplash.com/photo-1605979257913-1704eb7b6246?q=80&w=1470&auto=format&fit=crop",
-        condition: "Near Mint",
-        estimatedValue: 350,
-        currency: "USD"
-      },
-      {
-        id: "card-2",
-        name: "Pikachu V-Max",
-        imageUrl: "https://images.unsplash.com/photo-1607736703050-d0666c1d1278?q=80&w=1470&auto=format&fit=crop",
-        condition: "Mint",
-        estimatedValue: 120,
-        currency: "USD"
-      }
-    ],
-    escrowAmount: {
-      baseAmount: 470,
-      reputationDiscount: 235,
-      finalAmount: 235,
-      currency: "USD"
-    }
-  },
-  recipient: {
-    userId: "user-2",
-    username: "Jordan Lee",
-    reputation: "established" as const,
-    tradeCount: 23,
-    successRate: 96.0,
-    offeringCards: [
-      {
-        id: "card-3",
-        name: "Mewtwo EX",
-        imageUrl: "https://images.unsplash.com/photo-1613771404721-1f92d799e49f?q=80&w=1469&auto=format&fit=crop",
-        condition: "Excellent",
-        estimatedValue: 200,
-        currency: "USD"
-      },
-      {
-        id: "card-4",
-        name: "Blastoise Holo",
-        imageUrl: "https://images.unsplash.com/photo-1638075528746-8b5f9c2b6c9c?q=80&w=1480&auto=format&fit=crop",
-        condition: "Good",
-        estimatedValue: 80,
-        currency: "USD"
-      },
-      {
-        id: "card-5",
-        name: "Venusaur V",
-        imageUrl: "https://images.unsplash.com/photo-1539771340300-015110ffb6f7?q=80&w=1450&auto=format&fit=crop",
-        condition: "Near Mint",
-        estimatedValue: 150,
-        currency: "USD"
-      }
-    ],
-    escrowAmount: {
-      baseAmount: 430,
-      reputationDiscount: 107.5,
-      finalAmount: 322.5,
-      currency: "USD"
-    }
-  },
-  escrow: {
-    id: "escrow-123",
-    tradeId: "trade-123",
-    status: "accepted" as const,
-    initiatorId: "user-1",
-    recipientId: "user-2",
-    initiatorEscrowAmount: {
-      baseAmount: 470,
-      reputationDiscount: 235,
-      finalAmount: 235,
-      currency: "USD"
-    },
-    recipientEscrowAmount: {
-      baseAmount: 430,
-      reputationDiscount: 107.5,
-      finalAmount: 322.5,
-      currency: "USD"
-    },
-    initiatorPaid: false,
-    recipientPaid: false,
-    createdAt: "2023-05-16T14:22:00Z",
-    updatedAt: "2023-05-16T14:22:00Z",
-  },
-  messages: [
-    {
-      id: "msg-1",
-      tradeId: "trade-123",
-      userId: "user-1",
-      username: "Alex Morgan",
-      message: "Hi, I'm interested in trading my Charizard and Pikachu for your Mewtwo, Blastoise, and Venusaur.",
-      createdAt: "2023-05-15T10:30:00Z",
-      systemMessage: false
-    },
-    {
-      id: "msg-2",
-      tradeId: "trade-123",
-      userId: "user-2",
-      username: "Jordan Lee",
-      message: "That sounds like a fair trade. I accept your offer.",
-      createdAt: "2023-05-16T09:15:00Z",
-      systemMessage: false
-    },
-    {
-      id: "msg-3",
-      tradeId: "trade-123",
-      userId: "system",
-      username: "System",
-      message: "Trade accepted. Both parties must pay the required escrow amount to proceed.",
-      createdAt: "2023-05-16T14:22:00Z",
-      systemMessage: true
-    }
-  ]
-};
+interface TradeDetailProps {}
 
-const TradeDetail = () => {
-  const { id } = useParams<{ id: string }>();
+const TradeDetail: React.FC<TradeDetailProps> = () => {
+  const { tradeId } = useParams<{ tradeId: string }>();
   const { toast } = useToast();
+  const { user } = useUser();
   const [newMessage, setNewMessage] = useState("");
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  
-  // In a real app, we would fetch the trade data based on the ID
-  const tradeData = mockTradeData;
-  const isInitiator = true; // For demo, assuming current user is the initiator
-  
-  const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
-    
-    // In a real app, we would send the message to the API
+  const [shippingCarrier, setShippingCarrier] = useState("");
+  const [trackingNumber, setTrackingNumber] = useState("");
+  const [estimatedDelivery, setEstimatedDelivery] = useState<Date | undefined>(undefined);
+  const [isShippingEditMode, setIsShippingEditMode] = useState(false);
+
+  const {
+    data: trade,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ["trade", tradeId],
+    queryFn: () => getTradeProposal(tradeId!),
+    enabled: !!tradeId,
+    refetchOnMount: true,
+  });
+
+  const {
+    mutate: sendMessage,
+    isLoading: isSendingMessage,
+    isError: isSendMessageError,
+  } = useMutation({
+    mutationFn: (message: string) => addTradeMessage(tradeId!, message),
+    onSuccess: () => {
+      setNewMessage("");
+      refetch();
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "There was a problem sending your message.",
+      });
+    },
+  });
+
+  const {
+    mutate: acceptTrade,
+    isLoading: isAcceptingTrade,
+    isError: isAcceptTradeError,
+  } = useMutation({
+    mutationFn: () => acceptTradeProposal(tradeId!),
+    onSuccess: () => {
+      toast({
+        title: "Trade Accepted",
+        description: "You have accepted the trade proposal.",
+      });
+      refetch();
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "There was a problem accepting the trade proposal.",
+      });
+    },
+  });
+
+  const {
+    mutate: declineTrade,
+    isLoading: isDecliningTrade,
+    isError: isDeclineTradeError,
+  } = useMutation({
+    mutationFn: () => declineTradeProposal(tradeId!),
+    onSuccess: () => {
+      toast({
+        title: "Trade Declined",
+        description: "You have declined the trade proposal.",
+      });
+      refetch();
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "There was a problem declining the trade proposal.",
+      });
+    },
+  });
+
+  const {
+    mutate: payInitiator,
+    isLoading: isPayingInitiator,
+    isError: isPayInitiatorError,
+  } = useMutation({
+    mutationFn: () => payInitiatorEscrow(tradeId!),
+    onSuccess: () => {
+      toast({
+        title: "Escrow Paid",
+        description: "You have paid the escrow amount.",
+      });
+      refetch();
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "There was a problem paying the escrow amount.",
+      });
+    },
+  });
+
+  const {
+    mutate: payRecipient,
+    isLoading: isPayingRecipient,
+    isError: isPayRecipientError,
+  } = useMutation({
+    mutationFn: () => payRecipientEscrow(tradeId!),
+    onSuccess: () => {
+      toast({
+        title: "Escrow Paid",
+        description: "You have paid the escrow amount.",
+      });
+      refetch();
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "There was a problem paying the escrow amount.",
+      });
+    },
+  });
+
+  const {
+    mutate: releaseEscrow,
+    isLoading: isReleasingEscrow,
+    isError: isReleaseEscrowError,
+  } = useMutation({
+    mutationFn: () => releaseTradeEscrow(tradeId!),
+    onSuccess: () => {
+      toast({
+        title: "Escrow Released",
+        description: "You have released the escrow amount.",
+      });
+      refetch();
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "There was a problem releasing the escrow amount.",
+      });
+    },
+  });
+
+  const {
+    mutate: updateShipping,
+    isLoading: isUpdatingShipping,
+    isError: isUpdateShippingError,
+  } = useMutation({
+    mutationFn: () => updateShippingInfo(tradeId!, shippingCarrier, trackingNumber, estimatedDelivery),
+    onSuccess: () => {
+      toast({
+        title: "Shipping Info Updated",
+        description: "You have updated the shipping information.",
+      });
+      refetch();
+      setIsShippingEditMode(false);
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "There was a problem updating the shipping information.",
+      });
+    },
+  });
+
+  const getStatusBadge = (status: TradeStatus) => {
+    switch (status) {
+      case "proposed":
+        return <Badge variant="warning">Proposed</Badge>;
+      case "accepted":
+        return <Badge variant="info">Accepted</Badge>;
+      case "processing":
+        return <Badge variant="info">Processing</Badge>;
+      case "escrowed":
+        return <Badge variant="info">Escrowed</Badge>;
+      case "shipped":
+        return <Badge variant="info">Shipped</Badge>;
+      case "completed":
+        return <Badge variant="success">Completed</Badge>;
+      case "declined":
+        return <Badge variant="danger">Declined</Badge>;
+      case "disputed":
+        return <Badge variant="danger">Disputed</Badge>;
+      case "cancelled":
+        return <Badge variant="danger">Cancelled</Badge>;
+      case "pending":
+        return <Badge variant="warning">Pending</Badge>;
+      default:
+        return <Badge variant="default">Unknown</Badge>;
+    }
+  };
+
+  const getStatusStep = (status: TradeStatus) => {
+    switch (status) {
+      case "proposed":
+      case "pending":
+        return 1;
+      case "accepted":
+      case "processing":
+        return 2;
+      case "escrowed":
+        return 3;
+      case "shipped":
+        return 4;
+      case "completed":
+        return 5;
+      case "declined":
+      case "disputed":
+      case "cancelled":
+        return 0;
+      default:
+        return 0;
+    }
+  };
+
+  const step = trade ? getStatusStep(trade.status) : 0;
+
+  const isInitiator = trade?.initiator.userId === user?.id;
+  const isRecipient = trade?.recipient.userId === user?.id;
+
+  const canAccept =
+    trade?.status === "proposed" && trade?.recipient.userId === user?.id;
+  const canDecline =
+    trade?.status === "proposed" && trade?.recipient.userId === user?.id;
+  const canPayInitiator =
+    trade?.status === "accepted" &&
+    isInitiator &&
+    !trade.escrow?.initiatorPaid;
+  const canPayRecipient =
+    trade?.status === "accepted" &&
+    isRecipient &&
+    !trade.escrow?.recipientPaid;
+  const canReleaseEscrow =
+    trade?.status === "shipped" && isRecipient;
+
+  const showShippingInfo = trade?.status === "escrowed" || trade?.status === "shipped" || trade?.status === "completed";
+
+  if (isLoading) {
+    return <div>Loading trade details...</div>;
+  }
+
+  if (isError || !trade) {
+    return <div>Error loading trade details.</div>;
+  }
+
+  const copyToClipboard = (text: string, message: string) => {
+    navigator.clipboard.writeText(text);
     toast({
-      title: "Message sent",
-      description: "Your message has been sent successfully"
-    });
-    
-    setNewMessage("");
-  };
-  
-  const handlePayEscrow = () => {
-    setShowPaymentModal(true);
-  };
-  
-  const handleProcessPayment = () => {
-    // In a real app, we would process the payment through a payment gateway
-    setShowPaymentModal(false);
-    
-    toast({
-      title: "Escrow payment successful",
-      description: "Your escrow payment has been processed successfully"
-    });
-  };
-  
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      title: "Copied to clipboard",
+      description: message,
     });
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      
-      <div className="container py-8 flex-grow">
-        <div className="mb-6">
-          <Link to="/trades" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Trades</span>
+    <div className="container py-12">
+      <div className="mb-8 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link to="/trades" className="text-muted-foreground hover:underline">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Trades
           </Link>
+          <h1 className="text-2xl font-bold">Trade Details</h1>
         </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <GlassCard>
-              <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold">Trade #{id}</h1>
-                <Badge variant={
-                  tradeData.status === "completed" ? "success" :
-                  tradeData.status === "declined" || tradeData.status === "disputed" || tradeData.status === "cancelled" ? "danger" :
-                  "info"
-                }>
-                  {tradeData.status.charAt(0).toUpperCase() + tradeData.status.slice(1)}
-                </Badge>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <Avatar>
-                      <AvatarFallback>
-                        {tradeData.initiator.username.substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{tradeData.initiator.username}</span>
-                        <Badge variant="reputation" reputation={tradeData.initiator.reputation} size="sm">
-                          {tradeData.initiator.reputation.charAt(0).toUpperCase() + tradeData.initiator.reputation.slice(1)}
-                        </Badge>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {tradeData.initiator.tradeCount} trades • {tradeData.initiator.successRate}% success
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="text-sm font-medium mb-2">Offering:</div>
-                    {tradeData.initiator.offeringCards.map(card => (
-                      <div key={card.id} className="flex items-center gap-3 p-3 rounded-md bg-secondary/20">
-                        <div className="h-14 w-14 rounded-md overflow-hidden bg-muted">
-                          <img 
-                            src={card.imageUrl} 
-                            alt={card.name} 
-                            className="object-cover h-full w-full"
-                          />
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium">{card.name}</div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="outline" size="sm">{card.condition}</Badge>
-                            <span className="text-xs font-medium">
-                              {new Intl.NumberFormat('en-US', {
-                                style: 'currency',
-                                currency: card.currency
-                              }).format(card.estimatedValue)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <Avatar>
-                      <AvatarFallback>
-                        {tradeData.recipient.username.substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{tradeData.recipient.username}</span>
-                        <Badge variant="reputation" reputation={tradeData.recipient.reputation} size="sm">
-                          {tradeData.recipient.reputation.charAt(0).toUpperCase() + tradeData.recipient.reputation.slice(1)}
-                        </Badge>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {tradeData.recipient.tradeCount} trades • {tradeData.recipient.successRate}% success
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="text-sm font-medium mb-2">Offering:</div>
-                    {tradeData.recipient.offeringCards.map(card => (
-                      <div key={card.id} className="flex items-center gap-3 p-3 rounded-md bg-secondary/20">
-                        <div className="h-14 w-14 rounded-md overflow-hidden bg-muted">
-                          <img 
-                            src={card.imageUrl} 
-                            alt={card.name} 
-                            className="object-cover h-full w-full"
-                          />
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium">{card.name}</div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="outline" size="sm">{card.condition}</Badge>
-                            <span className="text-xs font-medium">
-                              {new Intl.NumberFormat('en-US', {
-                                style: 'currency',
-                                currency: card.currency
-                              }).format(card.estimatedValue)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <div>Created: {formatDate(tradeData.createdAt)}</div>
-                <div>Last updated: {formatDate(tradeData.updatedAt)}</div>
-              </div>
-            </GlassCard>
-            
-            {/* Escrow Details */}
-            {tradeData.escrow && (
-              <EscrowDetails
-                escrow={tradeData.escrow}
-                isInitiator={isInitiator}
-                onPayEscrow={handlePayEscrow}
-              />
-            )}
-            
-            {/* Trade Messages */}
-            <GlassCard>
-              <div className="flex items-center gap-2 mb-4">
-                <MessageCircle className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-medium">Messages</h2>
-              </div>
-              
-              <div className="h-[300px] overflow-y-auto mb-4 space-y-4 pr-2">
-                {tradeData.messages.map((message) => (
-                  <div 
-                    key={message.id} 
-                    className={`flex ${message.systemMessage ? 'justify-center' : message.userId === (isInitiator ? tradeData.initiator.userId : tradeData.recipient.userId) ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div 
-                      className={`max-w-[80%] p-3 rounded-lg ${
-                        message.systemMessage 
-                          ? 'bg-secondary/30 text-center w-full' 
-                          : message.userId === (isInitiator ? tradeData.initiator.userId : tradeData.recipient.userId)
-                            ? 'bg-primary/10 text-foreground' 
-                            : 'bg-secondary/30 text-foreground'
-                      }`}
-                    >
-                      {!message.systemMessage && (
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-medium">{message.username}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {formatDate(message.createdAt)}
-                          </span>
-                        </div>
-                      )}
-                      <div className={`${message.systemMessage ? 'text-xs text-muted-foreground italic' : 'text-sm'}`}>
-                        {message.message}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type your message..."
-                  className="flex-1 bg-secondary/20 border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-                <Button size="sm" onClick={handleSendMessage}>
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-            </GlassCard>
-          </div>
-          
-          <div className="space-y-6">
-            {/* Trade Summary */}
-            <GlassCard>
-              <h2 className="text-lg font-medium mb-4">Trade Summary</h2>
-              
-              <div className="space-y-3">
-                <div className="flex justify-between py-2 border-b border-border">
-                  <span className="text-sm text-muted-foreground">Status</span>
-                  <span className="text-sm font-medium">{tradeData.status.charAt(0).toUpperCase() + tradeData.status.slice(1)}</span>
-                </div>
-                
-                <div className="flex justify-between py-2 border-b border-border">
-                  <span className="text-sm text-muted-foreground">Your Cards</span>
-                  <span className="text-sm font-medium">{isInitiator ? tradeData.initiator.offeringCards.length : tradeData.recipient.offeringCards.length}</span>
-                </div>
-                
-                <div className="flex justify-between py-2 border-b border-border">
-                  <span className="text-sm text-muted-foreground">Their Cards</span>
-                  <span className="text-sm font-medium">{isInitiator ? tradeData.recipient.offeringCards.length : tradeData.initiator.offeringCards.length}</span>
-                </div>
-                
-                <div className="flex justify-between py-2 border-b border-border">
-                  <span className="text-sm text-muted-foreground">Your Total Value</span>
-                  <span className="text-sm font-medium">
-                    {new Intl.NumberFormat('en-US', {
-                      style: 'currency',
-                      currency: 'USD'
-                    }).format(isInitiator 
-                      ? tradeData.initiator.offeringCards.reduce((sum, card) => sum + card.estimatedValue, 0)
-                      : tradeData.recipient.offeringCards.reduce((sum, card) => sum + card.estimatedValue, 0)
-                    )}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between py-2 border-b border-border">
-                  <span className="text-sm text-muted-foreground">Their Total Value</span>
-                  <span className="text-sm font-medium">
-                    {new Intl.NumberFormat('en-US', {
-                      style: 'currency',
-                      currency: 'USD'
-                    }).format(isInitiator 
-                      ? tradeData.recipient.offeringCards.reduce((sum, card) => sum + card.estimatedValue, 0)
-                      : tradeData.initiator.offeringCards.reduce((sum, card) => sum + card.estimatedValue, 0)
-                    )}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between py-2">
-                  <span className="text-sm text-muted-foreground">Escrow Required</span>
-                  <span className="text-sm font-medium">
-                    {new Intl.NumberFormat('en-US', {
-                      style: 'currency',
-                      currency: 'USD'
-                    }).format(isInitiator 
-                      ? tradeData.escrow.initiatorEscrowAmount.finalAmount
-                      : tradeData.escrow.recipientEscrowAmount.finalAmount
-                    )}
-                  </span>
-                </div>
-              </div>
-            </GlassCard>
-            
-            {/* Actions */}
-            <GlassCard>
-              <h2 className="text-lg font-medium mb-4">Actions</h2>
-              
-              <div className="space-y-3">
-                {tradeData.status === "accepted" && (
-                  <Button className="w-full" onClick={handlePayEscrow}>
-                    Pay Escrow
-                  </Button>
-                )}
-                
-                {tradeData.status === "escrowed" && (
-                  <Button className="w-full">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Add Shipping Info
-                  </Button>
-                )}
-                
-                {tradeData.status === "shipped" && (
-                  <Button className="w-full">
-                    Confirm Receipt
-                  </Button>
-                )}
-                
-                {["proposed", "accepted", "processing"].includes(tradeData.status) && (
-                  <Button variant="outline" className="w-full">
-                    Cancel Trade
-                  </Button>
-                )}
-                
-                {["shipped", "received"].includes(tradeData.status) && (
-                  <Button variant="destructive" className="w-full">
-                    Report Issue
-                  </Button>
-                )}
-              </div>
-              
-              <div className="flex items-center justify-center gap-2 mt-6 p-3 border border-primary/20 rounded-md bg-primary/5">
-                <Shield className="h-5 w-5 text-primary" />
-                <span className="text-sm">All trades are protected by CollectX Escrow</span>
-              </div>
-            </GlassCard>
-          </div>
-        </div>
+        <div>{getStatusBadge(trade.status)}</div>
       </div>
-      
-      {/* Payment Modal */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <GlassCard className="w-full max-w-md m-4">
-            <h2 className="text-xl font-bold mb-4">Pay Escrow</h2>
-            
-            <div className="space-y-4 mb-6">
-              <div className="p-4 border border-border rounded-md bg-secondary/20">
-                <div className="text-sm text-muted-foreground mb-1">Escrow Amount:</div>
-                <div className="text-2xl font-bold">
-                  {new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: 'USD'
-                  }).format(isInitiator 
-                    ? tradeData.escrow.initiatorEscrowAmount.finalAmount
-                    : tradeData.escrow.recipientEscrowAmount.finalAmount
+
+      <GlassCard className="mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Initiator */}
+          <div>
+            <div className="text-xs text-muted-foreground mb-1">
+              You're giving:
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="relative h-14 w-14 rounded-md overflow-hidden bg-muted">
+                <img
+                  src={trade.initiator.offeringCards[0].imageUrl}
+                  alt="Cards preview"
+                  className="object-cover h-full w-full"
+                />
+                {trade.initiator.offeringCards.length > 1 && (
+                  <div className="absolute top-0.5 right-0.5 bg-primary/90 text-white text-[10px] font-medium h-4 w-4 rounded-full flex items-center justify-center">
+                    {trade.initiator.offeringCards.length}
+                  </div>
+                )}
+              </div>
+              <div>
+                <Package className="h-4 w-4 text-muted-foreground mb-1" />
+                {trade.initiator.escrowAmount.finalAmount !== undefined && (
+                  <div className="text-xs font-medium">
+                    {formatCurrency(
+                      trade.initiator.escrowAmount.finalAmount,
+                      trade.initiator.escrowAmount.currency
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="mt-2">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarImage src="" alt={trade.initiator.username} />
+                  <AvatarFallback>
+                    {trade.initiator.username.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{trade.initiator.username}</span>
+                    <Badge variant="reputation" reputation={trade.initiator.reputation} size="sm">
+                      {trade.initiator.reputation.charAt(0).toUpperCase() +
+                        trade.initiator.reputation.slice(1)}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Recipient */}
+          <div>
+            <div className="text-xs text-muted-foreground mb-1">
+              You're receiving:
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="relative h-14 w-14 rounded-md overflow-hidden bg-muted">
+                <img
+                  src={trade.recipient.offeringCards[0].imageUrl}
+                  alt="Cards preview"
+                  className="object-cover h-full w-full"
+                />
+                {trade.recipient.offeringCards.length > 1 && (
+                  <div className="absolute top-0.5 right-0.5 bg-primary/90 text-white text-[10px] font-medium h-4 w-4 rounded-full flex items-center justify-center">
+                    {trade.recipient.offeringCards.length}
+                  </div>
+                )}
+              </div>
+              <div>
+                <Package className="h-4 w-4 text-muted-foreground mb-1" />
+                {trade.recipient.escrowAmount.finalAmount !== undefined && (
+                  <div className="text-xs font-medium">
+                    {formatCurrency(
+                      trade.recipient.escrowAmount.finalAmount,
+                      trade.recipient.escrowAmount.currency
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="mt-2">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarImage src="" alt={trade.recipient.username} />
+                  <AvatarFallback>
+                    {trade.recipient.username.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{trade.recipient.username}</span>
+                    <Badge variant="reputation" reputation={trade.recipient.reputation} size="sm">
+                      {trade.recipient.reputation.charAt(0).toUpperCase() +
+                        trade.recipient.reputation.slice(1)}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </GlassCard>
+
+      {/* Escrow Status (if applicable) */}
+      {trade.escrow && (
+        <GlassCard className="mb-6">
+          <div className="p-4">
+            <h3 className="text-lg font-medium mb-2">Escrow Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Lock className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium">
+                      Initiator Escrow (You)
+                    </span>
+                  </div>
+                  {trade.escrow.initiatorPaid ? (
+                    <Badge variant="success" size="sm">
+                      Paid
+                    </Badge>
+                  ) : (
+                    <Badge variant="warning" size="sm">
+                      Pending
+                    </Badge>
                   )}
                 </div>
-                {(isInitiator 
-                  ? tradeData.escrow.initiatorEscrowAmount.reputationDiscount 
-                  : tradeData.escrow.recipientEscrowAmount.reputationDiscount
-                ) > 0 && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    You saved {new Intl.NumberFormat('en-US', {
-                      style: 'currency',
-                      currency: 'USD'
-                    }).format(isInitiator 
-                      ? tradeData.escrow.initiatorEscrowAmount.reputationDiscount
-                      : tradeData.escrow.recipientEscrowAmount.reputationDiscount
-                    )} due to your reputation!
-                  </div>
+                <div className="text-sm">
+                  Amount:{" "}
+                  {formatCurrency(
+                    trade.escrow.initiatorEscrowAmount.finalAmount,
+                    trade.escrow.initiatorEscrowAmount.currency
+                  )}
+                </div>
+                {!trade.escrow.initiatorPaid && canPayInitiator && (
+                  <Button
+                    size="sm"
+                    onClick={() => payInitiator()}
+                    disabled={isPayingInitiator}
+                  >
+                    {isPayingInitiator ? (
+                      <>
+                        Paying...
+                        <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                      </>
+                    ) : (
+                      "Pay Escrow"
+                    )}
+                  </Button>
                 )}
               </div>
-              
-              {/* This would be replaced with a real payment form */}
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Card Number</label>
-                  <input 
-                    type="text" 
-                    placeholder="4242 4242 4242 4242" 
-                    className="w-full bg-secondary/20 border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium">Expiry Date</label>
-                    <input 
-                      type="text" 
-                      placeholder="MM/YY" 
-                      className="w-full bg-secondary/20 border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Lock className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium">
+                      Recipient Escrow
+                    </span>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium">CVV</label>
-                    <input 
-                      type="text" 
-                      placeholder="123" 
-                      className="w-full bg-secondary/20 border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
-                  </div>
+                  {trade.escrow.recipientPaid ? (
+                    <Badge variant="success" size="sm">
+                      Paid
+                    </Badge>
+                  ) : (
+                    <Badge variant="warning" size="sm">
+                      Pending
+                    </Badge>
+                  )}
                 </div>
+                <div className="text-sm">
+                  Amount:{" "}
+                  {formatCurrency(
+                    trade.escrow.recipientEscrowAmount.finalAmount,
+                    trade.escrow.recipientEscrowAmount.currency
+                  )}
+                </div>
+                {!trade.escrow.recipientPaid && canPayRecipient && (
+                  <Button
+                    size="sm"
+                    onClick={() => payRecipient()}
+                    disabled={isPayingRecipient}
+                  >
+                    {isPayingRecipient ? (
+                      <>
+                        Paying...
+                        <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                      </>
+                    ) : (
+                      "Pay Escrow"
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
-            
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowPaymentModal(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleProcessPayment}>
-                Pay Now
-              </Button>
-            </div>
-          </GlassCard>
-        </div>
+          </div>
+        </GlassCard>
       )}
-      
-      <Footer />
+
+      {/* Shipping Information */}
+      {showShippingInfo && (
+        <GlassCard className="mb-6">
+          <div className="p-4">
+            <h3 className="text-lg font-medium mb-2">Shipping Information</h3>
+            {isShippingEditMode ? (
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="shippingCarrier">Shipping Carrier</Label>
+                  <Input
+                    id="shippingCarrier"
+                    type="text"
+                    value={shippingCarrier}
+                    onChange={(e) => setShippingCarrier(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="trackingNumber">Tracking Number</Label>
+                  <Input
+                    id="trackingNumber"
+                    type="text"
+                    value={trackingNumber}
+                    onChange={(e) => setTrackingNumber(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label>Estimated Delivery</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-[240px] justify-start text-left font-normal",
+                          !estimatedDelivery && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {estimatedDelivery ? format(estimatedDelivery, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="center" side="bottom">
+                      <Calendar
+                        mode="single"
+                        selected={estimatedDelivery}
+                        onSelect={setEstimatedDelivery}
+                        disabled={(date) =>
+                          date < new Date()
+                        }
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" onClick={() => setIsShippingEditMode(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={() => updateShipping()} disabled={isUpdatingShipping}>
+                    {isUpdatingShipping ? (
+                      <>
+                        Updating...
+                        <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                      </>
+                    ) : (
+                      "Update Shipping"
+                    )}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="text-sm">
+                  Carrier: {trade.escrow.shippingInfo?.carrier || "N/A"}
+                </div>
+                <div className="text-sm">
+                  Tracking Number: {trade.escrow.shippingInfo?.trackingNumber || "N/A"}
+                  {trade.escrow.shippingInfo?.trackingNumber && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => copyToClipboard(trade.escrow.shippingInfo!.trackingNumber, "Tracking number copied to clipboard.")}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                <div className="text-sm">
+                  Estimated Delivery: {trade.escrow.shippingInfo?.estimatedDelivery ? format(new Date(trade.escrow.shippingInfo.estimatedDelivery), "PPP") : "N/A"}
+                </div>
+                {(isInitiator && trade.status === "escrowed") && (
+                  <Button size="sm" onClick={() => {
+                    setIsShippingEditMode(true);
+                    setShippingCarrier(trade.escrow?.shippingInfo?.carrier || "");
+                    setTrackingNumber(trade.escrow?.shippingInfo?.trackingNumber || "");
+                    if (trade.escrow?.shippingInfo?.estimatedDelivery) {
+                      setEstimatedDelivery(new Date(trade.escrow.shippingInfo.estimatedDelivery));
+                    }
+                  }}>
+                    Edit Shipping Info
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        </GlassCard>
+      )}
+
+      {/* Progress tracker */}
+      {!["declined", "disputed", "cancelled"].includes(trade.status) && (
+        <GlassCard className="mb-6">
+          <div className="relative p-6">
+            <h3 className="text-lg font-medium mb-4">Trade Progress</h3>
+            <div className="absolute top-1/2 left-0 right-0 h-1 bg-muted transform -translate-y-1/2" />
+            <div
+              className="absolute top-1/2 left-0 h-1 bg-primary transform -translate-y-1/2"
+              style={{ width: `${(step / 5) * 100}%` }}
+            />
+            <div className="relative flex justify-between">
+              <div className="flex flex-col items-center">
+                <div
+                  className={`h-6 w-6 rounded-full ${step >= 1 ? "bg-primary" : "bg-muted"
+                    } flex items-center justify-center text-white text-xs`}
+                >
+                  1
+                </div>
+                <span className="text-xs mt-1">Proposed</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <div
+                  className={`h-6 w-6 rounded-full ${step >= 2 ? "bg-primary" : "bg-muted"
+                    } flex items-center justify-center text-white text-xs`}
+                >
+                  2
+                </div>
+                <span className="text-xs mt-1">Accepted</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <div
+                  className={`h-6 w-6 rounded-full ${step >= 3 ? "bg-primary" : "bg-muted"
+                    } flex items-center justify-center text-white text-xs`}
+                >
+                  3
+                </div>
+                <span className="text-xs mt-1">Escrowed</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <div
+                  className={`h-6 w-6 rounded-full ${step >= 4 ? "bg-primary" : "bg-muted"
+                    } flex items-center justify-center text-white text-xs`}
+                >
+                  4
+                </div>
+                <span className="text-xs mt-1">Shipped</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <div
+                  className={`h-6 w-6 rounded-full ${step >= 5 ? "bg-primary" : "bg-muted"
+                    } flex items-center justify-center text-white text-xs`}
+                >
+                  5
+                </div>
+                <span className="text-xs mt-1">Completed</span>
+              </div>
+            </div>
+          </div>
+        </GlassCard>
+      )}
+
+      {/* Action Buttons */}
+      <GlassCard className="mb-6">
+        <div className="flex items-center justify-around p-4">
+          {canAccept && (
+            <Button onClick={() => acceptTrade()} disabled={isAcceptingTrade}>
+              {isAcceptingTrade ? (
+                <>
+                  Accepting...
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                </>
+              ) : (
+                "Accept Trade"
+              )}
+            </Button>
+          )}
+          {canDecline && (
+            <Button
+              variant="destructive"
+              onClick={() => declineTrade()}
+              disabled={isDecliningTrade}
+            >
+              {isDecliningTrade ? (
+                <>
+                  Declining...
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                </>
+              ) : (
+                "Decline Trade"
+              )}
+            </Button>
+          )}
+          {canReleaseEscrow && (
+            <Button onClick={() => releaseEscrow()} disabled={isReleasingEscrow}>
+              {isReleasingEscrow ? (
+                <>
+                  Releasing...
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                </>
+              ) : (
+                "Release Escrow"
+              )}
+            </Button>
+          )}
+        </div>
+      </GlassCard>
+
+      {/* Chat */}
+      <GlassCard>
+        <div className="p-4">
+          <h3 className="text-lg font-medium mb-4">Trade Chat</h3>
+          <ScrollArea className="h-[300px] mb-4">
+            <div className="space-y-2">
+              {trade.messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`p-3 rounded-md ${msg.userId === user?.id
+                    ? "bg-primary/10 text-right ml-auto w-fit max-w-[75%]"
+                    : "bg-secondary/10 text-left mr-auto w-fit max-w-[75%]"
+                    }`}
+                >
+                  <div className="text-xs text-muted-foreground">
+                    {msg.userId === user?.id ? "You" : msg.username}
+                  </div>
+                  <div>{msg.message}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {format(new Date(msg.createdAt), "Pp")}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+          <div className="flex items-center">
+            <Input
+              type="text"
+              placeholder="Type your message here..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              className="mr-2"
+            />
+            <Button
+              onClick={() => sendMessage(newMessage)}
+              disabled={isSendingMessage}
+            >
+              {isSendingMessage ? (
+                <>
+                  Sending...
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                </>
+              ) : (
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Send
+              )}
+            </Button>
+          </div>
+        </div>
+      </GlassCard>
     </div>
   );
 };

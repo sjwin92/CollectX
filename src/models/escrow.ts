@@ -1,3 +1,4 @@
+
 export type TradeStatus = 
   | "proposed" 
   | "accepted" 

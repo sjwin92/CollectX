@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,13 +11,15 @@ import {
   ListChecks,
   Star,
   Truck,
-  Database
+  Database,
+  Check
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import CardGrid from "@/components/cards/CardGrid";
 import TradeOffer from "@/components/trades/TradeOffer";
 import GlassCard from "@/components/ui/custom/GlassCard";
+import Badge from "@/components/ui/custom/Badge";
 
 // Placeholder data
 const featuredCards = [

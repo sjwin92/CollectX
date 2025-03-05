@@ -9,7 +9,7 @@ import { ArrowLeftRight, Calendar, Package, Shield, Truck, Lock, AlertTriangle }
 
 export interface TradeOfferProps {
   id: string;
-  status: "proposed" | "accepted" | "processing" | "escrowed" | "shipped" | "completed" | "declined" | "disputed" | "cancelled";
+  status: "proposed" | "accepted" | "processing" | "escrowed" | "shipped" | "completed" | "declined" | "disputed" | "cancelled" | "pending";
   date: string;
   user: {
     id: string;
@@ -63,12 +63,15 @@ const TradeOffer = ({
         return <Badge variant="danger">Disputed</Badge>;
       case "cancelled":
         return <Badge variant="danger">Cancelled</Badge>;
+      case "pending":
+        return <Badge variant="warning">Pending</Badge>;
     }
   };
 
   const getStatusStep = () => {
     switch (status) {
       case "proposed":
+      case "pending":
         return 1;
       case "accepted":
       case "processing":

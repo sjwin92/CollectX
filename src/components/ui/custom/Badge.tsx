@@ -6,7 +6,7 @@ export type ReputationLevel = "new" | "established" | "trusted";
 
 interface BadgeProps {
   className?: string;
-  variant?: "default" | "outline" | "success" | "warning" | "danger" | "info" | "reputation";
+  variant?: "default" | "outline" | "success" | "warning" | "danger" | "info" | "reputation" | "secondary" | "destructive";
   size?: "sm" | "md" | "lg";
   children: React.ReactNode;
   reputation?: ReputationLevel;
@@ -36,6 +36,8 @@ const Badge = ({
     warning: "bg-yellow-100 text-yellow-800 hover:bg-yellow-200",
     danger: "bg-red-100 text-red-800 hover:bg-red-200",
     info: "bg-blue-100 text-blue-800 hover:bg-blue-200",
+    secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+    destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
     reputation: "",
   };
   
