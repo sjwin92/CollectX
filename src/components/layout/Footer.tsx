@@ -31,14 +31,17 @@ const Footer = () => {
                 <Link to="/trades" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   Trades
                 </Link>
+                <Link to="/pokemons" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Pokémon Cards
+                </Link>
               </nav>
             </div>
             
             <div className="flex flex-col gap-2">
               <h3 className="font-medium text-sm">Support</h3>
               <nav className="flex flex-col gap-1">
-                <Link to="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Help Center
+                <Link to="/profile" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  My Profile
                 </Link>
                 <Link to="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   Safety Guide

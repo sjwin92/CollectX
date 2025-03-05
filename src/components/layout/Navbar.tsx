@@ -49,6 +49,7 @@ const Navbar = () => {
     { name: "Home", path: "/" },
     { name: "Collection", path: "/collection" },
     { name: "Trades", path: "/trades" },
+    { name: "Pokémon Cards", path: "/pokemons" },
     { name: "Profile", path: "/profile" },
   ];
 
@@ -109,17 +110,23 @@ const Navbar = () => {
             <DropdownMenuContent align="end" className="w-56 animate-fade-in">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+              <DropdownMenuItem asChild>
+                <Link to="/profile">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Package className="mr-2 h-4 w-4" />
-                <span>Collection</span>
+              <DropdownMenuItem asChild>
+                <Link to="/collection">
+                  <Package className="mr-2 h-4 w-4" />
+                  <span>Collection</span>
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <ArrowLeftRight className="mr-2 h-4 w-4" />
-                <span>Trades</span>
+              <DropdownMenuItem asChild>
+                <Link to="/trades">
+                  <ArrowLeftRight className="mr-2 h-4 w-4" />
+                  <span>Trades</span>
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem>

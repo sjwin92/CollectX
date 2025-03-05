@@ -21,7 +21,6 @@ import TradeOffer from "@/components/trades/TradeOffer";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
 
-// Placeholder data
 const featuredCards = [
   {
     id: "1",
@@ -101,7 +100,6 @@ const Index = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      {/* Hero section */}
       <section className="relative pt-24 pb-16 md:pt-32 md:pb-24 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent" />
         <div className="container relative z-10">
@@ -126,7 +124,6 @@ const Index = () => {
         </div>
       </section>
       
-      {/* Features section */}
       <section className="py-16 md:py-24 bg-secondary/30">
         <div className="container">
           <div className="text-center mb-12">
@@ -183,7 +180,6 @@ const Index = () => {
         </div>
       </section>
       
-      {/* Pokémon TCG Database Section */}
       <section className="py-16 md:py-24">
         <div className="container">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -256,7 +252,6 @@ const Index = () => {
         </div>
       </section>
       
-      {/* Featured Cards */}
       <section className="py-16 md:py-24 bg-secondary/30">
         <div className="container">
           <div className="flex items-center justify-between mb-8">
@@ -287,7 +282,6 @@ const Index = () => {
         </div>
       </section>
       
-      {/* Recent Trades */}
       <section className="py-16 md:py-24">
         <div className="container">
           <div className="flex items-center justify-between mb-8">
@@ -318,7 +312,6 @@ const Index = () => {
         </div>
       </section>
       
-      {/* Call to Action */}
       <section className="py-16 md:py-24 bg-secondary/30">
         <div className="container">
           <div className="max-w-3xl mx-auto text-center">
