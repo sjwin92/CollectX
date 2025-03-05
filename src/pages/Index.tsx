@@ -11,7 +11,8 @@ import {
   Camera, 
   ListChecks,
   Star,
-  Truck
+  Truck,
+  Database
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -76,7 +77,7 @@ const recentTrades = [
   },
   {
     id: "t2",
-    status: "pending" as const,
+    status: "proposed" as const,
     date: "5 hours ago",
     user: {
       id: "u2",
@@ -117,7 +118,7 @@ const Index = () => {
                 <Link to="/collection">Start Trading</Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link to="/collection">Browse Collections</Link>
+                <Link to="/pokemons">Browse Pokémon Cards</Link>
               </Button>
             </div>
           </div>
@@ -181,8 +182,81 @@ const Index = () => {
         </div>
       </section>
       
-      {/* Featured Cards */}
+      {/* Pokémon TCG Database Section */}
       <section className="py-16 md:py-24">
+        <div className="container">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6">
+              <div>
+                <Badge variant="outline" className="mb-4">
+                  <Database className="h-3 w-3 mr-1" /> NEW FEATURE
+                </Badge>
+                <h2 className="text-3xl font-bold mb-4">Comprehensive Pokémon Card Database</h2>
+                <p className="text-muted-foreground mb-6">
+                  Access our integrated Pokémon TCG API with data on thousands of cards 
+                  spanning all sets and generations. Get accurate market prices, view high-resolution 
+                  card images, and find detailed information to help with trading decisions.
+                </p>
+              </div>
+              
+              <div className="space-y-3">
+                {[
+                  "Search for any Pokémon card by name, type, or set",
+                  "Get market prices from TCGplayer",
+                  "View detailed card information and attacks",
+                  "Browse cards by set and rarity"
+                ].map((feature, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <div className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center mt-0.5">
+                      <Check className="h-3 w-3 text-primary" />
+                    </div>
+                    <span>{feature}</span>
+                  </div>
+                ))}
+              </div>
+              
+              <Button asChild>
+                <Link to="/pokemons" className="inline-flex items-center gap-2">
+                  Explore Pokémon Card Database <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 relative">
+              <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 to-transparent rounded-xl -z-10 blur-xl opacity-30" />
+              {[
+                {
+                  image: "https://images.unsplash.com/photo-1605979257913-1704eb7b6246?q=80&w=1470&auto=format&fit=crop",
+                  className: "translate-y-8 animate-float"
+                },
+                {
+                  image: "https://images.unsplash.com/photo-1613771404721-1f92d799e49f?q=80&w=1469&auto=format&fit=crop",
+                  className: "animate-float animation-delay-300"
+                },
+                {
+                  image: "https://images.unsplash.com/photo-1607736703050-d0666c1d1278?q=80&w=1470&auto=format&fit=crop",
+                  className: "animate-float animation-delay-100"
+                },
+                {
+                  image: "https://images.unsplash.com/photo-1638075528746-8b5f9c2b6c9c?q=80&w=1480&auto=format&fit=crop",
+                  className: "translate-y-8 animate-float animation-delay-200"
+                }
+              ].map((card, i) => (
+                <div key={i} className={`rounded-lg overflow-hidden shadow-lg ${card.className}`}>
+                  <img 
+                    src={card.image} 
+                    alt="Pokémon card" 
+                    className="w-full h-full object-cover" 
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      {/* Featured Cards */}
+      <section className="py-16 md:py-24 bg-secondary/30">
         <div className="container">
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -213,7 +287,7 @@ const Index = () => {
       </section>
       
       {/* Recent Trades */}
-      <section className="py-16 md:py-24 bg-secondary/30">
+      <section className="py-16 md:py-24">
         <div className="container">
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -244,7 +318,7 @@ const Index = () => {
       </section>
       
       {/* Call to Action */}
-      <section className="py-16 md:py-24">
+      <section className="py-16 md:py-24 bg-secondary/30">
         <div className="container">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl font-bold mb-4">Ready to Start Trading?</h2>

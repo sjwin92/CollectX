@@ -1,4 +1,3 @@
-
 export type TradeStatus = 
   | "proposed" 
   | "accepted" 
@@ -8,7 +7,9 @@ export type TradeStatus =
   | "received" 
   | "completed" 
   | "disputed" 
-  | "cancelled";
+  | "cancelled" 
+  | "pending" 
+  | "declined";
 
 export type ReputationTier = "new" | "established" | "trusted" | "verified";
 

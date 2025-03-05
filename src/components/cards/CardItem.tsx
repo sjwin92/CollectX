@@ -14,6 +14,7 @@ export interface CardItemProps {
   estimatedValue: string;
   className?: string;
   animation?: "fade" | "scale" | "slide" | "none";
+  onClick?: () => void;
 }
 
 const CardItem = ({
@@ -24,7 +25,8 @@ const CardItem = ({
   condition,
   estimatedValue,
   className,
-  animation = "none"
+  animation = "none",
+  onClick
 }: CardItemProps) => {
   // Map condition to style
   const conditionVariant = (): "success" | "warning" | "danger" | "info" => {
@@ -44,39 +46,51 @@ const CardItem = ({
     }
   };
 
+  const CardContent = (
+    <GlassCard 
+      className={cn("overflow-hidden group h-full", className)}
+      animation={animation}
+    >
+      <div className="relative aspect-[2/3] overflow-hidden rounded-md mb-3">
+        <img
+          src={imageUrl}
+          alt={name}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          loading="lazy"
+        />
+        <div className="absolute top-2 right-2">
+          <Badge variant={conditionVariant()} size="sm">
+            {condition}
+          </Badge>
+        </div>
+      </div>
+      
+      <div className="space-y-1">
+        <h3 className="font-medium text-sm line-clamp-1 group-hover:text-primary transition-colors">
+          {name}
+        </h3>
+        
+        <div className="flex items-center justify-between">
+          <Badge variant="outline" size="sm">
+            {rarity}
+          </Badge>
+          <span className="text-xs font-medium">{estimatedValue}</span>
+        </div>
+      </div>
+    </GlassCard>
+  );
+
+  if (onClick) {
+    return (
+      <div className="cursor-pointer" onClick={onClick}>
+        {CardContent}
+      </div>
+    );
+  }
+
   return (
     <Link to={`/card/${id}`}>
-      <GlassCard 
-        className={cn("overflow-hidden group h-full", className)}
-        animation={animation}
-      >
-        <div className="relative aspect-[2/3] overflow-hidden rounded-md mb-3">
-          <img
-            src={imageUrl}
-            alt={name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-            loading="lazy"
-          />
-          <div className="absolute top-2 right-2">
-            <Badge variant={conditionVariant()} size="sm">
-              {condition}
-            </Badge>
-          </div>
-        </div>
-        
-        <div className="space-y-1">
-          <h3 className="font-medium text-sm line-clamp-1 group-hover:text-primary transition-colors">
-            {name}
-          </h3>
-          
-          <div className="flex items-center justify-between">
-            <Badge variant="outline" size="sm">
-              {rarity}
-            </Badge>
-            <span className="text-xs font-medium">{estimatedValue}</span>
-          </div>
-        </div>
-      </GlassCard>
+      {CardContent}
     </Link>
   );
 };
