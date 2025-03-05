@@ -5,11 +5,11 @@ import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge, { ReputationLevel } from "@/components/ui/custom/Badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeftRight, Calendar, Package, Shield, Truck } from "lucide-react";
+import { ArrowLeftRight, Calendar, Package, Shield, Truck, Lock, AlertTriangle } from "lucide-react";
 
 export interface TradeOfferProps {
   id: string;
-  status: "pending" | "accepted" | "shipped" | "completed" | "declined";
+  status: "proposed" | "accepted" | "processing" | "escrowed" | "shipped" | "completed" | "declined" | "disputed" | "cancelled";
   date: string;
   user: {
     id: string;
@@ -20,11 +20,17 @@ export interface TradeOfferProps {
   giving: {
     count: number;
     preview: string;
+    totalValue?: number;
+    currency?: string;
   };
   receiving: {
     count: number;
     preview: string;
+    totalValue?: number;
+    currency?: string;
   };
+  escrowRequired?: boolean;
+  escrowPaid?: boolean;
 }
 
 const TradeOffer = ({
@@ -34,38 +40,61 @@ const TradeOffer = ({
   user,
   giving,
   receiving,
+  escrowRequired = false,
+  escrowPaid = false,
 }: TradeOfferProps) => {
   const getStatusBadge = () => {
     switch (status) {
-      case "pending":
-        return <Badge variant="warning">Pending</Badge>;
+      case "proposed":
+        return <Badge variant="warning">Proposed</Badge>;
       case "accepted":
         return <Badge variant="info">Accepted</Badge>;
+      case "processing":
+        return <Badge variant="info">Processing</Badge>;
+      case "escrowed":
+        return <Badge variant="info">Escrowed</Badge>;
       case "shipped":
         return <Badge variant="info">Shipped</Badge>;
       case "completed":
         return <Badge variant="success">Completed</Badge>;
       case "declined":
         return <Badge variant="danger">Declined</Badge>;
+      case "disputed":
+        return <Badge variant="danger">Disputed</Badge>;
+      case "cancelled":
+        return <Badge variant="danger">Cancelled</Badge>;
     }
   };
 
   const getStatusStep = () => {
     switch (status) {
-      case "pending":
+      case "proposed":
         return 1;
       case "accepted":
+      case "processing":
         return 2;
-      case "shipped":
+      case "escrowed":
         return 3;
-      case "completed":
+      case "shipped":
         return 4;
+      case "completed":
+        return 5;
       case "declined":
+      case "disputed":
+      case "cancelled":
         return 0;
     }
   };
 
   const step = getStatusStep();
+
+  const formatCurrency = (value?: number, currency?: string): string => {
+    if (value === undefined) return "";
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency || 'USD'
+    }).format(value);
+  };
 
   return (
     <GlassCard className="overflow-hidden">
@@ -107,7 +136,14 @@ const TradeOffer = ({
                 </div>
               )}
             </div>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <div>
+              <Package className="h-4 w-4 text-muted-foreground mb-1" />
+              {giving.totalValue !== undefined && (
+                <div className="text-xs font-medium">
+                  {formatCurrency(giving.totalValue, giving.currency)}
+                </div>
+              )}
+            </div>
           </div>
         </div>
         
@@ -130,25 +166,49 @@ const TradeOffer = ({
                 </div>
               )}
             </div>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <div>
+              <Package className="h-4 w-4 text-muted-foreground mb-1" />
+              {receiving.totalValue !== undefined && (
+                <div className="text-xs font-medium">
+                  {formatCurrency(receiving.totalValue, receiving.currency)}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Escrow Status (if applicable) */}
+      {escrowRequired && (
+        <div className="mb-4 p-3 rounded-md border border-border bg-secondary/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Lock className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">Escrow Protection</span>
+            </div>
+            {escrowPaid ? (
+              <Badge variant="success" size="sm">Paid</Badge>
+            ) : (
+              <Badge variant="warning" size="sm">Required</Badge>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Progress tracker */}
-      {status !== "declined" && (
+      {!["declined", "disputed", "cancelled"].includes(status) && (
         <div className="relative mb-6 mt-6">
           <div className="absolute top-1/2 left-0 right-0 h-1 bg-muted transform -translate-y-1/2" />
           <div 
             className="absolute top-1/2 left-0 h-1 bg-primary transform -translate-y-1/2" 
-            style={{ width: `${(step / 4) * 100}%` }}
+            style={{ width: `${(step / 5) * 100}%` }}
           />
           <div className="relative flex justify-between">
             <div className="flex flex-col items-center">
               <div className={`h-6 w-6 rounded-full ${step >= 1 ? 'bg-primary' : 'bg-muted'} flex items-center justify-center text-white text-xs`}>
                 1
               </div>
-              <span className="text-xs mt-1">Pending</span>
+              <span className="text-xs mt-1">Proposed</span>
             </div>
             <div className="flex flex-col items-center">
               <div className={`h-6 w-6 rounded-full ${step >= 2 ? 'bg-primary' : 'bg-muted'} flex items-center justify-center text-white text-xs`}>
@@ -160,11 +220,17 @@ const TradeOffer = ({
               <div className={`h-6 w-6 rounded-full ${step >= 3 ? 'bg-primary' : 'bg-muted'} flex items-center justify-center text-white text-xs`}>
                 3
               </div>
-              <span className="text-xs mt-1">Shipped</span>
+              <span className="text-xs mt-1">Escrowed</span>
             </div>
             <div className="flex flex-col items-center">
               <div className={`h-6 w-6 rounded-full ${step >= 4 ? 'bg-primary' : 'bg-muted'} flex items-center justify-center text-white text-xs`}>
                 4
+              </div>
+              <span className="text-xs mt-1">Shipped</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className={`h-6 w-6 rounded-full ${step >= 5 ? 'bg-primary' : 'bg-muted'} flex items-center justify-center text-white text-xs`}>
+                5
               </div>
               <span className="text-xs mt-1">Completed</span>
             </div>
