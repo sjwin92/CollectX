@@ -1,3 +1,4 @@
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -12,10 +13,10 @@
   transition: filter 300ms;
 }
 .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+  filter: drop-shadow(0 0 2em rgba(97, 218, 251, 0.6));
 }
 .logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+  filter: drop-shadow(0 0 2em rgba(97, 218, 251, 0.6));
 }
 
 @keyframes logo-spin {
@@ -39,4 +40,28 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Apple-inspired smooth transitions */
+.fade-transition {
+  @apply transition-opacity duration-300 ease-out;
+}
+
+/* Sorare-inspired card glow */
+.card-glow {
+  @apply relative overflow-hidden;
+}
+
+.card-glow::before {
+  content: '';
+  @apply absolute inset-0 bg-gradient-to-tr from-primary/0 via-primary/20 to-primary/0 opacity-0 transition-opacity duration-500;
+}
+
+.card-glow:hover::before {
+  @apply opacity-100;
+}
+
+/* iPhone-style notification badge */
+.notification-badge {
+  @apply absolute -top-1 -right-1 bg-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold min-w-[16px] h-4 px-1;
 }

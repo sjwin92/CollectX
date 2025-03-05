@@ -7,6 +7,7 @@ interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   hover?: boolean;
   animation?: "fade" | "scale" | "slide" | "none";
+  variant?: "default" | "dark" | "frosted";
 }
 
 const GlassCard = ({
@@ -14,6 +15,7 @@ const GlassCard = ({
   children,
   hover = true,
   animation = "none",
+  variant = "default",
   ...props
 }: GlassCardProps) => {
   const getAnimationClass = () => {
@@ -29,10 +31,22 @@ const GlassCard = ({
     }
   };
 
+  const getVariantClass = () => {
+    switch (variant) {
+      case "dark":
+        return "bg-black/60 backdrop-blur-xl border border-white/10 text-white";
+      case "frosted":
+        return "bg-white/10 backdrop-blur-xl border border-white/20 text-white shadow-[0_4px_30px_rgba(0,0,0,0.1)]";
+      default:
+        return "glass";
+    }
+  };
+
   return (
     <div
       className={cn(
-        "glass rounded-lg p-4",
+        "rounded-xl p-4",
+        getVariantClass(),
         hover && "transition-all duration-300 hover:shadow-md hover:translate-y-[-2px]",
         getAnimationClass(),
         className

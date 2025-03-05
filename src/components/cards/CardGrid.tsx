@@ -13,6 +13,7 @@ interface CardGridProps {
     xl?: number;
   };
   animated?: boolean;
+  staggered?: boolean;
 }
 
 const CardGrid = ({
@@ -20,10 +21,11 @@ const CardGrid = ({
   className,
   columns = { sm: 2, md: 3, lg: 4, xl: 5 },
   animated = false,
+  staggered = false,
 }: CardGridProps) => {
   const getGridClasses = () => {
     return cn(
-      "grid gap-4",
+      "grid gap-6",
       columns.sm === 1 && "grid-cols-1",
       columns.sm === 2 && "grid-cols-2",
       columns.sm === 3 && "grid-cols-3",
@@ -46,7 +48,13 @@ const CardGrid = ({
           key={card.id}
           {...card}
           animation={animated ? "fade" : "none"}
-          className={animated ? `transition-all duration-300 delay-${(index % 10) * 100}` : ""}
+          className={cn(
+            animated && staggered ? 
+              `transition-all duration-500 delay-${((index % 10) * 150)}` : 
+              "transition-all duration-300",
+            index % 2 === 0 ? "animate-float" : "",
+            className
+          )}
         />
       ))}
     </div>
