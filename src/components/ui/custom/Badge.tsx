@@ -2,7 +2,7 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 
-export type ReputationLevel = "new" | "established" | "trusted";
+export type ReputationLevel = "new" | "established" | "trusted" | "verified";
 
 interface BadgeProps {
   className?: string;
@@ -53,6 +53,9 @@ const Badge = ({
         break;
       case "trusted":
         reputationClass = "bg-purple-100 text-purple-800 hover:bg-purple-200";
+        break;
+      case "verified":
+        reputationClass = "bg-amber-100 text-amber-800 hover:bg-amber-200";
         break;
     }
   }
