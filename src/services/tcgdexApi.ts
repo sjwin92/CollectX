@@ -66,15 +66,27 @@ export const getCardById = async (id: string): Promise<TCGDexCard> => {
 
 /**
  * Search cards by name
+ * Note: TCGDex search results are an array of cards, not an object with data property
  */
 export const searchCards = async (query: string): Promise<TCGDexCard[]> => {
+  // TCGDex search endpoint is different - it returns an array directly
   const response = await fetch(`${BASE_URL}/en/cards/search/${encodeURIComponent(query)}`);
   
   if (!response.ok) {
     throw new Error(`Failed to search cards: ${response.statusText}`);
   }
   
-  return await response.json();
+  const data = await response.json();
+  
+  // Handle both array format and object format with data property
+  if (Array.isArray(data)) {
+    return data;
+  } else if (data && data.data && Array.isArray(data.data)) {
+    return data.data;
+  }
+  
+  // If neither format matches, return empty array
+  return [];
 };
 
 /**
@@ -103,4 +115,3 @@ export const mapToTradeCard = (card: TCGDexCard): import("@/models/escrow").Trad
     currency: "USD"
   };
 };
-

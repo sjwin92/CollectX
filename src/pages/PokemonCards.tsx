@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getCards, PokemonCard } from "@/services/pokemonTcgApi";
+import { getCards as getPokemonTcgCards, PokemonCard } from "@/services/pokemonTcgApi";
+import { getCards as getTCGDexCards } from "@/services/tcgdexApi";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import CardGrid from "@/components/cards/CardGrid";
@@ -12,14 +13,65 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Database, Star, Info, X } from "lucide-react";
 import { CardItemProps } from "@/components/cards/CardItem";
+import { useToast } from "@/hooks/use-toast";
 
 const PokemonCards = () => {
   const [selectedCard, setSelectedCard] = useState<PokemonCard | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [dataSource, setDataSource] = useState<"pokemontcg" | "tcgdex">("pokemontcg");
+  const { toast } = useToast();
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['pokemonCards', currentPage],
-    queryFn: () => getCards(currentPage, 20),
+    queryKey: ['pokemonCards', currentPage, dataSource],
+    queryFn: async () => {
+      if (dataSource === 'pokemontcg') {
+        return await getPokemonTcgCards(currentPage, 20);
+      } else {
+        const tcgdexCards = await getTCGDexCards(currentPage, 20);
+        // Convert to the format expected by the component
+        return {
+          data: tcgdexCards.map(card => ({
+            id: card.id,
+            name: card.name.en,
+            supertype: "Pokémon",
+            subtypes: [],
+            hp: card.hp?.toString() || "0",
+            types: card.types || [],
+            rarity: card.rarity || "",
+            images: {
+              small: card.variants.normal || "",
+              large: card.variants.normal || ""
+            },
+            set: {
+              id: card.set.id,
+              name: card.set.name.en,
+              series: "",
+              printedTotal: card.set.printedTotal,
+              total: card.set.total,
+              legalities: {},
+              ptcgoCode: "",
+              releaseDate: card.set.releaseDate,
+              updatedAt: "",
+              images: {
+                symbol: card.set.symbol,
+                logo: card.set.logo
+              }
+            },
+            number: card.localId || "",
+            artist: card.illustrator || "",
+            legalities: {
+              standard: card.legal?.standard ? "Legal" : "Not Legal",
+              expanded: card.legal?.expanded ? "Legal" : "Not Legal",
+              unlimited: card.legal?.unlimited ? "Legal" : "Not Legal"
+            }
+          })),
+          page: currentPage,
+          pageSize: 20,
+          count: tcgdexCards.length,
+          totalCount: 100 // TCGDex doesn't provide a total count, so we'll use a placeholder
+        };
+      }
+    },
   });
 
   const handleCloseDetail = () => {
@@ -62,6 +114,26 @@ const PokemonCards = () => {
             Browse and explore thousands of Pokémon cards from across all sets and generations.
             Use this data to help you value your collection and make fair trades.
           </p>
+        </div>
+
+        <div className="mb-4">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium">Data Source:</span>
+            <Button 
+              variant={dataSource === "pokemontcg" ? "default" : "outline"} 
+              size="sm"
+              onClick={() => setDataSource("pokemontcg")}
+            >
+              Pokemon TCG API
+            </Button>
+            <Button 
+              variant={dataSource === "tcgdex" ? "default" : "outline"} 
+              size="sm"
+              onClick={() => setDataSource("tcgdex")}
+            >
+              TCGDex API
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="browse" className="space-y-6">
@@ -129,7 +201,14 @@ const PokemonCards = () => {
 
           <TabsContent value="search">
             <GlassCard className="p-6">
-              <PokemonCardSearch onSelect={(card) => setSelectedCard(card)} />
+              <PokemonCardSearch onSelect={(card) => {
+                setSelectedCard(card);
+                // Automatically switch to detail tab when a card is selected
+                const tabsElement = document.querySelector('[data-radix-ui-tabs-trigger][value="detail"]') as HTMLElement;
+                if (tabsElement) {
+                  tabsElement.click();
+                }
+              }} />
             </GlassCard>
           </TabsContent>
 

@@ -31,19 +31,21 @@ const PokemonCardSearch = ({ onSelect }: PokemonCardSearchProps) => {
         const response = await searchPokemonTCG(query);
         searchResults = response.data;
       } else {
+        // TCGDex search
         const tcgdexResults = await searchTCGDex(query);
+        
         // Map TCGDex results to PokemonCard format for consistency
         searchResults = tcgdexResults.map(card => ({
           id: card.id,
           name: card.name.en,
           supertype: "Pokémon",
           subtypes: [],
-          hp: card.hp?.toString(),
-          types: card.types,
-          rarity: card.rarity,
+          hp: card.hp?.toString() || "0",
+          types: card.types || [],
+          rarity: card.rarity || "",
           images: {
-            small: card.variants.normal,
-            large: card.variants.normal
+            small: card.variants.normal || "",
+            large: card.variants.normal || ""
           },
           set: {
             id: card.set.id,
@@ -60,19 +62,19 @@ const PokemonCardSearch = ({ onSelect }: PokemonCardSearchProps) => {
               logo: card.set.logo
             }
           },
-          number: "",
-          artist: card.illustrator,
+          number: card.localId || "",
+          artist: card.illustrator || "",
           legalities: {
-            standard: card.legal.standard ? "Legal" : "Not Legal",
-            expanded: card.legal.expanded ? "Legal" : "Not Legal",
-            unlimited: card.legal.unlimited ? "Legal" : "Not Legal"
+            standard: card.legal?.standard ? "Legal" : "Not Legal",
+            expanded: card.legal?.expanded ? "Legal" : "Not Legal",
+            unlimited: card.legal?.unlimited ? "Legal" : "Not Legal"
           }
         }));
       }
       
-      setResults(searchResults);
+      setResults(searchResults || []);
       
-      if (searchResults.length === 0) {
+      if (!searchResults || searchResults.length === 0) {
         toast({
           title: "No cards found",
           description: "Try a different search term",
@@ -86,6 +88,7 @@ const PokemonCardSearch = ({ onSelect }: PokemonCardSearchProps) => {
         description: "There was an error searching for cards",
         variant: "destructive"
       });
+      setResults([]);
     } finally {
       setIsSearching(false);
     }
@@ -143,11 +146,21 @@ const PokemonCardSearch = ({ onSelect }: PokemonCardSearchProps) => {
               onClick={() => onSelect(card)}
             >
               <div className="overflow-hidden rounded-lg">
-                <img 
-                  src={card.images.small} 
-                  alt={card.name} 
-                  className="w-full transition-transform duration-300 group-hover:scale-110"
-                />
+                {card.images.small ? (
+                  <img 
+                    src={card.images.small} 
+                    alt={card.name} 
+                    className="w-full transition-transform duration-300 group-hover:scale-110"
+                    onError={(e) => {
+                      // If image fails to load, use a placeholder
+                      (e.target as HTMLImageElement).src = "/placeholder.svg";
+                    }}
+                  />
+                ) : (
+                  <div className="bg-muted aspect-[2.5/3.5] flex items-center justify-center">
+                    <span className="text-muted-foreground">No Image</span>
+                  </div>
+                )}
               </div>
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <span className="text-white text-sm font-medium text-center px-2">
