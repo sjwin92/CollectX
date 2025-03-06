@@ -799,8 +799,10 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
                   <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                 </>
               ) : (
-                <MessageSquare className="mr-2 h-4 w-4" />
-                Send
+                <>
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  Send
+                </>
               )}
             </Button>
           </div>
