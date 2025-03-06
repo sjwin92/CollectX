@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,11 +12,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/custom/Badge";
-import { GlassCard } from "@/components/ui/custom/GlassCard";
+import Badge from "@/components/ui/custom/Badge";
+import GlassCard from "@/components/ui/custom/GlassCard";
 import {
   ArrowLeftRight,
-  Calendar,
+  Calendar as CalendarIcon,
   Package,
   Shield,
   Truck,
@@ -43,7 +43,7 @@ import {
   releaseTradeEscrow,
   updateShippingInfo,
 } from "@/services/tradeService";
-import { TradeStatus, TradeProposal, TradeMessage } from "@/models/escrow";
+import { TradeStatus, TradeProposal } from "@/models/escrow";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -56,10 +56,8 @@ import {
 } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { useUser } from "@clerk/clerk-react";
 import { format } from 'date-fns';
 import { cn } from "@/lib/utils";
-import { CalendarIcon } from "@radix-ui/react-icons";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 
@@ -89,7 +87,7 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
 
   const {
     mutate: sendMessage,
-    isLoading: isSendingMessage,
+    isPending: isSendingMessage,
     isError: isSendMessageError,
   } = useMutation({
     mutationFn: (message: string) => addTradeMessage(tradeId!, message),
@@ -108,7 +106,7 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
 
   const {
     mutate: acceptTrade,
-    isLoading: isAcceptingTrade,
+    isPending: isAcceptingTrade,
     isError: isAcceptTradeError,
   } = useMutation({
     mutationFn: () => acceptTradeProposal(tradeId!),
@@ -130,7 +128,7 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
 
   const {
     mutate: declineTrade,
-    isLoading: isDecliningTrade,
+    isPending: isDecliningTrade,
     isError: isDeclineTradeError,
   } = useMutation({
     mutationFn: () => declineTradeProposal(tradeId!),
@@ -152,7 +150,7 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
 
   const {
     mutate: payInitiator,
-    isLoading: isPayingInitiator,
+    isPending: isPayingInitiator,
     isError: isPayInitiatorError,
   } = useMutation({
     mutationFn: () => payInitiatorEscrow(tradeId!),
@@ -174,7 +172,7 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
 
   const {
     mutate: payRecipient,
-    isLoading: isPayingRecipient,
+    isPending: isPayingRecipient,
     isError: isPayRecipientError,
   } = useMutation({
     mutationFn: () => payRecipientEscrow(tradeId!),
@@ -196,7 +194,7 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
 
   const {
     mutate: releaseEscrow,
-    isLoading: isReleasingEscrow,
+    isPending: isReleasingEscrow,
     isError: isReleaseEscrowError,
   } = useMutation({
     mutationFn: () => releaseTradeEscrow(tradeId!),
@@ -218,7 +216,7 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
 
   const {
     mutate: updateShipping,
-    isLoading: isUpdatingShipping,
+    isPending: isUpdatingShipping,
     isError: isUpdateShippingError,
   } = useMutation({
     mutationFn: () => updateShippingInfo(tradeId!, shippingCarrier, trackingNumber, estimatedDelivery),
