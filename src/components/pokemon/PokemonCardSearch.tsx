@@ -2,9 +2,11 @@
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, X, Filter } from "lucide-react";
-import { PokemonCard, searchCards } from "@/services/pokemonTcgApi";
+import { Search, X } from "lucide-react";
+import { PokemonCard, searchCards as searchPokemonTCG } from "@/services/pokemonTcgApi";
+import { TCGDexCard, searchCards as searchTCGDex } from "@/services/tcgdexApi";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface PokemonCardSearchProps {
   onSelect: (card: PokemonCard) => void;
@@ -14,6 +16,7 @@ const PokemonCardSearch = ({ onSelect }: PokemonCardSearchProps) => {
   const [query, setQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<PokemonCard[]>([]);
+  const [source, setSource] = useState<"pokemontcg" | "tcgdex">("pokemontcg");
   const { toast } = useToast();
   
   const handleSearch = async (e: React.FormEvent) => {
@@ -23,10 +26,53 @@ const PokemonCardSearch = ({ onSelect }: PokemonCardSearchProps) => {
     setIsSearching(true);
     
     try {
-      const response = await searchCards(query);
-      setResults(response.data);
+      let searchResults;
+      if (source === "pokemontcg") {
+        const response = await searchPokemonTCG(query);
+        searchResults = response.data;
+      } else {
+        const tcgdexResults = await searchTCGDex(query);
+        // Map TCGDex results to PokemonCard format for consistency
+        searchResults = tcgdexResults.map(card => ({
+          id: card.id,
+          name: card.name.en,
+          supertype: "Pokémon",
+          subtypes: [],
+          hp: card.hp?.toString(),
+          types: card.types,
+          rarity: card.rarity,
+          images: {
+            small: card.variants.normal,
+            large: card.variants.normal
+          },
+          set: {
+            id: card.set.id,
+            name: card.set.name.en,
+            series: "",
+            printedTotal: card.set.printedTotal,
+            total: card.set.total,
+            legalities: {},
+            ptcgoCode: "",
+            releaseDate: card.set.releaseDate,
+            updatedAt: "",
+            images: {
+              symbol: card.set.symbol,
+              logo: card.set.logo
+            }
+          },
+          number: "",
+          artist: card.illustrator,
+          legalities: {
+            standard: card.legal.standard ? "Legal" : "Not Legal",
+            expanded: card.legal.expanded ? "Legal" : "Not Legal",
+            unlimited: card.legal.unlimited ? "Legal" : "Not Legal"
+          }
+        }));
+      }
       
-      if (response.data.length === 0) {
+      setResults(searchResults);
+      
+      if (searchResults.length === 0) {
         toast({
           title: "No cards found",
           description: "Try a different search term",
@@ -74,6 +120,15 @@ const PokemonCardSearch = ({ onSelect }: PokemonCardSearchProps) => {
             </Button>
           )}
         </div>
+        <Select value={source} onValueChange={(value: "pokemontcg" | "tcgdex") => setSource(value)}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Select source" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pokemontcg">Pokemon TCG</SelectItem>
+            <SelectItem value="tcgdex">TCG Dex</SelectItem>
+          </SelectContent>
+        </Select>
         <Button type="submit" disabled={isSearching}>
           {isSearching ? "Searching..." : "Search"}
         </Button>
