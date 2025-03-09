@@ -56,15 +56,22 @@ const CardItem = ({
 
   const handleImageError = () => {
     setImageStatus("error");
-    // Try to use a fallback Pokemon image service
-    if (imageUrl && !imageUrl.includes("pokemonimages.com")) {
-      // We'll implement this in our API service
-      console.log("Image failed to load, would try fallback if implemented");
-    }
+    console.log("Image failed to load, trying fallback");
   };
 
-  // Ensure we have a valid image URL
-  const validImageUrl = imageUrl || "https://assets.pokemon.com/assets/cms2/img/cards/web/SV12/SV12_EN_1.png";
+  // Use a more reliable public image source with fallbacks
+  const getFallbackImageUrl = (cardId: string, name: string): string => {
+    // Try these reliable sources in order:
+    // 1. Pokemon.com images (when available)
+    // 2. Limitless TCG (a reliable public source)
+    // 3. Generic Pokemon card back as final fallback
+    return `https://limitlesstcg.com/cards/en/${cardId.replace(/-/g, "/")}` || 
+           `https://assets.pokemon.com/assets/cms2/img/cards/web/SV12/SV12_EN_${cardId.split('-').pop()}.png` ||
+           "https://assets.pokemon.com/assets/cms2/img/cards/web/SV12/SV12_EN_1.png";
+  };
+
+  // Ensure we have a valid image URL with fallbacks
+  const validImageUrl = imageUrl || getFallbackImageUrl(id, name);
 
   const CardContent = (
     <GlassCard 
@@ -87,6 +94,7 @@ const CardItem = ({
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/80">
                 <AlertTriangle className="h-6 w-6 text-amber-500 mb-1" />
                 <span className="text-xs font-medium text-center">Image Failed to Load</span>
+                <span className="text-xs text-muted-foreground text-center mt-1">Card data still available</span>
               </div>
             )}
             

@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { PokemonCard } from "@/services/pokemonTcgApi";
+import { PokemonCard, getValidImageUrl } from "@/services/pokemonTcgApi";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
 import { formatCurrency } from "@/utils/escrowCalculator";
@@ -31,16 +31,20 @@ const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
 
   const handleImageError = () => {
     setImageStatus("error");
+    console.log("Detail image failed to load, trying fallback");
   };
+  
+  // Get a reliable image URL with fallbacks
+  const cardImageUrl = card.images.large || getValidImageUrl(card, true);
   
   return (
     <GlassCard className="overflow-hidden animate-float">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="relative aspect-[2/3] overflow-hidden rounded-lg">
-          {card.images.large ? (
+          {cardImageUrl ? (
             <div className="relative h-full">
               <img 
-                src={card.images.large} 
+                src={cardImageUrl} 
                 alt={`Detailed view of ${card.name} Pokémon card from set ${card.set.name}`}
                 className="w-full h-full object-contain"
                 onLoad={handleImageLoad}

@@ -1,8 +1,9 @@
 
 const BASE_URL = 'https://api.tcgdex.net/v2';
 
-// Additional fallback API for images
-const FALLBACK_IMAGE_API = 'https://images.pokemontcg.io';
+// Alternative reliable card image sources
+const LIMITLESS_TCG_API = 'https://limitlesstcg.com/cards/en';
+const POKEMON_COM_IMAGES = 'https://assets.pokemon.com/assets/cms2/img/cards/web';
 
 export interface TCGDexCard {
   id: string;
@@ -42,7 +43,7 @@ export interface TCGDexCard {
 }
 
 /**
- * Validates image URLs to ensure they're properly formatted
+ * Validates image URLs and provides reliable fallbacks
  * @param url The image URL to validate
  * @returns Validated URL or a fallback if invalid
  */
@@ -62,16 +63,26 @@ const validateImageUrl = (url: string | undefined, cardId?: string): string => {
 };
 
 /**
- * Get a fallback image URL for a card if the original URL is invalid
+ * Get reliable fallback images from multiple sources
  */
 const getFallbackImage = (cardId?: string): string => {
-  if (cardId) {
-    // Try using the Pokemon TCG API image pattern if we have a card ID
-    return `${FALLBACK_IMAGE_API}/${cardId.toLowerCase()}.png`;
+  if (!cardId) {
+    return `${POKEMON_COM_IMAGES}/SV12/SV12_EN_1.png`;
   }
   
-  // Default fallback
-  return 'https://assets.pokemon.com/assets/cms2/img/cards/web/SV12/SV12_EN_1.png';
+  // Try multiple sources
+  // 1. Limitless TCG
+  const limitlessUrl = `${LIMITLESS_TCG_API}/${cardId.replace(/-/g, "/")}`;
+  
+  // 2. If card ID looks like set-number format, try Pokemon.com pattern
+  const parts = cardId.split('-');
+  if (parts.length >= 2) {
+    const setId = parts[0];
+    const cardNumber = parts[parts.length - 1];
+    return `${POKEMON_COM_IMAGES}/${setId.toUpperCase()}/${setId.toUpperCase()}_EN_${cardNumber}.png`;
+  }
+  
+  return limitlessUrl;
 };
 
 /**
