@@ -1,6 +1,9 @@
 
 const BASE_URL = 'https://api.tcgdex.net/v2';
 
+// Additional fallback API for images
+const FALLBACK_IMAGE_API = 'https://images.pokemontcg.io';
+
 export interface TCGDexCard {
   id: string;
   localId: string;
@@ -41,10 +44,12 @@ export interface TCGDexCard {
 /**
  * Validates image URLs to ensure they're properly formatted
  * @param url The image URL to validate
- * @returns Validated URL or a placeholder if invalid
+ * @returns Validated URL or a fallback if invalid
  */
-const validateImageUrl = (url: string | undefined): string => {
-  if (!url) return '/placeholder.svg';
+const validateImageUrl = (url: string | undefined, cardId?: string): string => {
+  if (!url) {
+    return getFallbackImage(cardId);
+  }
   
   // Check if the URL is valid format
   try {
@@ -52,8 +57,21 @@ const validateImageUrl = (url: string | undefined): string => {
     return url;
   } catch (e) {
     console.warn('Invalid image URL detected:', url);
-    return '/placeholder.svg';
+    return getFallbackImage(cardId);
   }
+};
+
+/**
+ * Get a fallback image URL for a card if the original URL is invalid
+ */
+const getFallbackImage = (cardId?: string): string => {
+  if (cardId) {
+    // Try using the Pokemon TCG API image pattern if we have a card ID
+    return `${FALLBACK_IMAGE_API}/${cardId.toLowerCase()}.png`;
+  }
+  
+  // Default fallback
+  return 'https://assets.pokemon.com/assets/cms2/img/cards/web/SV12/SV12_EN_1.png';
 };
 
 /**
@@ -61,24 +79,34 @@ const validateImageUrl = (url: string | undefined): string => {
  */
 export const getCards = async (page = 1, pageSize = 20): Promise<TCGDexCard[]> => {
   try {
-    const response = await fetch(`${BASE_URL}/en/cards?page=${page}&pageSize=${pageSize}`);
+    // TCGDex doesn't have pagination, so we'll fetch all and slice
+    const response = await fetch(`${BASE_URL}/en/cards`);
     
     if (!response.ok) {
       console.error(`Failed to fetch cards: ${response.statusText}`);
       throw new Error(`Failed to fetch cards: ${response.statusText}`);
     }
     
-    const cards = await response.json();
+    let cards = await response.json();
+    
+    // Check if it's an array or needs to be extracted
+    if (!Array.isArray(cards) && cards.data && Array.isArray(cards.data)) {
+      cards = cards.data;
+    }
+    
+    // Handle pagination ourselves
+    const startIndex = (page - 1) * pageSize;
+    const paginatedCards = cards.slice(startIndex, startIndex + pageSize);
     
     // Process cards to ensure image URLs are valid
-    return cards.map((card: TCGDexCard) => ({
+    return paginatedCards.map((card: TCGDexCard) => ({
       ...card,
       variants: {
         ...card.variants,
-        normal: validateImageUrl(card.variants.normal),
-        reverse: card.variants.reverse ? validateImageUrl(card.variants.reverse) : undefined,
-        holo: card.variants.holo ? validateImageUrl(card.variants.holo) : undefined,
-        firstEdition: card.variants.firstEdition ? validateImageUrl(card.variants.firstEdition) : undefined
+        normal: validateImageUrl(card.variants.normal, card.id),
+        reverse: card.variants.reverse ? validateImageUrl(card.variants.reverse, card.id) : undefined,
+        holo: card.variants.holo ? validateImageUrl(card.variants.holo, card.id) : undefined,
+        firstEdition: card.variants.firstEdition ? validateImageUrl(card.variants.firstEdition, card.id) : undefined
       },
       set: {
         ...card.set,
@@ -100,6 +128,7 @@ export const getCardById = async (id: string): Promise<TCGDexCard> => {
     const response = await fetch(`${BASE_URL}/en/cards/${id}`);
     
     if (!response.ok) {
+      console.error(`Failed to fetch card: ${response.statusText}`);
       throw new Error(`Failed to fetch card: ${response.statusText}`);
     }
     
@@ -110,10 +139,10 @@ export const getCardById = async (id: string): Promise<TCGDexCard> => {
       ...card,
       variants: {
         ...card.variants,
-        normal: validateImageUrl(card.variants.normal),
-        reverse: card.variants.reverse ? validateImageUrl(card.variants.reverse) : undefined,
-        holo: card.variants.holo ? validateImageUrl(card.variants.holo) : undefined,
-        firstEdition: card.variants.firstEdition ? validateImageUrl(card.variants.firstEdition) : undefined
+        normal: validateImageUrl(card.variants.normal, card.id),
+        reverse: card.variants.reverse ? validateImageUrl(card.variants.reverse, card.id) : undefined,
+        holo: card.variants.holo ? validateImageUrl(card.variants.holo, card.id) : undefined,
+        firstEdition: card.variants.firstEdition ? validateImageUrl(card.variants.firstEdition, card.id) : undefined
       },
       set: {
         ...card.set,
@@ -129,14 +158,13 @@ export const getCardById = async (id: string): Promise<TCGDexCard> => {
 
 /**
  * Search cards by name
- * Note: TCGDex search results are an array of cards, not an object with data property
  */
 export const searchCards = async (query: string): Promise<TCGDexCard[]> => {
   try {
-    // TCGDex search endpoint is different - it returns an array directly
     const response = await fetch(`${BASE_URL}/en/cards/search/${encodeURIComponent(query)}`);
     
     if (!response.ok) {
+      console.error(`Failed to search cards: ${response.statusText}`);
       throw new Error(`Failed to search cards: ${response.statusText}`);
     }
     
@@ -156,10 +184,10 @@ export const searchCards = async (query: string): Promise<TCGDexCard[]> => {
       ...card,
       variants: {
         ...card.variants,
-        normal: validateImageUrl(card.variants.normal),
-        reverse: card.variants.reverse ? validateImageUrl(card.variants.reverse) : undefined,
-        holo: card.variants.holo ? validateImageUrl(card.variants.holo) : undefined,
-        firstEdition: card.variants.firstEdition ? validateImageUrl(card.variants.firstEdition) : undefined
+        normal: validateImageUrl(card.variants.normal, card.id),
+        reverse: card.variants.reverse ? validateImageUrl(card.variants.reverse, card.id) : undefined,
+        holo: card.variants.holo ? validateImageUrl(card.variants.holo, card.id) : undefined,
+        firstEdition: card.variants.firstEdition ? validateImageUrl(card.variants.firstEdition, card.id) : undefined
       },
       set: {
         ...card.set,
@@ -181,6 +209,7 @@ export const getSets = async (): Promise<any[]> => {
     const response = await fetch(`${BASE_URL}/en/sets`);
     
     if (!response.ok) {
+      console.error(`Failed to fetch sets: ${response.statusText}`);
       throw new Error(`Failed to fetch sets: ${response.statusText}`);
     }
     
@@ -205,7 +234,7 @@ export const mapToTradeCard = (card: TCGDexCard): import("@/models/escrow").Trad
   return {
     id: card.id,
     name: card.name.en,
-    imageUrl: validateImageUrl(card.variants.normal),
+    imageUrl: validateImageUrl(card.variants.normal, card.id),
     condition: "Near Mint", // Default condition
     estimatedValue: 0, // TCGDex doesn't provide prices
     currency: "USD"

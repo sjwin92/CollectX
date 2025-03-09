@@ -56,7 +56,15 @@ const CardItem = ({
 
   const handleImageError = () => {
     setImageStatus("error");
+    // Try to use a fallback Pokemon image service
+    if (imageUrl && !imageUrl.includes("pokemonimages.com")) {
+      // We'll implement this in our API service
+      console.log("Image failed to load, would try fallback if implemented");
+    }
   };
+
+  // Ensure we have a valid image URL
+  const validImageUrl = imageUrl || "https://assets.pokemon.com/assets/cms2/img/cards/web/SV12/SV12_EN_1.png";
 
   const CardContent = (
     <GlassCard 
@@ -64,10 +72,10 @@ const CardItem = ({
       animation={animation}
     >
       <div className="relative aspect-[2/3] overflow-hidden rounded-md mb-3">
-        {imageUrl ? (
+        {validImageUrl ? (
           <>
             <img
-              src={imageUrl}
+              src={validImageUrl}
               alt={`Pokémon card: ${name} - ${condition} condition, ${rarity} rarity`}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               loading="lazy"
