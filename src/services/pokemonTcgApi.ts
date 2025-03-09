@@ -75,6 +75,11 @@ export interface PokemonCardResponse {
  */
 const BASE_URL = 'https://api.pokemontcg.io/v2';
 
+// Public image repositories that don't require authentication
+const POKELLECTOR_URL = 'https://assets.pokellector.com/cards';
+const POKEMON_COM_URL = 'https://assets.pokemon.com/assets/cms2/img/cards/web';
+const PKMN_CARDS_URL = 'https://images.pokemoncards.com';
+
 /**
  * Get cards with optional filtering
  */
@@ -127,6 +132,7 @@ export const getCards = async (page = 1, pageSize = 20, query = ''): Promise<Pok
  */
 export const getCardById = async (id: string): Promise<PokemonCard> => {
   try {
+    console.log(`Fetching card with ID: ${id}`);
     const response = await fetch(`${BASE_URL}/cards/${id}`);
     
     if (!response.ok) {
@@ -144,6 +150,7 @@ export const getCardById = async (id: string): Promise<PokemonCard> => {
       };
     }
     
+    console.log(`Successfully fetched card: ${data.data?.name || 'Unknown'}`);
     return data.data;
   } catch (error) {
     console.error('Error fetching Pokemon card by ID:', error);
@@ -160,6 +167,7 @@ export const searchCards = async (query: string, page = 1, pageSize = 20): Promi
 
 /**
  * Generate reliable image URLs for Pokemon cards
+ * Uses multiple public sources that don't require API keys
  */
 export const getValidImageUrl = (card: PokemonCard, large = false): string => {
   if (!card) {
@@ -168,23 +176,55 @@ export const getValidImageUrl = (card: PokemonCard, large = false): string => {
   
   // Try official source first
   const originalUrl = large ? card.images?.large : card.images?.small;
-  if (originalUrl) {
+  if (originalUrl && isValidUrl(originalUrl)) {
+    console.log(`Using original image URL: ${originalUrl}`);
     return originalUrl;
   }
   
-  // Try alternative sources based on card ID and set
-  if (card.id) {
-    // Try Limitless TCG (public API without key requirements)
-    return `https://limitlesstcg.com/cards/en/${card.id.replace(/-/g, "/")}`;
-  }
-  
-  // Try using set number if available
+  // Try Pokellector - a reliable public source without API key requirements
+  // Format: https://assets.pokellector.com/cards/[SET]/[NUMBER].webp
   if (card.set?.id && card.number) {
-    return `https://images.pokemontcg.io/${card.set.id}/${card.number}.png`;
+    const setCode = card.set.id.toLowerCase();
+    const number = card.number.padStart(3, '0');
+    const pokellectorUrl = `${POKELLECTOR_URL}/${setCode}/${number}.webp`;
+    console.log(`Trying Pokellector URL: ${pokellectorUrl}`);
+    return pokellectorUrl;
   }
   
-  // Default fallback
-  return 'https://assets.pokemon.com/assets/cms2/img/cards/web/SV12/SV12_EN_1.png';
+  // Try Pokemon.com official assets
+  // Format: https://assets.pokemon.com/assets/cms2/img/cards/web/[SET]/[SET]_EN_[NUMBER].png
+  if (card.set?.id && card.number) {
+    const setCode = card.set.id.toUpperCase();
+    const number = card.number;
+    const pokemonComUrl = `${POKEMON_COM_URL}/${setCode}/${setCode}_EN_${number}.png`;
+    console.log(`Trying Pokemon.com URL: ${pokemonComUrl}`);
+    return pokemonComUrl;
+  }
+  
+  // Try PokemonCards.com images
+  // Format: https://images.pokemoncards.com/[SET]/[NUMBER].jpg
+  if (card.set?.id && card.number) {
+    const setCode = card.set.id.toLowerCase();
+    const number = card.number;
+    const pkmnCardsUrl = `${PKMN_CARDS_URL}/${setCode}/${number}.jpg`;
+    console.log(`Trying PokemonCards URL: ${pkmnCardsUrl}`);
+    return pkmnCardsUrl;
+  }
+  
+  // Default fallback to a static image
+  return 'https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg';
+};
+
+/**
+ * Check if a URL is valid format
+ */
+const isValidUrl = (url: string): boolean => {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 /**

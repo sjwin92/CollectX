@@ -1,11 +1,12 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
 import { cn } from "@/lib/utils";
-import { Info, AlertTriangle, Check, Image } from "lucide-react";
+import { Info, AlertTriangle, Check, Image, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 
 export interface CardItemProps {
   id: string;
@@ -31,6 +32,32 @@ const CardItem = ({
   onClick
 }: CardItemProps) => {
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
+  const [imageSrc, setImageSrc] = useState<string>(imageUrl);
+  const [retryCount, setRetryCount] = useState(0);
+  
+  // Alternative image sources to try in sequence
+  const getAlternativeImages = (): string[] => {
+    const alternatives = [
+      imageUrl, // Original URL
+      // Pokellector format
+      `https://assets.pokellector.com/cards/${id.split('-')[0]}/${id.split('-').pop()?.padStart(3, '0')}.webp`,
+      // Pokemon.com format
+      `https://assets.pokemon.com/assets/cms2/img/cards/web/${id.split('-')[0].toUpperCase()}/${id.split('-')[0].toUpperCase()}_EN_${id.split('-').pop()}.png`,
+      // PokemonCards.com format
+      `https://images.pokemoncards.com/${id.split('-')[0]}/${id.split('-').pop()}.jpg`,
+      // Last resort official card back
+      "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
+    ];
+    
+    return alternatives.filter(url => url !== undefined && url !== null && url !== "");
+  };
+  
+  useEffect(() => {
+    // Reset when card changes
+    setImageStatus("loading");
+    setRetryCount(0);
+    setImageSrc(imageUrl);
+  }, [id, imageUrl]);
   
   // Map condition to style
   const conditionVariant = (): "success" | "warning" | "danger" | "info" => {
@@ -55,23 +82,26 @@ const CardItem = ({
   };
 
   const handleImageError = () => {
-    setImageStatus("error");
-    console.log("Image failed to load, trying fallback");
+    console.log(`Image failed to load: ${imageSrc}, retry: ${retryCount}`);
+    
+    const alternatives = getAlternativeImages();
+    const nextIndex = retryCount + 1;
+    
+    if (nextIndex < alternatives.length) {
+      console.log(`Trying alternative image source: ${alternatives[nextIndex]}`);
+      setRetryCount(nextIndex);
+      setImageSrc(alternatives[nextIndex]);
+    } else {
+      setImageStatus("error");
+      console.log("All image sources failed for card:", id);
+    }
   };
-
-  // Use a more reliable public image source with fallbacks
-  const getFallbackImageUrl = (cardId: string, name: string): string => {
-    // Try these reliable sources in order:
-    // 1. Pokemon.com images (when available)
-    // 2. Limitless TCG (a reliable public source)
-    // 3. Generic Pokemon card back as final fallback
-    return `https://limitlesstcg.com/cards/en/${cardId.replace(/-/g, "/")}` || 
-           `https://assets.pokemon.com/assets/cms2/img/cards/web/SV12/SV12_EN_${cardId.split('-').pop()}.png` ||
-           "https://assets.pokemon.com/assets/cms2/img/cards/web/SV12/SV12_EN_1.png";
+  
+  const retryImage = () => {
+    setImageStatus("loading");
+    setRetryCount(0);
+    setImageSrc(imageUrl);
   };
-
-  // Ensure we have a valid image URL with fallbacks
-  const validImageUrl = imageUrl || getFallbackImageUrl(id, name);
 
   const CardContent = (
     <GlassCard 
@@ -79,55 +109,63 @@ const CardItem = ({
       animation={animation}
     >
       <div className="relative aspect-[2/3] overflow-hidden rounded-md mb-3">
-        {validImageUrl ? (
-          <>
+        <div className="relative h-full">
+          {imageSrc && (
             <img
-              src={validImageUrl}
+              src={imageSrc}
               alt={`Pokémon card: ${name} - ${condition} condition, ${rarity} rarity`}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               loading="lazy"
               onLoad={handleImageLoad}
               onError={handleImageError}
             />
-            
-            {imageStatus === "error" && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/80">
-                <AlertTriangle className="h-6 w-6 text-amber-500 mb-1" />
-                <span className="text-xs font-medium text-center">Image Failed to Load</span>
-                <span className="text-xs text-muted-foreground text-center mt-1">Card data still available</span>
-              </div>
-            )}
-            
-            <div className="absolute top-2 right-2 flex gap-1">
-              <Badge variant={conditionVariant()} size="sm">
-                {condition}
-              </Badge>
-              
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="bg-white/90 dark:bg-gray-800/90 rounded-full p-1 cursor-help">
-                      <Info className="h-3 w-3 text-primary" />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <div className="text-xs space-y-1">
-                      <p><strong>Card:</strong> {name}</p>
-                      <p><strong>Rarity:</strong> {rarity}</p>
-                      <p><strong>Condition:</strong> {condition}</p>
-                      <p><strong>Value:</strong> {estimatedValue}</p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+          )}
+          
+          {imageStatus === "loading" && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/70">
+              <div className="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
             </div>
-          </>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full bg-muted">
-            <Image className="h-6 w-6 text-muted-foreground mb-1" />
-            <span className="text-xs text-muted-foreground">No Image Available</span>
+          )}
+          
+          {imageStatus === "error" && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/80">
+              <AlertTriangle className="h-6 w-6 text-amber-500 mb-1" />
+              <span className="text-xs font-medium text-center">Image Failed to Load</span>
+              <span className="text-xs text-muted-foreground text-center mt-1 mb-2">Card data still available</span>
+              <Button size="sm" variant="outline" className="text-xs py-0 h-7" onClick={(e) => {
+                e.stopPropagation(); // Prevent triggering card click
+                retryImage();
+              }}>
+                <RefreshCw className="h-3 w-3 mr-1" /> Retry
+              </Button>
+            </div>
+          )}
+          
+          <div className="absolute top-2 right-2 flex gap-1">
+            <Badge variant={conditionVariant()} size="sm">
+              {condition}
+            </Badge>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="bg-white/90 dark:bg-gray-800/90 rounded-full p-1 cursor-help">
+                    <Info className="h-3 w-3 text-primary" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <div className="text-xs space-y-1">
+                    <p><strong>Card:</strong> {name}</p>
+                    <p><strong>Rarity:</strong> {rarity}</p>
+                    <p><strong>Condition:</strong> {condition}</p>
+                    <p><strong>Value:</strong> {estimatedValue}</p>
+                    <p><strong>ID:</strong> {id}</p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
-        )}
+        </div>
       </div>
       
       <div className="space-y-1">
