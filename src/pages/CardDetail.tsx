@@ -1,7 +1,6 @@
-
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { getCardById, PokemonCard } from "@/services/pokemonTcgApi";
+import { getCardById } from "@/services/pokemonTcgApi";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import PokemonCardDetail from "@/components/pokemon/PokemonCardDetail";
@@ -31,13 +30,15 @@ const CardDetail = () => {
       return await getCardById(id);
     },
     retry: 2,
-    onError: (err) => {
-      console.error('Error loading card:', err);
-      toast({
-        title: "Failed to load card",
-        description: `Could not find card with ID: ${id}`,
-        variant: "destructive"
-      });
+    meta: {
+      onError: (err: Error) => {
+        console.error('Error loading card:', err);
+        toast({
+          title: "Failed to load card",
+          description: `Could not find card with ID: ${id}`,
+          variant: "destructive"
+        });
+      }
     }
   });
 
@@ -98,15 +99,15 @@ const CardDetail = () => {
         </div>
         
         <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">{card.name}</h1>
+          <h1 className="text-3xl font-bold mb-2">{card?.name}</h1>
           <div className="flex items-center gap-2 text-muted-foreground">
-            <span>{card.set.name}</span>
+            <span>{card?.set.name}</span>
             <span>•</span>
-            <span>Card #{card.number}</span>
-            {card.rarity && (
+            <span>Card #{card?.number}</span>
+            {card?.rarity && (
               <>
                 <span>•</span>
-                <span>{card.rarity}</span>
+                <span>{card?.rarity}</span>
               </>
             )}
           </div>
