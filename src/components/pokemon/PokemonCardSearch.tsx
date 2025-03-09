@@ -2,11 +2,12 @@
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, X } from "lucide-react";
+import { Search, X, Info, AlertTriangle, Image } from "lucide-react";
 import { PokemonCard, searchCards as searchPokemonTCG } from "@/services/pokemonTcgApi";
 import { TCGDexCard, searchCards as searchTCGDex } from "@/services/tcgdexApi";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PokemonCardSearchProps {
   onSelect: (card: PokemonCard) => void;
@@ -110,6 +111,7 @@ const PokemonCardSearch = ({ onSelect }: PokemonCardSearchProps) => {
             className="pl-9"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search for Pokémon cards"
           />
           {query && (
             <Button 
@@ -118,6 +120,7 @@ const PokemonCardSearch = ({ onSelect }: PokemonCardSearchProps) => {
               size="icon" 
               className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" 
               onClick={clearSearch}
+              aria-label="Clear search"
             >
               <X className="h-3 w-3" />
             </Button>
@@ -147,18 +150,38 @@ const PokemonCardSearch = ({ onSelect }: PokemonCardSearchProps) => {
             >
               <div className="overflow-hidden rounded-lg">
                 {card.images.small ? (
-                  <img 
-                    src={card.images.small} 
-                    alt={card.name} 
-                    className="w-full transition-transform duration-300 group-hover:scale-110"
-                    onError={(e) => {
-                      // If image fails to load, use a placeholder
-                      (e.target as HTMLImageElement).src = "/placeholder.svg";
-                    }}
-                  />
+                  <div className="relative">
+                    <img 
+                      src={card.images.small} 
+                      alt={`Pokémon card: ${card.name} from set ${card.set.name}`}
+                      className="w-full transition-transform duration-300 group-hover:scale-110"
+                      onError={(e) => {
+                        // If image fails to load, use a placeholder
+                        (e.target as HTMLImageElement).src = "/placeholder.svg";
+                        // Add a data attribute to mark this as a placeholder
+                        (e.target as HTMLImageElement).setAttribute('data-placeholder', 'true');
+                      }}
+                      loading="lazy"
+                    />
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="absolute top-1 right-1 bg-black/60 rounded-full p-1">
+                            <Info className="h-3 w-3 text-white" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Card: {card.name}</p>
+                          <p>Set: {card.set.name}</p>
+                          <p>Source: {source === "pokemontcg" ? "Pokemon TCG API" : "TCGDex API"}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 ) : (
                   <div className="bg-muted aspect-[2.5/3.5] flex items-center justify-center">
-                    <span className="text-muted-foreground">No Image</span>
+                    <AlertTriangle className="h-5 w-5 text-amber-500 mb-1" />
+                    <span className="text-muted-foreground text-xs">Image Unavailable</span>
                   </div>
                 )}
               </div>
@@ -169,6 +192,14 @@ const PokemonCardSearch = ({ onSelect }: PokemonCardSearchProps) => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+      
+      {query && results.length === 0 && !isSearching && (
+        <div className="flex flex-col items-center justify-center p-6 text-center">
+          <AlertTriangle className="h-8 w-8 text-amber-500 mb-2" />
+          <p className="text-muted-foreground">No cards found for "{query}"</p>
+          <p className="text-sm text-muted-foreground">Try a different search term or data source</p>
         </div>
       )}
     </div>
