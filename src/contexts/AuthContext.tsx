@@ -20,6 +20,7 @@ type AuthContextType = {
     error: Error | null;
   }>;
   signOut: () => Promise<void>;
+  refreshSession: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -62,6 +63,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          username: email.split('@')[0]
+        }
+      }
     });
     return { error, user: data.user };
   };
@@ -80,6 +86,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await supabase.auth.signOut();
   };
 
+  const refreshSession = async () => {
+    const { data } = await supabase.auth.refreshSession();
+    setSession(data.session);
+    setUser(data.session?.user ?? null);
+  };
+
   const value = {
     session,
     user,
@@ -88,6 +100,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signUp,
     signInWithProvider,
     signOut,
+    refreshSession,
   };
 
   return (
