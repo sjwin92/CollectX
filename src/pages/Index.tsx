@@ -26,7 +26,7 @@ const featuredCards = [
   {
     id: "swsh4-25",  // Charizard VMAX from Vivid Voltage
     name: "Charizard VMAX",
-    imageUrl: "https://images.pokemontcg.io/swsh4/25_hires.png",
+    imageUrl: "https://images.pokemontcg.io/swsh4/25.png",
     rarity: "Ultra Rare",
     condition: "Near Mint",
     estimatedValue: "$350-450"
@@ -34,7 +34,7 @@ const featuredCards = [
   {
     id: "swsh1-190", // Pikachu VMAX from Sword & Shield Base
     name: "Pikachu VMAX",
-    imageUrl: "https://images.pokemontcg.io/swsh1/190_hires.png",
+    imageUrl: "https://images.pokemontcg.io/swsh1/190.png",
     rarity: "Rare",
     condition: "Mint",
     estimatedValue: "$120-150"
@@ -42,15 +42,15 @@ const featuredCards = [
   {
     id: "sm12-222", // Mewtwo & Mew GX from Cosmic Eclipse
     name: "Mewtwo & Mew GX",
-    imageUrl: "https://images.pokemontcg.io/sm12/222_hires.png",
+    imageUrl: "https://images.pokemontcg.io/sm12/222.png",
     rarity: "Ultra Rare",
     condition: "Excellent",
     estimatedValue: "$200-250"
   },
   {
-    id: "swsh9-155", // Blastoise VMAX from Brilliant Stars
+    id: "swsh9-25", // Blastoise VMAX from Brilliant Stars
     name: "Blastoise VMAX",
-    imageUrl: "https://images.pokemontcg.io/swsh9/155_hires.png",
+    imageUrl: "https://images.pokemontcg.io/swsh9/25.png",
     rarity: "Rare Holo",
     condition: "Good",
     estimatedValue: "$80-120"
