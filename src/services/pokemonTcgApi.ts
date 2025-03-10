@@ -1,4 +1,3 @@
-
 export interface PokemonCard {
   id: string;
   name: string;
@@ -68,10 +67,8 @@ export interface PokemonCardResponse {
   totalCount: number;
 }
 
-// Using the official Pokemon TCG API
 const BASE_URL = 'https://api.pokemontcg.io/v2';
-
-// These are the most reliable image sources for Pokemon cards
+const API_KEY = '3329f6d3-cb49-4b09-9997-2ee636a023e4';
 const POKEMON_TCG_IO = 'https://images.pokemontcg.io';
 const CARD_BACK_URL = 'https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg';
 
@@ -84,10 +81,7 @@ export const getCards = async (page = 1, pageSize = 20, query = ''): Promise<Pok
   url.searchParams.append('pageSize', pageSize.toString());
   
   if (query) {
-    // If the query doesn't already have a specific filter like "name:",
-    // we'll add it to ensure better search results
     if (!query.includes(':')) {
-      // Use wildcards for better search results
       url.searchParams.append('q', `name:"${query}"*`);
     } else {
       url.searchParams.append('q', query);
@@ -96,7 +90,11 @@ export const getCards = async (page = 1, pageSize = 20, query = ''): Promise<Pok
   
   try {
     console.log('Fetching cards with URL:', url.toString());
-    const response = await fetch(url.toString());
+    const response = await fetch(url.toString(), {
+      headers: {
+        'X-Api-Key': API_KEY
+      }
+    });
     
     if (!response.ok) {
       console.error(`Failed to fetch cards: ${response.statusText}`);
@@ -109,7 +107,6 @@ export const getCards = async (page = 1, pageSize = 20, query = ''): Promise<Pok
     return data;
   } catch (error) {
     console.error('Error fetching Pokemon cards:', error);
-    // Return empty response structure in case of error
     return {
       data: [],
       page: page,
@@ -126,7 +123,11 @@ export const getCards = async (page = 1, pageSize = 20, query = ''): Promise<Pok
 export const getCardById = async (id: string): Promise<PokemonCard> => {
   try {
     console.log(`Fetching card with ID: ${id}`);
-    const response = await fetch(`${BASE_URL}/cards/${id}`);
+    const response = await fetch(`${BASE_URL}/cards/${id}`, {
+      headers: {
+        'X-Api-Key': API_KEY
+      }
+    });
     
     if (!response.ok) {
       console.error(`Failed to fetch card: ${response.statusText}`);
@@ -149,9 +150,7 @@ export const getCardById = async (id: string): Promise<PokemonCard> => {
 export const searchCards = async (query: string, page = 1, pageSize = 20): Promise<PokemonCardResponse> => {
   console.log(`Searching cards with query: "${query}"`);
   
-  // If the query is simple (no advanced search operators), format it for better results
   if (query && !query.includes(':')) {
-    // Use double quotes and wildcard for partial matching
     query = `name:"${query}"*`;
   }
   
@@ -166,7 +165,6 @@ export const getReliableImageUrl = (cardId: string, size: 'small' | 'large' = 's
     return CARD_BACK_URL;
   }
   
-  // The most reliable source is the official Pokemon TCG API image server
   return `${POKEMON_TCG_IO}/${size}/${cardId}.png`;
 };
 
@@ -178,17 +176,13 @@ export const getAllPossibleImageUrls = (card: PokemonCard): string[] => {
     return [CARD_BACK_URL];
   }
   
-  // Return an array of URLs to try in sequence
   return [
-    // Original API URLs if present - try these first
     card.images?.small,
     card.images?.large,
-    // Our generated URLs as fallbacks
     `${POKEMON_TCG_IO}/small/${card.id}.png`,
     `${POKEMON_TCG_IO}/large/${card.id}.png`,
-    // Last resort
     CARD_BACK_URL
-  ].filter(url => !!url && isValidUrl(url)); // Filter out any undefined or invalid URLs
+  ].filter(url => !!url && isValidUrl(url));
 };
 
 /**
@@ -216,7 +210,7 @@ export const mapToTradeCard = (card: PokemonCard): import("@/models/escrow").Tra
     id: card.id,
     name: card.name,
     imageUrl: card.images.small || getReliableImageUrl(card.id),
-    condition: "Near Mint", // Default condition, would be user-specified in real app
+    condition: "Near Mint",
     estimatedValue: price,
     currency: "USD"
   };
