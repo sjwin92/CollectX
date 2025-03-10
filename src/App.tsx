@@ -1,6 +1,8 @@
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./App.css";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/react-query";
 import Trades from "./pages/Trades";
 import Collection from "./pages/Collection";
 import Index from "./pages/Index";
@@ -14,20 +16,22 @@ import Marketplace from "./pages/Marketplace";
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/trades" element={<Trades />} />
-        <Route path="/trades/:id" element={<TradeDetail />} />
-        <Route path="/collection" element={<Collection />} />
-        <Route path="/pokemon-cards" element={<PokemonCards />} />
-        <Route path="/pokemons" element={<Pokemons />} />
-        <Route path="/marketplace" element={<Marketplace />} />
-        <Route path="/card/:id" element={<CardDetail />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/trades" element={<Trades />} />
+          <Route path="/trades/:id" element={<TradeDetail />} />
+          <Route path="/collection" element={<Collection />} />
+          <Route path="/pokemon-cards" element={<PokemonCards />} />
+          <Route path="/pokemons" element={<Pokemons />} />
+          <Route path="/marketplace" element={<Marketplace />} />
+          <Route path="/card/:id" element={<CardDetail />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }
 
