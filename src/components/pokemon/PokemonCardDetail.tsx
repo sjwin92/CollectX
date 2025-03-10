@@ -29,6 +29,7 @@ const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
     setImageUrls(urls);
     
     console.log(`Generated ${urls.length} potential image URLs for card ${card.id}`);
+    console.log('Image URLs:', urls);
   }, [card?.id]);
   
   const currentImageUrl = imageUrls[currentImageIndex] || '';

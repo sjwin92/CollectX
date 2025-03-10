@@ -28,6 +28,7 @@ const CardDetail = () => {
       if (!id) {
         throw new Error('Card ID is required');
       }
+      console.log(`Fetching card details for ID: ${id}`);
       return await getCardById(id);
     },
     retry: 2,
