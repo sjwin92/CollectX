@@ -1,10 +1,9 @@
-
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, X, Info, AlertTriangle, Image } from "lucide-react";
+import { Search, X, Info, AlertTriangle } from "lucide-react";
 import { PokemonCard, searchCards as searchPokemonTCG } from "@/services/pokemonTcgApi";
-import { fetchCardsByName as searchTCGDex, TCGDexCard } from "@/services/tcgdexApi";
+import { searchCards as searchTCGDex } from "@/services/tcgdexApi";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -32,35 +31,33 @@ const PokemonCardSearch = ({ onSelect }: PokemonCardSearchProps) => {
         const response = await searchPokemonTCG(query);
         searchResults = response.data;
       } else {
-        // TCGDex search
         const tcgdexResults = await searchTCGDex(query);
         
-        // Map TCGDex results to PokemonCard format for consistency
         searchResults = tcgdexResults.map(card => ({
           id: card.id,
-          name: card.name.en,
+          name: card.name,
           supertype: "Pokémon",
           subtypes: [],
-          hp: card.hp?.toString() || "0",
+          hp: card.hp || "0",
           types: card.types || [],
           rarity: card.rarity || "",
           images: {
-            small: card.variants.normal || "",
-            large: card.variants.normal || ""
+            small: card.variants?.normal || card.image,
+            large: card.variants?.normal || card.image
           },
           set: {
             id: card.set.id,
-            name: card.set.name.en,
+            name: card.set.name,
             series: "",
-            printedTotal: card.set.printedTotal,
-            total: card.set.total,
+            printedTotal: card.set.printedTotal || 0,
+            total: card.set.total || 0,
             legalities: {},
             ptcgoCode: "",
-            releaseDate: card.set.releaseDate,
+            releaseDate: card.set.releaseDate || "",
             updatedAt: "",
             images: {
-              symbol: card.set.symbol,
-              logo: card.set.logo
+              symbol: card.set.symbol || "",
+              logo: card.set.logo || ""
             }
           },
           number: card.localId || "",
@@ -156,9 +153,7 @@ const PokemonCardSearch = ({ onSelect }: PokemonCardSearchProps) => {
                       alt={`Pokémon card: ${card.name} from set ${card.set.name}`}
                       className="w-full transition-transform duration-300 group-hover:scale-110"
                       onError={(e) => {
-                        // If image fails to load, use a placeholder
                         (e.target as HTMLImageElement).src = "/placeholder.svg";
-                        // Add a data attribute to mark this as a placeholder
                         (e.target as HTMLImageElement).setAttribute('data-placeholder', 'true');
                       }}
                       loading="lazy"
@@ -173,7 +168,7 @@ const PokemonCardSearch = ({ onSelect }: PokemonCardSearchProps) => {
                         <TooltipContent>
                           <p>Card: {card.name}</p>
                           <p>Set: {card.set.name}</p>
-                          <p>Source: {source === "pokemontcg" ? "Pokemon TCG API" : "TCGDex API"}</p>
+                          <p>Source: {source === "pokemontcg" ? "Pokemon TCG API" : "TCG Dex API"}</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>

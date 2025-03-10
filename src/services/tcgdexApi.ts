@@ -1,13 +1,31 @@
-
 // Define the TCGDexCard interface and export it
 export interface TCGDexCard {
   id: string;
   name: string;
   image: string;
+  hp?: string;
+  types?: string[];
   rarity?: string;
-  set?: {
+  localId?: string;
+  illustrator?: string;
+  legal?: {
+    standard: boolean;
+    expanded: boolean;
+    unlimited: boolean;
+  };
+  variants?: {
+    normal: string;
+    reverse?: string;
+    holo?: string;
+  };
+  set: {
     id: string;
     name: string;
+    printedTotal?: number;
+    total?: number;
+    releaseDate?: string;
+    symbol?: string;
+    logo?: string;
   };
 }
 
@@ -82,7 +100,45 @@ export const fetchCardsByName = async (name: string): Promise<TCGDexCard[]> => {
 };
 
 // Alias for fetchCardsByName to fix import errors
-export const searchCards = fetchCardsByName;
+export const searchCards = async (name: string): Promise<TCGDexCard[]> => {
+  try {
+    const apiUrl = `https://api.tcgdex.net/v2/en/search/${encodeURIComponent(name)}`;
+    const response = await fetch(apiUrl);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to search cards: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    return data.map((card: any) => ({  // Type assertion to handle API response
+      id: `${card.set?.id}-${card.localId}`,
+      name: card.name,
+      image: card.image || `https://assets.tcgdex.net/en/${card.set?.id}/${card.localId}`,
+      hp: card.hp,
+      types: card.types,
+      rarity: card.rarity,
+      localId: card.localId,
+      illustrator: card.illustrator,
+      legal: card.legal,
+      variants: {
+        normal: card.image || `https://assets.tcgdex.net/en/${card.set?.id}/${card.localId}`
+      },
+      set: {
+        id: card.set?.id,
+        name: card.set?.name,
+        printedTotal: card.set?.printedTotal,
+        total: card.set?.total,
+        releaseDate: card.set?.releaseDate,
+        symbol: card.set?.symbol,
+        logo: card.set?.logo
+      }
+    }));
+  } catch (error) {
+    console.error("Error searching TCGDex cards:", error);
+    return [];
+  }
+};
 
 // Function to fetch cards with pagination
 export const getCards = async (page: number = 1, pageSize: number = 20): Promise<TCGDexCard[]> => {
@@ -141,24 +197,13 @@ export interface TradeCard {
 }
 
 // Helper function to map a TCGDexCard to a TradeCard
-export const mapToTradeCard = (card: TCGDexCard | null): TradeCard => {
-  if (!card) {
-    return {
-      id: "unknown",
-      name: "Unknown Card",
-      imageUrl: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg",
-      condition: "Unknown",
-      estimatedValue: 0,
-      currency: "USD"
-    };
-  }
-  
+export const mapToTradeCard = (card: TCGDexCard): import("@/models/escrow").TradeCard => {
   return {
     id: card.id,
     name: card.name,
     imageUrl: card.image,
-    condition: "Near Mint", // Default condition
-    estimatedValue: 0, // Default value
+    condition: "Near Mint",
+    estimatedValue: 0, // Default to 0 since TCGDex doesn't provide pricing
     currency: "USD"
   };
 };

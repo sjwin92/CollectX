@@ -28,33 +28,33 @@ const PokemonCards = () => {
         return await getPokemonTcgCards(currentPage, 20);
       } else {
         const tcgdexCards = await getTCGDexCards(currentPage, 20);
-        // Convert to the format expected by the component
+        // Convert TCGDex cards to PokemonCard format
         return {
           data: tcgdexCards.map(card => ({
             id: card.id,
-            name: card.name.en,
+            name: card.name,
             supertype: "Pokémon",
             subtypes: [],
-            hp: card.hp?.toString() || "0",
+            hp: card.hp || "0",
             types: card.types || [],
             rarity: card.rarity || "",
             images: {
-              small: card.variants.normal || "",
-              large: card.variants.normal || ""
+              small: card.variants?.normal || card.image,
+              large: card.variants?.normal || card.image
             },
             set: {
               id: card.set.id,
-              name: card.set.name.en,
+              name: card.set.name,
               series: "",
-              printedTotal: card.set.printedTotal,
-              total: card.set.total,
+              printedTotal: card.set.printedTotal || 0,
+              total: card.set.total || 0,
               legalities: {},
               ptcgoCode: "",
-              releaseDate: card.set.releaseDate,
+              releaseDate: card.set.releaseDate || "",
               updatedAt: "",
               images: {
-                symbol: card.set.symbol,
-                logo: card.set.logo
+                symbol: card.set.symbol || "",
+                logo: card.set.logo || ""
               }
             },
             number: card.localId || "",
@@ -68,7 +68,7 @@ const PokemonCards = () => {
           page: currentPage,
           pageSize: 20,
           count: tcgdexCards.length,
-          totalCount: 100 // TCGDex doesn't provide a total count, so we'll use a placeholder
+          totalCount: 100 // TCGDex doesn't provide a total count
         };
       }
     },
