@@ -23,7 +23,8 @@ import {
   TrendingUp,
   Tag,
   Sparkles,
-  Heart
+  Heart,
+  Check
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { CardItemProps } from "@/components/cards/CardItem";
@@ -50,8 +51,20 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 
+// Define the interface for listing objects with the 'featured' property
+interface ListingType {
+  id: string;
+  userId: string;
+  username: string;
+  cardOffered: CardItemProps;
+  cardsWanted: string[];
+  description: string;
+  createdAt: Date;
+  featured?: boolean;
+}
+
 // Mock featured listings for demo purposes
-const FEATURED_LISTINGS = [
+const FEATURED_LISTINGS: ListingType[] = [
   {
     id: "featured-1",
     userId: "user-premium-1",
@@ -89,7 +102,7 @@ const FEATURED_LISTINGS = [
 ];
 
 // Combined with the existing mock listings from your code
-const INITIAL_LISTINGS = [
+const INITIAL_LISTINGS: ListingType[] = [
   {
     id: "listing-1",
     userId: "user-1",
@@ -178,7 +191,7 @@ const Marketplace = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateListingOpen, setCreateListingOpen] = useState(false);
   const [selectedCard, setSelectedCard] = useState<PokemonCard | null>(null);
-  const [listings, setListings] = useState([...FEATURED_LISTINGS, ...INITIAL_LISTINGS]);
+  const [listings, setListings] = useState<ListingType[]>([...FEATURED_LISTINGS, ...INITIAL_LISTINGS]);
   const [activeCategory, setActiveCategory] = useState<'featured' | 'recent' | 'trending'>('featured');
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<string>("all");
@@ -272,7 +285,7 @@ const Marketplace = () => {
   };
 
   const createNewListing = (cardOffered: PokemonCard, cardsWanted: string[], description: string) => {
-    const newListing = {
+    const newListing: ListingType = {
       id: `listing-${Date.now()}`,
       userId: user.id,
       username: user.username,
