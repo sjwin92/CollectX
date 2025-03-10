@@ -437,7 +437,8 @@ const Collection = () => {
                                 alt={card.name} 
                                 className="h-10 w-8 object-cover rounded"
                                 onError={(e) => {
-                                  e.target.src = 'https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg';
+                                  // TypeScript requires explicit casting of target to HTMLImageElement
+                                  (e.target as HTMLImageElement).src = 'https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg';
                                 }}
                               />
                               <div>
@@ -457,7 +458,8 @@ const Collection = () => {
                               alt={selectedCard.name} 
                               className="h-24 w-auto object-contain rounded"
                               onError={(e) => {
-                                e.target.src = 'https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg';
+                                // TypeScript requires explicit casting of target to HTMLImageElement
+                                (e.target as HTMLImageElement).src = 'https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg';
                               }}
                             />
                             <div className="flex-1">

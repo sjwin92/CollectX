@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, X, Info, AlertTriangle, Image } from "lucide-react";
 import { PokemonCard, searchCards as searchPokemonTCG } from "@/services/pokemonTcgApi";
-import { TCGDexCard, searchCards as searchTCGDex } from "@/services/tcgdexApi";
+import { fetchCardsByName as searchTCGDex, TCGDexCard } from "@/services/tcgdexApi";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
