@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { PokemonCard } from "@/services/pokemonTcgApi";
+import { PokemonCard, getReliableImageUrl } from "@/services/pokemonTcgApi";
 import PokemonCardSearch from "@/components/pokemon/PokemonCardSearch";
 import { X } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface CreateListingModalProps {
   isOpen: boolean;
@@ -26,15 +27,37 @@ const CreateListingModal = ({
   const [cardsWanted, setCardsWanted] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [step, setStep] = useState<"select-card" | "details">(selectedCard ? "details" : "select-card");
+  const { toast } = useToast();
 
   const handleSubmit = () => {
-    if (!card) return;
+    if (!card) {
+      toast({
+        title: "Error",
+        description: "Please select a card to offer",
+        variant: "destructive"
+      });
+      return;
+    }
     
     // Split the cards wanted by commas and trim whitespace
     const cardsWantedArray = cardsWanted
       .split(",")
       .map(c => c.trim())
       .filter(c => c.length > 0);
+
+    if (cardsWantedArray.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please specify at least one card you want in exchange",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    toast({
+      title: "Creating listing",
+      description: "Your trade listing is being created...",
+    });
     
     onCreateListing(card, cardsWantedArray, description);
   };
@@ -42,6 +65,10 @@ const CreateListingModal = ({
   const handleCardSelect = (selectedCard: PokemonCard) => {
     setCard(selectedCard);
     setStep("details");
+    toast({
+      title: "Card Selected",
+      description: `${selectedCard.name} has been selected for your trade listing.`,
+    });
   };
 
   const handleReset = () => {
@@ -70,11 +97,16 @@ const CreateListingModal = ({
               <div className="flex gap-4 items-start">
                 <div className="w-1/3">
                   <img 
-                    src={card.images.small} 
+                    src={card.images?.small || getReliableImageUrl(card.id)}
                     alt={card.name}
                     className="w-full rounded-md"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/placeholder.svg";
+                      const target = e.target as HTMLImageElement;
+                      if (target.src !== getReliableImageUrl(card.id)) {
+                        target.src = getReliableImageUrl(card.id);
+                      } else {
+                        target.src = "/placeholder.svg";
+                      }
                     }}
                   />
                 </div>
@@ -94,6 +126,8 @@ const CreateListingModal = ({
                         ? `$${card.tcgplayer.prices.holofoil.market.toFixed(2)}`
                         : card.tcgplayer?.prices?.normal?.market
                         ? `$${card.tcgplayer.prices.normal.market.toFixed(2)}`
+                        : card.tcgplayer?.prices?.reverseHolofoil?.market
+                        ? `$${card.tcgplayer.prices.reverseHolofoil.market.toFixed(2)}`
                         : "Not available"
                     }
                   </p>

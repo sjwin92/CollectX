@@ -73,7 +73,7 @@ const BASE_URL = 'https://api.pokemontcg.io/v2';
 
 // These are the most reliable image sources for Pokemon cards
 const POKEMON_TCG_IO = 'https://images.pokemontcg.io';
-const CARD_BACK_URL = 'https://play.pokemoncarddeck.com/Content/pokemon-back-mini.png';
+const CARD_BACK_URL = 'https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg';
 
 /**
  * Get cards with optional filtering
@@ -87,14 +87,15 @@ export const getCards = async (page = 1, pageSize = 20, query = ''): Promise<Pok
     // If the query doesn't already have a specific filter like "name:",
     // we'll add it to ensure better search results
     if (!query.includes(':')) {
-      // Use partial match with wildcards instead of exact match
-      url.searchParams.append('q', `name:${query}*`);
+      // Use wildcards for better search results
+      url.searchParams.append('q', `name:"${query}"*`);
     } else {
       url.searchParams.append('q', query);
     }
   }
   
   try {
+    console.log('Fetching cards with URL:', url.toString());
     const response = await fetch(url.toString());
     
     if (!response.ok) {
@@ -103,6 +104,7 @@ export const getCards = async (page = 1, pageSize = 20, query = ''): Promise<Pok
     }
     
     const data = await response.json();
+    console.log(`Successfully fetched ${data.data?.length || 0} cards`);
     
     // Preserve the original image URLs from the API response
     return data;
@@ -147,10 +149,14 @@ export const getCardById = async (id: string): Promise<PokemonCard> => {
  * Search cards with a query string
  */
 export const searchCards = async (query: string, page = 1, pageSize = 20): Promise<PokemonCardResponse> => {
+  console.log(`Searching cards with query: "${query}"`);
+  
   // If the query is simple (no advanced search operators), format it for better results
   if (query && !query.includes(':')) {
-    query = `name:${query}*`; // Use wildcards for partial matching
+    // Use double quotes and wildcard for partial matching
+    query = `name:"${query}"*`;
   }
+  
   return getCards(page, pageSize, query);
 };
 
