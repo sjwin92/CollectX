@@ -1,5 +1,6 @@
 
-// Mock user hook for now
+import { useAuth } from "@/contexts/AuthContext";
+
 export interface User {
   id: string;
   username: string;
@@ -7,12 +8,18 @@ export interface User {
 }
 
 export function useUser() {
-  // This is a mock implementation
-  const user: User = {
-    id: "user-1",
-    username: "MockUser",
-    email: "user@example.com"
-  };
+  const { user, loading } = useAuth();
   
-  return { user, isLoaded: true, isSignedIn: true };
+  // Convert Supabase user to our app's user format
+  const appUser: User | null = user ? {
+    id: user.id,
+    username: user.user_metadata?.username || user.email?.split('@')[0] || "User",
+    email: user.email || "",
+  } : null;
+  
+  return { 
+    user: appUser, 
+    isLoaded: !loading, 
+    isSignedIn: !!user 
+  };
 }
