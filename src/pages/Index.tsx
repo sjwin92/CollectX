@@ -118,7 +118,7 @@ const Index = () => {
                 <Link to="/collection">Start Trading</Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link to="/pokemons">Browse Pokémon Cards</Link>
+                <Link to="/pokemons">Browse Cards</Link>
               </Button>
             </div>
           </div>
