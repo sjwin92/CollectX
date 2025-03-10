@@ -37,26 +37,37 @@ const CardItem = ({
   
   // Alternative image sources to try in sequence
   const getAlternativeImages = (): string[] => {
+    // Handle cases where the ID isn't in the expected format
+    if (!id || !id.includes('-')) {
+      return [imageUrl, "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"];
+    }
+    
     const setId = id.split('-')[0];
     const cardNumber = id.split('-').pop() || "";
     
-    const alternatives = [
+    return [
       imageUrl, // Original URL
+      
+      // Pokemon TCG API format (common)
+      `https://images.pokemontcg.io/${setId}/${cardNumber}.png`,
+      
       // TCGDex format
       `https://assets.tcgdex.net/en/${setId}/${cardNumber}`,
       `https://assets.tcgdex.net/en/${setId}/${cardNumber}.jpg`,
       `https://assets.tcgdex.net/en/${setId}/${cardNumber}.png`,
+      
       // Pokellector format
       `https://assets.pokellector.com/cards/${setId}/${cardNumber.padStart(3, '0')}.webp`,
+      
       // Pokemon.com format
       `https://assets.pokemon.com/assets/cms2/img/cards/web/${setId.toUpperCase()}/${setId.toUpperCase()}_EN_${cardNumber}.png`,
+      
       // PokemonCards.com format
       `https://images.pokemoncards.com/${setId}/${cardNumber}.jpg`,
+      
       // Last resort official card back
       "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
-    ];
-    
-    return alternatives.filter(url => url !== undefined && url !== null && url !== "");
+    ].filter(url => url !== undefined && url !== null && url !== "");
   };
   
   useEffect(() => {

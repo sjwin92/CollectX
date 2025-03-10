@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CardItemProps } from "@/components/cards/CardItem";
-import { ArrowRightLeft, Calendar, MessageSquare, User } from "lucide-react";
+import { ArrowRightLeft, Calendar, MessageSquare, User, Star, Shield } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 
@@ -17,14 +17,22 @@ interface TradeListingProps {
     cardsWanted: string[];
     description: string;
     createdAt: Date;
+    featured?: boolean;
   };
   onProposeTrade: () => void;
+  featured?: boolean;
 }
 
-const TradeListing = ({ listing, onProposeTrade }: TradeListingProps) => {
+const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListingProps) => {
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="pb-3">
+    <Card className={`overflow-hidden transition-all ${featured ? 'border-amber-400 shadow-lg dark:border-amber-500 bg-gradient-to-br from-transparent to-amber-50/5' : ''}`}>
+      {featured && (
+        <div className="bg-amber-400 dark:bg-amber-500 text-primary-foreground px-3 py-1 text-xs font-medium flex items-center justify-center">
+          <Star className="h-3 w-3 mr-1 fill-current" /> Featured Listing
+        </div>
+      )}
+      
+      <CardHeader className={`pb-3 ${featured ? 'pt-3' : 'pt-5'}`}>
         <div className="flex justify-between items-start">
           <div>
             <CardTitle>{listing.cardOffered.name}</CardTitle>
@@ -38,7 +46,7 @@ const TradeListing = ({ listing, onProposeTrade }: TradeListingProps) => {
               </div>
             </CardDescription>
           </div>
-          <Badge variant="outline">
+          <Badge variant="outline" className={featured ? "bg-amber-400/10" : ""}>
             {listing.cardOffered.estimatedValue}
           </Badge>
         </div>
@@ -90,11 +98,18 @@ const TradeListing = ({ listing, onProposeTrade }: TradeListingProps) => {
             View Card Details
           </Link>
         </Button>
-        <Button size="sm" onClick={onProposeTrade}>
+        <Button size="sm" onClick={onProposeTrade} className={featured ? "bg-amber-600 hover:bg-amber-700" : ""}>
           <ArrowRightLeft className="h-4 w-4 mr-2" />
           Propose Trade
         </Button>
       </CardFooter>
+      
+      <div className="px-4 pb-3 pt-0 flex items-center justify-center">
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Shield className="h-3 w-3" />
+          <span>Protected by CollectX Escrow</span>
+        </div>
+      </div>
     </Card>
   );
 };
