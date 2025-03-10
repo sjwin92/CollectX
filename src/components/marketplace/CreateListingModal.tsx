@@ -27,6 +27,8 @@ const CreateListingModal = ({
   const [cardsWanted, setCardsWanted] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [step, setStep] = useState<"select-card" | "details">(selectedCard ? "details" : "select-card");
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = () => {
@@ -63,8 +65,11 @@ const CreateListingModal = ({
   };
 
   const handleCardSelect = (selectedCard: PokemonCard) => {
+    console.log("Card selected:", selectedCard);
     setCard(selectedCard);
     setStep("details");
+    setImageLoaded(false);
+    setImageError(false);
     toast({
       title: "Card Selected",
       description: `${selectedCard.name} has been selected for your trade listing.`,
@@ -74,6 +79,44 @@ const CreateListingModal = ({
   const handleReset = () => {
     setCard(null);
     setStep("select-card");
+    setImageLoaded(false);
+    setImageError(false);
+  };
+
+  const getCardImageUrl = (card: PokemonCard) => {
+    // First try the small image from the card
+    if (card.images?.small) {
+      return card.images.small;
+    }
+    
+    // Then try the reliable URL
+    return getReliableImageUrl(card.id);
+  };
+
+  const getFallbackImage = () => {
+    return "/placeholder.svg";
+  };
+
+  const getCardPrice = (card: PokemonCard) => {
+    if (!card.tcgplayer?.prices) {
+      return "Not available";
+    }
+    
+    // Check different price types in order of preference
+    if (card.tcgplayer.prices.holofoil?.market) {
+      return `$${card.tcgplayer.prices.holofoil.market.toFixed(2)}`;
+    }
+    
+    if (card.tcgplayer.prices.normal?.market) {
+      return `$${card.tcgplayer.prices.normal.market.toFixed(2)}`;
+    }
+    
+    if (card.tcgplayer.prices.reverseHolofoil?.market) {
+      return `$${card.tcgplayer.prices.reverseHolofoil.market.toFixed(2)}`;
+    }
+    
+    // If no market price is available, return "Not available"
+    return "Not available";
   };
 
   return (
@@ -95,20 +138,39 @@ const CreateListingModal = ({
           <div className="space-y-6 py-4">
             {card && (
               <div className="flex gap-4 items-start">
-                <div className="w-1/3">
+                <div className="w-1/3 relative">
+                  {!imageLoaded && !imageError && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-md">
+                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                    </div>
+                  )}
                   <img 
-                    src={card.images?.small || getReliableImageUrl(card.id)}
+                    src={getCardImageUrl(card)}
                     alt={card.name}
-                    className="w-full rounded-md"
+                    className={`w-full rounded-md ${!imageLoaded && 'opacity-0'} ${imageError && 'hidden'}`}
+                    onLoad={() => setImageLoaded(true)}
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      if (target.src !== getReliableImageUrl(card.id)) {
-                        target.src = getReliableImageUrl(card.id);
-                      } else {
-                        target.src = "/placeholder.svg";
+                      console.log("Image loading error for:", card.id);
+                      
+                      // If primary image failed, try fallback
+                      if (!imageError) {
+                        setImageError(true);
+                        target.src = getFallbackImage();
+                        target.className = "w-full rounded-md";
+                        setImageLoaded(true);
                       }
                     }}
                   />
+                  {imageError && (
+                    <div className="w-full aspect-[2/3] bg-muted rounded-md flex items-center justify-center">
+                      <p className="text-sm text-muted-foreground px-2 text-center">
+                        {card.name}
+                        <br />
+                        (Image unavailable)
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <div className="w-2/3 space-y-2">
                   <div className="flex justify-between items-start">
@@ -121,15 +183,7 @@ const CreateListingModal = ({
                     {card.set.name} • {card.rarity || "Unknown rarity"}
                   </p>
                   <p className="text-sm">
-                    Estimated Value: {
-                      card.tcgplayer?.prices?.holofoil?.market
-                        ? `$${card.tcgplayer.prices.holofoil.market.toFixed(2)}`
-                        : card.tcgplayer?.prices?.normal?.market
-                        ? `$${card.tcgplayer.prices.normal.market.toFixed(2)}`
-                        : card.tcgplayer?.prices?.reverseHolofoil?.market
-                        ? `$${card.tcgplayer.prices.reverseHolofoil.market.toFixed(2)}`
-                        : "Not available"
-                    }
+                    Estimated Value: {getCardPrice(card)}
                   </p>
                 </div>
               </div>

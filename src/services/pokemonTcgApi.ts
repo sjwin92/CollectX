@@ -68,7 +68,7 @@ export interface PokemonCardResponse {
   totalCount: number;
 }
 
-// Using multiple reliable sources that don't require API keys
+// Using the official Pokemon TCG API
 const BASE_URL = 'https://api.pokemontcg.io/v2';
 
 // These are the most reliable image sources for Pokemon cards
@@ -106,7 +106,6 @@ export const getCards = async (page = 1, pageSize = 20, query = ''): Promise<Pok
     const data = await response.json();
     console.log(`Successfully fetched ${data.data?.length || 0} cards`);
     
-    // Preserve the original image URLs from the API response
     return data;
   } catch (error) {
     console.error('Error fetching Pokemon cards:', error);
@@ -137,7 +136,6 @@ export const getCardById = async (id: string): Promise<PokemonCard> => {
     const data = await response.json();
     console.log(`Successfully fetched card: ${data.data?.name || 'Unknown'}`);
     
-    // Return the data as-is without modifying image URLs
     return data.data;
   } catch (error) {
     console.error('Error fetching Pokemon card by ID:', error);
