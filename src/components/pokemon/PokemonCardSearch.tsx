@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, X, Info, AlertTriangle } from "lucide-react";
+import { Search, X, Info, AlertTriangle, Check } from "lucide-react";
 import { PokemonCard, searchCards as searchPokemonTCG } from "@/services/pokemonTcgApi";
 import { searchCards as searchTCGDex, TCGDexCard } from "@/services/tcgdexApi";
 import { useToast } from "@/hooks/use-toast";
@@ -29,7 +29,10 @@ const PokemonCardSearch = ({ onSelect }: PokemonCardSearchProps) => {
     try {
       let searchResults;
       if (source === "pokemontcg") {
-        const response = await searchPokemonTCG(query);
+        // For Pokemon TCG API, we need to properly format the query
+        // The API expects a format like "name:pikachu" to search by name
+        const formattedQuery = `name:${query}*`;
+        const response = await searchPokemonTCG(formattedQuery);
         searchResults = response.data;
       } else {
         const tcgdexResults = await searchTCGDex(query);
@@ -77,7 +80,7 @@ const PokemonCardSearch = ({ onSelect }: PokemonCardSearchProps) => {
       if (!searchResults || searchResults.length === 0) {
         toast({
           title: "No cards found",
-          description: "Try a different search term",
+          description: "Try a different search term or data source",
           variant: "destructive"
         });
       }

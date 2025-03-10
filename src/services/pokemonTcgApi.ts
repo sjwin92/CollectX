@@ -84,7 +84,13 @@ export const getCards = async (page = 1, pageSize = 20, query = ''): Promise<Pok
   url.searchParams.append('pageSize', pageSize.toString());
   
   if (query) {
-    url.searchParams.append('q', query);
+    // If the query doesn't already have a specific filter like "name:",
+    // we'll add it to ensure better search results
+    if (!query.includes(':')) {
+      url.searchParams.append('q', `name:${query}*`); // Add wildcard for partial matches
+    } else {
+      url.searchParams.append('q', query);
+    }
   }
   
   try {
@@ -157,6 +163,10 @@ export const getCardById = async (id: string): Promise<PokemonCard> => {
  * Search cards with a query string
  */
 export const searchCards = async (query: string, page = 1, pageSize = 20): Promise<PokemonCardResponse> => {
+  // If the query is simple (no advanced search operators), format it for better results
+  if (query && !query.includes(':')) {
+    query = `name:${query}*`; // Add wildcard for partial matching
+  }
   return getCards(page, pageSize, query);
 };
 
