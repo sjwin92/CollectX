@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,7 @@ import { CardItemProps } from "@/components/cards/CardItem";
 import { ArrowRightLeft, Calendar, MessageSquare, User, Star, Shield, AlertTriangle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
+import { getReliableImageUrl } from "@/services/pokemonTcgApi";
 
 interface TradeListingProps {
   listing: {
@@ -25,28 +25,32 @@ interface TradeListingProps {
 
 const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListingProps) => {
   const [imageError, setImageError] = useState(false);
-  const [imageSrc, setImageSrc] = useState(listing.cardOffered.imageUrl);
+  const [imageSrc, setImageSrc] = useState(() => {
+    if (listing.cardOffered.id) {
+      return getReliableImageUrl(listing.cardOffered.id, 'small');
+    }
+    return listing.cardOffered.imageUrl;
+  });
   
-  // Try different image URLs
   const handleImageError = () => {
-    // If this is already an error state, don't try more sources
     if (imageError) return;
     
-    // Try direct Pokemon TCG URLs based on card ID
-    if (listing.cardOffered.id.includes('-')) {
-      const [setId, cardNumber] = listing.cardOffered.id.split('-');
-      const newSrc = `https://images.pokemontcg.io/small/${listing.cardOffered.id}.png`;
+    if (listing.cardOffered.id) {
+      const newSrc = getReliableImageUrl(listing.cardOffered.id, 'large');
       console.log(`Trying alternative image source: ${newSrc}`);
       setImageSrc(newSrc);
     } else {
-      // If we can't generate a new source, mark as error
       setImageError(true);
     }
   };
   
   const retryImage = () => {
     setImageError(false);
-    setImageSrc(listing.cardOffered.imageUrl);
+    if (listing.cardOffered.id) {
+      setImageSrc(getReliableImageUrl(listing.cardOffered.id, 'small'));
+    } else {
+      setImageSrc(listing.cardOffered.imageUrl);
+    }
   };
   
   return (
