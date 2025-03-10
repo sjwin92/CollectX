@@ -1,3 +1,4 @@
+
 export interface PokemonCard {
   id: string;
   name: string;
@@ -86,7 +87,8 @@ export const getCards = async (page = 1, pageSize = 20, query = ''): Promise<Pok
     // If the query doesn't already have a specific filter like "name:",
     // we'll add it to ensure better search results
     if (!query.includes(':')) {
-      url.searchParams.append('q', `name:"${query}"`); // Use quotes for exact name matching
+      // Use partial match with wildcards instead of exact match
+      url.searchParams.append('q', `name:${query}*`);
     } else {
       url.searchParams.append('q', query);
     }
@@ -102,17 +104,7 @@ export const getCards = async (page = 1, pageSize = 20, query = ''): Promise<Pok
     
     const data = await response.json();
     
-    // Enhance cards with validated image URLs
-    if (data.data && Array.isArray(data.data)) {
-      data.data = data.data.map(card => ({
-        ...card,
-        images: {
-          small: getReliableImageUrl(card.id, 'small'),
-          large: getReliableImageUrl(card.id, 'large')
-        }
-      }));
-    }
-    
+    // Preserve the original image URLs from the API response
     return data;
   } catch (error) {
     console.error('Error fetching Pokemon cards:', error);
@@ -141,16 +133,9 @@ export const getCardById = async (id: string): Promise<PokemonCard> => {
     }
     
     const data = await response.json();
-    
-    // Enhance card with validated image URLs
-    if (data.data) {
-      data.data.images = {
-        small: getReliableImageUrl(data.data.id, 'small'),
-        large: getReliableImageUrl(data.data.id, 'large')
-      };
-    }
-    
     console.log(`Successfully fetched card: ${data.data?.name || 'Unknown'}`);
+    
+    // Return the data as-is without modifying image URLs
     return data.data;
   } catch (error) {
     console.error('Error fetching Pokemon card by ID:', error);
@@ -164,7 +149,7 @@ export const getCardById = async (id: string): Promise<PokemonCard> => {
 export const searchCards = async (query: string, page = 1, pageSize = 20): Promise<PokemonCardResponse> => {
   // If the query is simple (no advanced search operators), format it for better results
   if (query && !query.includes(':')) {
-    query = `name:"${query}"`; // Use quotes for exact name matching
+    query = `name:${query}*`; // Use wildcards for partial matching
   }
   return getCards(page, pageSize, query);
 };
@@ -191,12 +176,12 @@ export const getAllPossibleImageUrls = (card: PokemonCard): string[] => {
   
   // Return an array of URLs to try in sequence
   return [
-    // Most reliable sources first
-    `${POKEMON_TCG_IO}/large/${card.id}.png`,
-    `${POKEMON_TCG_IO}/small/${card.id}.png`,
-    // Original API URLs if present
-    card.images?.large,
+    // Original API URLs if present - try these first
     card.images?.small,
+    card.images?.large,
+    // Our generated URLs as fallbacks
+    `${POKEMON_TCG_IO}/small/${card.id}.png`,
+    `${POKEMON_TCG_IO}/large/${card.id}.png`,
     // Last resort
     CARD_BACK_URL
   ].filter(url => !!url && isValidUrl(url)); // Filter out any undefined or invalid URLs
@@ -226,7 +211,7 @@ export const mapToTradeCard = (card: PokemonCard): import("@/models/escrow").Tra
   return {
     id: card.id,
     name: card.name,
-    imageUrl: getReliableImageUrl(card.id),
+    imageUrl: card.images.small || getReliableImageUrl(card.id),
     condition: "Near Mint", // Default condition, would be user-specified in real app
     estimatedValue: price,
     currency: "USD"

@@ -48,7 +48,11 @@ const CardItem = ({
     return [
       imageUrl, // Original URL
       
-      // Pokemon TCG API format (common)
+      // Try different sizes from Pokemon TCG API
+      `https://images.pokemontcg.io/small/${id}.png`,
+      `https://images.pokemontcg.io/large/${id}.png`,
+      
+      // Try direct format with set ID
       `https://images.pokemontcg.io/${setId}/${cardNumber}.png`,
       
       // TCGDex format

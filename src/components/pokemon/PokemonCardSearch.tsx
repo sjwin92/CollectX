@@ -1,8 +1,9 @@
+
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, X, Info, AlertTriangle, Check } from "lucide-react";
-import { PokemonCard, searchCards as searchPokemonTCG } from "@/services/pokemonTcgApi";
+import { PokemonCard, searchCards as searchPokemonTCG, getAllPossibleImageUrls } from "@/services/pokemonTcgApi";
 import { searchCards as searchTCGDex, TCGDexCard } from "@/services/tcgdexApi";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -98,6 +99,14 @@ const PokemonCardSearch = ({ onSelect }: PokemonCardSearchProps) => {
     setResults([]);
   };
   
+  // Function to try multiple image sources if one fails
+  const getCardImageSrc = (card: PokemonCard) => {
+    // Return directly from the card if available
+    return card.images?.small || card.images?.large || 
+           `https://images.pokemontcg.io/small/${card.id}.png` ||
+           "/placeholder.svg";
+  };
+  
   return (
     <div className="space-y-6">
       <form onSubmit={handleSearch} className="flex gap-2">
@@ -147,15 +156,26 @@ const PokemonCardSearch = ({ onSelect }: PokemonCardSearchProps) => {
               onClick={() => onSelect(card)}
             >
               <div className="overflow-hidden rounded-lg">
-                {card.images.small ? (
+                {card.images?.small ? (
                   <div className="relative">
                     <img 
-                      src={card.images.small} 
+                      src={getCardImageSrc(card)} 
                       alt={`Pokémon card: ${card.name} from set ${card.set.name}`}
                       className="w-full transition-transform duration-300 group-hover:scale-110"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/placeholder.svg";
-                        (e.target as HTMLImageElement).setAttribute('data-placeholder', 'true');
+                        const imgElement = e.target as HTMLImageElement;
+                        // Try multiple fallback sources
+                        const possibleUrls = getAllPossibleImageUrls(card);
+                        const currentIndex = possibleUrls.indexOf(imgElement.src);
+                        
+                        if (currentIndex < possibleUrls.length - 1) {
+                          // Try the next URL in our list
+                          imgElement.src = possibleUrls[currentIndex + 1];
+                        } else {
+                          // If we've tried all URLs, use placeholder
+                          imgElement.src = "/placeholder.svg";
+                          imgElement.setAttribute('data-placeholder', 'true');
+                        }
                       }}
                       loading="lazy"
                     />
@@ -169,6 +189,8 @@ const PokemonCardSearch = ({ onSelect }: PokemonCardSearchProps) => {
                         <TooltipContent>
                           <p>Card: {card.name}</p>
                           <p>Set: {card.set.name}</p>
+                          <p>ID: {card.id}</p>
+                          <p>Image URL: {card.images?.small}</p>
                           <p>Source: {source === "pokemontcg" ? "Pokemon TCG API" : "TCG Dex API"}</p>
                         </TooltipContent>
                       </Tooltip>

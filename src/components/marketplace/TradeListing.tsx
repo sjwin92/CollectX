@@ -1,10 +1,10 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CardItemProps } from "@/components/cards/CardItem";
-import { ArrowRightLeft, Calendar, MessageSquare, User, Star, Shield } from "lucide-react";
+import { ArrowRightLeft, Calendar, MessageSquare, User, Star, Shield, AlertTriangle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 
@@ -24,6 +24,31 @@ interface TradeListingProps {
 }
 
 const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListingProps) => {
+  const [imageError, setImageError] = useState(false);
+  const [imageSrc, setImageSrc] = useState(listing.cardOffered.imageUrl);
+  
+  // Try different image URLs
+  const handleImageError = () => {
+    // If this is already an error state, don't try more sources
+    if (imageError) return;
+    
+    // Try direct Pokemon TCG URLs based on card ID
+    if (listing.cardOffered.id.includes('-')) {
+      const [setId, cardNumber] = listing.cardOffered.id.split('-');
+      const newSrc = `https://images.pokemontcg.io/small/${listing.cardOffered.id}.png`;
+      console.log(`Trying alternative image source: ${newSrc}`);
+      setImageSrc(newSrc);
+    } else {
+      // If we can't generate a new source, mark as error
+      setImageError(true);
+    }
+  };
+  
+  const retryImage = () => {
+    setImageError(false);
+    setImageSrc(listing.cardOffered.imageUrl);
+  };
+  
   return (
     <Card className={`overflow-hidden transition-all ${featured ? 'border-amber-400 shadow-lg dark:border-amber-500 bg-gradient-to-br from-transparent to-amber-50/5' : ''}`}>
       {featured && (
@@ -55,14 +80,30 @@ const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListin
       <CardContent className="py-2">
         <div className="flex gap-6 items-center">
           <div className="w-1/3 relative group">
-            <img 
-              src={listing.cardOffered.imageUrl} 
-              alt={listing.cardOffered.name}
-              className="w-full h-auto rounded-md transition-transform duration-300 group-hover:scale-105"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = "/placeholder.svg";
-              }}
-            />
+            {!imageError ? (
+              <img 
+                src={imageSrc} 
+                alt={listing.cardOffered.name}
+                className="w-full h-auto rounded-md transition-transform duration-300 group-hover:scale-105"
+                onError={handleImageError}
+              />
+            ) : (
+              <div className="w-full aspect-[2/3] bg-muted flex flex-col items-center justify-center rounded-md">
+                <AlertTriangle className="h-5 w-5 text-amber-500 mb-1" />
+                <span className="text-xs text-muted-foreground mb-2">Image unavailable</span>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="text-xs" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    retryImage();
+                  }}
+                >
+                  <RefreshCw className="h-3 w-3 mr-1" /> Retry
+                </Button>
+              </div>
+            )}
             <div className="absolute top-2 right-2">
               <Badge variant="secondary" className="text-xs">
                 {listing.cardOffered.condition}
