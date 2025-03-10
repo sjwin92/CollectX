@@ -15,23 +15,31 @@ interface TradeListingImageProps {
 const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListingImageProps) => {
   const [imageError, setImageError] = useState(false);
   const [imageSrc, setImageSrc] = useState(() => {
-    // First try to use the reliable image URL if cardId is available
+    // Use the provided imageUrl first if available
+    if (imageUrl && imageUrl.trim() !== '') {
+      return imageUrl;
+    }
+    // Then try to use the cardId to get a reliable image URL
     if (cardId) {
       return getReliableImageUrl(cardId, 'small');
     }
-    // Fall back to provided imageUrl if available
-    return imageUrl || '';
+    return '';
   });
   
   const handleImageError = () => {
     if (imageError) return;
     
+    // If the first image source fails, try alternatives
     if (cardId) {
       // Try the large image as a fallback
       const newSrc = getReliableImageUrl(cardId, 'large');
-      console.log(`Trying alternative image source: ${newSrc}`);
+      console.log(`Image failed to load. Trying alternative source: ${newSrc}`);
       setImageSrc(newSrc);
       setImageError(true); // Mark as having an error, so we don't retry infinitely
+    } else if (imageUrl) {
+      // If we were using imageUrl and it failed, try to use the card back
+      console.log('Image URL failed to load. Marking as error.');
+      setImageError(true);
     } else {
       setImageError(true);
     }
@@ -39,10 +47,11 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
   
   const retryImage = () => {
     setImageError(false);
-    if (cardId) {
+    // Reset to the original logic for determining the image source
+    if (imageUrl && imageUrl.trim() !== '') {
+      setImageSrc(imageUrl);
+    } else if (cardId) {
       setImageSrc(getReliableImageUrl(cardId, 'small'));
-    } else {
-      setImageSrc(imageUrl || '');
     }
   };
 
