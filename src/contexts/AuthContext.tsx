@@ -3,6 +3,8 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
+type Provider = "google" | "twitter" | "github";
+
 type AuthContextType = {
   session: Session | null;
   user: User | null;
@@ -13,6 +15,9 @@ type AuthContextType = {
   signUp: (email: string, password: string) => Promise<{
     error: Error | null;
     user: User | null;
+  }>;
+  signInWithProvider: (provider: Provider) => Promise<{
+    error: Error | null;
   }>;
   signOut: () => Promise<void>;
 };
@@ -61,6 +66,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return { error, user: data.user };
   };
 
+  const signInWithProvider = async (provider: Provider) => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
+    return { error };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
@@ -71,6 +86,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     loading,
     signIn,
     signUp,
+    signInWithProvider,
     signOut,
   };
 
