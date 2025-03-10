@@ -19,7 +19,7 @@ const mockTrades: Record<string, TradeProposal> = {
         {
           id: "c1",
           name: "Charizard GX Rainbow Rare",
-          imageUrl: "https://images.pokemontcg.io/sm12/RR.png", // Correct Charizard GX Rainbow Rare image
+          imageUrl: "https://archives.bulbagarden.net/media/upload/thumb/1/1c/CharizardGXBurningShad150.jpg/180px-CharizardGXBurningShad150.jpg",
           condition: "Near Mint",
           estimatedValue: 400,
           currency: "USD",
@@ -28,7 +28,7 @@ const mockTrades: Record<string, TradeProposal> = {
         {
           id: "c2",
           name: "Venusaur V",
-          imageUrl: "https://images.pokemontcg.io/swsh1/1.png", // Correct Venusaur V image
+          imageUrl: "https://archives.bulbagarden.net/media/upload/thumb/f/fd/VenusaurVSWS1.jpg/180px-VenusaurVSWS1.jpg",
           condition: "Mint",
           estimatedValue: 120,
           currency: "USD",
@@ -51,8 +51,8 @@ const mockTrades: Record<string, TradeProposal> = {
       offeringCards: [
         {
           id: "c3",
-          name: "Pikachu V-Max",
-          imageUrl: "https://images.pokemontcg.io/swsh4/44.png", // Correct Pikachu VMAX image
+          name: "Pikachu VMAX",
+          imageUrl: "https://archives.bulbagarden.net/media/upload/thumb/3/3c/PikachuVMAXVividVoltage044.jpg/180px-PikachuVMAXVividVoltage044.jpg",
           condition: "Mint",
           estimatedValue: 135,
           currency: "USD",
@@ -61,7 +61,7 @@ const mockTrades: Record<string, TradeProposal> = {
         {
           id: "c4",
           name: "Mewtwo EX",
-          imageUrl: "https://images.pokemontcg.io/xy8/52.png", // Correct Mewtwo EX image
+          imageUrl: "https://archives.bulbagarden.net/media/upload/thumb/e/e0/MewtwoEXBW45.jpg/180px-MewtwoEXBW45.jpg",
           condition: "Excellent",
           estimatedValue: 225,
           currency: "USD",
@@ -70,7 +70,7 @@ const mockTrades: Record<string, TradeProposal> = {
         {
           id: "c5",
           name: "Blastoise VMAX",
-          imageUrl: "https://images.pokemontcg.io/swsh1/25.png", // Correct Blastoise VMAX image
+          imageUrl: "https://archives.bulbagarden.net/media/upload/thumb/5/5c/BlastoiseVMAXChampionsPath023.jpg/180px-BlastoiseVMAXChampionsPath023.jpg",
           condition: "Good",
           estimatedValue: 100,
           currency: "USD",
@@ -119,7 +119,7 @@ const mockTrades: Record<string, TradeProposal> = {
         tradeId: "t1",
         userId: "u1",
         username: "Alex Morgan",
-        message: "I'm interested in your Pikachu V-Max. Would you trade it for my Charizard GX?",
+        message: "I'm interested in your Pikachu VMAX. Would you trade it for my Charizard GX?",
         createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
         systemMessage: false
       },
@@ -158,7 +158,7 @@ const mockTrades: Record<string, TradeProposal> = {
         {
           id: "c6",
           name: "Blastoise Holo",
-          imageUrl: "https://images.pokemontcg.io/base1/2.png", // Correct Blastoise Holo image from base set
+          imageUrl: "https://archives.bulbagarden.net/media/upload/thumb/a/a5/BlastoiseBaseSet2H2.jpg/180px-BlastoiseBaseSet2H2.jpg",
           condition: "Good",
           estimatedValue: 100,
           currency: "USD",
@@ -182,7 +182,7 @@ const mockTrades: Record<string, TradeProposal> = {
         {
           id: "c7",
           name: "Mewtwo EX",
-          imageUrl: "https://images.pokemontcg.io/xy8/52.png", // Correct Mewtwo EX image
+          imageUrl: "https://archives.bulbagarden.net/media/upload/thumb/e/e0/MewtwoEXBW45.jpg/180px-MewtwoEXBW45.jpg",
           condition: "Excellent",
           estimatedValue: 225,
           currency: "USD",
