@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getCards as getPokemonTcgCards, PokemonCard } from "@/services/pokemonTcgApi";
-import { getCards as getTCGDexCards } from "@/services/tcgdexApi";
+import { getCards as getTCGDexCards, TCGDexCard } from "@/services/tcgdexApi";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import CardGrid from "@/components/cards/CardGrid";
@@ -30,7 +30,7 @@ const PokemonCards = () => {
         const tcgdexCards = await getTCGDexCards(currentPage, 20);
         // Convert TCGDex cards to PokemonCard format
         return {
-          data: tcgdexCards.map(card => ({
+          data: tcgdexCards.map((card: TCGDexCard) => ({
             id: card.id,
             name: card.name,
             supertype: "Pokémon",

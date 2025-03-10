@@ -37,14 +37,21 @@ const CardItem = ({
   
   // Alternative image sources to try in sequence
   const getAlternativeImages = (): string[] => {
+    const setId = id.split('-')[0];
+    const cardNumber = id.split('-').pop() || "";
+    
     const alternatives = [
       imageUrl, // Original URL
+      // TCGDex format
+      `https://assets.tcgdex.net/en/${setId}/${cardNumber}`,
+      `https://assets.tcgdex.net/en/${setId}/${cardNumber}.jpg`,
+      `https://assets.tcgdex.net/en/${setId}/${cardNumber}.png`,
       // Pokellector format
-      `https://assets.pokellector.com/cards/${id.split('-')[0]}/${id.split('-').pop()?.padStart(3, '0')}.webp`,
+      `https://assets.pokellector.com/cards/${setId}/${cardNumber.padStart(3, '0')}.webp`,
       // Pokemon.com format
-      `https://assets.pokemon.com/assets/cms2/img/cards/web/${id.split('-')[0].toUpperCase()}/${id.split('-')[0].toUpperCase()}_EN_${id.split('-').pop()}.png`,
+      `https://assets.pokemon.com/assets/cms2/img/cards/web/${setId.toUpperCase()}/${setId.toUpperCase()}_EN_${cardNumber}.png`,
       // PokemonCards.com format
-      `https://images.pokemoncards.com/${id.split('-')[0]}/${id.split('-').pop()}.jpg`,
+      `https://images.pokemoncards.com/${setId}/${cardNumber}.jpg`,
       // Last resort official card back
       "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
     ];

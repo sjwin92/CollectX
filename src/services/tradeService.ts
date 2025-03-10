@@ -1,3 +1,4 @@
+
 import { TradeProposal, TradeStatus, TradeMessage } from "@/models/escrow";
 import { v4 as uuidv4 } from 'uuid';
 import { getCardById, mapToTradeCard } from './tcgdexApi';
@@ -21,6 +22,7 @@ const initializeMockTrades = async () => {
     const blastoiseVMAX = await getCardById(CARD_IDS.BLASTOISE_VMAX);
     const blastoiseHolo = await getCardById(CARD_IDS.BLASTOISE_HOLO);
 
+    // Create mock trades
     const mockTrades: Record<string, TradeProposal> = {
       "t1": {
         id: "t1",

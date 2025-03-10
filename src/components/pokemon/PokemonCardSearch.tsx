@@ -1,9 +1,10 @@
+
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, X, Info, AlertTriangle } from "lucide-react";
 import { PokemonCard, searchCards as searchPokemonTCG } from "@/services/pokemonTcgApi";
-import { searchCards as searchTCGDex } from "@/services/tcgdexApi";
+import { searchCards as searchTCGDex, TCGDexCard } from "@/services/tcgdexApi";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -33,7 +34,8 @@ const PokemonCardSearch = ({ onSelect }: PokemonCardSearchProps) => {
       } else {
         const tcgdexResults = await searchTCGDex(query);
         
-        searchResults = tcgdexResults.map(card => ({
+        // Transform TCGDexCard to PokemonCard format
+        searchResults = tcgdexResults.map((card: TCGDexCard) => ({
           id: card.id,
           name: card.name,
           supertype: "Pokémon",
