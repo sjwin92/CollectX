@@ -1,17 +1,21 @@
 
-import React from "react";
+import React, { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import CardGrid from "@/components/cards/CardGrid";
+import { CardItemProps } from "@/components/cards/CardItem";
+import { Input } from "@/components/ui/input";
 import { 
   Tabs, 
   TabsContent, 
   TabsList, 
   TabsTrigger 
 } from "@/components/ui/tabs";
+import { useUser } from "@/hooks/useUser";
 import { 
   Star, 
   Mail, 
@@ -22,7 +26,9 @@ import {
   ShieldCheck,
   Award,
   Settings,
-  ListChecks
+  ListChecks,
+  Plus,
+  Search
 } from "lucide-react";
 
 // Placeholder user data
@@ -46,7 +52,66 @@ const userData = {
   ]
 };
 
+// Placeholder collection data
+const userCollection: CardItemProps[] = [
+  {
+    id: "swsh4-25",
+    name: "Charizard VMAX",
+    imageUrl: "https://images.pokemontcg.io/swsh4/25.png",
+    rarity: "Rare Ultra",
+    condition: "Near Mint",
+    estimatedValue: "$125-150"
+  },
+  {
+    id: "base1-4",
+    name: "Charizard Base Set",
+    imageUrl: "https://images.pokemontcg.io/base1/4.png",
+    rarity: "Rare Holo",
+    condition: "Excellent",
+    estimatedValue: "$350-500"
+  },
+  {
+    id: "xy12-13",
+    name: "Pikachu EX",
+    imageUrl: "https://images.pokemontcg.io/xy12/13.png",
+    rarity: "Rare Ultra",
+    condition: "Mint",
+    estimatedValue: "$40-60"
+  },
+  {
+    id: "sm10-158",
+    name: "Reshiram & Charizard GX",
+    imageUrl: "https://images.pokemontcg.io/sm10/158.png",
+    rarity: "Rare Rainbow",
+    condition: "Near Mint",
+    estimatedValue: "$180-220"
+  },
+  {
+    id: "cel25c-12",
+    name: "Blastoise",
+    imageUrl: "https://images.pokemontcg.io/cel25c/12.png",
+    rarity: "Classic Collection",
+    condition: "Mint",
+    estimatedValue: "$30-45"
+  },
+  {
+    id: "dp7-130",
+    name: "Gengar Lv.X",
+    imageUrl: "https://images.pokemontcg.io/dp7/130.png",
+    rarity: "Rare Holo Lv.X",
+    condition: "Good",
+    estimatedValue: "$85-115"
+  },
+];
+
+// Rare cards that user might want to showcase
+const showcaseCards = userCollection.slice(0, 4);
+
 const Profile = () => {
+  const { user } = useUser();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredCards, setFilteredCards] = useState<CardItemProps[]>(userCollection);
+  
   // Function to render reputation stars
   const renderReputationStars = (score: number) => {
     const stars = [];
@@ -64,6 +129,23 @@ const Profile = () => {
     }
     
     return stars;
+  };
+  
+  // Filter cards based on search query
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value.toLowerCase();
+    setSearchQuery(query);
+    
+    if (query.trim() === "") {
+      setFilteredCards(userCollection);
+    } else {
+      const filtered = userCollection.filter(card => 
+        card.name.toLowerCase().includes(query) || 
+        card.rarity.toLowerCase().includes(query) ||
+        card.condition.toLowerCase().includes(query)
+      );
+      setFilteredCards(filtered);
+    }
   };
 
   return (
@@ -158,7 +240,7 @@ const Profile = () => {
             
             {/* Profile main content */}
             <div className="md:col-span-2">
-              <Tabs defaultValue="activity">
+              <Tabs defaultValue="collection">
                 <TabsList className="mb-6">
                   <TabsTrigger value="activity">Activity</TabsTrigger>
                   <TabsTrigger value="collection">Collection</TabsTrigger>
@@ -265,90 +347,117 @@ const Profile = () => {
                 </TabsContent>
                 
                 <TabsContent value="collection">
-                  <GlassCard className="p-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-lg font-bold">Collection Highlights</h2>
-                      <Button variant="outline" size="sm">
-                        View Full Collection
+                  <GlassCard className="p-6 mb-6">
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-lg font-bold">My Card Collection</h2>
+                      <Button size="sm">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Cards
                       </Button>
                     </div>
                     
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                      {[1, 2, 3, 4, 5, 6].map((item) => (
-                        <div key={item} className="aspect-[2/3] relative rounded-md overflow-hidden group">
-                          <img 
-                            src={`https://images.unsplash.com/photo-160${item}041011872-596597976b25?q=80&w=1374&auto=format&fit=crop`}
-                            alt="Card preview"
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end">
-                            <h3 className="text-white text-sm font-medium">Charizard Holo</h3>
-                            <p className="text-white/70 text-xs">Base Set</p>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="relative mb-6">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input 
+                        placeholder="Search your collection..." 
+                        className="pl-9"
+                        value={searchQuery}
+                        onChange={handleSearchChange}
+                      />
                     </div>
                     
-                    <div className="flex flex-col md:flex-row gap-4">
-                      <div className="flex-1 bg-muted/50 rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Package className="h-5 w-5 text-primary" />
-                          <h3 className="text-sm font-medium">Collection Breakdown</h3>
-                        </div>
-                        <ul className="space-y-2 text-sm">
-                          <li className="flex justify-between">
-                            <span className="text-muted-foreground">Common</span>
-                            <span>164 cards</span>
-                          </li>
-                          <li className="flex justify-between">
-                            <span className="text-muted-foreground">Uncommon</span>
-                            <span>98 cards</span>
-                          </li>
-                          <li className="flex justify-between">
-                            <span className="text-muted-foreground">Rare</span>
-                            <span>76 cards</span>
-                          </li>
-                          <li className="flex justify-between">
-                            <span className="text-muted-foreground">Ultra Rare</span>
-                            <span>42 cards</span>
-                          </li>
-                          <li className="flex justify-between">
-                            <span className="text-muted-foreground">Secret Rare</span>
-                            <span>4 cards</span>
-                          </li>
-                        </ul>
+                    {filteredCards.length > 0 ? (
+                      <CardGrid 
+                        cards={filteredCards} 
+                        columns={{ sm: 1, md: 2, lg: 3 }} 
+                        animated
+                      />
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground">No cards matching "{searchQuery}"</p>
                       </div>
-                      
-                      <div className="flex-1 bg-muted/50 rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <ListChecks className="h-5 w-5 text-primary" />
-                          <h3 className="text-sm font-medium">Set Completion</h3>
-                        </div>
-                        <ul className="space-y-2 text-sm">
-                          <li className="flex justify-between">
-                            <span className="text-muted-foreground">Base Set</span>
-                            <span>92%</span>
-                          </li>
-                          <li className="flex justify-between">
-                            <span className="text-muted-foreground">Jungle</span>
-                            <span>100%</span>
-                          </li>
-                          <li className="flex justify-between">
-                            <span className="text-muted-foreground">Fossil</span>
-                            <span>85%</span>
-                          </li>
-                          <li className="flex justify-between">
-                            <span className="text-muted-foreground">Team Rocket</span>
-                            <span>76%</span>
-                          </li>
-                          <li className="flex justify-between">
-                            <span className="text-muted-foreground">Gym Heroes</span>
-                            <span>62%</span>
-                          </li>
-                        </ul>
+                    )}
+                    
+                    {userCollection.length === 0 && (
+                      <div className="text-center py-10">
+                        <h3 className="text-xl font-medium mb-2">Your collection is empty</h3>
+                        <p className="text-muted-foreground mb-4">Start adding cards to showcase your collection</p>
+                        <Button>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Your First Card
+                        </Button>
                       </div>
-                    </div>
+                    )}
                   </GlassCard>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <GlassCard className="p-6">
+                      <h3 className="text-lg font-medium mb-4">Collection Stats</h3>
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Total Cards</span>
+                          <span className="font-medium">{userCollection.length}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Tradable Cards</span>
+                          <span className="font-medium">12</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Rare Cards</span>
+                          <span className="font-medium">28</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Est. Collection Value</span>
+                          <span className="font-medium">$1,250-1,800</span>
+                        </div>
+                      </div>
+                    </GlassCard>
+                    
+                    <GlassCard className="p-6">
+                      <h3 className="text-lg font-medium mb-4">Set Completion</h3>
+                      <div className="space-y-3">
+                        <div>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span>Base Set</span>
+                            <span className="font-medium">85%</span>
+                          </div>
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
+                            <div className="h-full bg-primary rounded-full" style={{ width: "85%" }} />
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span>Jungle</span>
+                            <span className="font-medium">100%</span>
+                          </div>
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
+                            <div className="h-full bg-primary rounded-full" style={{ width: "100%" }} />
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span>Team Rocket</span>
+                            <span className="font-medium">62%</span>
+                          </div>
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
+                            <div className="h-full bg-primary rounded-full" style={{ width: "62%" }} />
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span>Sword & Shield</span>
+                            <span className="font-medium">34%</span>
+                          </div>
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
+                            <div className="h-full bg-primary rounded-full" style={{ width: "34%" }} />
+                          </div>
+                        </div>
+                      </div>
+                    </GlassCard>
+                  </div>
                 </TabsContent>
                 
                 <TabsContent value="reviews">
