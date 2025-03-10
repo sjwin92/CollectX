@@ -10,6 +10,7 @@ import CardDetail from "./pages/CardDetail";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import Pokemons from "./pages/Pokemons";
+import Marketplace from "./pages/Marketplace";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path="/collection" element={<Collection />} />
         <Route path="/pokemon-cards" element={<PokemonCards />} />
         <Route path="/pokemons" element={<Pokemons />} />
+        <Route path="/marketplace" element={<Marketplace />} />
         <Route path="/card/:id" element={<CardDetail />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="*" element={<NotFound />} />
