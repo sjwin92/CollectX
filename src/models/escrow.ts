@@ -19,6 +19,8 @@ export interface EscrowCalculation {
   reputationDiscount: number;
   finalAmount: number;
   currency: string;
+  // Backward compatibility for existing code
+  feeAmount?: number;
 }
 
 export interface TradeEscrow {
@@ -34,6 +36,7 @@ export interface TradeEscrow {
   createdAt: string;
   updatedAt: string;
   releaseCode?: string;
+  completedAt?: string;
   shippingInfo?: {
     trackingNumber: string;
     carrier: string;
@@ -45,8 +48,8 @@ export interface TradeParticipant {
   userId: string;
   username: string;
   reputation: ReputationTier;
-  tradeCount: number;
-  successRate: number;
+  tradeCount?: number;
+  successRate?: number;
   offeringCards: TradeCard[];
   escrowAmount: EscrowCalculation;
 }
@@ -58,6 +61,7 @@ export interface TradeCard {
   condition: string;
   estimatedValue: number;
   currency: string;
+  rarity?: string; // Adding rarity to match the service implementation
 }
 
 export interface TradeProposal {
