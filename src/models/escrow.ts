@@ -61,7 +61,7 @@ export interface TradeCard {
   condition: string;
   estimatedValue: number;
   currency: string;
-  rarity?: string; // Adding rarity to match the service implementation
+  rarity?: string; // Making rarity property explicit
 }
 
 export interface TradeProposal {
