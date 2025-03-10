@@ -24,33 +24,33 @@ import Badge from "@/components/ui/custom/Badge";
 
 const featuredCards = [
   {
-    id: "1",
-    name: "Charizard GX Rainbow Rare",
-    imageUrl: "https://images.unsplash.com/photo-1605979257913-1704eb7b6246?q=80&w=1470&auto=format&fit=crop",
+    id: "swsh4-25",  // Charizard VMAX from Vivid Voltage
+    name: "Charizard VMAX",
+    imageUrl: "https://images.pokemontcg.io/swsh4/25_hires.png",
     rarity: "Ultra Rare",
     condition: "Near Mint",
     estimatedValue: "$350-450"
   },
   {
-    id: "2",
-    name: "Pikachu V-Max",
-    imageUrl: "https://images.unsplash.com/photo-1607736703050-d0666c1d1278?q=80&w=1470&auto=format&fit=crop",
+    id: "swsh1-190", // Pikachu VMAX from Sword & Shield Base
+    name: "Pikachu VMAX",
+    imageUrl: "https://images.pokemontcg.io/swsh1/190_hires.png",
     rarity: "Rare",
     condition: "Mint",
     estimatedValue: "$120-150"
   },
   {
-    id: "3",
-    name: "Mewtwo EX",
-    imageUrl: "https://images.unsplash.com/photo-1613771404721-1f92d799e49f?q=80&w=1469&auto=format&fit=crop",
+    id: "sm12-222", // Mewtwo & Mew GX from Cosmic Eclipse
+    name: "Mewtwo & Mew GX",
+    imageUrl: "https://images.pokemontcg.io/sm12/222_hires.png",
     rarity: "Ultra Rare",
     condition: "Excellent",
     estimatedValue: "$200-250"
   },
   {
-    id: "4",
-    name: "Blastoise Holo",
-    imageUrl: "https://images.unsplash.com/photo-1638075528746-8b5f9c2b6c9c?q=80&w=1480&auto=format&fit=crop",
+    id: "swsh9-155", // Blastoise VMAX from Brilliant Stars
+    name: "Blastoise VMAX",
+    imageUrl: "https://images.pokemontcg.io/swsh9/155_hires.png",
     rarity: "Rare Holo",
     condition: "Good",
     estimatedValue: "$80-120"
@@ -69,11 +69,11 @@ const recentTrades = [
     },
     giving: {
       count: 2,
-      preview: featuredCards[0].imageUrl // Using Charizard card image
+      preview: featuredCards[0].imageUrl
     },
     receiving: {
       count: 3,
-      preview: featuredCards[1].imageUrl // Using Pikachu card image
+      preview: featuredCards[1].imageUrl
     }
   },
   {
@@ -87,11 +87,11 @@ const recentTrades = [
     },
     giving: {
       count: 1,
-      preview: featuredCards[3].imageUrl // Using Blastoise card image
+      preview: featuredCards[3].imageUrl
     },
     receiving: {
       count: 1,
-      preview: featuredCards[2].imageUrl // Using Mewtwo card image
+      preview: featuredCards[2].imageUrl
     }
   }
 ];
