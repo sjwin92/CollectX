@@ -68,17 +68,15 @@ export interface PokemonCardResponse {
   totalCount: number;
 }
 
-/**
- * Pokemon TCG API client
- * Using the public Pokemon TCG API: https://pokemontcg.io/
- * No API key required for basic usage
- */
+// Using multiple reliable sources that don't require API keys
 const BASE_URL = 'https://api.pokemontcg.io/v2';
 
-// Public image repositories that don't require authentication
+// Additional reliable image sources (all public, no API key needed)
+const LIMITLESSTCG_URL = 'https://images.limitlesstcg.com/cards';
 const POKELLECTOR_URL = 'https://assets.pokellector.com/cards';
 const POKEMON_COM_URL = 'https://assets.pokemon.com/assets/cms2/img/cards/web';
 const PKMN_CARDS_URL = 'https://images.pokemoncards.com';
+const SEREBII_URL = 'https://www.serebii.net/card/';
 
 /**
  * Get cards with optional filtering
@@ -107,8 +105,8 @@ export const getCards = async (page = 1, pageSize = 20, query = ''): Promise<Pok
       data.data = data.data.map(card => ({
         ...card,
         images: {
-          small: getValidImageUrl(card),
-          large: getValidImageUrl(card, true)
+          small: getReliableImageUrl(card, false),
+          large: getReliableImageUrl(card, true)
         }
       }));
     }
@@ -145,8 +143,8 @@ export const getCardById = async (id: string): Promise<PokemonCard> => {
     // Enhance card with validated image URLs
     if (data.data) {
       data.data.images = {
-        small: getValidImageUrl(data.data),
-        large: getValidImageUrl(data.data, true)
+        small: getReliableImageUrl(data.data, false),
+        large: getReliableImageUrl(data.data, true)
       };
     }
     
@@ -166,53 +164,78 @@ export const searchCards = async (query: string, page = 1, pageSize = 20): Promi
 };
 
 /**
- * Generate reliable image URLs for Pokemon cards
- * Uses multiple public sources that don't require API keys
+ * Generate a more reliable image URL using multiple sources
  */
-export const getValidImageUrl = (card: PokemonCard, large = false): string => {
+export const getReliableImageUrl = (card: PokemonCard, large = false): string => {
   if (!card) {
-    return '';
+    return 'https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg';
   }
   
-  // Try official source first
+  const setId = card.set?.id?.toLowerCase();
+  const cardNumber = card.number;
+  
+  if (!setId || !cardNumber) {
+    return 'https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg';
+  }
+  
+  // Create an array of potential URLs to try (in order of preference)
+  const imageUrls = [];
+  
+  // Option 1: Original URL from API (if present and valid)
   const originalUrl = large ? card.images?.large : card.images?.small;
   if (originalUrl && isValidUrl(originalUrl)) {
-    console.log(`Using original image URL: ${originalUrl}`);
-    return originalUrl;
+    imageUrls.push(originalUrl);
   }
   
-  // Try Pokellector - a reliable public source without API key requirements
-  // Format: https://assets.pokellector.com/cards/[SET]/[NUMBER].webp
-  if (card.set?.id && card.number) {
-    const setCode = card.set.id.toLowerCase();
-    const number = card.number.padStart(3, '0');
-    const pokellectorUrl = `${POKELLECTOR_URL}/${setCode}/${number}.webp`;
-    console.log(`Trying Pokellector URL: ${pokellectorUrl}`);
-    return pokellectorUrl;
+  // Option 2: LimitlessTCG (very reliable source)
+  imageUrls.push(`${LIMITLESSTCG_URL}/${setId}/${cardNumber}.jpg`);
+  
+  // Option 3: Pokellector
+  const paddedNumber = cardNumber.padStart(3, '0');
+  imageUrls.push(`${POKELLECTOR_URL}/${setId}/${paddedNumber}.webp`);
+  imageUrls.push(`${POKELLECTOR_URL}/${setId}/${cardNumber}.webp`);
+  
+  // Option 4: Pokemon.com official images
+  imageUrls.push(`${POKEMON_COM_URL}/${setId.toUpperCase()}/${setId.toUpperCase()}_EN_${cardNumber}.png`);
+  
+  // Option 5: PokemonCards.com
+  imageUrls.push(`${PKMN_CARDS_URL}/${setId}/${cardNumber}.jpg`);
+  
+  // Option 6: Serebii
+  const setNameParts = card.set?.name?.toLowerCase().split(/\s+/) || [];
+  const setURLPart = setNameParts.join('');
+  imageUrls.push(`${SEREBII_URL}${setURLPart}/${cardNumber}.jpg`);
+  
+  // Return the array of potential URLs to try
+  return imageUrls[0]; // For now, just return the first URL
+};
+
+/**
+ * Get a list of all potential image URLs for a card
+ */
+export const getAllPossibleImageUrls = (card: PokemonCard): string[] => {
+  if (!card || !card.set?.id || !card.number) {
+    return ['https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg'];
   }
   
-  // Try Pokemon.com official assets
-  // Format: https://assets.pokemon.com/assets/cms2/img/cards/web/[SET]/[SET]_EN_[NUMBER].png
-  if (card.set?.id && card.number) {
-    const setCode = card.set.id.toUpperCase();
-    const number = card.number;
-    const pokemonComUrl = `${POKEMON_COM_URL}/${setCode}/${setCode}_EN_${number}.png`;
-    console.log(`Trying Pokemon.com URL: ${pokemonComUrl}`);
-    return pokemonComUrl;
-  }
+  const setId = card.set.id.toLowerCase();
+  const cardNumber = card.number;
+  const paddedNumber = cardNumber.padStart(3, '0');
+  const setNameParts = card.set.name.toLowerCase().split(/\s+/);
+  const setURLPart = setNameParts.join('');
   
-  // Try PokemonCards.com images
-  // Format: https://images.pokemoncards.com/[SET]/[NUMBER].jpg
-  if (card.set?.id && card.number) {
-    const setCode = card.set.id.toLowerCase();
-    const number = card.number;
-    const pkmnCardsUrl = `${PKMN_CARDS_URL}/${setCode}/${number}.jpg`;
-    console.log(`Trying PokemonCards URL: ${pkmnCardsUrl}`);
-    return pkmnCardsUrl;
-  }
-  
-  // Default fallback to a static image
-  return 'https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg';
+  // Create an array of potential URLs to try (in order of preference)
+  return [
+    card.images?.large,
+    card.images?.small,
+    `${LIMITLESSTCG_URL}/${setId}/${cardNumber}.jpg`,
+    `${POKELLECTOR_URL}/${setId}/${paddedNumber}.webp`,
+    `${POKELLECTOR_URL}/${setId}/${cardNumber}.webp`,
+    `${POKEMON_COM_URL}/${setId.toUpperCase()}/${setId.toUpperCase()}_EN_${cardNumber}.png`,
+    `${PKMN_CARDS_URL}/${setId}/${cardNumber}.jpg`,
+    `${SEREBII_URL}${setURLPart}/${cardNumber}.jpg`,
+    'https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg' // Final fallback
+  ].filter(url => !!url); // Filter out any undefined URLs
 };
 
 /**
@@ -239,7 +262,7 @@ export const mapToTradeCard = (card: PokemonCard): import("@/models/escrow").Tra
   return {
     id: card.id,
     name: card.name,
-    imageUrl: getValidImageUrl(card),
+    imageUrl: getReliableImageUrl(card),
     condition: "Near Mint", // Default condition, would be user-specified in real app
     estimatedValue: price,
     currency: "USD"
