@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -68,11 +69,11 @@ const recentTrades = [
     },
     giving: {
       count: 2,
-      preview: "https://images.unsplash.com/photo-1605979257913-1704eb7b6246?q=80&w=1470&auto=format&fit=crop"
+      preview: featuredCards[0].imageUrl // Using Charizard card image
     },
     receiving: {
       count: 3,
-      preview: "https://images.unsplash.com/photo-1607736703050-d0666c1d1278?q=80&w=1470&auto=format&fit=crop"
+      preview: featuredCards[1].imageUrl // Using Pikachu card image
     }
   },
   {
@@ -86,11 +87,11 @@ const recentTrades = [
     },
     giving: {
       count: 1,
-      preview: "https://images.unsplash.com/photo-1638075528746-8b5f9c2b6c9c?q=80&w=1480&auto=format&fit=crop"
+      preview: featuredCards[3].imageUrl // Using Blastoise card image
     },
     receiving: {
       count: 1,
-      preview: "https://images.unsplash.com/photo-1613771404721-1f92d799e49f?q=80&w=1469&auto=format&fit=crop"
+      preview: featuredCards[2].imageUrl // Using Mewtwo card image
     }
   }
 ];
