@@ -1,0 +1,32 @@
+
+import React from "react";
+import { CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ArrowRightLeft } from "lucide-react";
+import { Link } from "react-router-dom";
+
+interface TradeListingFooterProps {
+  cardId: string;
+  onProposeTrade: () => void;
+  featured?: boolean;
+}
+
+const TradeListingFooter = ({ cardId, onProposeTrade, featured = false }: TradeListingFooterProps) => {
+  return (
+    <>
+      <CardFooter className="pt-3 flex justify-between">
+        <Button variant="outline" size="sm" asChild>
+          <Link to={`/card/${cardId}`}>
+            View Card Details
+          </Link>
+        </Button>
+        <Button size="sm" onClick={onProposeTrade} className={featured ? "bg-amber-600 hover:bg-amber-700" : ""}>
+          <ArrowRightLeft className="h-4 w-4 mr-2" />
+          Propose Trade
+        </Button>
+      </CardFooter>
+    </>
+  );
+};
+
+export default TradeListingFooter;
