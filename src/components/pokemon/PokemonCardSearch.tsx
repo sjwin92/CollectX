@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -29,15 +28,12 @@ const PokemonCardSearch = ({ onSelect }: PokemonCardSearchProps) => {
     try {
       let searchResults;
       if (source === "pokemontcg") {
-        // For Pokemon TCG API, we need to properly format the query
-        // The API expects a format like "name:pikachu" to search by name
-        const formattedQuery = `name:${query}*`;
-        const response = await searchPokemonTCG(formattedQuery);
+        console.log(`Searching for Pokemon cards with query: ${query}`);
+        const response = await searchPokemonTCG(query);
         searchResults = response.data;
       } else {
         const tcgdexResults = await searchTCGDex(query);
         
-        // Transform TCGDexCard to PokemonCard format
         searchResults = tcgdexResults.map((card: TCGDexCard) => ({
           id: card.id,
           name: card.name,
