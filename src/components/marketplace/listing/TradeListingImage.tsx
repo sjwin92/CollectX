@@ -15,19 +15,23 @@ interface TradeListingImageProps {
 const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListingImageProps) => {
   const [imageError, setImageError] = useState(false);
   const [imageSrc, setImageSrc] = useState(() => {
+    // First try to use the reliable image URL if cardId is available
     if (cardId) {
       return getReliableImageUrl(cardId, 'small');
     }
-    return imageUrl;
+    // Fall back to provided imageUrl if available
+    return imageUrl || '';
   });
   
   const handleImageError = () => {
     if (imageError) return;
     
     if (cardId) {
+      // Try the large image as a fallback
       const newSrc = getReliableImageUrl(cardId, 'large');
       console.log(`Trying alternative image source: ${newSrc}`);
       setImageSrc(newSrc);
+      setImageError(true); // Mark as having an error, so we don't retry infinitely
     } else {
       setImageError(true);
     }
@@ -38,7 +42,7 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
     if (cardId) {
       setImageSrc(getReliableImageUrl(cardId, 'small'));
     } else {
-      setImageSrc(imageUrl);
+      setImageSrc(imageUrl || '');
     }
   };
 

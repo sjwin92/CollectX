@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getCards, PokemonCard } from "@/services/pokemonTcgApi";
+import { getCards, PokemonCard, getReliableImageUrl, mapToTradeCard } from "@/services/pokemonTcgApi";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import CardGrid from "@/components/cards/CardGrid";
@@ -63,141 +63,147 @@ interface ListingType {
   featured?: boolean;
 }
 
-// Mock featured listings for demo purposes
-const FEATURED_LISTINGS: ListingType[] = [
-  {
-    id: "featured-1",
-    userId: "user-premium-1",
-    username: "RarityHunter",
-    cardOffered: {
-      id: "base1-4",
-      name: "Charizard Base Set",
-      imageUrl: "https://images.pokemontcg.io/base1/4.png",
-      rarity: "Holo Rare",
-      condition: "Near Mint",
-      estimatedValue: "$500"
-    },
-    cardsWanted: ["Blastoise Base Set", "Venusaur Base Set", "Shadowless Raichu"],
-    description: "Original 1999 Base Set Charizard in Near Mint condition. Looking for other Base Set holos or shadowless cards.",
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    featured: true
-  },
-  {
-    id: "featured-2",
-    userId: "user-premium-2",
-    username: "VintageCollector",
-    cardOffered: {
-      id: "sm12-190",
-      name: "Mewtwo & Mew GX (Rainbow)",
-      imageUrl: "https://images.pokemontcg.io/sm12/190.png",
-      rarity: "Ultra Rare",
-      condition: "Mint",
-      estimatedValue: "$120"
-    },
-    cardsWanted: ["Charizard & Reshiram GX", "Pikachu VMAX", "Rayquaza VMAX"],
-    description: "Perfect condition Rainbow rare Mewtwo & Mew GX. Straight from pack to sleeve. Looking for other recent high-value cards.",
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    featured: true
-  }
-];
-
-// Combined with the existing mock listings from your code
-const INITIAL_LISTINGS: ListingType[] = [
-  {
-    id: "listing-1",
-    userId: "user-1",
-    username: "PokeMaster99",
-    cardOffered: {
-      id: "sm9-60",
-      name: "Charizard GX",
-      imageUrl: "https://images.pokemontcg.io/sm9/60.png",
-      rarity: "Ultra Rare",
-      condition: "Near Mint",
-      estimatedValue: "$120"
-    },
-    cardsWanted: ["Blastoise", "Venusaur GX", "Mew"],
-    description: "Looking to trade my Charizard GX for any of the cards listed. Prefer Near Mint condition only.",
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
-  },
-  {
-    id: "listing-2",
-    userId: "user-2",
-    username: "PikachuFan22",
-    cardOffered: {
-      id: "swsh4-25",
-      name: "Pikachu V",
-      imageUrl: "https://images.pokemontcg.io/swsh4/25.png",
-      rarity: "Rare",
-      condition: "Excellent",
-      estimatedValue: "$15"
-    },
-    cardsWanted: ["Raichu", "Alolan Raichu", "Pikachu GX"],
-    description: "Trading my Pikachu V for other Pikachu evolution line cards.",
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
-  },
-  {
-    id: "listing-3",
-    userId: "user-3",
-    username: "CardCollector44",
-    cardOffered: {
-      id: "swsh12-179",
-      name: "Mewtwo V",
-      imageUrl: "https://images.pokemontcg.io/swsh12/179.png",
-      rarity: "Ultra Rare",
-      condition: "Mint",
-      estimatedValue: "$35"
-    },
-    cardsWanted: ["Any Legendary Pokémon cards", "Rayquaza V", "Lugia V"],
-    description: "Looking to trade my mint condition Mewtwo V for other Legendary Pokémon cards.",
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
-  },
-  // Additional listings for a better browsing experience
-  {
-    id: "listing-4",
-    userId: "user-4",
-    username: "VintageVibes",
-    cardOffered: {
-      id: "base2-4",
-      name: "Blastoise",
-      imageUrl: "https://images.pokemontcg.io/base2/4.png",
-      rarity: "Holo Rare",
-      condition: "Played",
-      estimatedValue: "$75"
-    },
-    cardsWanted: ["Fossil Zapdos", "Jungle Jolteon", "Base Raichu"],
-    description: "Original Base Set 2 Blastoise with some edge wear. Looking for similar era electrics.",
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-  },
-  {
-    id: "listing-5",
-    userId: "user-5",
-    username: "ModernCollector",
-    cardOffered: {
-      id: "swsh8-188",
-      name: "Umbreon VMAX (Alternate Art)",
-      imageUrl: "https://images.pokemontcg.io/swsh8/188.png",
-      rarity: "Secret Rare",
-      condition: "Mint",
-      estimatedValue: "$280"
-    },
-    cardsWanted: ["Charizard VMAX (Rainbow)", "Rayquaza VMAX (Alt Art)", "Gengar VMAX (Alt Art)"],
-    description: "PSA 9 worthy Umbreon VMAX Alt Art. Looking for other high-end modern cards in similar condition.",
-    createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000)
-  }
-];
-
 const Marketplace = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateListingOpen, setCreateListingOpen] = useState(false);
   const [selectedCard, setSelectedCard] = useState<PokemonCard | null>(null);
-  const [listings, setListings] = useState<ListingType[]>([...FEATURED_LISTINGS, ...INITIAL_LISTINGS]);
+  const [listings, setListings] = useState<ListingType[]>([]);
   const [activeCategory, setActiveCategory] = useState<'featured' | 'recent' | 'trending'>('featured');
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<string>("newest");
   const { toast } = useToast();
   const { user } = useUser();
+
+  // Query for featured listings (rare and valuable cards)
+  const { data: featuredCardsData } = useQuery({
+    queryKey: ['featured-cards'],
+    queryFn: async () => {
+      // Query for rare and valuable cards (typically holos or ultra rares)
+      return await getCards(1, 4, 'rarity:"Ultra Rare" OR rarity:"Hyper Rare"');
+    },
+  });
+
+  // Query for recent listings (newest sets)
+  const { data: recentCardsData } = useQuery({
+    queryKey: ['recent-cards'],
+    queryFn: async () => {
+      // Get cards from the newest sets
+      return await getCards(1, 8, 'set.releaseDate:>2023-01-01');
+    },
+  });
+
+  // Query for trending listings (popular pokemon)
+  const { data: trendingCardsData } = useQuery({
+    queryKey: ['trending-cards'],
+    queryFn: async () => {
+      // Popular Pokémon like Charizard, Pikachu, Mewtwo, etc.
+      return await getCards(1, 8, 'name:"Charizard" OR name:"Pikachu" OR name:"Mewtwo" OR name:"Gengar" OR name:"Mew"');
+    },
+  });
+
+  // Convert API card data to listings
+  useEffect(() => {
+    const generateListings = () => {
+      const newListings: ListingType[] = [];
+      
+      // Add featured listings
+      if (featuredCardsData?.data) {
+        featuredCardsData.data.slice(0, 4).forEach((card, index) => {
+          const cardValue = card.tcgplayer?.prices?.holofoil?.market || 
+                          card.tcgplayer?.prices?.normal?.market || 
+                          card.tcgplayer?.prices?.reverseHolofoil?.market || 100;
+          
+          newListings.push({
+            id: `featured-${card.id}`,
+            userId: `user-premium-${index}`,
+            username: `RarityHunter${index + 1}`,
+            cardOffered: {
+              id: card.id,
+              name: card.name,
+              imageUrl: getReliableImageUrl(card.id),
+              rarity: card.rarity || "Ultra Rare",
+              condition: "Near Mint",
+              estimatedValue: `$${cardValue.toFixed(2)}`
+            },
+            cardsWanted: [
+              "Base Set Charizard", 
+              "Shadowless Blastoise", 
+              `${card.name} Alt Art`
+            ],
+            description: `Mint condition ${card.name}. Looking to trade for other rare cards of similar value.`,
+            createdAt: new Date(Date.now() - (index * 24 * 60 * 60 * 1000)),
+            featured: true
+          });
+        });
+      }
+      
+      // Add recent listings
+      if (recentCardsData?.data) {
+        recentCardsData.data.slice(0, 8).forEach((card, index) => {
+          const cardValue = card.tcgplayer?.prices?.holofoil?.market || 
+                          card.tcgplayer?.prices?.normal?.market || 
+                          card.tcgplayer?.prices?.reverseHolofoil?.market || 25;
+          
+          newListings.push({
+            id: `recent-${card.id}`,
+            userId: `user-${100 + index}`,
+            username: `NewSetCollector${index + 1}`,
+            cardOffered: {
+              id: card.id,
+              name: card.name,
+              imageUrl: getReliableImageUrl(card.id),
+              rarity: card.rarity || "Rare",
+              condition: ["Near Mint", "Excellent", "Good"][Math.floor(Math.random() * 3)],
+              estimatedValue: `$${cardValue.toFixed(2)}`
+            },
+            cardsWanted: [
+              "Any Ex or GX cards", 
+              "Full Art Trainers",
+              `${card.name} Alt Art`
+            ],
+            description: `Fresh pull from a ${card.set?.name} pack! Looking for cards from other recent sets.`,
+            createdAt: new Date(Date.now() - (index * 12 * 60 * 60 * 1000)),
+          });
+        });
+      }
+      
+      // Add trending listings
+      if (trendingCardsData?.data) {
+        trendingCardsData.data.slice(0, 8).forEach((card, index) => {
+          const cardValue = card.tcgplayer?.prices?.holofoil?.market || 
+                          card.tcgplayer?.prices?.normal?.market || 
+                          card.tcgplayer?.prices?.reverseHolofoil?.market || 50;
+          
+          newListings.push({
+            id: `trending-${card.id}`,
+            userId: `user-${200 + index}`,
+            username: `TrendCollector${index + 1}`,
+            cardOffered: {
+              id: card.id,
+              name: card.name,
+              imageUrl: getReliableImageUrl(card.id),
+              rarity: card.rarity || "Ultra Rare",
+              condition: ["Near Mint", "Excellent"][Math.floor(Math.random() * 2)],
+              estimatedValue: `$${cardValue.toFixed(2)}`
+            },
+            cardsWanted: [
+              "Popular Pokémon Alt Arts", 
+              "Eeveelution Cards",
+              "Full Art Trainers"
+            ],
+            description: `Trending ${card.name} card for trade! Looking for other popular Pokémon cards.`,
+            createdAt: new Date(Date.now() - (index * 36 * 60 * 60 * 1000)),
+          });
+        });
+      }
+      
+      setListings(newListings);
+    };
+    
+    generateListings();
+  }, [featuredCardsData, recentCardsData, trendingCardsData]);
 
   // Filter listings based on search query, category, conditions, etc.
   const filteredListings = React.useMemo(() => {
@@ -213,8 +219,8 @@ const Marketplace = () => {
         // Category filter
         const matchesCategory = 
           (activeCategory === 'featured' && listing.featured) ||
-          (activeCategory === 'recent') ||
-          (activeCategory === 'trending');
+          (activeCategory === 'recent' && listing.id.startsWith('recent-')) ||
+          (activeCategory === 'trending' && listing.id.startsWith('trending-'));
         
         // Condition filter
         const matchesCondition = selectedConditions.length === 0 || 
@@ -273,7 +279,7 @@ const Marketplace = () => {
     return cards.map(card => ({
       id: card.id,
       name: card.name,
-      imageUrl: card.images.small,
+      imageUrl: getReliableImageUrl(card.id),
       rarity: card.rarity || "Unknown",
       condition: "Near Mint",
       estimatedValue: card.tcgplayer?.prices?.holofoil?.market
@@ -292,7 +298,7 @@ const Marketplace = () => {
       cardOffered: {
         id: cardOffered.id,
         name: cardOffered.name,
-        imageUrl: cardOffered.images.small,
+        imageUrl: getReliableImageUrl(cardOffered.id),
         rarity: cardOffered.rarity || "Unknown",
         condition: "Near Mint", // Would come from form in real app
         estimatedValue: cardOffered.tcgplayer?.prices?.holofoil?.market
