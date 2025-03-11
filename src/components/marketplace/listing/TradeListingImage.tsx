@@ -72,9 +72,7 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
         setImageSrc(CARD_BACK_URL);
       } finally {
         // Make sure loading state ends even if there's an error
-        if (isLoading && !imageSrc) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     };
     

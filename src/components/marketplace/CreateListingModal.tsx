@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PokemonCard, getReliableImageUrl } from "@/services/pokemonTcgApi";
 import PokemonCardSearch from "@/components/pokemon/PokemonCardSearch";
+import { findWorkingImageUrl } from "@/services/cardImageService";
 import { X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -29,7 +30,25 @@ const CreateListingModal = ({
   const [step, setStep] = useState<"select-card" | "details">(selectedCard ? "details" : "select-card");
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [cardImageUrl, setCardImageUrl] = useState<string>("");
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    const loadCardImage = async () => {
+      if (card) {
+        try {
+          const bestImageUrl = await findWorkingImageUrl(card);
+          setCardImageUrl(bestImageUrl);
+          setImageError(false);
+        } catch (error) {
+          console.error("Error loading card image:", error);
+          setImageError(true);
+        }
+      }
+    };
+    
+    loadCardImage();
+  }, [card]);
 
   const handleSubmit = () => {
     if (!card) {
@@ -83,18 +102,8 @@ const CreateListingModal = ({
     setImageError(false);
   };
 
-  const getCardImageUrl = (card: PokemonCard) => {
-    // First try the small image from the card
-    if (card.images?.small) {
-      return card.images.small;
-    }
-    
-    // Then try the reliable URL
-    return getReliableImageUrl(card.id);
-  };
-
   const getFallbackImage = () => {
-    return "/placeholder.svg";
+    return "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg";
   };
 
   const getCardPrice = (card: PokemonCard) => {
@@ -145,21 +154,16 @@ const CreateListingModal = ({
                     </div>
                   )}
                   <img 
-                    src={getCardImageUrl(card)}
+                    src={cardImageUrl || (card.images?.large || card.images?.small || "")}
                     alt={card.name}
                     className={`w-full rounded-md ${!imageLoaded && 'opacity-0'} ${imageError && 'hidden'}`}
                     onLoad={() => setImageLoaded(true)}
                     onError={(e) => {
+                      setImageError(true);
                       const target = e.target as HTMLImageElement;
-                      console.log("Image loading error for:", card.id);
-                      
-                      // If primary image failed, try fallback
-                      if (!imageError) {
-                        setImageError(true);
-                        target.src = getFallbackImage();
-                        target.className = "w-full rounded-md";
-                        setImageLoaded(true);
-                      }
+                      target.src = getFallbackImage();
+                      target.className = "w-full rounded-md";
+                      setImageLoaded(true);
                     }}
                   />
                   {imageError && (

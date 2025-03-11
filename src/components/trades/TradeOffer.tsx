@@ -99,6 +99,12 @@ const TradeOffer = ({
     }).format(value);
   };
 
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.target as HTMLImageElement;
+    img.onerror = null; // Prevent infinite loop
+    img.src = "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg";
+  };
+
   return (
     <GlassCard className="overflow-hidden">
       <div className="flex items-center justify-between mb-4">
@@ -132,6 +138,7 @@ const TradeOffer = ({
                 src={giving.preview} 
                 alt="Cards preview" 
                 className="object-cover h-full w-full"
+                onError={handleImageError}
               />
               {giving.count > 1 && (
                 <div className="absolute top-0.5 right-0.5 bg-primary/90 text-white text-[10px] font-medium h-4 w-4 rounded-full flex items-center justify-center">
@@ -162,6 +169,7 @@ const TradeOffer = ({
                 src={receiving.preview} 
                 alt="Cards preview" 
                 className="object-cover h-full w-full"
+                onError={handleImageError}
               />
               {receiving.count > 1 && (
                 <div className="absolute top-0.5 right-0.5 bg-primary/90 text-white text-[10px] font-medium h-4 w-4 rounded-full flex items-center justify-center">
