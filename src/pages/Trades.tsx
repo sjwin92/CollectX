@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import TradeOffer from "@/components/trades/TradeOffer";
@@ -13,8 +12,11 @@ import {
 import { Button } from "@/components/ui/button";
 import Badge from "@/components/ui/custom/Badge";
 import { HandshakeIcon, Plus, RefreshCw } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import CreateListingModal from "@/components/marketplace/CreateListingModal";
+import { PokemonCard } from "@/services/pokemonTcgApi";
 
-// Dummy trade data
 const activeTrades = [
   {
     id: "t1",
@@ -133,6 +135,23 @@ const declinedTrades = [
 ];
 
 const Trades = () => {
+  const [isCreateListingOpen, setCreateListingOpen] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<PokemonCard | null>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleCreateTrade = () => {
+    setCreateListingOpen(true);
+  };
+
+  const onCreateListing = (cardOffered: PokemonCard, cardsWanted: string[], description: string) => {
+    toast({
+      title: "Trade Created!",
+      description: "Your trade proposal has been created successfully.",
+    });
+    setCreateListingOpen(false);
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -177,7 +196,7 @@ const Trades = () => {
           </div>
           
           <div className="flex justify-between items-center mb-6">
-            <Button className="gap-2">
+            <Button className="gap-2" onClick={handleCreateTrade}>
               <Plus className="h-4 w-4" />
               Create New Trade
             </Button>
@@ -225,7 +244,7 @@ const Trades = () => {
                     You don't have any active trades at the moment. 
                     Start by creating a new trade proposal.
                   </p>
-                  <Button>Create New Trade</Button>
+                  <Button onClick={handleCreateTrade}>Create New Trade</Button>
                 </GlassCard>
               )}
             </TabsContent>
@@ -265,6 +284,15 @@ const Trades = () => {
       </main>
       
       <Footer />
+
+      {isCreateListingOpen && (
+        <CreateListingModal 
+          isOpen={isCreateListingOpen}
+          onClose={() => setCreateListingOpen(false)}
+          selectedCard={selectedCard}
+          onCreateListing={onCreateListing}
+        />
+      )}
     </div>
   );
 };

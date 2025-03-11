@@ -4,6 +4,7 @@ import { CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRightLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 interface TradeListingFooterProps {
   cardId: string;
@@ -13,6 +14,16 @@ interface TradeListingFooterProps {
 }
 
 const TradeListingFooter = ({ cardId, tradeId, onProposeTrade, featured = false }: TradeListingFooterProps) => {
+  const { toast } = useToast();
+  
+  const handleProposeTrade = () => {
+    onProposeTrade();
+    toast({
+      title: "Trade Proposal Initiated",
+      description: "You can now select cards to offer in exchange.",
+    });
+  };
+
   return (
     <>
       <CardFooter className="pt-3 flex justify-between">
@@ -30,7 +41,7 @@ const TradeListingFooter = ({ cardId, tradeId, onProposeTrade, featured = false 
         ) : (
           <Button 
             size="sm" 
-            onClick={onProposeTrade} 
+            onClick={handleProposeTrade} 
             className={featured ? "bg-amber-600 hover:bg-amber-700" : ""}
           >
             <ArrowRightLeft className="h-4 w-4 mr-2" />
