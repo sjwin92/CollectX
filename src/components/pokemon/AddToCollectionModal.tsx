@@ -89,7 +89,8 @@ const AddToCollectionModal = ({ isOpen, onClose, card }: AddToCollectionModalPro
         notes: notes || null,
         for_trade: forTrade,
         grading_company: "PSA", // Default to PSA since we're using their scale
-        grading_value: condition
+        grading_value: condition,
+        user_id: user.id // Add the user ID from the auth context
       });
       
       if (error) {
