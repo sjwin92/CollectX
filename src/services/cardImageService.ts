@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import React from "react";
 
@@ -62,16 +63,19 @@ export const getImageUrlsForCard = (cardIdOrCard: string | Card): string[] => {
   }
   
   const possibleUrls = [
+    // Try the official Pokemon TCG API URL formats
+    `https://images.pokemontcg.io/${cardId.split("-")[0]}/small/${cardId.split("-")[1]}.png`,
+    `https://images.pokemontcg.io/${cardId.split("-")[0]}/large/${cardId.split("-")[1]}.png`,
+    `https://images.pokemontcg.io/${cardId.split("-")[0]}/${cardId.split("-")[1]}_hires.png`,
+    
+    // Try some alternative formats
     `https://images.pokemontcg.io/small/${cardId}.png`,
     `https://images.pokemontcg.io/large/${cardId}.png`,
     
-    // Try alternative format with set prefix
-    ...(cardId.includes("-") ? [
-      `https://images.pokemontcg.io/${cardId.split("-")[0]}/small/${cardId.split("-")[1]}.png`,
-      `https://images.pokemontcg.io/${cardId.split("-")[0]}/large/${cardId.split("-")[1]}.png`,
-      `https://images.pokemontcg.io/${cardId.split("-")[0]}/${cardId.split("-")[1]}_hires.png`
-    ] : []),
+    // Backup URL if we have it
+    typeof cardIdOrCard !== 'string' && cardIdOrCard.imageUrl ? cardIdOrCard.imageUrl : '',
     
+    // Last resort fallback
     CARD_BACK_URL
   ];
   
@@ -105,6 +109,7 @@ export const findWorkingImageUrl = async (cardIdOrCard: string | Card): Promise<
   try {
     console.log(`Finding best image for card ${cardId}`);
     
+    // First check for verified images in the database
     const { data: cachedImage } = await supabase
       .from('card_alternative_images')
       .select('image_url')
@@ -118,31 +123,36 @@ export const findWorkingImageUrl = async (cardIdOrCard: string | Card): Promise<
       return cachedImage[0].image_url;
     }
     
-    const possibleUrls = getImageUrlsForCard(cardId);
+    // If not in database, try all possible URLs
+    const possibleUrls = getImageUrlsForCard(cardIdOrCard);
+    console.log(`Generated ${possibleUrls.length} potential image URLs for card ${cardId}`);
+    console.log('Image URLs:', possibleUrls);
     
     for (const url of possibleUrls) {
+      if (url === CARD_BACK_URL) continue;
+      
       try {
-        if (url === CARD_BACK_URL) continue;
-        
         const response = await fetch(url, { method: 'HEAD' });
         if (response.ok) {
+          // Store this working URL in the database for future use
           await supabase
             .from('card_alternative_images')
             .upsert({
               card_id: cardId,
               image_url: url,
               is_verified: true,
-              source: 'pokemon_tcg_io'
+              source: 'found_by_app'
             }, { onConflict: 'card_id,image_url' });
           
           console.log(`Found working image URL for ${cardId}: ${url}`);
           return url;
         }
       } catch (error) {
-        continue;
+        continue; // Try next URL
       }
     }
     
+    // If we reach here, no URLs worked, trigger function to verify card images
     try {
       const functionUrl = `${import.meta.env.VITE_SUPABASE_URL || 'https://psidmvvzcpodxbqcgomm.supabase.co'}/functions/v1/verify-card-images?id=${cardId}`;
       fetch(functionUrl, { method: 'GET' });

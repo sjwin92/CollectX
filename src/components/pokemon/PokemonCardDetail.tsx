@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from "react";
-import { PokemonCard, getAllPossibleImageUrls } from "@/services/pokemonTcgApi";
+import { PokemonCard } from "@/services/pokemonTcgApi";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
 import { formatCurrency } from "@/utils/escrowCalculator";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/useUser";
 import { supabase } from "@/integrations/supabase/client";
+import { findWorkingImageUrl } from "@/services/cardImageService";
 
 interface PokemonCardDetailProps {
   card: PokemonCard;
@@ -16,8 +18,7 @@ interface PokemonCardDetailProps {
 
 const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [imageSrc, setImageSrc] = useState<string>("");
   const [collectionQuantity, setCollectionQuantity] = useState(0);
   const [isUpdating, setIsUpdating] = useState(false);
   const { user, isSignedIn } = useUser();
@@ -27,16 +28,45 @@ const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
     if (!card) return;
     
     setImageStatus("loading");
-    setCurrentImageIndex(0);
+    loadCardImage();
     
-    const urls = getAllPossibleImageUrls(card);
-    setImageUrls(urls);
-    
-    console.log(`Generated ${urls.length} potential image URLs for card ${card.id}`);
-    console.log('Image URLs:', urls);
   }, [card?.id]);
   
-  const currentImageUrl = imageUrls[currentImageIndex] || '';
+  const loadCardImage = async () => {
+    if (!card) return;
+    
+    try {
+      setImageStatus("loading");
+      
+      // First check for verified images in the database
+      const { data: cachedImage } = await supabase
+        .from('card_alternative_images')
+        .select('image_url')
+        .eq('card_id', card.id)
+        .eq('is_verified', true)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (cachedImage && cachedImage.length > 0) {
+        console.log(`Found verified image in database for ${card.id}`);
+        setImageSrc(cachedImage[0].image_url);
+        return;
+      }
+      
+      // If not in database, find a working URL
+      const bestImageUrl = await findWorkingImageUrl({
+        id: card.id,
+        name: card.name,
+        images: card.images
+      });
+      
+      console.log(`Best image URL for ${card.name}: ${bestImageUrl}`);
+      setImageSrc(bestImageUrl);
+    } catch (error) {
+      console.error("Error loading card image:", error);
+      setImageStatus("error");
+    }
+  };
   
   const getMarketPrice = () => {
     if (!card?.tcgplayer?.prices) return null;
@@ -50,26 +80,16 @@ const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
   
   const handleImageLoad = () => {
     setImageStatus("loaded");
-    console.log("Card image loaded successfully:", currentImageUrl);
+    console.log("Card image loaded successfully:", imageSrc);
   };
 
   const handleImageError = () => {
-    console.log(`Image failed to load: ${currentImageUrl}`);
-    
-    if (currentImageIndex < imageUrls.length - 1) {
-      const nextIndex = currentImageIndex + 1;
-      setCurrentImageIndex(nextIndex);
-      setImageStatus("loading");
-      console.log(`Trying next image (${nextIndex + 1}/${imageUrls.length}): ${imageUrls[nextIndex]}`);
-    } else {
-      setImageStatus("error");
-      console.log("All image sources failed");
-    }
+    console.log(`Image failed to load: ${imageSrc}`);
+    setImageStatus("error");
   };
   
   const retryImages = () => {
-    setImageStatus("loading");
-    setCurrentImageIndex(0);
+    loadCardImage();
   };
   
   useEffect(() => {
@@ -161,9 +181,9 @@ const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="relative aspect-[2/3] overflow-hidden rounded-lg">
           <div className="relative h-full">
-            {currentImageUrl && (
+            {imageSrc && (
               <img 
-                src={currentImageUrl} 
+                src={imageSrc} 
                 alt={`Detailed view of ${card?.name} Pokémon card from set ${card?.set?.name}`}
                 className="w-full h-full object-contain"
                 onLoad={handleImageLoad}
@@ -203,11 +223,10 @@ const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="left" className="max-w-[250px]">
-                  <p><strong>Image Source:</strong> {currentImageUrl ? new URL(currentImageUrl).hostname : "N/A"}</p>
+                  <p><strong>Image Source:</strong> {imageSrc ? new URL(imageSrc).hostname : "N/A"}</p>
                   <p><strong>Card Set:</strong> {card?.set.name}</p>
                   <p><strong>Card Number:</strong> {card?.number}</p>
                   <p><strong>Artist:</strong> {card?.artist || "Unknown"}</p>
-                  <p><strong>Source #:</strong> {currentImageIndex + 1} of {imageUrls.length}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

@@ -5,8 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { findWorkingImageUrl } from "@/services/cardImageService";
-import { PokemonCard } from "@/services/pokemonTcgApi";
-import { Json } from "@/integrations/supabase/types";
 
 interface TradeListingImageProps {
   cardId?: string;
@@ -35,14 +33,29 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
           return;
         }
 
-        // Use our card image service to find a working image
-        const card = {
-          id: cardId,
+        // Query the card_alternative_images table first for verified images
+        const { data: alternativeImages } = await supabase
+          .from('card_alternative_images')
+          .select('image_url')
+          .eq('card_id', cardId)
+          .eq('is_verified', true)
+          .order('created_at', { ascending: false })
+          .limit(1);
+          
+        if (alternativeImages && alternativeImages.length > 0) {
+          console.log(`Found verified image in database for ${cardId}: ${alternativeImages[0].image_url}`);
+          setImageSrc(alternativeImages[0].image_url);
+          setIsLoading(false);
+          return;
+        }
+        
+        // If no verified images in database, try to find a working image
+        const bestImageUrl = await findWorkingImageUrl({
+          id: cardId || '',
           name: cardName,
           imageUrl: imageUrl
-        };
+        });
         
-        const bestImageUrl = await findWorkingImageUrl(card);
         console.log(`Found best image URL for ${cardName}:`, bestImageUrl);
         setImageSrc(bestImageUrl);
       } catch (error) {
@@ -79,13 +92,26 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
     setImageError(false);
     
     try {
-      const card = {
-        id: cardId,
+      // Query first from verified images in database
+      const { data: alternativeImages } = await supabase
+        .from('card_alternative_images')
+        .select('image_url')
+        .eq('card_id', cardId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+        
+      if (alternativeImages && alternativeImages.length > 0) {
+        setImageSrc(alternativeImages[0].image_url);
+        return;
+      }
+      
+      // Try other sources if no database entry
+      const bestImageUrl = await findWorkingImageUrl({
+        id: cardId || '',
         name: cardName,
         imageUrl: imageUrl
-      };
+      });
       
-      const bestImageUrl = await findWorkingImageUrl(card);
       setImageSrc(bestImageUrl);
     } catch (error) {
       console.error("Error during retry:", error);
