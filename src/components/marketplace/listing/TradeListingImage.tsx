@@ -56,14 +56,7 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
           }
         }
         
-        // If we have a direct image URL, try it
-        if (imageUrl && imageUrl.trim() !== '') {
-          console.log(`Using provided image URL: ${imageUrl}`);
-          setImageSrc(imageUrl);
-          return;
-        }
-        
-        // Otherwise, use our card image service to find a working image
+        // Use our card image service to find a working image
         const card = {
           id: cardId,
           name: cardName,
@@ -77,6 +70,11 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
         console.error("Error loading card image:", error);
         setImageError(true);
         setImageSrc(CARD_BACK_URL);
+      } finally {
+        // Make sure loading state ends even if there's an error
+        if (isLoading && !imageSrc) {
+          setIsLoading(false);
+        }
       }
     };
     

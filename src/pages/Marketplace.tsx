@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getCards, PokemonCard, getReliableImageUrl, mapToTradeCard } from "@/services/pokemonTcgApi";
+import { findWorkingImageUrl } from "@/services/cardImageService";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import CardGrid from "@/components/cards/CardGrid";
@@ -51,7 +51,6 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 
-// Define the interface for listing objects with the 'featured' property
 interface ListingType {
   id: string;
   userId: string;
@@ -76,39 +75,31 @@ const Marketplace = () => {
   const { toast } = useToast();
   const { user } = useUser();
 
-  // Query for featured listings (rare and valuable cards)
   const { data: featuredCardsData } = useQuery({
     queryKey: ['featured-cards'],
     queryFn: async () => {
-      // Query for rare and valuable cards (typically holos or ultra rares)
       return await getCards(1, 4, 'rarity:"Ultra Rare" OR rarity:"Hyper Rare"');
     },
   });
 
-  // Query for recent listings (newest sets)
   const { data: recentCardsData } = useQuery({
     queryKey: ['recent-cards'],
     queryFn: async () => {
-      // Get cards from the newest sets
       return await getCards(1, 8, 'set.releaseDate:>2023-01-01');
     },
   });
 
-  // Query for trending listings (popular pokemon)
   const { data: trendingCardsData } = useQuery({
     queryKey: ['trending-cards'],
     queryFn: async () => {
-      // Popular Pokémon like Charizard, Pikachu, Mewtwo, etc.
       return await getCards(1, 8, 'name:"Charizard" OR name:"Pikachu" OR name:"Mewtwo" OR name:"Gengar" OR name:"Mew"');
     },
   });
 
-  // Convert API card data to listings
   useEffect(() => {
     const generateListings = () => {
       const newListings: ListingType[] = [];
       
-      // Add featured listings
       if (featuredCardsData?.data) {
         featuredCardsData.data.slice(0, 4).forEach((card, index) => {
           const cardValue = card.tcgplayer?.prices?.holofoil?.market || 
@@ -122,7 +113,7 @@ const Marketplace = () => {
             cardOffered: {
               id: card.id,
               name: card.name,
-              imageUrl: getReliableImageUrl(card.id),
+              imageUrl: findWorkingImageUrl(card.id),
               rarity: card.rarity || "Ultra Rare",
               condition: "Near Mint",
               estimatedValue: `$${cardValue.toFixed(2)}`
@@ -139,7 +130,6 @@ const Marketplace = () => {
         });
       }
       
-      // Add recent listings
       if (recentCardsData?.data) {
         recentCardsData.data.slice(0, 8).forEach((card, index) => {
           const cardValue = card.tcgplayer?.prices?.holofoil?.market || 
@@ -153,7 +143,7 @@ const Marketplace = () => {
             cardOffered: {
               id: card.id,
               name: card.name,
-              imageUrl: getReliableImageUrl(card.id),
+              imageUrl: findWorkingImageUrl(card.id),
               rarity: card.rarity || "Rare",
               condition: ["Near Mint", "Excellent", "Good"][Math.floor(Math.random() * 3)],
               estimatedValue: `$${cardValue.toFixed(2)}`
@@ -169,7 +159,6 @@ const Marketplace = () => {
         });
       }
       
-      // Add trending listings
       if (trendingCardsData?.data) {
         trendingCardsData.data.slice(0, 8).forEach((card, index) => {
           const cardValue = card.tcgplayer?.prices?.holofoil?.market || 
@@ -183,7 +172,7 @@ const Marketplace = () => {
             cardOffered: {
               id: card.id,
               name: card.name,
-              imageUrl: getReliableImageUrl(card.id),
+              imageUrl: findWorkingImageUrl(card.id),
               rarity: card.rarity || "Ultra Rare",
               condition: ["Near Mint", "Excellent"][Math.floor(Math.random() * 2)],
               estimatedValue: `$${cardValue.toFixed(2)}`
@@ -205,28 +194,23 @@ const Marketplace = () => {
     generateListings();
   }, [featuredCardsData, recentCardsData, trendingCardsData]);
 
-  // Filter listings based on search query, category, conditions, etc.
   const filteredListings = React.useMemo(() => {
     return listings
       .filter(listing => {
-        // Search query filter
         const matchesSearch = searchQuery === "" || 
           listing.cardOffered.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           listing.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
           listing.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
           listing.cardsWanted.some(card => card.toLowerCase().includes(searchQuery.toLowerCase()));
         
-        // Category filter
         const matchesCategory = 
           (activeCategory === 'featured' && listing.featured) ||
           (activeCategory === 'recent' && listing.id.startsWith('recent-')) ||
           (activeCategory === 'trending' && listing.id.startsWith('trending-'));
         
-        // Condition filter
         const matchesCondition = selectedConditions.length === 0 || 
           selectedConditions.includes(listing.cardOffered.condition);
         
-        // Price filter
         let matchesPrice = true;
         if (priceRange !== "all") {
           const price = parseFloat(listing.cardOffered.estimatedValue.replace(/[^0-9.]/g, ''));
@@ -249,7 +233,6 @@ const Marketplace = () => {
         return matchesSearch && matchesCategory && matchesCondition && matchesPrice;
       })
       .sort((a, b) => {
-        // Sort listings
         switch (sortOrder) {
           case "newest":
             return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -267,7 +250,6 @@ const Marketplace = () => {
       });
   }, [listings, searchQuery, activeCategory, selectedConditions, priceRange, sortOrder]);
 
-  // Get latest cards for marketplace browsing
   const { data, isLoading, isError } = useQuery({
     queryKey: ['marketplace-cards', currentPage, searchQuery],
     queryFn: async () => {
@@ -279,7 +261,7 @@ const Marketplace = () => {
     return cards.map(card => ({
       id: card.id,
       name: card.name,
-      imageUrl: getReliableImageUrl(card.id),
+      imageUrl: findWorkingImageUrl(card.id),
       rarity: card.rarity || "Unknown",
       condition: "Near Mint",
       estimatedValue: card.tcgplayer?.prices?.holofoil?.market
@@ -298,9 +280,9 @@ const Marketplace = () => {
       cardOffered: {
         id: cardOffered.id,
         name: cardOffered.name,
-        imageUrl: getReliableImageUrl(cardOffered.id),
+        imageUrl: findWorkingImageUrl(cardOffered.id),
         rarity: cardOffered.rarity || "Unknown",
-        condition: "Near Mint", // Would come from form in real app
+        condition: "Near Mint",
         estimatedValue: cardOffered.tcgplayer?.prices?.holofoil?.market
           ? `$${cardOffered.tcgplayer.prices.holofoil.market.toFixed(2)}`
           : cardOffered.tcgplayer?.prices?.normal?.market
@@ -335,7 +317,6 @@ const Marketplace = () => {
   };
 
   const handleProposeTrade = (listingId: string) => {
-    // In a real app, this would open the trade proposal form
     toast({
       title: "Coming soon!",
       description: "Trade proposal functionality is coming soon.",
@@ -371,7 +352,6 @@ const Marketplace = () => {
           </TabsList>
 
           <TabsContent value="browse" className="space-y-6">
-            {/* Top Action Bar */}
             <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -453,7 +433,6 @@ const Marketplace = () => {
               </div>
             </div>
 
-            {/* Category tabs for Featured, Recent, Trending */}
             <div className="border-b mb-6">
               <div className="flex space-x-6">
                 <button

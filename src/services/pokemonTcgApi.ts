@@ -159,12 +159,17 @@ export const searchCards = async (query: string, page = 1, pageSize = 20): Promi
 
 /**
  * Generate a reliable image URL for a Pokemon card
- * @deprecated Use cardImageService.getImageUrlsForCard instead
+ * @deprecated Use cardImageService.findWorkingImageUrl instead
  */
 export const getReliableImageUrl = (cardId: string, size: 'small' | 'large' = 'small'): string => {
   if (!cardId) {
     return CARD_BACK_URL;
   }
+  
+  import('./cardImageService').then(cardImageService => {
+    console.warn('getReliableImageUrl is deprecated. Use cardImageService.findWorkingImageUrl instead');
+    cardImageService.findWorkingImageUrl({ id: cardId });
+  });
   
   return `${POKEMON_TCG_IO}/${size}/${cardId}.png`;
 };
@@ -208,10 +213,22 @@ export const mapToTradeCard = (card: PokemonCard): import("@/models/escrow").Tra
     || card.tcgplayer?.prices?.reverseHolofoil?.market
     || 0;
   
+  import('./cardImageService').then(async cardImageService => {
+    try {
+      await cardImageService.findWorkingImageUrl({ 
+        id: card.id, 
+        name: card.name, 
+        imageUrl: card.images.small 
+      });
+    } catch (e) {
+      // Ignore errors in this warning code
+    }
+  });
+  
   return {
     id: card.id,
     name: card.name,
-    imageUrl: card.images.small || getReliableImageUrl(card.id),
+    imageUrl: card.images.small || `${POKEMON_TCG_IO}/small/${card.id}.png`,
     condition: "Near Mint",
     estimatedValue: price,
     currency: "USD"
