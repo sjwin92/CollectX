@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import React from "react";
 
@@ -50,11 +51,11 @@ export const handleImageError = async (e: React.SyntheticEvent<HTMLImageElement>
       return;
     }
     
-    // Try the TCGDex API URLs first as they seem most reliable
-    const tcgdexUrl = getTCGDexUrl(card.id);
-    if (tcgdexUrl) {
-      img.src = tcgdexUrl;
-      console.log(`Trying TCGDex URL for ${card.id}: ${tcgdexUrl}`);
+    // Try the Pokemon TCG API (with the format that works for card sets)
+    const tcgioUrl = getPokemonTcgIoUrl(card.id);
+    if (tcgioUrl) {
+      img.src = tcgioUrl;
+      console.log(`Trying Pokemon TCG IO URL for ${card.id}: ${tcgioUrl}`);
       return;
     }
     
@@ -106,10 +107,9 @@ export const handleImageError = async (e: React.SyntheticEvent<HTMLImageElement>
 };
 
 /**
- * Get TCGDex URL directly - this seems to be the most reliable source
- * Updated to use the format that works better for Pokemon TCG cards
+ * Get Pokemon TCG IO URL directly - this is the format that works for card sets
  */
-export const getTCGDexUrl = (cardId: string): string | null => {
+export const getPokemonTcgIoUrl = (cardId: string): string | null => {
   if (!cardId) return null;
   
   // Parse the set code and card number from the ID
@@ -118,12 +118,19 @@ export const getTCGDexUrl = (cardId: string): string | null => {
     const setCode = parts[0];
     const cardNumber = parts[1];
     
-    // Try the format that works for Pokemon TCG sets with full URL
-    // We're using the hi-res full URL version which seems more reliable
     return `https://images.pokemontcg.io/${setCode}/${cardNumber}_hires.png`;
   }
   
   return null;
+};
+
+/**
+ * Get TCGDex URL - this is kept for backwards compatibility
+ * @deprecated Use getPokemonTcgIoUrl instead
+ */
+export const getTCGDexUrl = (cardId: string): string | null => {
+  console.warn('getTCGDexUrl is deprecated, use getPokemonTcgIoUrl instead');
+  return getPokemonTcgIoUrl(cardId);
 };
 
 /**
@@ -149,10 +156,10 @@ export const getImageUrlsForCard = (cardIdOrCard: string | Card): string[] => {
   // Array to hold all possible URL formats
   const possibleUrls = [];
   
-  // Try TCGDex first (most reliable)
-  const tcgdexUrl = getTCGDexUrl(cardId);
-  if (tcgdexUrl) {
-    possibleUrls.push(tcgdexUrl);
+  // Try Pokemon TCG IO first (most reliable for card sets)
+  const tcgioUrl = getPokemonTcgIoUrl(cardId);
+  if (tcgioUrl) {
+    possibleUrls.push(tcgioUrl);
   }
   
   // Add any existing URLs we already know about
@@ -166,18 +173,12 @@ export const getImageUrlsForCard = (cardIdOrCard: string | Card): string[] => {
     const setCode = parts[0];
     const cardNumber = parts[1];
     
-    // Add Pokemon TCG API URLs in order of preference - UPDATED ORDER
+    // Add various format variations in order of reliability for our app
     possibleUrls.push(
       `https://images.pokemontcg.io/${setCode}/${cardNumber}_hires.png`,
       `https://images.pokemontcg.io/${setCode}/${cardNumber}.png`,
-      `https://assets.tcgdex.net/en/${setCode}/${cardNumber}`,
       `https://images.pokemontcg.io/${setCode}/small/${cardNumber}.png`,
       `https://images.pokemontcg.io/${setCode}/large/${cardNumber}.png`
-    );
-    
-    // Add more TCGDex URL variants
-    possibleUrls.push(
-      `https://assets.tcgdex.net/en/${setCode.substring(0, 2)}/${setCode}/${cardNumber}`
     );
   }
   
@@ -216,29 +217,30 @@ export const findWorkingImageUrl = async (cardIdOrCard: string | Card): Promise<
   try {
     console.log(`Finding best image for card ${cardId} (${cardName})`);
     
-    // PRIORITY 1: Try Pokemon TCG API URL directly (changing our first priority)
-    const tcgUrl = getTCGDexUrl(cardId);
-    if (tcgUrl) {
+    // PRIORITY 1: Try Pokemon TCG IO URL directly (from card sets)
+    const tcgioUrl = getPokemonTcgIoUrl(cardId);
+    if (tcgioUrl) {
       try {
-        const response = await fetch(tcgUrl, { method: 'HEAD' });
+        console.log(`Testing Pokemon TCG IO URL for ${cardId}: ${tcgioUrl}`);
+        const response = await fetch(tcgioUrl, { method: 'HEAD' });
         if (response.ok) {
-          console.log(`Found working Pokemon TCG URL for ${cardId}: ${tcgUrl}`);
+          console.log(`Found working Pokemon TCG IO URL for ${cardId}: ${tcgioUrl}`);
           
           // Store this working URL for future use
           await supabase
             .from('card_alternative_images')
             .upsert({
               card_id: cardId,
-              image_url: tcgUrl,
+              image_url: tcgioUrl,
               is_verified: true,
-              source: 'pokemon_tcg_direct'
+              source: 'pokemon_tcg_io_direct'
             }, { onConflict: 'card_id,image_url' });
             
-          return tcgUrl;
+          return tcgioUrl;
         }
       } catch (error) {
         // Continue to other strategies
-        console.log(`Pokemon TCG URL failed for ${cardId}, trying other sources`);
+        console.log(`Pokemon TCG IO URL failed for ${cardId}, trying other sources`);
       }
     }
     

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { getPokemonTcgIoUrl } from "@/services/cardImageService";
 
 interface TradeListingImageProps {
   cardId?: string;
@@ -25,23 +26,18 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
     setIsLoading(true);
     setImageError(false);
     
-    // If we have a card ID, try to generate a Pokemon TCG URL directly
+    // If we have a card ID, try to generate a consistent URL that works for card sets
     if (cardId) {
-      const parts = cardId.split("-");
-      if (parts.length >= 2) {
-        const setCode = parts[0];
-        const cardNumber = parts[1];
-        
-        // Use the Pokemon TCG format that has better reliability
-        const tcgUrl = `https://images.pokemontcg.io/${setCode}/${cardNumber}_hires.png`;
-        console.log(`Setting Pokemon TCG URL for ${cardId}: ${tcgUrl}`);
-        setImageSrc(tcgUrl);
+      const reliableImageUrl = getPokemonTcgIoUrl(cardId);
+      if (reliableImageUrl) {
+        console.log(`Setting reliable image URL for ${cardName}: ${reliableImageUrl}`);
+        setImageSrc(reliableImageUrl);
         setIsLoading(false);
         return;
       }
     }
     
-    // If we can't generate a Pokemon TCG URL, use the provided image URL
+    // If we can't generate a reliable URL, use the provided image URL
     if (imageUrl) {
       setImageSrc(imageUrl);
       setIsLoading(false);
@@ -59,29 +55,20 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
   const handleImageError = () => {
     console.log(`Image failed to load for ${cardName}: ${imageSrc}`);
     
-    // If the current image fails, try the TCGDex format as a backup
-    if (cardId && imageSrc !== CARD_BACK_URL && !imageSrc.includes('tcgdex.net')) {
-      const parts = cardId.split("-");
-      if (parts.length >= 2) {
-        const setCode = parts[0];
-        const cardNumber = parts[1];
-        const tcgdexUrl = `https://assets.tcgdex.net/en/${setCode}/${cardNumber}`;
-        console.log(`Trying TCGDex URL as backup: ${tcgdexUrl}`);
-        setImageSrc(tcgdexUrl);
+    // If the current image fails, try the regular URL format as a backup
+    if (cardId && imageSrc !== CARD_BACK_URL && !imageSrc.includes('tcgplayer.com')) {
+      // Try another reliable source
+      if (imageUrl && imageSrc !== imageUrl) {
+        console.log(`Trying original URL: ${imageUrl}`);
+        setImageSrc(imageUrl);
         return;
       }
     }
     
-    // If TCGDex fails and it's not the original URL, try the original URL
-    if (imageSrc !== CARD_BACK_URL && imageSrc !== imageUrl && imageUrl) {
-      console.log(`Trying original URL: ${imageUrl}`);
-      setImageSrc(imageUrl);
-    } else {
-      // If that fails too, use card back
-      setImageSrc(CARD_BACK_URL);
-      setImageError(true);
-      setIsLoading(false);
-    }
+    // If all else fails, use card back
+    setImageSrc(CARD_BACK_URL);
+    setImageError(true);
+    setIsLoading(false);
   };
   
   const retryImage = () => {

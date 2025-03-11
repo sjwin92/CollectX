@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import CardGrid from "@/components/cards/CardGrid";
-import { getTCGDexUrl } from "@/services/cardImageService";
+import { getPokemonTcgIoUrl } from "@/services/cardImageService";
 
 const featuredCards = [
   {
@@ -47,16 +47,13 @@ const FeaturedCards = () => {
   useEffect(() => {
     // Transform the cards to use our more reliable image sources
     const updatedCards = featuredCards.map(card => {
-      // Use the format that works for card sets
-      const [setCode, cardNumber] = card.id.split('-');
-      
-      // Use the more reliable Pokemon TCG API URL format
-      const imageUrl = `https://images.pokemontcg.io/${setCode}/${cardNumber}_hires.png`;
-      console.log(`Setting Pokemon TCG URL for ${card.name}: ${imageUrl}`);
+      // Use the format that works consistently for card sets
+      const reliableImageUrl = getPokemonTcgIoUrl(card.id) || card.imageUrl;
+      console.log(`Setting reliable image URL for ${card.name}: ${reliableImageUrl}`);
       
       return {
         ...card,
-        imageUrl
+        imageUrl: reliableImageUrl
       };
     });
     

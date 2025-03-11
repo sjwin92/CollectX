@@ -7,6 +7,7 @@ import { PlusCircle, ArrowRightLeft, AlertTriangle, Loader2 } from "lucide-react
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/useUser";
 import AddToCollectionModal from "./AddToCollectionModal";
+import { getPokemonTcgIoUrl } from "@/services/cardImageService";
 
 interface PokemonCard {
   id: string;
@@ -32,25 +33,21 @@ const PokemonCardItem = ({ card, onClick }: PokemonCardItemProps) => {
   const { isSignedIn } = useUser();
   const { toast } = useToast();
   
-  // Create Pokemon TCG URL directly - this uses the reliable format
+  // Use the consistent format that works for card sets
   useEffect(() => {
     if (!card?.id) return;
     
     setImageStatus("loading");
     
-    // Parse card ID into set code and number
-    const parts = card.id.split("-");
-    if (parts.length >= 2) {
-      const setCode = parts[0];
-      const cardNumber = parts[1];
-      
-      // Use the Pokemon TCG format that has better reliability
-      const tcgUrl = `https://images.pokemontcg.io/${setCode}/${cardNumber}_hires.png`;
-      console.log(`Setting Pokemon TCG URL for ${card.name}: ${tcgUrl}`);
-      setImageSrc(tcgUrl);
-    } else {
-      // Fallback to original image if we can't parse the ID
-      setImageSrc(card.images?.small || card.images?.large || "");
+    // Use the reliable format that works for card sets
+    const reliableImageUrl = getPokemonTcgIoUrl(card.id);
+    if (reliableImageUrl) {
+      console.log(`Setting reliable image URL for ${card.name}: ${reliableImageUrl}`);
+      setImageSrc(reliableImageUrl);
+    } else if (card.images?.small) {
+      setImageSrc(card.images.small);
+    } else if (card.images?.large) {
+      setImageSrc(card.images.large);
     }
   }, [card?.id]);
   
@@ -82,23 +79,12 @@ const PokemonCardItem = ({ card, onClick }: PokemonCardItemProps) => {
   const handleImageError = () => {
     console.log(`Image failed to load: ${imageSrc} for card ${card?.id}`);
     
-    // If Pokemon TCG URL fails, try TCGDex format
-    if (card?.id && !imageSrc.includes('tcgdex.net')) {
-      const parts = card.id.split("-");
-      if (parts.length >= 2) {
-        const setCode = parts[0];
-        const cardNumber = parts[1];
-        const tcgdexUrl = `https://assets.tcgdex.net/en/${setCode}/${cardNumber}`;
-        console.log(`Trying TCGDex URL as backup: ${tcgdexUrl}`);
-        setImageSrc(tcgdexUrl);
-        return;
-      }
-    }
-    
-    // If TCGDex URL fails, try the original images
+    // If reliable URL fails, try the original images
     if (card.images?.small && imageSrc !== card.images.small) {
+      console.log(`Trying small image URL: ${card.images.small}`);
       setImageSrc(card.images.small);
     } else if (card.images?.large && imageSrc !== card.images.large) {
+      console.log(`Trying large image URL: ${card.images.large}`);
       setImageSrc(card.images.large);
     } else {
       setImageStatus("error");

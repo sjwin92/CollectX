@@ -8,6 +8,7 @@ import { Info, AlertTriangle, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { getPokemonTcgIoUrl } from "@/services/cardImageService";
 
 export interface CardItemProps {
   id: string;
@@ -40,16 +41,11 @@ const CardItem = ({
     // Reset when card changes
     setImageStatus("loading");
     
-    // Direct access to Pokemon TCG URL - this seems more reliable
-    const parts = id.split("-");
-    if (parts.length >= 2) {
-      const setCode = parts[0];
-      const cardNumber = parts[1];
-      
-      // Use the Pokemon TCG format that has better reliability
-      const tcgUrl = `https://images.pokemontcg.io/${setCode}/${cardNumber}_hires.png`;
-      console.log(`Setting Pokemon TCG URL for ${name}: ${tcgUrl}`);
-      setCurrentImageSrc(tcgUrl);
+    // Use the consistent format that works for card sets
+    const reliableImageUrl = getPokemonTcgIoUrl(id);
+    if (reliableImageUrl) {
+      console.log(`Setting reliable image URL for ${name}: ${reliableImageUrl}`);
+      setCurrentImageSrc(reliableImageUrl);
     } else {
       // Fallback to provided imageUrl if we can't parse the ID
       setCurrentImageSrc(imageUrl);
@@ -82,25 +78,12 @@ const CardItem = ({
   const handleImageError = () => {
     console.log(`Image failed to load: ${currentImageSrc} for card ${id}`);
     
-    // If Pokemon TCG URL fails, try TCGDex format
-    if (currentImageSrc.includes('pokemontcg.io') && !currentImageSrc.includes('tcgdex.net')) {
-      const parts = id.split("-");
-      if (parts.length >= 2) {
-        const setCode = parts[0];
-        const cardNumber = parts[1];
-        const tcgdexUrl = `https://assets.tcgdex.net/en/${setCode}/${cardNumber}`;
-        console.log(`Trying TCGDex URL as backup: ${tcgdexUrl}`);
-        setCurrentImageSrc(tcgdexUrl);
-        return;
-      }
-    }
-    
-    // If TCGDex URL fails or we already tried it, use the original provided URL
+    // If reliable URL fails, try the original URL
     if (currentImageSrc !== imageUrl && imageUrl) {
       console.log(`Trying original URL: ${imageUrl}`);
       setCurrentImageSrc(imageUrl);
     } else {
-      // If that fails too, use card back
+      // If that fails too, mark as error
       setImageStatus("error");
     }
   };
@@ -108,13 +91,10 @@ const CardItem = ({
   const retryImage = () => {
     setImageStatus("loading");
     
-    // Try the Pokemon TCG URL again
-    const parts = id.split("-");
-    if (parts.length >= 2) {
-      const setCode = parts[0];
-      const cardNumber = parts[1];
-      const tcgUrl = `https://images.pokemontcg.io/${setCode}/${cardNumber}_hires.png`;
-      setCurrentImageSrc(tcgUrl);
+    // Try the reliable URL again
+    const reliableImageUrl = getPokemonTcgIoUrl(id);
+    if (reliableImageUrl) {
+      setCurrentImageSrc(reliableImageUrl);
     } else {
       setCurrentImageSrc(imageUrl);
     }
