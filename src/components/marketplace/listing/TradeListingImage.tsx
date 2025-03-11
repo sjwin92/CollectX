@@ -6,6 +6,7 @@ import { AlertTriangle, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { findWorkingImageUrl } from "@/services/cardImageService";
 import { PokemonCard } from "@/services/pokemonTcgApi";
+import { Json } from "@/integrations/supabase/types";
 
 interface TradeListingImageProps {
   cardId?: string;
@@ -41,15 +42,15 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
             .eq('id', cardId)
             .maybeSingle();
 
-          // Safely check and convert the cached data to PokemonCard
+          // Safely check and convert the cached data
           if (cachedCard && typeof cachedCard.data === 'object' && cachedCard.data !== null) {
-            // First convert to unknown, then to PokemonCard to satisfy TypeScript
-            const cardData = cachedCard.data as unknown as PokemonCard;
+            // First cast to unknown, then to a record to check the structure
+            const tempData = cachedCard.data as unknown;
             
-            // Verify the object has the expected structure before using it
-            if (cardData.images && typeof cardData.images === 'object' && 'large' in cardData.images) {
+            // Check if it has the expected structure before treating it as a PokemonCard
+            if (isPokemonCardLike(tempData)) {
               console.log(`Using cached image for card ${cardId}`);
-              setImageSrc(cardData.images.large);
+              setImageSrc(tempData.images.large);
               return;
             }
           }
@@ -81,6 +82,19 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
     
     loadCardImage();
   }, [cardId, imageUrl, cardName]);
+  
+  // Helper function to type check if an object has the expected PokemonCard structure
+  const isPokemonCardLike = (obj: unknown): obj is { images: { large: string } } => {
+    return (
+      obj !== null &&
+      typeof obj === 'object' &&
+      'images' in obj &&
+      obj.images !== null &&
+      typeof obj.images === 'object' &&
+      'large' in obj.images &&
+      typeof obj.images.large === 'string'
+    );
+  };
   
   const handleImageLoad = () => {
     setIsLoading(false);
