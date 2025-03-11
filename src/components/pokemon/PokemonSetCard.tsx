@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Calendar, Cards } from "lucide-react";
+import { Calendar, Layers } from "lucide-react";
 import { PokemonSet, formatReleaseDate } from "@/services/pokemonSetsApi";
 
 interface PokemonSetCardProps {
@@ -62,7 +62,7 @@ const PokemonSetCard = ({ set, onClick }: PokemonSetCardProps) => {
       
       <CardFooter className="p-4 pt-0 flex justify-between">
         <Badge variant="outline" className="flex items-center gap-1">
-          <Cards className="h-3 w-3" />
+          <Layers className="h-3 w-3" />
           {set.total} cards
         </Badge>
         
