@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -8,12 +7,12 @@ import { Info, AlertTriangle, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { getPokemonTcgIoUrl } from "@/services/cardImageService";
+import { getPokemonTcgIoUrl, getAlternativeImageUrls } from "@/services/cardImageService";
 
 export interface CardItemProps {
   id: string;
   name: string;
-  imageUrl: string;
+  imageUrl?: string;
   rarity: string;
   condition: string;
   estimatedValue: string;
@@ -21,6 +20,8 @@ export interface CardItemProps {
   animation?: "fade" | "scale" | "slide" | "none";
   onClick?: () => void;
 }
+
+const CARD_BACK_URL = "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg";
 
 const CardItem = ({
   id,
@@ -46,11 +47,14 @@ const CardItem = ({
     if (reliableImageUrl) {
       console.log(`Setting reliable image URL for ${name}: ${reliableImageUrl}`);
       setCurrentImageSrc(reliableImageUrl);
-    } else {
+    } else if (imageUrl) {
       // Fallback to provided imageUrl if we can't parse the ID
       setCurrentImageSrc(imageUrl);
+    } else {
+      setCurrentImageSrc(CARD_BACK_URL);
+      setImageStatus("error");
     }
-  }, [id, name]);
+  }, [id, name, imageUrl]);
   
   // Map condition to style
   const conditionVariant = (): "success" | "warning" | "danger" | "info" => {
@@ -78,14 +82,23 @@ const CardItem = ({
   const handleImageError = () => {
     console.log(`Image failed to load: ${currentImageSrc} for card ${id}`);
     
-    // If reliable URL fails, try the original URL
-    if (currentImageSrc !== imageUrl && imageUrl) {
-      console.log(`Trying original URL: ${imageUrl}`);
-      setCurrentImageSrc(imageUrl);
-    } else {
-      // If that fails too, mark as error
-      setImageStatus("error");
+    // Try alternative image formats
+    if (id && currentImageSrc !== CARD_BACK_URL) {
+      const alternativeUrls = getAlternativeImageUrls(id, imageUrl);
+      const currentIndex = alternativeUrls.indexOf(currentImageSrc);
+      
+      // Try the next URL in the list if available
+      if (currentIndex >= 0 && currentIndex < alternativeUrls.length - 1) {
+        const nextUrl = alternativeUrls[currentIndex + 1];
+        console.log(`Trying alternative URL for ${name}: ${nextUrl}`);
+        setCurrentImageSrc(nextUrl);
+        return;
+      }
     }
+    
+    // If all alternatives fail
+    setCurrentImageSrc(CARD_BACK_URL);
+    setImageStatus("error");
   };
   
   const retryImage = () => {
@@ -95,8 +108,10 @@ const CardItem = ({
     const reliableImageUrl = getPokemonTcgIoUrl(id);
     if (reliableImageUrl) {
       setCurrentImageSrc(reliableImageUrl);
-    } else {
+    } else if (imageUrl) {
       setCurrentImageSrc(imageUrl);
+    } else {
+      setCurrentImageSrc(CARD_BACK_URL);
     }
     
     toast({

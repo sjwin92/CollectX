@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getPokemonTcgIoUrl } from "@/services/cardImageService";
+import { getPokemonTcgIoUrl, getAlternativeImageUrls } from "@/services/cardImageService";
 
 interface TradeListingImageProps {
   cardId?: string;
@@ -16,7 +16,7 @@ interface TradeListingImageProps {
 const CARD_BACK_URL = "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg";
 
 const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListingImageProps) => {
-  const [imageSrc, setImageSrc] = useState<string>(imageUrl || CARD_BACK_URL);
+  const [imageSrc, setImageSrc] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
@@ -26,8 +26,8 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
     setIsLoading(true);
     setImageError(false);
     
-    // If we have a card ID, try to generate a consistent URL that works for card sets
     if (cardId) {
+      // Try using the Pokemon TCG IO URL format first (most reliable)
       const reliableImageUrl = getPokemonTcgIoUrl(cardId);
       if (reliableImageUrl) {
         console.log(`Setting reliable image URL for ${cardName}: ${reliableImageUrl}`);
@@ -40,27 +40,33 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
     // If we can't generate a reliable URL, use the provided image URL
     if (imageUrl) {
       setImageSrc(imageUrl);
-      setIsLoading(false);
     } else {
       setImageSrc(CARD_BACK_URL);
-      setIsLoading(false);
+      setImageError(true);
     }
+    
+    setIsLoading(false);
   }, [cardId, imageUrl, retryCount]);
   
   const handleImageLoad = () => {
     setIsLoading(false);
+    setImageError(false);
     console.log(`Successfully loaded image for ${cardName}: ${imageSrc}`);
   };
   
   const handleImageError = () => {
     console.log(`Image failed to load for ${cardName}: ${imageSrc}`);
     
-    // If the current image fails, try the regular URL format as a backup
-    if (cardId && imageSrc !== CARD_BACK_URL && !imageSrc.includes('tcgplayer.com')) {
-      // Try another reliable source
-      if (imageUrl && imageSrc !== imageUrl) {
-        console.log(`Trying original URL: ${imageUrl}`);
-        setImageSrc(imageUrl);
+    // If we have a card ID, try alternative formats
+    if (cardId && imageSrc !== CARD_BACK_URL) {
+      const alternativeUrls = getAlternativeImageUrls(cardId, imageUrl);
+      const currentIndex = alternativeUrls.indexOf(imageSrc);
+      
+      // Try the next URL in the list
+      if (currentIndex >= 0 && currentIndex < alternativeUrls.length - 1) {
+        const nextUrl = alternativeUrls[currentIndex + 1];
+        console.log(`Trying alternative URL: ${nextUrl}`);
+        setImageSrc(nextUrl);
         return;
       }
     }

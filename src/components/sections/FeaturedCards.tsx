@@ -6,11 +6,11 @@ import { ArrowRight } from "lucide-react";
 import CardGrid from "@/components/cards/CardGrid";
 import { getPokemonTcgIoUrl } from "@/services/cardImageService";
 
+// Updated featured cards with correct IDs and information
 const featuredCards = [
   {
     id: "swsh4-25",
     name: "Charizard VMAX",
-    imageUrl: "https://images.pokemontcg.io/swsh4/25_hires.png",
     rarity: "Ultra Rare",
     condition: "Near Mint",
     estimatedValue: "$350-450"
@@ -18,7 +18,6 @@ const featuredCards = [
   {
     id: "swsh1-7",
     name: "Pikachu V",
-    imageUrl: "https://images.pokemontcg.io/swsh1/7_hires.png",
     rarity: "Rare",
     condition: "Mint",
     estimatedValue: "$120-150"
@@ -26,7 +25,6 @@ const featuredCards = [
   {
     id: "sm12-222",
     name: "Mewtwo & Mew GX",
-    imageUrl: "https://images.pokemontcg.io/sm12/222_hires.png",
     rarity: "Ultra Rare",
     condition: "Excellent",
     estimatedValue: "$200-250"
@@ -34,7 +32,6 @@ const featuredCards = [
   {
     id: "swsh3-20",
     name: "Blastoise VMAX",
-    imageUrl: "https://images.pokemontcg.io/swsh3/20_hires.png",
     rarity: "Rare Holo",
     condition: "Good",
     estimatedValue: "$80-120"
@@ -42,18 +39,22 @@ const featuredCards = [
 ];
 
 const FeaturedCards = () => {
-  const [processedCards, setProcessedCards] = useState(featuredCards);
+  const [processedCards, setProcessedCards] = useState(featuredCards.map(card => ({
+    ...card,
+    imageUrl: "" // Initial empty state for images
+  })));
   
   useEffect(() => {
-    // Transform the cards to use our more reliable image sources
+    // Get reliable image URLs for each card
     const updatedCards = featuredCards.map(card => {
-      // Use the format that works consistently for card sets
-      const reliableImageUrl = getPokemonTcgIoUrl(card.id) || card.imageUrl;
-      console.log(`Setting reliable image URL for ${card.name}: ${reliableImageUrl}`);
+      // Use the consistent format for card sets
+      const imageUrl = getPokemonTcgIoUrl(card.id) || "";
+      
+      console.log(`Setting image URL for ${card.name}: ${imageUrl}`);
       
       return {
         ...card,
-        imageUrl: reliableImageUrl
+        imageUrl
       };
     });
     

@@ -3,11 +3,11 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, ArrowRightLeft, AlertTriangle, Loader2 } from "lucide-react";
+import { PlusCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/useUser";
 import AddToCollectionModal from "./AddToCollectionModal";
-import { getPokemonTcgIoUrl } from "@/services/cardImageService";
+import { getPokemonTcgIoUrl, getAlternativeImageUrls } from "@/services/cardImageService";
 
 interface PokemonCard {
   id: string;
@@ -26,6 +26,8 @@ interface PokemonCardItemProps {
   onClick?: (card: PokemonCard) => void;
 }
 
+const CARD_BACK_URL = "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg";
+
 const PokemonCardItem = ({ card, onClick }: PokemonCardItemProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [imageSrc, setImageSrc] = useState<string>("");
@@ -33,7 +35,6 @@ const PokemonCardItem = ({ card, onClick }: PokemonCardItemProps) => {
   const { isSignedIn } = useUser();
   const { toast } = useToast();
   
-  // Use the consistent format that works for card sets
   useEffect(() => {
     if (!card?.id) return;
     
@@ -44,10 +45,12 @@ const PokemonCardItem = ({ card, onClick }: PokemonCardItemProps) => {
     if (reliableImageUrl) {
       console.log(`Setting reliable image URL for ${card.name}: ${reliableImageUrl}`);
       setImageSrc(reliableImageUrl);
-    } else if (card.images?.small) {
-      setImageSrc(card.images.small);
     } else if (card.images?.large) {
       setImageSrc(card.images.large);
+    } else if (card.images?.small) {
+      setImageSrc(card.images.small);
+    } else {
+      setImageStatus("error");
     }
   }, [card?.id]);
   
@@ -79,16 +82,22 @@ const PokemonCardItem = ({ card, onClick }: PokemonCardItemProps) => {
   const handleImageError = () => {
     console.log(`Image failed to load: ${imageSrc} for card ${card?.id}`);
     
-    // If reliable URL fails, try the original images
-    if (card.images?.small && imageSrc !== card.images.small) {
-      console.log(`Trying small image URL: ${card.images.small}`);
-      setImageSrc(card.images.small);
-    } else if (card.images?.large && imageSrc !== card.images.large) {
-      console.log(`Trying large image URL: ${card.images.large}`);
-      setImageSrc(card.images.large);
-    } else {
-      setImageStatus("error");
+    // Try alternative image formats
+    if (card?.id && imageSrc !== CARD_BACK_URL) {
+      const alternativeUrls = getAlternativeImageUrls(card.id);
+      const currentIndex = alternativeUrls.indexOf(imageSrc);
+      
+      // Try the next URL in the list if available
+      if (currentIndex >= 0 && currentIndex < alternativeUrls.length - 1) {
+        const nextUrl = alternativeUrls[currentIndex + 1];
+        console.log(`Trying alternative URL: ${nextUrl}`);
+        setImageSrc(nextUrl);
+        return;
+      }
     }
+    
+    // If all alternatives fail, mark as error
+    setImageStatus("error");
   };
   
   return (
