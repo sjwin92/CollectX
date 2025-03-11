@@ -77,6 +77,42 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          full_name: string | null
+          id: string
+          reputation: string | null
+          success_rate: number | null
+          trade_count: number | null
+          updated_at: string | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+          reputation?: string | null
+          success_rate?: number | null
+          trade_count?: number | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          reputation?: string | null
+          success_rate?: number | null
+          trade_count?: number | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
       trade_cards: {
         Row: {
           card_id: string
