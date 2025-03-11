@@ -3,14 +3,13 @@ import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/useUser";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, Minus } from "lucide-react";
 
 interface Card {
   id: string;
@@ -27,17 +26,19 @@ interface AddToCollectionModalProps {
   card: Card | null;
 }
 
+// Map of PSA grades to conditions
 const conditionOptions = [
-  "Mint",
-  "Near Mint",
-  "Excellent",
-  "Good",
-  "Played",
-  "Poor"
+  { value: "Gem Mint", label: "Gem Mint (PSA 10)", description: "Perfect card with no visible flaws" },
+  { value: "Mint", label: "Mint (PSA 9)", description: "Nearly perfect with tiny imperfections" },
+  { value: "Near Mint", label: "Near Mint (PSA 8)", description: "Slight wear, minor scratches" },
+  { value: "Excellent", label: "Excellent (PSA 6-7)", description: "Noticeable wear, small edge whitening" },
+  { value: "Good", label: "Good (PSA 4-5)", description: "Obvious wear, some creases or bends" },
+  { value: "Fair", label: "Fair (PSA 2-3)", description: "Heavy wear, creases, edge chipping" },
+  { value: "Poor", label: "Poor (PSA 1)", description: "Severe damage, tears or major creases" }
 ];
 
 const AddToCollectionModal = ({ isOpen, onClose, card }: AddToCollectionModalProps) => {
-  const [quantity, setQuantity] = useState("1");
+  const [quantity, setQuantity] = useState(1);
   const [condition, setCondition] = useState("Near Mint");
   const [notes, setNotes] = useState("");
   const [forTrade, setForTrade] = useState(false);
@@ -47,7 +48,7 @@ const AddToCollectionModal = ({ isOpen, onClose, card }: AddToCollectionModalPro
   const { user, isSignedIn } = useUser();
   
   const resetForm = () => {
-    setQuantity("1");
+    setQuantity(1);
     setCondition("Near Mint");
     setNotes("");
     setForTrade(false);
@@ -56,6 +57,14 @@ const AddToCollectionModal = ({ isOpen, onClose, card }: AddToCollectionModalPro
   const handleClose = () => {
     resetForm();
     onClose();
+  };
+
+  const increaseQuantity = () => {
+    setQuantity(prev => prev + 1);
+  };
+
+  const decreaseQuantity = () => {
+    setQuantity(prev => prev > 1 ? prev - 1 : 1);
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,7 +87,7 @@ const AddToCollectionModal = ({ isOpen, onClose, card }: AddToCollectionModalPro
         method: "POST",
         body: {
           cardId: card.id,
-          quantity: parseInt(quantity),
+          quantity: quantity,
           condition,
           notes: notes || null,
           for_trade: forTrade
@@ -132,34 +141,48 @@ const AddToCollectionModal = ({ isOpen, onClose, card }: AddToCollectionModalPro
               </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="quantity">Quantity</Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  min="1"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  required
-                />
+            <div className="space-y-2">
+              <Label htmlFor="quantity">Quantity</Label>
+              <div className="flex items-center rounded-md border">
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-9 rounded-r-none border-r"
+                  onClick={decreaseQuantity}
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <div className="flex-1 text-center">{quantity}</div>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-9 rounded-l-none border-l"
+                  onClick={increaseQuantity}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="condition">Condition</Label>
-                <Select value={condition} onValueChange={setCondition}>
-                  <SelectTrigger id="condition">
-                    <SelectValue placeholder="Select condition" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {conditionOptions.map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="condition">Condition</Label>
+              <Select value={condition} onValueChange={setCondition}>
+                <SelectTrigger id="condition">
+                  <SelectValue placeholder="Select condition" />
+                </SelectTrigger>
+                <SelectContent>
+                  {conditionOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      <div>
+                        <div>{option.label}</div>
+                        <div className="text-xs text-muted-foreground">{option.description}</div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="space-y-2">
