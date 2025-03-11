@@ -1,9 +1,12 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge, { ReputationLevel } from "@/components/ui/custom/Badge";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeftRight, Calendar, Package, Shield, Truck, Lock, AlertTriangle } from "lucide-react";
+import { ArrowLeftRight, Calendar, Package, Shield, Truck, Lock, AlertTriangle, ExternalLink } from "lucide-react";
+import { useUser } from "@/hooks/useUser";
+import { useToast } from "@/hooks/use-toast";
 
 export interface TradeOfferProps {
   id: string;
@@ -29,6 +32,7 @@ export interface TradeOfferProps {
   };
   escrowRequired?: boolean;
   escrowPaid?: boolean;
+  showFooter?: boolean;
 }
 
 const TradeOffer = ({
@@ -40,7 +44,12 @@ const TradeOffer = ({
   receiving,
   escrowRequired = false,
   escrowPaid = false,
+  showFooter = true,
 }: TradeOfferProps) => {
+  const { isSignedIn } = useUser();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
   const getStatusBadge = () => {
     switch (status) {
       case "proposed":
@@ -101,6 +110,19 @@ const TradeOffer = ({
     const img = e.target as HTMLImageElement;
     img.onerror = null; // Prevent infinite loop
     img.src = "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg";
+  };
+
+  const handleViewTradeDetails = () => {
+    if (!isSignedIn) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to view trade details.",
+        variant: "destructive"
+      });
+      navigate("/auth");
+      return;
+    }
+    navigate(`/trades/${id}`);
   };
 
   return (
@@ -218,6 +240,19 @@ const TradeOffer = ({
           <div className="text-xs text-blue-700 mt-1">
             This trade is currently in transit. Tracking information is available in trade details.
           </div>
+        </div>
+      )}
+      
+      {showFooter && (
+        <div className="flex justify-end mt-4 pt-3 border-t border-border">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1"
+            onClick={handleViewTradeDetails}
+          >
+            View Details <ExternalLink className="h-3.5 w-3.5" />
+          </Button>
         </div>
       )}
     </GlassCard>

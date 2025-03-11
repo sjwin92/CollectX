@@ -1,14 +1,11 @@
-
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ExternalLink } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import TradeOffer from "@/components/trades/TradeOffer";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import Badge from "@/components/ui/custom/Badge";
-import { useToast } from "@/hooks/use-toast";
-import { useUser } from "@/hooks/useUser";
 
 const recentTrades = [
   {
@@ -131,25 +128,6 @@ const TradeProgressSteps = ({ status }: { status: string }) => {
 };
 
 const RecentTrades = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const { isSignedIn } = useUser();
-  
-  const handleViewTradeDetails = (tradeId: string) => {
-    if (!isSignedIn) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to view trade details.",
-        variant: "destructive"
-      });
-      navigate("/auth");
-      return;
-    }
-    
-    // This is the key change - navigate to the correct trade details page
-    navigate(`/trades/${tradeId}`);
-  };
-
   return (
     <section className="py-16 md:py-24">
       <div className="container">
@@ -171,7 +149,7 @@ const RecentTrades = () => {
           {recentTrades.map((trade) => (
             <Card key={trade.id} className="overflow-hidden">
               <CardContent className="p-4">
-                <TradeOffer key={trade.id} {...trade} />
+                <TradeOffer key={trade.id} {...trade} showFooter={false} />
                 <Separator className="my-3" />
                 <div className="flex items-center justify-between px-1">
                   <div className="text-sm font-medium">Trade Progress</div>
@@ -186,16 +164,6 @@ const RecentTrades = () => {
                 </div>
                 <TradeProgressSteps status={trade.status} />
               </CardContent>
-              <CardFooter className="p-4 pt-0">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="ml-auto flex items-center gap-1"
-                  onClick={() => handleViewTradeDetails(trade.id)}
-                >
-                  View Details <ExternalLink className="h-3.5 w-3.5" />
-                </Button>
-              </CardFooter>
             </Card>
           ))}
         </div>
