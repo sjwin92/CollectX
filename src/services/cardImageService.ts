@@ -51,7 +51,15 @@ export const handleImageError = async (e: React.SyntheticEvent<HTMLImageElement>
       return;
     }
     
-    // If no verified alternatives, try all possible URLs
+    // Try the TCGDex API URLs first as they seem most reliable
+    const tcgdexUrl = getTCGDexUrl(card.id);
+    if (tcgdexUrl) {
+      img.src = tcgdexUrl;
+      console.log(`Trying TCGDex URL for ${card.id}: ${tcgdexUrl}`);
+      return;
+    }
+    
+    // If not, try all possible URLs
     const possibleUrls = getImageUrlsForCard(card);
     
     // We'll try each URL until one works or we run out
@@ -99,6 +107,25 @@ export const handleImageError = async (e: React.SyntheticEvent<HTMLImageElement>
 };
 
 /**
+ * Get TCGDex URL directly - this seems to be the most reliable source
+ */
+export const getTCGDexUrl = (cardId: string): string | null => {
+  if (!cardId) return null;
+  
+  // Parse the set code and card number from the ID
+  const parts = cardId.split("-");
+  if (parts.length >= 2) {
+    const setCode = parts[0];
+    const cardNumber = parts[1];
+    
+    // TCGDex format that's working for card sets
+    return `https://assets.tcgdex.net/en/${setCode}/${cardNumber}`;
+  }
+  
+  return null;
+};
+
+/**
  * Generate all possible image URLs for a card based on its ID
  */
 export const getImageUrlsForCard = (cardIdOrCard: string | Card): string[] => {
@@ -121,6 +148,12 @@ export const getImageUrlsForCard = (cardIdOrCard: string | Card): string[] => {
   // Array to hold all possible URL formats
   const possibleUrls = [];
   
+  // Try TCGDex first (most reliable)
+  const tcgdexUrl = getTCGDexUrl(cardId);
+  if (tcgdexUrl) {
+    possibleUrls.push(tcgdexUrl);
+  }
+  
   // Add any existing URLs we already know about
   if (existingUrl) possibleUrls.push(existingUrl);
   if (smallImage) possibleUrls.push(smallImage);
@@ -134,24 +167,17 @@ export const getImageUrlsForCard = (cardIdOrCard: string | Card): string[] => {
     
     // Add Pokemon TCG API URLs in order of preference
     possibleUrls.push(
-      `https://images.pokemontcg.io/${setCode}/large/${cardNumber}.png`,
-      `https://images.pokemontcg.io/${setCode}/small/${cardNumber}.png`,
       `https://images.pokemontcg.io/${setCode}/${cardNumber}_hires.png`,
-      `https://images.pokemontcg.io/${setCode}/${cardNumber}.png`
+      `https://images.pokemontcg.io/${setCode}/${cardNumber}.png`,
+      `https://images.pokemontcg.io/${setCode}/small/${cardNumber}.png`,
+      `https://images.pokemontcg.io/${setCode}/large/${cardNumber}.png`
     );
     
-    // Add TCGDex URLs
+    // Add more TCGDex URL variants
     possibleUrls.push(
-      `https://assets.tcgdex.net/en/${setCode.substring(0, 2)}/${setCode}/${cardNumber}`,
-      `https://assets.tcgdex.net/en/${setCode}/${cardNumber}`
+      `https://assets.tcgdex.net/en/${setCode.substring(0, 2)}/${setCode}/${cardNumber}`
     );
   }
-  
-  // Add more general formats
-  possibleUrls.push(
-    `https://images.pokemontcg.io/small/${cardId}.png`,
-    `https://images.pokemontcg.io/large/${cardId}.png`
-  );
   
   // Add the fallback as last resort
   possibleUrls.push(CARD_BACK_URL);
@@ -188,7 +214,33 @@ export const findWorkingImageUrl = async (cardIdOrCard: string | Card): Promise<
   try {
     console.log(`Finding best image for card ${cardId} (${cardName})`);
     
-    // STRATEGY 1: Check the database first for verified images
+    // PRIORITY 1: Try TCGDex URL directly (this is what's working for card sets)
+    const tcgdexUrl = getTCGDexUrl(cardId);
+    if (tcgdexUrl) {
+      try {
+        const response = await fetch(tcgdexUrl, { method: 'HEAD' });
+        if (response.ok) {
+          console.log(`Found working TCGDex URL for ${cardId}: ${tcgdexUrl}`);
+          
+          // Store this working URL for future use
+          await supabase
+            .from('card_alternative_images')
+            .upsert({
+              card_id: cardId,
+              image_url: tcgdexUrl,
+              is_verified: true,
+              source: 'tcgdex_direct'
+            }, { onConflict: 'card_id,image_url' });
+            
+          return tcgdexUrl;
+        }
+      } catch (error) {
+        // Continue to other strategies
+        console.log(`TCGDex URL failed for ${cardId}, trying other sources`);
+      }
+    }
+    
+    // PRIORITY 2: Check the database for verified images
     const { data: verifiedImages } = await supabase
       .from('card_alternative_images')
       .select('image_url')
@@ -202,7 +254,7 @@ export const findWorkingImageUrl = async (cardIdOrCard: string | Card): Promise<
       return verifiedImages[0].image_url;
     }
     
-    // STRATEGY 2: Look in pokemon_cards_cache table
+    // PRIORITY 3: Look in pokemon_cards_cache table
     const { data: cachedCard } = await supabase
       .from('pokemon_cards_cache')
       .select('image_url, backup_image_url')
@@ -236,7 +288,7 @@ export const findWorkingImageUrl = async (cardIdOrCard: string | Card): Promise<
       }
     }
     
-    // STRATEGY 3: Generate and try all possible URLs
+    // PRIORITY 4: Generate and try all possible URLs
     const possibleUrls = getImageUrlsForCard(cardIdOrCard);
     console.log(`Generated ${possibleUrls.length} potential image URLs for card ${cardId}`);
     
@@ -264,7 +316,7 @@ export const findWorkingImageUrl = async (cardIdOrCard: string | Card): Promise<
       }
     }
     
-    // STRATEGY 4: If everything fails, trigger the verification function and return fallback
+    // PRIORITY 5: If everything fails, trigger the verification function and return fallback
     try {
       const functionUrl = `${import.meta.env.VITE_SUPABASE_URL || 'https://psidmvvzcpodxbqcgomm.supabase.co'}/functions/v1/verify-card-images?id=${cardId}`;
       fetch(functionUrl, { method: 'GET' });

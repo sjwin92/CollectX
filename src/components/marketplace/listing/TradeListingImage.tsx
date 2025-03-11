@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { findWorkingImageUrl, getImageUrlsForCard } from "@/services/cardImageService";
+import { findWorkingImageUrl, getTCGDexUrl } from "@/services/cardImageService";
 import { useToast } from "@/hooks/use-toast";
 
 interface TradeListingImageProps {
@@ -36,23 +36,36 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
         return;
       }
 
-      // First check the database for a verified image
-      const { data: alternativeImages } = await supabase
-        .from('card_alternative_images')
-        .select('image_url')
-        .eq('card_id', cardId)
-        .eq('is_verified', true)
-        .order('created_at', { ascending: false })
-        .limit(1);
-        
-      if (alternativeImages && alternativeImages.length > 0) {
-        console.log(`Found verified image in database for ${cardId}: ${alternativeImages[0].image_url}`);
-        setImageSrc(alternativeImages[0].image_url);
-        setIsLoading(false);
-        return;
+      // Try the TCGDex URL first (same as what's working in card sets)
+      if (cardId) {
+        const tcgdexUrl = getTCGDexUrl(cardId);
+        if (tcgdexUrl) {
+          console.log(`Trying TCGDex URL for ${cardId}: ${tcgdexUrl}`);
+          setImageSrc(tcgdexUrl);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // Next check the database for a verified image
+      if (cardId) {
+        const { data: alternativeImages } = await supabase
+          .from('card_alternative_images')
+          .select('image_url')
+          .eq('card_id', cardId)
+          .eq('is_verified', true)
+          .order('created_at', { ascending: false })
+          .limit(1);
+          
+        if (alternativeImages && alternativeImages.length > 0) {
+          console.log(`Found verified image in database for ${cardId}: ${alternativeImages[0].image_url}`);
+          setImageSrc(alternativeImages[0].image_url);
+          setIsLoading(false);
+          return;
+        }
       }
       
-      // If no verified images, use our service to find a working image
+      // If previous methods fail, use our service to find a working image
       const card = {
         id: cardId || 'unknown',
         name: cardName,
@@ -85,16 +98,18 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
     console.log(`Image failed to load for ${cardName}: ${imageSrc}`);
     
     if (imageSrc !== CARD_BACK_URL) {
-      // Try to find alternative URLs directly from our service
+      // If TCGDex direct URL fails, try the full service
       try {
-        const possibleUrls = getImageUrlsForCard({ id: cardId || 'unknown', name: cardName, imageUrl });
+        const card = {
+          id: cardId || 'unknown',
+          name: cardName,
+          imageUrl: imageUrl
+        };
         
-        // Find first URL that's not the current failing one
-        const alternativeUrl = possibleUrls.find(url => url !== imageSrc && url !== CARD_BACK_URL);
-        
-        if (alternativeUrl) {
-          console.log(`Trying alternative URL for ${cardName}: ${alternativeUrl}`);
-          setImageSrc(alternativeUrl);
+        const bestImageUrl = await findWorkingImageUrl(card);
+        if (bestImageUrl !== imageSrc && bestImageUrl !== CARD_BACK_URL) {
+          console.log(`Trying alternative URL for ${cardName}: ${bestImageUrl}`);
+          setImageSrc(bestImageUrl);
           return;
         }
       } catch (error) {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -7,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { Info, AlertTriangle, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { findWorkingImageUrl, getImageUrlsForCard } from "@/services/cardImageService";
+import { findWorkingImageUrl, getTCGDexUrl } from "@/services/cardImageService";
 import { useToast } from "@/hooks/use-toast";
 
 export interface CardItemProps {
@@ -41,7 +40,15 @@ const CardItem = ({
     // Reset when card changes
     setImageStatus("loading");
     
-    // Find best working image using our service
+    // Try TCGDex URL first, as it's what's working for card sets
+    const tcgdexUrl = getTCGDexUrl(id);
+    if (tcgdexUrl) {
+      console.log(`Trying TCGDex URL for ${id}: ${tcgdexUrl}`);
+      setCurrentImageSrc(tcgdexUrl);
+      return;
+    }
+    
+    // If TCGDex direct URL isn't available, find best working image
     const loadImage = async () => {
       try {
         const url = await findWorkingImageUrl({ id, name, imageUrl });
@@ -81,18 +88,18 @@ const CardItem = ({
   const handleImageError = async () => {
     console.log(`Image failed to load: ${currentImageSrc} for card ${id}`);
     
-    // Get alternative URLs and try the next one
-    const urls = getImageUrlsForCard({ id, name, imageUrl });
-    const currentIndex = urls.indexOf(currentImageSrc);
-    
-    if (currentIndex >= 0 && currentIndex < urls.length - 1) {
-      // Try the next URL in the sequence
-      const nextUrl = urls[currentIndex + 1];
-      console.log(`Trying alternative image source: ${nextUrl}`);
-      setCurrentImageSrc(nextUrl);
-    } else {
+    // If TCGDex URL failed, try the full service
+    try {
+      const url = await findWorkingImageUrl({ id, name, imageUrl });
+      if (url !== currentImageSrc) {
+        console.log(`Trying alternative image source: ${url}`);
+        setCurrentImageSrc(url);
+      } else {
+        setImageStatus("error");
+      }
+    } catch (error) {
+      console.error("Error during retry:", error);
       setImageStatus("error");
-      console.log("All image sources failed for card:", id);
     }
   };
   

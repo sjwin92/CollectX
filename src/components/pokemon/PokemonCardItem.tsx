@@ -1,13 +1,13 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, ArrowRightLeft } from "lucide-react";
+import { PlusCircle, ArrowRightLeft, AlertTriangle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/useUser";
 import AddToCollectionModal from "./AddToCollectionModal";
-import { handleImageError } from "@/services/cardImageService";
+import { findWorkingImageUrl, getTCGDexUrl } from "@/services/cardImageService";
 
 interface PokemonCard {
   id: string;
@@ -28,8 +28,36 @@ interface PokemonCardItemProps {
 
 const PokemonCardItem = ({ card, onClick }: PokemonCardItemProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [imageSrc, setImageSrc] = useState<string>("");
+  const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
   const { isSignedIn } = useUser();
   const { toast } = useToast();
+  
+  // Load the best image for this card
+  useEffect(() => {
+    if (!card?.id) return;
+    
+    // Try TCGDex URL first, as it's what's working for card sets
+    const tcgdexUrl = getTCGDexUrl(card.id);
+    if (tcgdexUrl) {
+      setImageSrc(tcgdexUrl);
+      return;
+    }
+    
+    const loadImage = async () => {
+      try {
+        setImageStatus("loading");
+        const url = await findWorkingImageUrl(card);
+        setImageSrc(url);
+        setImageStatus("loaded");
+      } catch (error) {
+        console.error(`Failed to find working image for ${card.name}:`, error);
+        setImageStatus("error");
+      }
+    };
+    
+    loadImage();
+  }, [card?.id]);
   
   const handleAddToCollection = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -52,6 +80,27 @@ const PokemonCardItem = ({ card, onClick }: PokemonCardItemProps) => {
     }
   };
   
+  const handleImageLoad = () => {
+    setImageStatus("loaded");
+  };
+  
+  const handleImageError = async () => {
+    console.log(`Image failed to load: ${imageSrc} for card ${card?.id}`);
+    
+    // If current image fails, try the full image service
+    try {
+      const url = await findWorkingImageUrl(card);
+      if (url !== imageSrc) {
+        setImageSrc(url);
+      } else {
+        setImageStatus("error");
+      }
+    } catch (error) {
+      console.error("Error finding alternative URL:", error);
+      setImageStatus("error");
+    }
+  };
+  
   return (
     <>
       <Card 
@@ -59,14 +108,28 @@ const PokemonCardItem = ({ card, onClick }: PokemonCardItemProps) => {
         onClick={handleClick}
       >
         <div className="relative aspect-[2/3] overflow-hidden">
-          {card.images?.small && (
+          {imageSrc && imageStatus !== "error" && (
             <img 
-              src={card.images.small}
+              src={imageSrc}
               alt={card.name}
               className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
               loading="lazy"
-              onError={(e) => handleImageError(e, card)}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
             />
+          )}
+          
+          {imageStatus === "loading" && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/70">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            </div>
+          )}
+          
+          {imageStatus === "error" && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/80">
+              <AlertTriangle className="h-5 w-5 text-amber-500 mb-1" />
+              <p className="text-xs text-center">Image unavailable</p>
+            </div>
           )}
           
           <div className="absolute top-0 left-0 w-full h-full opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity flex flex-col justify-end">

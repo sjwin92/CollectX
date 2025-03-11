@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import CardGrid from "@/components/cards/CardGrid";
-import { findWorkingImageUrl } from "@/services/cardImageService";
+import { findWorkingImageUrl, getTCGDexUrl } from "@/services/cardImageService";
 
 const featuredCards = [
   {
@@ -49,6 +49,16 @@ const FeaturedCards = () => {
       const processedCards = await Promise.all(
         featuredCards.map(async (card) => {
           try {
+            // First try TCGDex directly, which is working for card sets
+            const tcgdexUrl = getTCGDexUrl(card.id);
+            if (tcgdexUrl) {
+              return {
+                ...card,
+                imageUrl: tcgdexUrl
+              };
+            }
+            
+            // If TCGDex direct URL isn't available, find best working image
             const workingImageUrl = await findWorkingImageUrl({
               id: card.id,
               name: card.name,
