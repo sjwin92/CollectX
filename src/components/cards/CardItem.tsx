@@ -40,16 +40,16 @@ const CardItem = ({
     // Reset when card changes
     setImageStatus("loading");
     
-    // Direct access to TCGDex URL for card sets - this is what's working
+    // Direct access to Pokemon TCG URL - this seems more reliable
     const parts = id.split("-");
     if (parts.length >= 2) {
       const setCode = parts[0];
       const cardNumber = parts[1];
       
-      // Use the TCGDex format that's working for card sets
-      const tcgdexUrl = `https://assets.tcgdex.net/en/${setCode}/${cardNumber}`;
-      console.log(`Setting TCGDex URL for ${name}: ${tcgdexUrl}`);
-      setCurrentImageSrc(tcgdexUrl);
+      // Use the Pokemon TCG format that has better reliability
+      const tcgUrl = `https://images.pokemontcg.io/${setCode}/${cardNumber}_hires.png`;
+      console.log(`Setting Pokemon TCG URL for ${name}: ${tcgUrl}`);
+      setCurrentImageSrc(tcgUrl);
     } else {
       // Fallback to provided imageUrl if we can't parse the ID
       setCurrentImageSrc(imageUrl);
@@ -82,7 +82,20 @@ const CardItem = ({
   const handleImageError = () => {
     console.log(`Image failed to load: ${currentImageSrc} for card ${id}`);
     
-    // If TCGDex URL fails, try the original provided URL
+    // If Pokemon TCG URL fails, try TCGDex format
+    if (currentImageSrc.includes('pokemontcg.io') && !currentImageSrc.includes('tcgdex.net')) {
+      const parts = id.split("-");
+      if (parts.length >= 2) {
+        const setCode = parts[0];
+        const cardNumber = parts[1];
+        const tcgdexUrl = `https://assets.tcgdex.net/en/${setCode}/${cardNumber}`;
+        console.log(`Trying TCGDex URL as backup: ${tcgdexUrl}`);
+        setCurrentImageSrc(tcgdexUrl);
+        return;
+      }
+    }
+    
+    // If TCGDex URL fails or we already tried it, use the original provided URL
     if (currentImageSrc !== imageUrl && imageUrl) {
       console.log(`Trying original URL: ${imageUrl}`);
       setCurrentImageSrc(imageUrl);
@@ -95,13 +108,13 @@ const CardItem = ({
   const retryImage = () => {
     setImageStatus("loading");
     
-    // Try the TCGDex URL again
+    // Try the Pokemon TCG URL again
     const parts = id.split("-");
     if (parts.length >= 2) {
       const setCode = parts[0];
       const cardNumber = parts[1];
-      const tcgdexUrl = `https://assets.tcgdex.net/en/${setCode}/${cardNumber}`;
-      setCurrentImageSrc(tcgdexUrl);
+      const tcgUrl = `https://images.pokemontcg.io/${setCode}/${cardNumber}_hires.png`;
+      setCurrentImageSrc(tcgUrl);
     } else {
       setCurrentImageSrc(imageUrl);
     }

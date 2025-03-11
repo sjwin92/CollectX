@@ -32,7 +32,7 @@ const PokemonCardItem = ({ card, onClick }: PokemonCardItemProps) => {
   const { isSignedIn } = useUser();
   const { toast } = useToast();
   
-  // Create TCGDex URL directly - this is what works for card sets
+  // Create Pokemon TCG URL directly - this uses the reliable format
   useEffect(() => {
     if (!card?.id) return;
     
@@ -44,10 +44,10 @@ const PokemonCardItem = ({ card, onClick }: PokemonCardItemProps) => {
       const setCode = parts[0];
       const cardNumber = parts[1];
       
-      // Use the TCGDex format that's working for card sets
-      const tcgdexUrl = `https://assets.tcgdex.net/en/${setCode}/${cardNumber}`;
-      console.log(`Setting TCGDex URL for ${card.name}: ${tcgdexUrl}`);
-      setImageSrc(tcgdexUrl);
+      // Use the Pokemon TCG format that has better reliability
+      const tcgUrl = `https://images.pokemontcg.io/${setCode}/${cardNumber}_hires.png`;
+      console.log(`Setting Pokemon TCG URL for ${card.name}: ${tcgUrl}`);
+      setImageSrc(tcgUrl);
     } else {
       // Fallback to original image if we can't parse the ID
       setImageSrc(card.images?.small || card.images?.large || "");
@@ -81,6 +81,19 @@ const PokemonCardItem = ({ card, onClick }: PokemonCardItemProps) => {
   
   const handleImageError = () => {
     console.log(`Image failed to load: ${imageSrc} for card ${card?.id}`);
+    
+    // If Pokemon TCG URL fails, try TCGDex format
+    if (card?.id && !imageSrc.includes('tcgdex.net')) {
+      const parts = card.id.split("-");
+      if (parts.length >= 2) {
+        const setCode = parts[0];
+        const cardNumber = parts[1];
+        const tcgdexUrl = `https://assets.tcgdex.net/en/${setCode}/${cardNumber}`;
+        console.log(`Trying TCGDex URL as backup: ${tcgdexUrl}`);
+        setImageSrc(tcgdexUrl);
+        return;
+      }
+    }
     
     // If TCGDex URL fails, try the original images
     if (card.images?.small && imageSrc !== card.images.small) {

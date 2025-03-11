@@ -50,9 +50,9 @@ const FeaturedCards = () => {
       // Use the format that works for card sets
       const [setCode, cardNumber] = card.id.split('-');
       
-      // Create the TCGDex URL directly
-      const imageUrl = `https://assets.tcgdex.net/en/${setCode}/${cardNumber}`;
-      console.log(`Setting TCGDex URL for ${card.name}: ${imageUrl}`);
+      // Use the more reliable Pokemon TCG API URL format
+      const imageUrl = `https://images.pokemontcg.io/${setCode}/${cardNumber}_hires.png`;
+      console.log(`Setting Pokemon TCG URL for ${card.name}: ${imageUrl}`);
       
       return {
         ...card,
