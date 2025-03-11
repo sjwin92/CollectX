@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -144,6 +145,8 @@ const RecentTrades = () => {
       navigate("/auth");
       return;
     }
+    
+    // This is the key change - navigate to the correct trade details page
     navigate(`/trades/${tradeId}`);
   };
 
