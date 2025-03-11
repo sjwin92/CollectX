@@ -31,6 +31,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Handle the redirect when coming back from Supabase auth
+    const handleAuthRedirect = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('Error retrieving session after redirect:', error);
+      }
+      
+      if (data?.session) {
+        setSession(data.session);
+        setUser(data.session.user);
+      }
+    };
+
+    // Check if we're coming back from a redirect
+    const hash = window.location.hash;
+    if (hash && (hash.includes('access_token') || hash.includes('error'))) {
+      handleAuthRedirect();
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -66,7 +86,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       options: {
         data: {
           username: email.split('@')[0]
-        }
+        },
+        emailRedirectTo: window.location.origin + '/auth',
       }
     });
     return { error, user: data.user };
@@ -76,7 +97,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: window.location.origin + '/auth',
       },
     });
     return { error };
