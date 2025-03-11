@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { findWorkingImageUrl } from "@/services/cardImageService";
+import { PokemonCard } from "@/services/pokemonTcgApi";
 
 interface TradeListingImageProps {
   cardId?: string;
@@ -40,10 +40,14 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
             .eq('id', cardId)
             .maybeSingle();
 
-          if (cachedCard?.data?.images?.large) {
-            console.log(`Using cached image for card ${cardId}`);
-            setImageSrc(cachedCard.data.images.large);
-            return;
+          // Properly type the cached card data
+          if (cachedCard && typeof cachedCard.data === 'object' && cachedCard.data !== null) {
+            const cardData = cachedCard.data as PokemonCard;
+            if (cardData.images?.large) {
+              console.log(`Using cached image for card ${cardId}`);
+              setImageSrc(cardData.images.large);
+              return;
+            }
           }
         }
         
