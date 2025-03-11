@@ -120,16 +120,20 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
                 
                 // Cache this result in Supabase if we have a card ID
                 if (cardId) {
-                  await supabase
-                    .from('pokemon_cards_cache')
-                    .upsert({
-                      id: cardId,
-                      data: card,
-                      image_url: card.images.large,
-                      created_at: new Date().toISOString()
-                    })
-                    .then(() => console.log(`Cached card data for ${cardId}`))
-                    .catch(err => console.error(`Failed to cache card data: ${err}`));
+                  try {
+                    await supabase
+                      .from('pokemon_cards_cache')
+                      .upsert({
+                        id: cardId,
+                        data: card,
+                        image_url: card.images.large,
+                        cached_at: new Date().toISOString(),
+                        name: card.name
+                      });
+                    console.log(`Cached card data for ${cardId}`);
+                  } catch (cacheErr) {
+                    console.error(`Failed to cache card data: ${cacheErr}`);
+                  }
                 }
                 
                 return;
