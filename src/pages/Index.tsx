@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -41,7 +42,7 @@ const featuredCards = [
     estimatedValue: "$120-150"
   },
   {
-    id: "sm12-222", // Mewtwo & Mew GX from Cosmic Eclipse
+    id: "sm12-222", // Mewtwo & Mew GX from Cosmic Eclipse - Corrected ID
     name: "Mewtwo & Mew GX",
     imageUrl: "https://images.pokemontcg.io/sm12/222_hires.png",
     rarity: "Ultra Rare",
@@ -49,9 +50,9 @@ const featuredCards = [
     estimatedValue: "$200-250"
   },
   {
-    id: "swsh9-25", // Blastoise VMAX from Brilliant Stars
+    id: "swsh3-20", // Blastoise VMAX from Darkness Ablaze - Corrected ID
     name: "Blastoise VMAX",
-    imageUrl: "https://images.pokemontcg.io/swsh9/25_hires.png",
+    imageUrl: "https://images.pokemontcg.io/swsh3/20_hires.png",
     rarity: "Rare Holo",
     condition: "Good",
     estimatedValue: "$80-120"
