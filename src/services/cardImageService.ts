@@ -9,24 +9,26 @@ const PLACEHOLDER_URL = "/placeholder.svg";
  * Generate a list of potential image URLs for a card ID
  */
 export const generateImageUrlsById = (cardId: string): string[] => {
-  if (!cardId) return [CARD_BACK_URL];
+  if (!cardId) return [PLACEHOLDER_URL];
   
   // Split the ID to get set and number
   const parts = cardId.split('-');
-  if (parts.length !== 2) return [CARD_BACK_URL];
+  if (parts.length !== 2) return [PLACEHOLDER_URL];
   
   const [setId, cardNumber] = parts;
   
   return [
-    // Pokemon TCG API images
-    `https://images.pokemontcg.io/small/${cardId}.png`,
-    `https://images.pokemontcg.io/large/${cardId}.png`,
+    // Direct image URLs (most reliable)
     `https://images.pokemontcg.io/${setId}/${cardNumber}.png`,
     
+    // Pokemon TCG API images (small first since they load faster)
+    `https://images.pokemontcg.io/small/${cardId}.png`,
+    `https://images.pokemontcg.io/large/${cardId}.png`,
+    
     // TCGDex format
-    `https://assets.tcgdex.net/en/${setId}/${cardNumber}`,
-    `https://assets.tcgdex.net/en/${setId}/${cardNumber}.jpg`,
     `https://assets.tcgdex.net/en/${setId}/${cardNumber}.png`,
+    `https://assets.tcgdex.net/en/${setId}/${cardNumber}.jpg`,
+    `https://assets.tcgdex.net/en/${setId}/${cardNumber}`,
     
     // Pokellector format (padding card number to 3 digits)
     `https://assets.pokellector.com/cards/${setId}/${cardNumber.padStart(3, '0')}.webp`,
@@ -37,8 +39,8 @@ export const generateImageUrlsById = (cardId: string): string[] => {
     // PokemonCards.com format
     `https://images.pokemoncards.com/${setId}/${cardNumber}.jpg`,
     
-    // Card back as last resort
-    CARD_BACK_URL
+    // Placeholder as last resort (NOT card back)
+    PLACEHOLDER_URL
   ];
 };
 
@@ -46,7 +48,7 @@ export const generateImageUrlsById = (cardId: string): string[] => {
  * Get all possible image URLs for a PokemonCard
  */
 export const getImageUrlsForPokemonCard = (card: PokemonCard): string[] => {
-  if (!card) return [CARD_BACK_URL];
+  if (!card) return [PLACEHOLDER_URL];
   
   return [
     // Direct URLs from the card data
@@ -62,7 +64,7 @@ export const getImageUrlsForPokemonCard = (card: PokemonCard): string[] => {
  * Get all possible image URLs for a TCGDexCard
  */
 export const getImageUrlsForTCGDexCard = (card: TCGDexCard): string[] => {
-  if (!card) return [CARD_BACK_URL];
+  if (!card) return [PLACEHOLDER_URL];
   
   return [
     // Direct URLs from the card data
@@ -80,7 +82,7 @@ export const getImageUrlsForTCGDexCard = (card: TCGDexCard): string[] => {
  * Universal function to get image URLs for any card type
  */
 export const getImageUrlsForCard = (card: any): string[] => {
-  if (!card) return [CARD_BACK_URL];
+  if (!card) return [PLACEHOLDER_URL];
   
   // Check if it's a PokemonCard
   if (card.images?.small || card.images?.large) {
@@ -92,9 +94,9 @@ export const getImageUrlsForCard = (card: any): string[] => {
     return getImageUrlsForTCGDexCard(card as TCGDexCard);
   }
   
-  // If it's just a string ID
-  if (typeof card === 'string') {
-    return generateImageUrlsById(card);
+  // If it has an imageUrl property (for listings and trades)
+  if (card.imageUrl) {
+    return [card.imageUrl, ...generateImageUrlsById(card.id || '')];
   }
   
   // If it has an ID, try to generate URLs from that
@@ -102,12 +104,12 @@ export const getImageUrlsForCard = (card: any): string[] => {
     return generateImageUrlsById(card.id);
   }
   
-  // Check if it has an imageUrl property (for listings and trades)
-  if (card.imageUrl) {
-    return [card.imageUrl, ...generateImageUrlsById(card.id || '')];
+  // If it's just a string ID
+  if (typeof card === 'string') {
+    return generateImageUrlsById(card);
   }
   
-  return [CARD_BACK_URL];
+  return [PLACEHOLDER_URL];
 };
 
 /**
@@ -116,6 +118,47 @@ export const getImageUrlsForCard = (card: any): string[] => {
 export const getBestImageUrl = (card: any): string => {
   const urls = getImageUrlsForCard(card);
   return urls[0] || PLACEHOLDER_URL;
+};
+
+/**
+ * Check if a URL exists and is accessible
+ */
+export const checkImageUrl = async (url: string): Promise<boolean> => {
+  try {
+    // Skip checking for placeholder and card back
+    if (url === PLACEHOLDER_URL || url === CARD_BACK_URL) {
+      return true;
+    }
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 seconds timeout
+    
+    const response = await fetch(url, { 
+      method: 'HEAD', 
+      signal: controller.signal 
+    });
+    
+    clearTimeout(timeoutId);
+    return response.ok;
+  } catch (error) {
+    console.log(`Failed to check image URL: ${url}`, error);
+    return false;
+  }
+};
+
+/**
+ * Find the first working image URL for a card
+ */
+export const findWorkingImageUrl = async (card: any): Promise<string> => {
+  const urls = getImageUrlsForCard(card);
+  
+  for (const url of urls) {
+    if (await checkImageUrl(url)) {
+      return url;
+    }
+  }
+  
+  return PLACEHOLDER_URL;
 };
 
 /**
@@ -135,31 +178,4 @@ export const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>, card
     imgElement.src = PLACEHOLDER_URL;
     console.log('All image sources failed, using placeholder');
   }
-};
-
-/**
- * Check if a URL exists and is accessible
- */
-export const checkImageUrl = async (url: string): Promise<boolean> => {
-  try {
-    const response = await fetch(url, { method: 'HEAD' });
-    return response.ok;
-  } catch (error) {
-    return false;
-  }
-};
-
-/**
- * Find the first working image URL for a card
- */
-export const findWorkingImageUrl = async (card: any): Promise<string> => {
-  const urls = getImageUrlsForCard(card);
-  
-  for (const url of urls) {
-    if (await checkImageUrl(url)) {
-      return url;
-    }
-  }
-  
-  return PLACEHOLDER_URL;
 };

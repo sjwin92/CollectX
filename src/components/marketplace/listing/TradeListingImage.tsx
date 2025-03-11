@@ -1,9 +1,9 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, RefreshCw } from "lucide-react";
-import { getImageUrlsForCard } from "@/services/cardImageService";
+import { getImageUrlsForCard, checkImageUrl } from "@/services/cardImageService";
 
 interface TradeListingImageProps {
   cardId?: string;
@@ -15,47 +15,98 @@ interface TradeListingImageProps {
 const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListingImageProps) => {
   const [imageError, setImageError] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [imageSrc, setImageSrc] = useState(() => {
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [imageSrc, setImageSrc] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    // Reset state when props change
+    setImageError(false);
+    setCurrentImageIndex(0);
+    setIsLoading(true);
+    
+    // Get all possible image URLs
     const card = { id: cardId, imageUrl };
     const urls = getImageUrlsForCard(card);
-    return urls[0] || '/placeholder.svg';
-  });
+    setImageUrls(urls);
+    
+    // Start with the first URL
+    if (urls.length > 0) {
+      setImageSrc(urls[0]);
+      console.log(`Starting with image source: ${urls[0]} for card ${cardId || 'unknown'}`);
+    } else {
+      console.error('No image URLs available for card:', cardId);
+      setImageError(true);
+      setIsLoading(false);
+    }
+  }, [cardId, imageUrl]);
   
   const handleImageError = () => {
-    const card = { id: cardId, imageUrl };
-    const urls = getImageUrlsForCard(card);
-    
     // Try the next image in the sequence
     const nextIndex = currentImageIndex + 1;
     
-    if (nextIndex < urls.length) {
-      console.log(`Image failed to load. Trying alternative source #${nextIndex + 1}: ${urls[nextIndex]}`);
+    if (nextIndex < imageUrls.length) {
+      console.log(`Image failed to load: ${imageSrc}. Trying alternative source #${nextIndex + 1}: ${imageUrls[nextIndex]}`);
       setCurrentImageIndex(nextIndex);
-      setImageSrc(urls[nextIndex]);
+      setImageSrc(imageUrls[nextIndex]);
     } else {
       console.log('All image sources failed. Marking as error.');
       setImageError(true);
+      setIsLoading(false);
     }
   };
   
-  const retryImage = () => {
+  const handleImageLoad = () => {
+    console.log(`Successfully loaded image: ${imageSrc}`);
+    setIsLoading(false);
+  };
+  
+  const retryImage = async () => {
+    setIsLoading(true);
+    setImageError(false);
+    
+    // Try to find a working image by checking URLs before setting them
     const card = { id: cardId, imageUrl };
     const urls = getImageUrlsForCard(card);
     
-    setImageError(false);
-    setCurrentImageIndex(0);
-    setImageSrc(urls[0] || '/placeholder.svg');
+    for (let i = 0; i < urls.length; i++) {
+      const url = urls[i];
+      try {
+        const works = await checkImageUrl(url);
+        if (works) {
+          console.log(`Found working image URL: ${url}`);
+          setCurrentImageIndex(i);
+          setImageSrc(url);
+          return;
+        }
+      } catch (error) {
+        console.log(`Error checking URL ${url}:`, error);
+      }
+    }
+    
+    // If we get here, no URLs worked
+    console.log('No working image URLs found');
+    setImageError(true);
+    setIsLoading(false);
   };
 
   return (
     <div className="w-1/3 relative group">
       {!imageError ? (
-        <img 
-          src={imageSrc} 
-          alt={cardName}
-          className="w-full h-auto rounded-md transition-transform duration-300 group-hover:scale-105"
-          onError={handleImageError}
-        />
+        <div className="relative w-full h-full">
+          {isLoading && (
+            <div className="absolute inset-0 bg-muted flex items-center justify-center">
+              <div className="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+            </div>
+          )}
+          <img 
+            src={imageSrc} 
+            alt={cardName}
+            className={`w-full h-auto rounded-md transition-transform duration-300 group-hover:scale-105 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+            onError={handleImageError}
+            onLoad={handleImageLoad}
+          />
+        </div>
       ) : (
         <div className="w-full aspect-[2/3] bg-muted flex flex-col items-center justify-center rounded-md">
           <AlertTriangle className="h-5 w-5 text-amber-500 mb-1" />
