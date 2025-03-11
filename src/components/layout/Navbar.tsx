@@ -117,7 +117,7 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          {!isMobile && user && (
+          {user && (
             <>
               <Popover>
                 <PopoverTrigger asChild>
