@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import CardGrid from "@/components/cards/CardGrid";
-import { findWorkingImageUrl, getTCGDexUrl } from "@/services/cardImageService";
+import { getTCGDexUrl } from "@/services/cardImageService";
 
 const featuredCards = [
   {
@@ -45,41 +45,22 @@ const FeaturedCards = () => {
   const [processedCards, setProcessedCards] = useState(featuredCards);
   
   useEffect(() => {
-    const processImages = async () => {
-      const processedCards = await Promise.all(
-        featuredCards.map(async (card) => {
-          try {
-            // First try TCGDex directly, which is working for card sets
-            const tcgdexUrl = getTCGDexUrl(card.id);
-            if (tcgdexUrl) {
-              return {
-                ...card,
-                imageUrl: tcgdexUrl
-              };
-            }
-            
-            // If TCGDex direct URL isn't available, find best working image
-            const workingImageUrl = await findWorkingImageUrl({
-              id: card.id,
-              name: card.name,
-              imageUrl: card.imageUrl
-            });
-            
-            return {
-              ...card,
-              imageUrl: workingImageUrl
-            };
-          } catch (error) {
-            console.error(`Error processing card image for ${card.name}:`, error);
-            return card;
-          }
-        })
-      );
+    // Transform the cards to use our more reliable image sources
+    const updatedCards = featuredCards.map(card => {
+      // Use the format that works for card sets
+      const [setCode, cardNumber] = card.id.split('-');
       
-      setProcessedCards(processedCards);
-    };
+      // Create the TCGDex URL directly
+      const imageUrl = `https://assets.tcgdex.net/en/${setCode}/${cardNumber}`;
+      console.log(`Setting TCGDex URL for ${card.name}: ${imageUrl}`);
+      
+      return {
+        ...card,
+        imageUrl
+      };
+    });
     
-    processImages();
+    setProcessedCards(updatedCards);
   }, []);
 
   return (

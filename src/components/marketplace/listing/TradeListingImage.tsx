@@ -1,10 +1,8 @@
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { findWorkingImageUrl, getTCGDexUrl } from "@/services/cardImageService";
 import { useToast } from "@/hooks/use-toast";
 
 interface TradeListingImageProps {
@@ -23,102 +21,51 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
   const [retryCount, setRetryCount] = useState(0);
   const { toast } = useToast();
   
-  // Create a memoized function to load the card image
-  const loadCardImage = useCallback(async () => {
+  useEffect(() => {
     setIsLoading(true);
     setImageError(false);
     
-    try {
-      if (!cardId && !imageUrl) {
-        console.log('No card ID or image URL provided for:', cardName);
-        setImageSrc(CARD_BACK_URL);
+    // If we have a card ID, try to generate a TCGDex URL directly
+    if (cardId) {
+      const parts = cardId.split("-");
+      if (parts.length >= 2) {
+        const setCode = parts[0];
+        const cardNumber = parts[1];
+        
+        // Use the TCGDex format that's working for card sets
+        const tcgdexUrl = `https://assets.tcgdex.net/en/${setCode}/${cardNumber}`;
+        console.log(`Setting TCGDex URL for ${cardId}: ${tcgdexUrl}`);
+        setImageSrc(tcgdexUrl);
         setIsLoading(false);
         return;
       }
-
-      // Try the TCGDex URL first (same as what's working in card sets)
-      if (cardId) {
-        const tcgdexUrl = getTCGDexUrl(cardId);
-        if (tcgdexUrl) {
-          console.log(`Trying TCGDex URL for ${cardId}: ${tcgdexUrl}`);
-          setImageSrc(tcgdexUrl);
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      // Next check the database for a verified image
-      if (cardId) {
-        const { data: alternativeImages } = await supabase
-          .from('card_alternative_images')
-          .select('image_url')
-          .eq('card_id', cardId)
-          .eq('is_verified', true)
-          .order('created_at', { ascending: false })
-          .limit(1);
-          
-        if (alternativeImages && alternativeImages.length > 0) {
-          console.log(`Found verified image in database for ${cardId}: ${alternativeImages[0].image_url}`);
-          setImageSrc(alternativeImages[0].image_url);
-          setIsLoading(false);
-          return;
-        }
-      }
-      
-      // If previous methods fail, use our service to find a working image
-      const card = {
-        id: cardId || 'unknown',
-        name: cardName,
-        imageUrl: imageUrl
-      };
-      
-      const bestImageUrl = await findWorkingImageUrl(card);
-      console.log(`Found best image URL for ${cardName}:`, bestImageUrl);
-      setImageSrc(bestImageUrl);
-    } catch (error) {
-      console.error("Error loading card image:", error);
-      setImageError(true);
+    }
+    
+    // If we can't generate a TCGDex URL, use the provided image URL
+    if (imageUrl) {
+      setImageSrc(imageUrl);
+      setIsLoading(false);
+    } else {
       setImageSrc(CARD_BACK_URL);
-    } finally {
       setIsLoading(false);
     }
-  }, [cardId, imageUrl, cardName]);
-  
-  // Load the image on mount and when dependencies change
-  useEffect(() => {
-    loadCardImage();
-  }, [loadCardImage, retryCount]);
+  }, [cardId, imageUrl, retryCount]);
   
   const handleImageLoad = () => {
     setIsLoading(false);
     console.log(`Successfully loaded image for ${cardName}: ${imageSrc}`);
   };
   
-  const handleImageError = async () => {
+  const handleImageError = () => {
     console.log(`Image failed to load for ${cardName}: ${imageSrc}`);
     
-    if (imageSrc !== CARD_BACK_URL) {
-      // If TCGDex direct URL fails, try the full service
-      try {
-        const card = {
-          id: cardId || 'unknown',
-          name: cardName,
-          imageUrl: imageUrl
-        };
-        
-        const bestImageUrl = await findWorkingImageUrl(card);
-        if (bestImageUrl !== imageSrc && bestImageUrl !== CARD_BACK_URL) {
-          console.log(`Trying alternative URL for ${cardName}: ${bestImageUrl}`);
-          setImageSrc(bestImageUrl);
-          return;
-        }
-      } catch (error) {
-        console.error("Error finding alternative URL:", error);
-      }
-      
-      // If no alternatives found, use fallback
-      setImageSrc(CARD_BACK_URL);
+    // If the current image fails and it's not the card back already, try the original URL
+    if (imageSrc !== CARD_BACK_URL && imageSrc !== imageUrl && imageUrl) {
+      console.log(`Trying original URL: ${imageUrl}`);
+      setImageSrc(imageUrl);
     } else {
+      // If that fails too, use card back
+      setImageSrc(CARD_BACK_URL);
       setImageError(true);
       setIsLoading(false);
     }

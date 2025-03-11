@@ -7,7 +7,6 @@ import { PlusCircle, ArrowRightLeft, AlertTriangle, Loader2 } from "lucide-react
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/useUser";
 import AddToCollectionModal from "./AddToCollectionModal";
-import { findWorkingImageUrl, getTCGDexUrl } from "@/services/cardImageService";
 
 interface PokemonCard {
   id: string;
@@ -33,30 +32,26 @@ const PokemonCardItem = ({ card, onClick }: PokemonCardItemProps) => {
   const { isSignedIn } = useUser();
   const { toast } = useToast();
   
-  // Load the best image for this card
+  // Create TCGDex URL directly - this is what works for card sets
   useEffect(() => {
     if (!card?.id) return;
     
-    // Try TCGDex URL first, as it's what's working for card sets
-    const tcgdexUrl = getTCGDexUrl(card.id);
-    if (tcgdexUrl) {
+    setImageStatus("loading");
+    
+    // Parse card ID into set code and number
+    const parts = card.id.split("-");
+    if (parts.length >= 2) {
+      const setCode = parts[0];
+      const cardNumber = parts[1];
+      
+      // Use the TCGDex format that's working for card sets
+      const tcgdexUrl = `https://assets.tcgdex.net/en/${setCode}/${cardNumber}`;
+      console.log(`Setting TCGDex URL for ${card.name}: ${tcgdexUrl}`);
       setImageSrc(tcgdexUrl);
-      return;
+    } else {
+      // Fallback to original image if we can't parse the ID
+      setImageSrc(card.images?.small || card.images?.large || "");
     }
-    
-    const loadImage = async () => {
-      try {
-        setImageStatus("loading");
-        const url = await findWorkingImageUrl(card);
-        setImageSrc(url);
-        setImageStatus("loaded");
-      } catch (error) {
-        console.error(`Failed to find working image for ${card.name}:`, error);
-        setImageStatus("error");
-      }
-    };
-    
-    loadImage();
   }, [card?.id]);
   
   const handleAddToCollection = (e: React.MouseEvent) => {
@@ -84,19 +79,15 @@ const PokemonCardItem = ({ card, onClick }: PokemonCardItemProps) => {
     setImageStatus("loaded");
   };
   
-  const handleImageError = async () => {
+  const handleImageError = () => {
     console.log(`Image failed to load: ${imageSrc} for card ${card?.id}`);
     
-    // If current image fails, try the full image service
-    try {
-      const url = await findWorkingImageUrl(card);
-      if (url !== imageSrc) {
-        setImageSrc(url);
-      } else {
-        setImageStatus("error");
-      }
-    } catch (error) {
-      console.error("Error finding alternative URL:", error);
+    // If TCGDex URL fails, try the original images
+    if (card.images?.small && imageSrc !== card.images.small) {
+      setImageSrc(card.images.small);
+    } else if (card.images?.large && imageSrc !== card.images.large) {
+      setImageSrc(card.images.large);
+    } else {
       setImageStatus("error");
     }
   };

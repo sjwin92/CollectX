@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -6,7 +7,6 @@ import { cn } from "@/lib/utils";
 import { Info, AlertTriangle, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { findWorkingImageUrl, getTCGDexUrl } from "@/services/cardImageService";
 import { useToast } from "@/hooks/use-toast";
 
 export interface CardItemProps {
@@ -33,35 +33,28 @@ const CardItem = ({
   onClick
 }: CardItemProps) => {
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
-  const [currentImageSrc, setCurrentImageSrc] = useState<string>(imageUrl);
+  const [currentImageSrc, setCurrentImageSrc] = useState<string>("");
   const { toast } = useToast();
   
   useEffect(() => {
     // Reset when card changes
     setImageStatus("loading");
     
-    // Try TCGDex URL first, as it's what's working for card sets
-    const tcgdexUrl = getTCGDexUrl(id);
-    if (tcgdexUrl) {
-      console.log(`Trying TCGDex URL for ${id}: ${tcgdexUrl}`);
+    // Direct access to TCGDex URL for card sets - this is what's working
+    const parts = id.split("-");
+    if (parts.length >= 2) {
+      const setCode = parts[0];
+      const cardNumber = parts[1];
+      
+      // Use the TCGDex format that's working for card sets
+      const tcgdexUrl = `https://assets.tcgdex.net/en/${setCode}/${cardNumber}`;
+      console.log(`Setting TCGDex URL for ${name}: ${tcgdexUrl}`);
       setCurrentImageSrc(tcgdexUrl);
-      return;
+    } else {
+      // Fallback to provided imageUrl if we can't parse the ID
+      setCurrentImageSrc(imageUrl);
     }
-    
-    // If TCGDex direct URL isn't available, find best working image
-    const loadImage = async () => {
-      try {
-        const url = await findWorkingImageUrl({ id, name, imageUrl });
-        setCurrentImageSrc(url);
-        setImageStatus("loaded");
-      } catch (error) {
-        console.error(`Failed to find working image for ${name}:`, error);
-        setImageStatus("error");
-      }
-    };
-    
-    loadImage();
-  }, [id, imageUrl, name]);
+  }, [id, name]);
   
   // Map condition to style
   const conditionVariant = (): "success" | "warning" | "danger" | "info" => {
@@ -83,43 +76,40 @@ const CardItem = ({
 
   const handleImageLoad = () => {
     setImageStatus("loaded");
+    console.log(`Successfully loaded image for ${name}: ${currentImageSrc}`);
   };
 
-  const handleImageError = async () => {
+  const handleImageError = () => {
     console.log(`Image failed to load: ${currentImageSrc} for card ${id}`);
     
-    // If TCGDex URL failed, try the full service
-    try {
-      const url = await findWorkingImageUrl({ id, name, imageUrl });
-      if (url !== currentImageSrc) {
-        console.log(`Trying alternative image source: ${url}`);
-        setCurrentImageSrc(url);
-      } else {
-        setImageStatus("error");
-      }
-    } catch (error) {
-      console.error("Error during retry:", error);
+    // If TCGDex URL fails, try the original provided URL
+    if (currentImageSrc !== imageUrl && imageUrl) {
+      console.log(`Trying original URL: ${imageUrl}`);
+      setCurrentImageSrc(imageUrl);
+    } else {
+      // If that fails too, use card back
       setImageStatus("error");
     }
   };
   
-  const retryImage = async () => {
+  const retryImage = () => {
     setImageStatus("loading");
     
-    try {
-      // Force refresh from the image service
-      const url = await findWorkingImageUrl({ id, name, imageUrl });
-      setCurrentImageSrc(url);
-      setImageStatus("loaded");
-      
-      toast({
-        title: "Retrying image load",
-        description: `Attempting to find a better image for ${name}`
-      });
-    } catch (error) {
-      console.error("Error during retry:", error);
-      setImageStatus("error");
+    // Try the TCGDex URL again
+    const parts = id.split("-");
+    if (parts.length >= 2) {
+      const setCode = parts[0];
+      const cardNumber = parts[1];
+      const tcgdexUrl = `https://assets.tcgdex.net/en/${setCode}/${cardNumber}`;
+      setCurrentImageSrc(tcgdexUrl);
+    } else {
+      setCurrentImageSrc(imageUrl);
     }
+    
+    toast({
+      title: "Retrying image load",
+      description: `Attempting to find a better image for ${name}`
+    });
   };
 
   const CardContent = (
