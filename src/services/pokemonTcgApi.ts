@@ -215,11 +215,7 @@ export const mapToTradeCard = (card: PokemonCard): import("@/models/escrow").Tra
   
   import('./cardImageService').then(async cardImageService => {
     try {
-      await cardImageService.findWorkingImageUrl({ 
-        id: card.id, 
-        name: card.name, 
-        imageUrl: card.images.small 
-      });
+      await cardImageService.findWorkingImageUrl(card.id);
     } catch (e) {
       // Ignore errors in this warning code
     }
@@ -228,7 +224,7 @@ export const mapToTradeCard = (card: PokemonCard): import("@/models/escrow").Tra
   return {
     id: card.id,
     name: card.name,
-    imageUrl: card.images.small || `${POKEMON_TCG_IO}/small/${card.id}.png`,
+    imageUrl: card.images?.small || `https://images.pokemontcg.io/small/${card.id}.png`,
     condition: "Near Mint",
     estimatedValue: price,
     currency: "USD"
