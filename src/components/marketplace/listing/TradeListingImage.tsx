@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { getImageUrlsForCard, checkImageUrl } from "@/services/cardImageService";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TradeListingImageProps {
   cardId?: string;
@@ -20,25 +21,51 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    // Reset state when props change
-    setImageError(false);
-    setCurrentImageIndex(0);
-    setIsLoading(true);
+    const loadCardImage = async () => {
+      // Reset state when props change
+      setImageError(false);
+      setCurrentImageIndex(0);
+      setIsLoading(true);
+      
+      // Get all possible image URLs
+      const card = { id: cardId, imageUrl };
+      const urls = getImageUrlsForCard(card);
+      setImageUrls(urls);
+      console.log(`Generated ${urls.length} potential image URLs for card ${cardId || 'unknown'}`);
+      
+      // Start with the first URL
+      if (urls.length > 0) {
+        // Try to fetch the actual card data if we have an ID to get the official image
+        if (cardId) {
+          try {
+            // Check if we have this card in Supabase cache
+            const { data: cachedData } = await supabase
+              .from('pokemon_cards_cache')
+              .select('data, image_url')
+              .eq('id', cardId)
+              .maybeSingle();
+              
+            if (cachedData?.data?.images?.large) {
+              // Use the official image from the cache if available
+              setImageSrc(cachedData.data.images.large);
+              console.log(`Using cached official image for card ${cardId}`);
+              return;
+            }
+          } catch (error) {
+            console.error('Error fetching card from cache:', error);
+          }
+        }
+        
+        setImageSrc(urls[0]);
+        console.log(`Starting with image source: ${urls[0]} for card ${cardId || 'unknown'}`);
+      } else {
+        console.error('No image URLs available for card:', cardId);
+        setImageError(true);
+        setIsLoading(false);
+      }
+    };
     
-    // Get all possible image URLs
-    const card = { id: cardId, imageUrl };
-    const urls = getImageUrlsForCard(card);
-    setImageUrls(urls);
-    
-    // Start with the first URL
-    if (urls.length > 0) {
-      setImageSrc(urls[0]);
-      console.log(`Starting with image source: ${urls[0]} for card ${cardId || 'unknown'}`);
-    } else {
-      console.error('No image URLs available for card:', cardId);
-      setImageError(true);
-      setIsLoading(false);
-    }
+    loadCardImage();
   }, [cardId, imageUrl]);
   
   const handleImageError = () => {
