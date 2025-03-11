@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,10 +41,13 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
             .eq('id', cardId)
             .maybeSingle();
 
-          // Properly type the cached card data
+          // Safely check and convert the cached data to PokemonCard
           if (cachedCard && typeof cachedCard.data === 'object' && cachedCard.data !== null) {
-            const cardData = cachedCard.data as PokemonCard;
-            if (cardData.images?.large) {
+            // First convert to unknown, then to PokemonCard to satisfy TypeScript
+            const cardData = cachedCard.data as unknown as PokemonCard;
+            
+            // Verify the object has the expected structure before using it
+            if (cardData.images && typeof cardData.images === 'object' && 'large' in cardData.images) {
               console.log(`Using cached image for card ${cardId}`);
               setImageSrc(cardData.images.large);
               return;
