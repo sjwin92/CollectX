@@ -1,6 +1,6 @@
 
-import React, { useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,15 +10,35 @@ import { Package, Github, Twitter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Auth = () => {
   const { signIn, signUp, signInWithProvider, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [authMessage, setAuthMessage] = useState("");
+
+  // Check if we're coming back from a redirect
+  useEffect(() => {
+    const hash = window.location.hash;
+    
+    if (location.hash) {
+      // If there's an error in the URL hash, show a message
+      if (hash.includes('error')) {
+        setAuthMessage("There was an error with authentication. Please try again.");
+      } else if (hash.includes('access_token')) {
+        toast({
+          title: "Authentication successful",
+          description: "You have successfully signed in.",
+        });
+      }
+    }
+  }, [location, toast]);
 
   // If user is already logged in, redirect to home
   if (user) {
@@ -28,6 +48,7 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setAuthMessage("");
     
     try {
       const { error } = await signIn(email, password);
@@ -38,6 +59,7 @@ const Auth = () => {
           description: error.message,
           variant: "destructive",
         });
+        setAuthMessage(error.message);
       } else {
         toast({
           title: "Welcome back!",
@@ -51,6 +73,7 @@ const Auth = () => {
         description: "Please try again later.",
         variant: "destructive",
       });
+      setAuthMessage("An unexpected error occurred. Please try again later.");
     } finally {
       setIsLoading(false);
     }
@@ -59,6 +82,7 @@ const Auth = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setAuthMessage("");
     
     try {
       const { error } = await signUp(email, password);
@@ -69,11 +93,13 @@ const Auth = () => {
           description: error.message,
           variant: "destructive",
         });
+        setAuthMessage(error.message);
       } else {
         toast({
           title: "Success!",
           description: "Please check your email for a confirmation link.",
         });
+        setAuthMessage("Please check your email for a confirmation link. If you don't receive it within a few minutes, check your spam folder.");
       }
     } catch (error) {
       toast({
@@ -81,6 +107,7 @@ const Auth = () => {
         description: "Please try again later.",
         variant: "destructive",
       });
+      setAuthMessage("An unexpected error occurred. Please try again later.");
     } finally {
       setIsLoading(false);
     }
@@ -88,6 +115,7 @@ const Auth = () => {
 
   const handleSocialSignIn = async (provider: "google" | "twitter" | "github") => {
     setIsLoading(true);
+    setAuthMessage("");
     
     try {
       const { error } = await signInWithProvider(provider);
@@ -98,6 +126,7 @@ const Auth = () => {
           description: error.message,
           variant: "destructive",
         });
+        setAuthMessage(error.message);
       }
       // No success toast here since the page will redirect to the provider
     } catch (error) {
@@ -106,6 +135,7 @@ const Auth = () => {
         description: "Please try again later.",
         variant: "destructive",
       });
+      setAuthMessage("An unexpected error occurred. Please try again later.");
     } finally {
       setIsLoading(false);
     }
@@ -160,6 +190,12 @@ const Auth = () => {
         </div>
         
         <GlassCard>
+          {authMessage && (
+            <Alert className="mb-4">
+              <AlertDescription>{authMessage}</AlertDescription>
+            </Alert>
+          )}
+          
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-4">
               <TabsTrigger value="signin">Sign In</TabsTrigger>

@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 type Provider = "google" | "twitter" | "github";
 
@@ -87,7 +88,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         data: {
           username: email.split('@')[0]
         },
-        emailRedirectTo: window.location.origin + '/auth',
+        emailRedirectTo: `${window.location.origin}/auth`,
       }
     });
     return { error, user: data.user };
@@ -97,7 +98,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: window.location.origin + '/auth',
+        redirectTo: `${window.location.origin}/auth`,
       },
     });
     return { error };
