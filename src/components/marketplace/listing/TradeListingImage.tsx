@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { findWorkingImageUrl } from "@/services/cardImageService";
 
 interface TradeListingImageProps {
   cardId?: string;
@@ -12,7 +12,6 @@ interface TradeListingImageProps {
   condition: string;
 }
 
-const POKEMON_TCG_API_URL = "https://api.pokemontcg.io/v2";
 const CARD_BACK_URL = "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg";
 
 const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListingImageProps) => {
@@ -27,124 +26,23 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
       setImageError(false);
       
       try {
-        // Priority 1: Direct image URL if provided
+        // If we have a direct image URL, use it first
         if (imageUrl && imageUrl.trim() !== '') {
           console.log(`Using provided image URL: ${imageUrl}`);
           setImageSrc(imageUrl);
           return;
         }
         
-        // Priority 2: Try direct TCG API URL if we have a card ID
-        if (cardId) {
-          // Extract set and number from ID (e.g., "swsh4-120" -> set="swsh4", number="120")
-          const parts = cardId.split('-');
-          if (parts.length === 2) {
-            const [setId, cardNumber] = parts;
-            // Use the high resolution image directly (more reliable)
-            const directUrl = `https://images.pokemontcg.io/${setId}/${cardNumber}_hires.png`;
-            console.log(`Using direct high-res API URL: ${directUrl}`);
-            setImageSrc(directUrl);
-            return;
-          }
-        }
+        // Otherwise, use our card image service to find a working image
+        const card = {
+          id: cardId,
+          name: cardName,
+          imageUrl: imageUrl
+        };
         
-        // Priority 3: Check Supabase cache for the card
-        if (cardId) {
-          const { data: cachedCard, error: cacheError } = await supabase
-            .from('pokemon_cards_cache')
-            .select('data, image_url')
-            .eq('id', cardId)
-            .maybeSingle();
-            
-          if (!cacheError && cachedCard) {
-            // If we have a direct image_url in the cache, use that
-            if (cachedCard.image_url && typeof cachedCard.image_url === 'string') {
-              console.log(`Using cached image URL for card ${cardId}: ${cachedCard.image_url}`);
-              setImageSrc(cachedCard.image_url);
-              return;
-            }
-            
-            // Try to extract image URL from the cached data
-            if (cachedCard.data) {
-              const cardData = cachedCard.data;
-              
-              // Check if data is an object
-              if (cardData && typeof cardData === 'object') {
-                // Check for images nested structure
-                if ('images' in cardData && cardData.images) {
-                  const images = cardData.images;
-                  
-                  // Try to get large image
-                  if (typeof images === 'object' && 'large' in images && typeof images.large === 'string') {
-                    console.log(`Using cached large image URL from data: ${images.large}`);
-                    setImageSrc(images.large);
-                    return;
-                  }
-                  
-                  // Try to get small image as fallback
-                  if (typeof images === 'object' && 'small' in images && typeof images.small === 'string') {
-                    console.log(`Using cached small image URL from data: ${images.small}`);
-                    setImageSrc(images.small);
-                    return;
-                  }
-                }
-              }
-            }
-          }
-        }
-        
-        // Priority 4: Search by name using Pokemon TCG API
-        if (cardName && cardName.length > 0) {
-          console.log(`Searching for card by name: ${cardName}`);
-          
-          // Encode and clean the name for the API
-          const cleanName = cardName.replace(/[^\w\s]/gi, ''); // Remove special characters
-          const encodedName = encodeURIComponent(`"${cleanName}"`);
-          
-          const response = await fetch(`${POKEMON_TCG_API_URL}/cards?q=name:${encodedName}&pageSize=1`, {
-            headers: {
-              'X-Api-Key': '3329f6d3-cb49-4b09-9997-2ee636a023e4'
-            }
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            if (data.data && data.data.length > 0) {
-              const card = data.data[0];
-              console.log(`Found card by name search: ${card.name}`);
-              
-              // Check if high-res image is available
-              if (card.images && card.images.large) {
-                console.log(`Using high-res image from name search: ${card.images.large}`);
-                setImageSrc(card.images.large);
-                
-                // Cache this result in Supabase if we have a card ID
-                if (cardId) {
-                  try {
-                    await supabase
-                      .from('pokemon_cards_cache')
-                      .upsert({
-                        id: cardId,
-                        data: card,
-                        image_url: card.images.large,
-                        cached_at: new Date().toISOString(),
-                        name: card.name
-                      });
-                    console.log(`Cached card data for ${cardId}`);
-                  } catch (cacheErr) {
-                    console.error(`Failed to cache card data: ${cacheErr}`);
-                  }
-                }
-                
-                return;
-              }
-            }
-          }
-        }
-        
-        // Last resort: Use card back image
-        console.log("Falling back to default card back image");
-        setImageSrc(CARD_BACK_URL);
+        const bestImageUrl = await findWorkingImageUrl(card);
+        console.log(`Found best image URL: ${bestImageUrl}`);
+        setImageSrc(bestImageUrl);
       } catch (error) {
         console.error("Error loading card image:", error);
         setImageError(true);
@@ -177,28 +75,16 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
     setIsLoading(true);
     setImageError(false);
     
-    // Retry with direct search by card name
     try {
-      if (cardName) {
-        const cleanName = cardName.replace(/[^\w\s]/gi, '');
-        const encodedName = encodeURIComponent(`"${cleanName}"`);
-        const response = await fetch(`${POKEMON_TCG_API_URL}/cards?q=name:${encodedName}&pageSize=1`, {
-          headers: {
-            'X-Api-Key': '3329f6d3-cb49-4b09-9997-2ee636a023e4'
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.data && data.data.length > 0 && data.data[0].images && data.data[0].images.large) {
-            setImageSrc(data.data[0].images.large);
-            return;
-          }
-        }
-      }
+      const card = {
+        id: cardId,
+        name: cardName,
+        imageUrl: imageUrl
+      };
       
-      // If name search fails, use the card back
-      setImageSrc(CARD_BACK_URL);
+      // Force a re-fetch of the best image
+      const bestImageUrl = await findWorkingImageUrl(card);
+      setImageSrc(bestImageUrl);
     } catch (error) {
       console.error("Error during retry:", error);
       setImageSrc(CARD_BACK_URL);
