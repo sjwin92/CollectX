@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getAllSets, groupSetsBySeries, PokemonSet, searchSets } from "@/services/pokemonSetsApi";
 import Navbar from "@/components/layout/Navbar";
@@ -8,20 +9,62 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Search, CalendarRange, X } from "lucide-react";
+import { Search, CalendarRange, X, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
+import { useToast } from "@/hooks/use-toast";
 
 const PokemonSets = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [filteredSets, setFilteredSets] = useState<PokemonSet[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   const { data: allSets = [], isLoading, isError } = useQuery({
     queryKey: ['pokemonSets'],
     queryFn: getAllSets,
   });
   
-  const filteredSets = searchSets(allSets, searchQuery);
+  useEffect(() => {
+    if (!searchQuery) {
+      setFilteredSets(allSets);
+      return;
+    }
+    
+    const runSearch = async () => {
+      setIsSearching(true);
+      try {
+        const results = await searchSets(allSets, searchQuery);
+        setFilteredSets(results);
+        
+        if (results.length === 0) {
+          toast({
+            title: "No sets found",
+            description: `No Pokémon sets found matching "${searchQuery}"`,
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error('Search error:', error);
+        toast({
+          title: "Search error",
+          description: "There was a problem searching for sets",
+          variant: "destructive"
+        });
+      } finally {
+        setIsSearching(false);
+      }
+    };
+    
+    // Debounce search to avoid too many requests
+    const timeoutId = setTimeout(() => {
+      runSearch();
+    }, 500);
+    
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, allSets, toast]);
+  
   const groupedSets = groupSetsBySeries(filteredSets);
   
   const handleClearSearch = () => {
@@ -51,11 +94,14 @@ const PokemonSets = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search sets by name or series..."
+              placeholder="Search by set name, series, or Pokémon name (e.g. 'Charizard')..."
               className="pl-9 pr-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+            {isSearching && (
+              <Loader2 className="absolute right-10 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin" />
+            )}
             {searchQuery && (
               <Button 
                 variant="ghost" 
@@ -83,7 +129,7 @@ const PokemonSets = () => {
           </GlassCard>
         ) : (
           <>
-            {filteredSets.length === 0 ? (
+            {filteredSets.length === 0 && !isSearching ? (
               <div className="text-center py-12">
                 <p className="text-xl mb-4">No sets found matching "{searchQuery}"</p>
                 <Button onClick={handleClearSearch}>Clear Search</Button>

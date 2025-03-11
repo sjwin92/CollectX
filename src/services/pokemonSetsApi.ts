@@ -78,16 +78,53 @@ export const groupSetsBySeries = (sets: PokemonSet[]) => {
 };
 
 /**
- * Search sets by name
+ * Search sets by name, series, or card name
  */
-export const searchSets = (sets: PokemonSet[], query: string): PokemonSet[] => {
+export const searchSets = async (sets: PokemonSet[], query: string): Promise<PokemonSet[]> => {
   if (!query) return sets;
   
   const lowerQuery = query.toLowerCase();
-  return sets.filter(set => 
+  
+  // First check if it's a set name or series match
+  const directMatches = sets.filter(set => 
     set.name.toLowerCase().includes(lowerQuery) || 
     set.series.toLowerCase().includes(lowerQuery)
   );
+  
+  // If we have direct matches, return them immediately
+  if (directMatches.length > 0) {
+    return directMatches;
+  }
+  
+  // If no direct matches, search for cards containing the query
+  try {
+    console.log(`Searching for cards containing: ${query}`);
+    const cardResponse = await fetch(`${BASE_URL}/cards?q=name:"${query}"*&pageSize=20`, {
+      headers: {
+        'X-Api-Key': API_KEY
+      }
+    });
+    
+    if (!cardResponse.ok) {
+      throw new Error(`Failed to search cards: ${cardResponse.statusText}`);
+    }
+    
+    const cardData = await cardResponse.json();
+    
+    if (!cardData.data || cardData.data.length === 0) {
+      return [];
+    }
+    
+    // Get unique set IDs from the card results
+    const setIds = new Set(cardData.data.map((card: any) => card.set.id));
+    
+    // Filter our sets array to only include those that contain matching cards
+    return sets.filter(set => setIds.has(set.id));
+    
+  } catch (error) {
+    console.error('Error searching for cards:', error);
+    return [];
+  }
 };
 
 /**
