@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRightLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/hooks/useUser";
 
 interface TradeListingFooterProps {
   cardId: string;
@@ -15,12 +16,22 @@ interface TradeListingFooterProps {
 
 const TradeListingFooter = ({ cardId, tradeId, onProposeTrade, featured = false }: TradeListingFooterProps) => {
   const { toast } = useToast();
+  const { user, isSignedIn } = useUser();
   
   const handleProposeTrade = () => {
+    if (!isSignedIn) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to propose a trade.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     onProposeTrade();
     toast({
       title: "Trade Proposal Initiated",
-      description: "You can now select cards to offer in exchange.",
+      description: "You can now select cards to offer in exchange."
     });
   };
 

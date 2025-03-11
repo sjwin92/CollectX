@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -6,6 +5,7 @@ import Badge, { ReputationLevel } from "@/components/ui/custom/Badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeftRight, Calendar, Package, Shield, Truck, Lock, AlertTriangle } from "lucide-react";
+import { useUser } from "@/hooks/useUser";
 
 export interface TradeOfferProps {
   id: string;
@@ -43,6 +43,8 @@ const TradeOffer = ({
   escrowRequired = false,
   escrowPaid = false,
 }: TradeOfferProps) => {
+  const { isSignedIn } = useUser();
+
   const getStatusBadge = () => {
     switch (status) {
       case "proposed":
@@ -189,77 +191,5 @@ const TradeOffer = ({
         </div>
       </div>
 
-      {/* Escrow Status (if applicable) */}
-      {escrowRequired && (
-        <div className="mb-4 p-3 rounded-md border border-border bg-secondary/20">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Lock className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">Escrow Protection</span>
-            </div>
-            {escrowPaid ? (
-              <Badge variant="success" size="sm">Paid</Badge>
-            ) : (
-              <Badge variant="warning" size="sm">Required</Badge>
-            )}
-          </div>
-        </div>
-      )}
+      {
 
-      {/* Progress tracker */}
-      {!["declined", "disputed", "cancelled"].includes(status) && (
-        <div className="relative mb-6 mt-6">
-          <div className="absolute top-1/2 left-0 right-0 h-1 bg-muted transform -translate-y-1/2" />
-          <div 
-            className="absolute top-1/2 left-0 h-1 bg-primary transform -translate-y-1/2" 
-            style={{ width: `${(step / 5) * 100}%` }}
-          />
-          <div className="relative flex justify-between">
-            <div className="flex flex-col items-center">
-              <div className={`h-6 w-6 rounded-full ${step >= 1 ? 'bg-primary' : 'bg-muted'} flex items-center justify-center text-white text-xs`}>
-                1
-              </div>
-              <span className="text-xs mt-1">Proposed</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className={`h-6 w-6 rounded-full ${step >= 2 ? 'bg-primary' : 'bg-muted'} flex items-center justify-center text-white text-xs`}>
-                2
-              </div>
-              <span className="text-xs mt-1">Accepted</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className={`h-6 w-6 rounded-full ${step >= 3 ? 'bg-primary' : 'bg-muted'} flex items-center justify-center text-white text-xs`}>
-                3
-              </div>
-              <span className="text-xs mt-1">Escrowed</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className={`h-6 w-6 rounded-full ${step >= 4 ? 'bg-primary' : 'bg-muted'} flex items-center justify-center text-white text-xs`}>
-                4
-              </div>
-              <span className="text-xs mt-1">Shipped</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className={`h-6 w-6 rounded-full ${step >= 5 ? 'bg-primary' : 'bg-muted'} flex items-center justify-center text-white text-xs`}>
-                5
-              </div>
-              <span className="text-xs mt-1">Completed</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-          <Shield className="h-4 w-4" />
-          <span>Trade Protected</span>
-        </div>
-        <Link to={`/trades/${id}`}>
-          <Button size="sm">View Details</Button>
-        </Link>
-      </div>
-    </GlassCard>
-  );
-};
-
-export default TradeOffer;
