@@ -17,6 +17,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { 
   Menu, 
   User, 
   Package, 
@@ -24,11 +29,17 @@ import {
   LogOut,
   MessageSquare,
   ShoppingCart,
-  LogIn
+  LogIn,
+  Bell,
+  BellDot
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/hooks/useUser";
+import NotificationBox from "@/components/notifications/NotificationBox";
+import ChatBox from "@/components/chat/ChatBox";
+import { useNotifications } from "@/hooks/useNotifications";
 
 const Navbar = () => {
   const location = useLocation();
@@ -37,6 +48,7 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const { user, signOut } = useAuth();
   const { toast } = useToast();
+  const { hasUnreadMessages, hasUnreadNotifications } = useNotifications();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -105,13 +117,40 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          {!isMobile && (
-            <Button variant="ghost" size="icon" className="relative">
-              <MessageSquare className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-white">
-                3
-              </span>
-            </Button>
+          {!isMobile && user && (
+            <>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    {hasUnreadNotifications ? <BellDot className="h-5 w-5 text-primary" /> : <Bell className="h-5 w-5" />}
+                    {hasUnreadNotifications && (
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-white">
+                        !
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0" align="end">
+                  <NotificationBox />
+                </PopoverContent>
+              </Popover>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <MessageSquare className="h-5 w-5" />
+                    {hasUnreadMessages && (
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-white">
+                        !
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0" align="end">
+                  <ChatBox />
+                </PopoverContent>
+              </Popover>
+            </>
           )}
 
           {user ? (
