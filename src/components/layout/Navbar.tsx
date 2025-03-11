@@ -38,6 +38,9 @@ const Navbar = () => {
             <Link to="/collection">
               <Button variant="ghost">Collection</Button>
             </Link>
+            <Link to="/pokemon-sets">
+              <Button variant="ghost">Card Sets</Button>
+            </Link>
           </div>
           <div className="flex items-center space-x-4">
             {!isLoading && (

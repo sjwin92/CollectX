@@ -14,6 +14,7 @@ import NotFound from "./pages/NotFound";
 import Pokemons from "./pages/Pokemons";
 import Marketplace from "./pages/Marketplace";
 import Auth from "./pages/Auth";
+import PokemonSets from "./pages/PokemonSets";
 import { AuthProvider } from "./contexts/AuthContext";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -28,6 +29,7 @@ function App() {
             <Route path="/trades/:id" element={<TradeDetail />} />
             <Route path="/collection" element={<Collection />} />
             <Route path="/pokemon-cards" element={<PokemonCards />} />
+            <Route path="/pokemon-sets" element={<PokemonSets />} />
             <Route path="/pokemons" element={<Pokemons />} />
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/card/:id" element={<CardDetail />} />
