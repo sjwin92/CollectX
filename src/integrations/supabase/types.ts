@@ -9,26 +9,70 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      card_alternative_images: {
+        Row: {
+          card_id: string
+          created_at: string | null
+          id: string
+          image_url: string
+          is_verified: boolean | null
+          source: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string | null
+          id?: string
+          image_url: string
+          is_verified?: boolean | null
+          source: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string | null
+          id?: string
+          image_url?: string
+          is_verified?: boolean | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_alternative_images_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "pokemon_cards_cache"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pokemon_cards_cache: {
         Row: {
+          backup_image_url: string | null
           cached_at: string
           data: Json
           id: string
           image_url: string | null
+          image_verified: boolean | null
+          last_verified: string | null
           name: string
         }
         Insert: {
+          backup_image_url?: string | null
           cached_at?: string
           data: Json
           id: string
           image_url?: string | null
+          image_verified?: boolean | null
+          last_verified?: string | null
           name: string
         }
         Update: {
+          backup_image_url?: string | null
           cached_at?: string
           data?: Json
           id?: string
           image_url?: string | null
+          image_verified?: boolean | null
+          last_verified?: string | null
           name?: string
         }
         Relationships: []

@@ -184,12 +184,62 @@ export const findWorkingImageUrl = async (card: any): Promise<string> => {
     try {
       const { data: cachedCard } = await supabase
         .from('pokemon_cards_cache')
-        .select('data, image_url')
+        .select('image_url, image_verified, backup_image_url, data')
         .eq('id', card.id)
         .maybeSingle();
         
       if (cachedCard) {
-        // If we have a cached card with data that contains images
+        // If the card has a verified image, use it
+        if (cachedCard.image_verified && cachedCard.image_url) {
+          console.log(`Using verified image for ${card.id}: ${cachedCard.image_url}`);
+          return cachedCard.image_url;
+        }
+        
+        // If the card has a backup image, use it
+        if (cachedCard.backup_image_url) {
+          console.log(`Using backup image for ${card.id}: ${cachedCard.backup_image_url}`);
+          return cachedCard.backup_image_url;
+        }
+        
+        // If the image hasn't been verified yet, check if the primary image works
+        if (cachedCard.image_url) {
+          const works = await checkImageUrl(cachedCard.image_url);
+          if (works) {
+            // Update the verification status
+            await supabase
+              .from('pokemon_cards_cache')
+              .update({ 
+                image_verified: true,
+                last_verified: new Date().toISOString()
+              })
+              .eq('id', card.id);
+              
+            return cachedCard.image_url;
+          }
+        }
+        
+        // Check for alternative images in our database
+        const { data: alternatives } = await supabase
+          .from('card_alternative_images')
+          .select('image_url, is_verified')
+          .eq('card_id', card.id)
+          .eq('is_verified', true)
+          .limit(1);
+          
+        if (alternatives && alternatives.length > 0) {
+          // Update backup URL in the cache
+          await supabase
+            .from('pokemon_cards_cache')
+            .update({ 
+              backup_image_url: alternatives[0].image_url,
+              last_verified: new Date().toISOString()
+            })
+            .eq('id', card.id);
+            
+          return alternatives[0].image_url;
+        }
+          
+        // If all else fails, try to use the image from the data field
         if (typeof cachedCard.data === 'object' && cachedCard.data !== null) {
           // Safely type check and access the image properties
           const typedData = cachedCard.data as Record<string, any>;
@@ -202,25 +252,53 @@ export const findWorkingImageUrl = async (card: any): Promise<string> => {
             if ('large' in typedData.images && typedData.images.large) {
               const largeUrl = typedData.images.large as string;
               const works = await checkImageUrl(largeUrl);
-              if (works) return largeUrl;
+              if (works) {
+                // Store this as a backup
+                await supabase
+                  .from('pokemon_cards_cache')
+                  .update({ 
+                    backup_image_url: largeUrl,
+                    last_verified: new Date().toISOString()
+                  })
+                  .eq('id', card.id);
+                  
+                return largeUrl;
+              }
             }
             
             if ('small' in typedData.images && typedData.images.small) {
               const smallUrl = typedData.images.small as string;
               const works = await checkImageUrl(smallUrl);
-              if (works) return smallUrl;
+              if (works) {
+                // Store this as a backup
+                await supabase
+                  .from('pokemon_cards_cache')
+                  .update({ 
+                    backup_image_url: smallUrl,
+                    last_verified: new Date().toISOString()
+                  })
+                  .eq('id', card.id);
+                  
+                return smallUrl;
+              }
             }
           }
-        }
-        
-        // Try the image_url field as a fallback
-        if (cachedCard.image_url && typeof cachedCard.image_url === 'string') {
-          const works = await checkImageUrl(cachedCard.image_url);
-          if (works) return cachedCard.image_url;
         }
       }
     } catch (error) {
       console.error("Error checking cache for card image:", error);
+    }
+    
+    // If we got here, the card wasn't in the cache or verification failed
+    // Trigger our image verification edge function
+    try {
+      await fetch(`${supabase.functions.url}/verify-card-images?id=${card.id}`, {
+        method: 'GET'
+      });
+      // Don't wait for the response as it can be slow
+      console.log(`Triggered image verification for ${card.id}`);
+    } catch (verifyError) {
+      console.warn("Error triggering verification:", verifyError);
     }
   }
   

@@ -82,6 +82,34 @@ const AddToCollectionModal = ({ isOpen, onClose, card }: AddToCollectionModalPro
     setIsSubmitting(true);
     
     try {
+      // Check if the card is in the cache
+      const { data: existingCard, error: cardError } = await supabase
+        .from("pokemon_cards_cache")
+        .select("id")
+        .eq("id", card.id)
+        .maybeSingle();
+      
+      // If not in cache, add it to the cache first
+      if (!existingCard && !cardError) {
+        const cardData = {
+          id: card.id,
+          name: card.name,
+          data: card,
+          image_url: card.images?.small || card.images?.large,
+          cached_at: new Date()
+        };
+        
+        const { error: cacheError } = await supabase
+          .from("pokemon_cards_cache")
+          .upsert([cardData], { onConflict: 'id' });
+          
+        if (cacheError) {
+          console.warn("Error caching card:", cacheError);
+          // Continue anyway as this is not critical
+        }
+      }
+      
+      // Now add to user collection
       const { data, error } = await supabase.from("user_collections").insert({
         card_id: card.id,
         quantity,
@@ -95,6 +123,44 @@ const AddToCollectionModal = ({ isOpen, onClose, card }: AddToCollectionModalPro
       
       if (error) {
         throw new Error(error.message);
+      }
+      
+      // Also try to save alternative images if available
+      if (card.images) {
+        try {
+          // Save all available image URLs as alternatives
+          const alternativeImages = [];
+          
+          if (card.images.small) {
+            alternativeImages.push({
+              card_id: card.id,
+              image_url: card.images.small,
+              source: "pokemon_tcg_api_small",
+              is_verified: true
+            });
+          }
+          
+          if (card.images.large) {
+            alternativeImages.push({
+              card_id: card.id,
+              image_url: card.images.large,
+              source: "pokemon_tcg_api_large",
+              is_verified: true
+            });
+          }
+          
+          // Only insert if we have alternatives
+          if (alternativeImages.length > 0) {
+            await supabase
+              .from("card_alternative_images")
+              .upsert(alternativeImages, { 
+                onConflict: 'card_id,image_url'
+              });
+          }
+        } catch (imageError) {
+          // Non-critical, just log the error
+          console.error("Error saving alternative images:", imageError);
+        }
       }
       
       toast({
