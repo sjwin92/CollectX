@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -46,87 +47,6 @@ const recentTrades = [
   }
 ];
 
-const TradeProgressSteps = ({ status }: { status: string }) => {
-  const getStatusStep = () => {
-    switch (status) {
-      case "proposed":
-      case "pending":
-        return 1;
-      case "accepted":
-      case "processing":
-        return 2;
-      case "escrowed":
-        return 3;
-      case "shipped":
-        return 4;
-      case "completed":
-        return 5;
-      case "declined":
-      case "disputed":
-      case "cancelled":
-        return 0;
-      default:
-        return 0;
-    }
-  };
-
-  const step = getStatusStep();
-
-  return (
-    <div className="mt-3 mb-1">
-      <div className="relative flex justify-between w-full max-w-md mx-auto">
-        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-muted transform -translate-y-1/2" />
-        <div
-          className="absolute top-1/2 left-0 h-0.5 bg-primary transform -translate-y-1/2"
-          style={{ width: `${(step / 5) * 100}%` }}
-        />
-        <div className="relative flex justify-between w-full">
-          <div className="flex flex-col items-center">
-            <div
-              className={`h-4 w-4 rounded-full ${
-                step >= 1 ? "bg-primary" : "bg-muted"
-              } flex items-center justify-center text-white text-xs z-10`}
-            />
-            <span className="text-[10px] mt-1">Offered</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <div
-              className={`h-4 w-4 rounded-full ${
-                step >= 2 ? "bg-primary" : "bg-muted"
-              } flex items-center justify-center text-white text-xs z-10`}
-            />
-            <span className="text-[10px] mt-1">Accepted</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <div
-              className={`h-4 w-4 rounded-full ${
-                step >= 3 ? "bg-primary" : "bg-muted"
-              } flex items-center justify-center text-white text-xs z-10`}
-            />
-            <span className="text-[10px] mt-1">Escrowed</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <div
-              className={`h-4 w-4 rounded-full ${
-                step >= 4 ? "bg-primary" : "bg-muted"
-              } flex items-center justify-center text-white text-xs z-10`}
-            />
-            <span className="text-[10px] mt-1">Shipped</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <div
-              className={`h-4 w-4 rounded-full ${
-                step >= 5 ? "bg-primary" : "bg-muted"
-              } flex items-center justify-center text-white text-xs z-10`}
-            />
-            <span className="text-[10px] mt-1">Completed</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const RecentTrades = () => {
   return (
     <section className="py-16 md:py-24">
@@ -147,24 +67,11 @@ const RecentTrades = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {recentTrades.map((trade) => (
-            <Card key={trade.id} className="overflow-hidden">
-              <CardContent className="p-4">
-                <TradeOffer key={trade.id} {...trade} showFooter={false} />
-                <Separator className="my-3" />
-                <div className="flex items-center justify-between px-1">
-                  <div className="text-sm font-medium">Trade Progress</div>
-                  <Badge 
-                    variant={
-                      trade.status === "completed" ? "success" : 
-                      trade.status === "proposed" ? "warning" : "info"
-                    }
-                  >
-                    {trade.status.charAt(0).toUpperCase() + trade.status.slice(1)}
-                  </Badge>
-                </div>
-                <TradeProgressSteps status={trade.status} />
-              </CardContent>
-            </Card>
+            <TradeOffer 
+              key={trade.id} 
+              {...trade} 
+              showProgressBar={true}
+            />
           ))}
         </div>
         
