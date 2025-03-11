@@ -29,8 +29,9 @@ interface UserProfile {
 // Function to fetch user profile data
 const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
   // Use the RPC function which handles the case where the profiles table doesn't exist yet
+  // We need to cast the parameter to any to avoid TypeScript errors with the RPC call
   const { data, error } = await supabase
-    .rpc('get_profile_by_id', { user_id: userId as unknown as never });
+    .rpc('get_profile_by_id', { user_id: userId as any });
     
   if (error) {
     console.error("Error fetching user profile:", error);
