@@ -28,11 +28,12 @@ interface UserProfile {
 
 // Function to fetch user profile data
 const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
-  // Cast the parameters to unknown first, then to the expected type
-  // This is a workaround for TypeScript's strict type checking with RPC calls
-  const params = { user_id: userId } as unknown as Record<string, never>;
+  // Explicitly type the parameters object
+  type ProfileParams = {
+    user_id: string;
+  };
   
-  const { data, error } = await supabase.rpc('get_profile_by_id', params);
+  const { data, error } = await supabase.rpc('get_profile_by_id', { user_id: userId } as ProfileParams);
   
   if (error) {
     console.error("Error fetching user profile:", error);
