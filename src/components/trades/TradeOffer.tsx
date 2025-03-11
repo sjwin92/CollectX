@@ -1,11 +1,13 @@
+
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge, { ReputationLevel } from "@/components/ui/custom/Badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeftRight, Calendar, Package, Shield, Truck, Lock, AlertTriangle } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
+import { useToast } from "@/hooks/use-toast";
 
 export interface TradeOfferProps {
   id: string;
@@ -44,6 +46,8 @@ const TradeOffer = ({
   escrowPaid = false,
 }: TradeOfferProps) => {
   const { isSignedIn } = useUser();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const getStatusBadge = () => {
     switch (status) {
@@ -105,6 +109,19 @@ const TradeOffer = ({
     const img = e.target as HTMLImageElement;
     img.onerror = null; // Prevent infinite loop
     img.src = "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg";
+  };
+
+  const handleViewTradeDetails = () => {
+    if (!isSignedIn) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to view trade details.",
+        variant: "destructive"
+      });
+      navigate("/auth");
+      return;
+    }
+    navigate(`/trades/${id}`);
   };
 
   return (
@@ -191,5 +208,52 @@ const TradeOffer = ({
         </div>
       </div>
 
-      {
+      {escrowRequired && (
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-amber-500" />
+            <span className="text-sm font-medium text-amber-800">Escrow Protection</span>
+          </div>
+          <div className="text-xs text-amber-700 mt-1">
+            {escrowPaid ? (
+              <div className="flex items-center gap-1">
+                <Lock className="h-3 w-3" />
+                <span>Escrow has been paid and the trade is protected</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                <span>Escrow payment required to proceed with this trade</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
+      {status === "shipped" && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+          <div className="flex items-center gap-2">
+            <Truck className="h-4 w-4 text-blue-500" />
+            <span className="text-sm font-medium text-blue-800">Shipping Status</span>
+          </div>
+          <div className="text-xs text-blue-700 mt-1">
+            This trade is currently in transit. Tracking information is available in trade details.
+          </div>
+        </div>
+      )}
+
+      <div className="flex justify-end pt-2 border-t border-border">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="text-xs"
+          onClick={handleViewTradeDetails}
+        >
+          View Trade Details
+        </Button>
+      </div>
+    </GlassCard>
+  );
+};
+
+export default TradeOffer;
