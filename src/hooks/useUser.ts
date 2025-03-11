@@ -13,13 +13,12 @@ export interface ExtendedUser extends User {
   avatarUrl?: string;
 }
 
-// Function to fetch user profile from the profiles table
+// Function to fetch user profile data
 const fetchUserProfile = async (userId: string) => {
+  // Use a direct SQL query instead of the from() method since the profiles table
+  // isn't in the generated types yet
   const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
+    .rpc('get_profile_by_id', { user_id: userId });
     
   if (error) {
     console.error("Error fetching user profile:", error);

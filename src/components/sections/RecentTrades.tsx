@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 // Function to fetch recent trades
 const fetchRecentTrades = async () => {
+  // Use a simpler query that doesn't try to join to users directly
   const { data, error } = await supabase
     .from('trade_proposals')
     .select(`
@@ -18,8 +19,8 @@ const fetchRecentTrades = async () => {
       status,
       created_at,
       updated_at,
-      initiator:initiator_id(id),
-      recipient:recipient_id(id),
+      initiator_id,
+      recipient_id,
       trade_cards(
         id,
         user_id,
@@ -48,8 +49,8 @@ const fetchRecentTrades = async () => {
 
     // Find initiator and recipient cards
     const userIds = Object.keys(cardsByUser);
-    const initiatorId = trade.initiator?.id;
-    const recipientId = trade.recipient?.id;
+    const initiatorId = trade.initiator_id;
+    const recipientId = trade.recipient_id;
 
     // For demo purposes, use placeholder usernames
     const usernames = {
@@ -77,7 +78,7 @@ const fetchRecentTrades = async () => {
     const formatRelativeTime = (timestamp) => {
       const date = new Date(timestamp);
       const now = new Date();
-      const diffInSeconds = Math.floor((now - date) / 1000);
+      const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
       
       if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
       if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
