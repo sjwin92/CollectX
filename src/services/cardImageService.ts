@@ -191,18 +191,25 @@ export const findWorkingImageUrl = async (card: any): Promise<string> => {
       if (cachedCard) {
         // If we have a cached card with data that contains images
         if (typeof cachedCard.data === 'object' && cachedCard.data !== null) {
+          // Safely type check and access the image properties
           const typedData = cachedCard.data as Record<string, any>;
           
-          if (typedData.images?.large) {
-            const largeUrl = typedData.images.large as string;
-            const works = await checkImageUrl(largeUrl);
-            if (works) return largeUrl;
-          }
-          
-          if (typedData.images?.small) {
-            const smallUrl = typedData.images.small as string;
-            const works = await checkImageUrl(smallUrl);
-            if (works) return smallUrl;
+          if (
+            'images' in typedData && 
+            typedData.images && 
+            typeof typedData.images === 'object'
+          ) {
+            if ('large' in typedData.images && typedData.images.large) {
+              const largeUrl = typedData.images.large as string;
+              const works = await checkImageUrl(largeUrl);
+              if (works) return largeUrl;
+            }
+            
+            if ('small' in typedData.images && typedData.images.small) {
+              const smallUrl = typedData.images.small as string;
+              const works = await checkImageUrl(smallUrl);
+              if (works) return smallUrl;
+            }
           }
         }
         
@@ -226,7 +233,12 @@ export const findWorkingImageUrl = async (card: any): Promise<string> => {
       
       if (response.ok) {
         const data = await response.json();
-        if (data.data?.length > 0 && data.data[0].images?.large) {
+        if (
+          data.data?.length > 0 && 
+          data.data[0].images && 
+          typeof data.data[0].images === 'object' &&
+          'large' in data.data[0].images
+        ) {
           const imageUrl = data.data[0].images.large;
           console.log(`Found image by name search: ${imageUrl}`);
           

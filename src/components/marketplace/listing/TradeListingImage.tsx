@@ -13,6 +13,22 @@ interface TradeListingImageProps {
   condition: string;
 }
 
+// Helper function to safely type check and access nested properties
+const safelyAccessImageUrl = (data: any): string | undefined => {
+  if (
+    typeof data === 'object' && 
+    data !== null && 
+    'images' in data && 
+    data.images && 
+    typeof data.images === 'object' &&
+    'large' in data.images
+  ) {
+    return data.images.large as string;
+  }
+  
+  return undefined;
+};
+
 const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListingImageProps) => {
   const [imageError, setImageError] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -41,18 +57,14 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
             .maybeSingle();
             
           if (!cacheError && cachedData?.data) {
-            const cardData = cachedData.data;
+            // Use the helper function to safely access image URL
+            const cardImageUrl = safelyAccessImageUrl(cachedData.data);
             
-            // Properly type check and handle the cached data
-            if (typeof cardData === 'object' && cardData !== null) {
-              const typedCardData = cardData as Record<string, any>;
-              
-              if (typedCardData.images && typedCardData.images.large) {
-                setImageSrc(typedCardData.images.large);
-                console.log(`Using cached official image for card ${cardId}: ${typedCardData.images.large}`);
-                setIsLoading(false);
-                return;
-              }
+            if (cardImageUrl) {
+              setImageSrc(cardImageUrl);
+              console.log(`Using cached official image for card ${cardId}: ${cardImageUrl}`);
+              setIsLoading(false);
+              return;
             }
             
             // Fallback to the image_url field if available
@@ -66,7 +78,7 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
         }
         
         // If no cache hit, try to find a working image
-        const workingUrl = await findWorkingImageUrl({ id: cardId, imageUrl });
+        const workingUrl = await findWorkingImageUrl({ id: cardId, imageUrl, name: cardName });
         if (workingUrl) {
           setImageSrc(workingUrl);
           setIsLoading(false);
