@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +18,7 @@ interface TradeListingImageProps {
 const CARD_BACK_URL = "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg";
 
 const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListingImageProps) => {
-  const [imageSrc, setImageSrc] = useState<string>(CARD_BACK_URL);
+  const [imageSrc, setImageSrc] = useState<string>(imageUrl || CARD_BACK_URL);
   const [isLoading, setIsLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
 
@@ -29,45 +30,11 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
       try {
         if (!cardId && !imageUrl) {
           console.log('No card ID or image URL provided for:', cardName);
+          setImageSrc(CARD_BACK_URL);
+          setIsLoading(false);
           return;
         }
 
-        // First try to get image from Supabase cache if we have an ID
-        if (cardId) {
-          const { data: cachedCard } = await supabase
-            .from('pokemon_cards_cache')
-            .select('data, image_url')
-            .eq('id', cardId)
-            .maybeSingle();
-
-          if (cachedCard) {
-            // If we have a direct image_url, use that first
-            if (cachedCard.image_url) {
-              console.log(`Using cached image_url for card ${cardId}`);
-              setImageSrc(cachedCard.image_url);
-              return;
-            }
-            
-            // Otherwise check the data field
-            if (typeof cachedCard.data === 'object' && cachedCard.data !== null) {
-              // First cast to unknown, then to a record to check the structure
-              const tempData = cachedCard.data as unknown;
-              
-              // Check if it has the expected structure before treating it as a PokemonCard
-              if (isPokemonCardLike(tempData)) {
-                console.log(`Using cached image for card ${cardId}`);
-                if (tempData.images.large) {
-                  setImageSrc(tempData.images.large);
-                  return;
-                } else if (tempData.images.small) {
-                  setImageSrc(tempData.images.small);
-                  return;
-                }
-              }
-            }
-          }
-        }
-        
         // Use our card image service to find a working image
         const card = {
           id: cardId,
@@ -81,6 +48,7 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
       } catch (error) {
         console.error("Error loading card image:", error);
         setImageError(true);
+        setImageSrc(CARD_BACK_URL);
       } finally {
         // Make sure loading state ends even if there's an error
         setIsLoading(false);
@@ -89,19 +57,6 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
     
     loadCardImage();
   }, [cardId, imageUrl, cardName]);
-  
-  // Helper function to type check if an object has the expected PokemonCard structure
-  const isPokemonCardLike = (obj: unknown): obj is { images: { large?: string, small?: string } } => {
-    return (
-      obj !== null &&
-      typeof obj === 'object' &&
-      'images' in obj &&
-      obj.images !== null &&
-      typeof obj.images === 'object' &&
-      (('large' in obj.images && typeof obj.images.large === 'string') || 
-       ('small' in obj.images && typeof obj.images.small === 'string'))
-    );
-  };
   
   const handleImageLoad = () => {
     setIsLoading(false);

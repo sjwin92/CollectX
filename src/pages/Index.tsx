@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -21,20 +20,22 @@ import CardGrid from "@/components/cards/CardGrid";
 import TradeOffer from "@/components/trades/TradeOffer";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
+import { findWorkingImageUrl } from "@/services/cardImageService";
+import { useEffect, useState } from "react";
 
 const featuredCards = [
   {
     id: "swsh4-25",  // Charizard VMAX from Vivid Voltage
     name: "Charizard VMAX",
-    imageUrl: "https://images.pokemontcg.io/swsh4/25.png",
+    imageUrl: "https://images.pokemontcg.io/swsh4/25_hires.png",
     rarity: "Ultra Rare",
     condition: "Near Mint",
     estimatedValue: "$350-450"
   },
   {
-    id: "swsh1-190", // Pikachu VMAX from Sword & Shield Base
-    name: "Pikachu VMAX",
-    imageUrl: "https://images.pokemontcg.io/swsh1/190.png",
+    id: "swsh1-7", // Pikachu V from Sword & Shield Base
+    name: "Pikachu V",
+    imageUrl: "https://images.pokemontcg.io/swsh1/7_hires.png",
     rarity: "Rare",
     condition: "Mint",
     estimatedValue: "$120-150"
@@ -42,7 +43,7 @@ const featuredCards = [
   {
     id: "sm12-222", // Mewtwo & Mew GX from Cosmic Eclipse
     name: "Mewtwo & Mew GX",
-    imageUrl: "https://images.pokemontcg.io/sm12/222.png",
+    imageUrl: "https://images.pokemontcg.io/sm12/222_hires.png",
     rarity: "Ultra Rare",
     condition: "Excellent",
     estimatedValue: "$200-250"
@@ -50,7 +51,7 @@ const featuredCards = [
   {
     id: "swsh9-25", // Blastoise VMAX from Brilliant Stars
     name: "Blastoise VMAX",
-    imageUrl: "https://images.pokemontcg.io/swsh9/25.png",
+    imageUrl: "https://images.pokemontcg.io/swsh9/25_hires.png",
     rarity: "Rare Holo",
     condition: "Good",
     estimatedValue: "$80-120"
@@ -97,6 +98,36 @@ const recentTrades = [
 ];
 
 const Index = () => {
+  const [processedFeaturedCards, setProcessedFeaturedCards] = useState(featuredCards);
+  
+  useEffect(() => {
+    const processImages = async () => {
+      const processedCards = await Promise.all(
+        featuredCards.map(async (card) => {
+          try {
+            const workingImageUrl = await findWorkingImageUrl({
+              id: card.id,
+              name: card.name,
+              imageUrl: card.imageUrl
+            });
+            
+            return {
+              ...card,
+              imageUrl: workingImageUrl
+            };
+          } catch (error) {
+            console.error(`Error processing card image for ${card.name}:`, error);
+            return card;
+          }
+        })
+      );
+      
+      setProcessedFeaturedCards(processedCards);
+    };
+    
+    processImages();
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -198,7 +229,7 @@ const Index = () => {
           </div>
           
           <CardGrid 
-            cards={featuredCards} 
+            cards={processedFeaturedCards} 
             columns={{ sm: 2, md: 3, lg: 4 }}
             animated
           />

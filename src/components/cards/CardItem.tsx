@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Info, AlertTriangle, Check, Image, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { getImageUrlsForCard } from "@/services/cardImageService";
+import { getImageUrlsForCard, findWorkingImageUrl } from "@/services/cardImageService";
 
 export interface CardItemProps {
   id: string;
@@ -35,6 +35,7 @@ const CardItem = ({
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageSources, setImageSources] = useState<string[]>([]);
+  const [bestImageUrl, setBestImageUrl] = useState<string>(imageUrl);
   
   useEffect(() => {
     // Reset when card changes
@@ -42,14 +43,28 @@ const CardItem = ({
     setCurrentImageIndex(0);
     
     // Get all possible image sources
-    const card = { id, imageUrl };
+    const card = { id, name, imageUrl };
     const sources = getImageUrlsForCard(card);
     setImageSources(sources);
     
+    // Find best working image using our service
+    const findBestImage = async () => {
+      try {
+        const url = await findWorkingImageUrl(card);
+        setBestImageUrl(url);
+        setImageStatus("loaded");
+      } catch (error) {
+        console.error(`Failed to find working image for ${name}:`, error);
+        // We'll continue with our fallback logic if this fails
+      }
+    };
+    
+    findBestImage();
+    
     console.log(`Generated ${sources.length} potential image URLs for card ${id}`);
-  }, [id, imageUrl]);
+  }, [id, imageUrl, name]);
   
-  const currentImageSrc = imageSources[currentImageIndex] || '';
+  const currentImageSrc = bestImageUrl || imageSources[currentImageIndex] || '';
   
   // Map condition to style
   const conditionVariant = (): "success" | "warning" | "danger" | "info" => {
@@ -76,6 +91,11 @@ const CardItem = ({
   const handleImageError = () => {
     console.log(`Image failed to load: ${currentImageSrc}, current index: ${currentImageIndex}`);
     
+    // If the best image URL failed, try the next one in our sequence
+    if (currentImageSrc === bestImageUrl && imageSources.length > 0) {
+      setBestImageUrl(''); // Clear the best URL so we use the fallback sequence
+    }
+    
     // Try the next image in the list
     if (currentImageIndex < imageSources.length - 1) {
       const nextIndex = currentImageIndex + 1;
@@ -87,9 +107,18 @@ const CardItem = ({
     }
   };
   
-  const retryImage = () => {
+  const retryImage = async () => {
     setImageStatus("loading");
     setCurrentImageIndex(0);
+    
+    try {
+      const card = { id, name, imageUrl };
+      const url = await findWorkingImageUrl(card);
+      setBestImageUrl(url);
+    } catch (error) {
+      console.error("Error during retry:", error);
+      setBestImageUrl('');
+    }
   };
 
   const CardContent = (
