@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getCards, PokemonCard, getReliableImageUrl, mapToTradeCard } from "@/services/pokemonTcgApi";
@@ -277,6 +278,21 @@ const Marketplace = () => {
     return mappedCards;
   };
 
+  // State for cards in card grid
+  const [cardItems, setCardItems] = useState<CardItemProps[]>([]);
+  
+  // Effect to load card data for the grid
+  useEffect(() => {
+    const loadCards = async () => {
+      if (data?.data) {
+        const mappedCards = await mapToPokemonCardItems(data.data);
+        setCardItems(mappedCards);
+      }
+    };
+    
+    loadCards();
+  }, [data]);
+
   const createNewListing = async (cardOffered: PokemonCard, cardsWanted: string[], description: string) => {
     const imageUrl = await findWorkingImageUrl(cardOffered.id);
     const newListing: ListingType = {
@@ -520,7 +536,7 @@ const Marketplace = () => {
                 </div>
 
                 <CardGrid
-                  cards={mapToPokemonCardItems(data?.data)}
+                  cards={cardItems}
                   columns={{ sm: 2, md: 3, lg: 4, xl: 5 }}
                   animated
                   staggered
