@@ -1,11 +1,10 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import React from "react";
 
 // Card type definition to match what's used in the app
-interface Card {
+export interface Card {
   id: string;
-  name: string;
+  name?: string; // Make name optional since we don't always have it
   imageUrl?: string;
   images?: {
     small?: string;
@@ -96,7 +95,7 @@ const isValidUrl = (url: string): boolean => {
  */
 export const findWorkingImageUrl = async (cardIdOrCard: string | Card): Promise<string> => {
   const cardId = typeof cardIdOrCard === 'string' ? cardIdOrCard : cardIdOrCard.id;
-  const cardName = typeof cardIdOrCard === 'string' ? '' : cardIdOrCard.name;
+  const cardName = typeof cardIdOrCard === 'string' ? '' : (cardIdOrCard.name || '');
   
   if (!cardId) {
     console.warn("No card ID provided to findWorkingImageUrl");

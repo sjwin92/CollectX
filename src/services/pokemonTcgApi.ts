@@ -168,7 +168,7 @@ export const getReliableImageUrl = (cardId: string, size: 'small' | 'large' = 's
   
   import('./cardImageService').then(cardImageService => {
     console.warn('getReliableImageUrl is deprecated. Use cardImageService.findWorkingImageUrl instead');
-    cardImageService.findWorkingImageUrl({ id: cardId });
+    cardImageService.findWorkingImageUrl(cardId);
   });
   
   return `${POKEMON_TCG_IO}/${size}/${cardId}.png`;
