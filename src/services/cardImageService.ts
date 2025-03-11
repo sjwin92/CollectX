@@ -1,6 +1,7 @@
 
 import { PokemonCard } from "./pokemonTcgApi";
 import { TCGDexCard } from "./tcgdexApi";
+import { supabase } from "@/integrations/supabase/client";
 
 const CARD_BACK_URL = "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg";
 const PLACEHOLDER_URL = "/placeholder.svg";
@@ -19,20 +20,21 @@ export const generateImageUrlsById = (cardId: string): string[] => {
   
   return [
     // Direct API image URLs - most reliable source
-    `https://images.pokemontcg.io/${setId}/${cardNumber}.png`,
     `https://images.pokemontcg.io/${setId}/${cardNumber}_hires.png`,
+    `https://images.pokemontcg.io/${setId}/${cardNumber}.png`,
     
     // Pokemon TCG API standard format images
     `https://images.pokemontcg.io/large/${cardId}.png`,
     `https://images.pokemontcg.io/small/${cardId}.png`,
     
+    // Alternative source: Pokellector with padding
+    `https://assets.pokellector.com/cards/${setId.toLowerCase()}/${cardNumber.padStart(3, '0')}.webp`,
+    `https://assets.pokellector.com/cards/${setId.toUpperCase()}/${cardNumber.padStart(3, '0')}.webp`,
+    
     // TCGDex format
     `https://assets.tcgdex.net/en/${setId}/${cardNumber}.png`,
     `https://assets.tcgdex.net/en/${setId}/${cardNumber}.jpg`,
     `https://assets.tcgdex.net/en/${setId}/${cardNumber}`,
-    
-    // Pokellector format (padding card number to 3 digits)
-    `https://assets.pokellector.com/cards/${setId}/${cardNumber.padStart(3, '0')}.webp`,
     
     // Pokemon.com format
     `https://assets.pokemon.com/assets/cms2/img/cards/web/${setId.toUpperCase()}/${setId.toUpperCase()}_EN_${cardNumber}.png`,
@@ -103,12 +105,26 @@ export const getImageUrlsForCard = (card: any): string[] => {
       urls.push(...generateImageUrlsById(card.id));
     }
     
+    // Also try searching by name for better results if available
+    if (card.name) {
+      // We'll add this at the end as it's a fallback method
+      urls.push(`https://api.pokemontcg.io/v2/cards?q=name:"${encodeURIComponent(card.name)}"&pageSize=1`);
+    }
+    
     return urls;
   }
   
   // If it just has an ID, try to generate URLs from that
   if (card.id) {
     return generateImageUrlsById(card.id);
+  }
+  
+  // If we have a name but no ID, try to find by name
+  if (card.name) {
+    return [
+      `https://api.pokemontcg.io/v2/cards?q=name:"${encodeURIComponent(card.name)}"&pageSize=1`,
+      PLACEHOLDER_URL
+    ];
   }
   
   // If it's just a string ID
@@ -137,6 +153,11 @@ export const checkImageUrl = async (url: string): Promise<boolean> => {
       return true;
     }
     
+    // Skip API search URLs, which need special handling
+    if (url.includes('/v2/cards?q=name:')) {
+      return false;
+    }
+    
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 seconds timeout
     
@@ -158,14 +179,86 @@ export const checkImageUrl = async (url: string): Promise<boolean> => {
  * Find the first working image URL for a card
  */
 export const findWorkingImageUrl = async (card: any): Promise<string> => {
-  const urls = getImageUrlsForCard(card);
-  
-  for (const url of urls) {
-    if (await checkImageUrl(url)) {
-      return url;
+  // First try to get the card from Supabase cache if we have an ID
+  if (card.id) {
+    try {
+      const { data: cachedCard } = await supabase
+        .from('pokemon_cards_cache')
+        .select('data, image_url')
+        .eq('id', card.id)
+        .maybeSingle();
+        
+      if (cachedCard) {
+        // If we have a cached card with data that contains images
+        if (typeof cachedCard.data === 'object' && cachedCard.data !== null) {
+          const typedData = cachedCard.data as Record<string, any>;
+          
+          if (typedData.images?.large) {
+            const largeUrl = typedData.images.large as string;
+            const works = await checkImageUrl(largeUrl);
+            if (works) return largeUrl;
+          }
+          
+          if (typedData.images?.small) {
+            const smallUrl = typedData.images.small as string;
+            const works = await checkImageUrl(smallUrl);
+            if (works) return smallUrl;
+          }
+        }
+        
+        // Try the image_url field as a fallback
+        if (cachedCard.image_url && typeof cachedCard.image_url === 'string') {
+          const works = await checkImageUrl(cachedCard.image_url);
+          if (works) return cachedCard.image_url;
+        }
+      }
+    } catch (error) {
+      console.error("Error checking cache for card image:", error);
     }
   }
   
+  // If we have a name but no successful image yet, try to search by name
+  if (card.name && typeof card.name === 'string') {
+    try {
+      console.log(`Searching Pokemon TCG API for card by name: ${card.name}`);
+      const searchUrl = `https://api.pokemontcg.io/v2/cards?q=name:"${encodeURIComponent(card.name)}"&pageSize=1`;
+      const response = await fetch(searchUrl);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.data?.length > 0 && data.data[0].images?.large) {
+          const imageUrl = data.data[0].images.large;
+          console.log(`Found image by name search: ${imageUrl}`);
+          
+          // Verify this image works
+          const works = await checkImageUrl(imageUrl);
+          if (works) return imageUrl;
+        }
+      }
+    } catch (error) {
+      console.error("Error searching for card by name:", error);
+    }
+  }
+  
+  // Fall back to checking each URL in sequence
+  const urls = getImageUrlsForCard(card);
+  
+  for (const url of urls) {
+    // Skip API search URLs, as we've already tried them above
+    if (url.includes('/v2/cards?q=name:')) continue;
+    
+    try {
+      const works = await checkImageUrl(url);
+      if (works) {
+        console.log(`Found working image URL: ${url}`);
+        return url;
+      }
+    } catch (error) {
+      console.error(`Error checking URL ${url}:`, error);
+    }
+  }
+  
+  console.log(`Could not find working image for card: ${card.name || card.id || 'unknown'}`);
   return PLACEHOLDER_URL;
 };
 

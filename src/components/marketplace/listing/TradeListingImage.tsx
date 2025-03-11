@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, RefreshCw } from "lucide-react";
-import { getImageUrlsForCard, checkImageUrl } from "@/services/cardImageService";
+import { getImageUrlsForCard, checkImageUrl, findWorkingImageUrl } from "@/services/cardImageService";
 import { supabase } from "@/integrations/supabase/client";
 
 interface TradeListingImageProps {
@@ -27,46 +27,73 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
       setCurrentImageIndex(0);
       setIsLoading(true);
       
-      // Get all possible image URLs
-      const card = { id: cardId, imageUrl };
-      const urls = getImageUrlsForCard(card);
-      setImageUrls(urls);
-      console.log(`Generated ${urls.length} potential image URLs for card ${cardId || 'unknown'}`);
-      
-      // Start with the first URL
-      if (urls.length > 0) {
-        // Try to fetch the actual card data if we have an ID to get the official image
+      // Start by trying to find a working image
+      try {
+        // If we have a cardId, try to get it from cache first
         if (cardId) {
-          try {
-            // Check if we have this card in Supabase cache
-            const { data: cachedData } = await supabase
-              .from('pokemon_cards_cache')
-              .select('data, image_url')
-              .eq('id', cardId)
-              .maybeSingle();
+          console.log(`Trying to load image for card ID: ${cardId}`);
+          
+          // Check if we have this card in Supabase cache
+          const { data: cachedData, error: cacheError } = await supabase
+            .from('pokemon_cards_cache')
+            .select('data, image_url')
+            .eq('id', cardId)
+            .maybeSingle();
+            
+          if (!cacheError && cachedData?.data) {
+            const cardData = cachedData.data;
+            
+            // Properly type check and handle the cached data
+            if (typeof cardData === 'object' && cardData !== null) {
+              const typedCardData = cardData as Record<string, any>;
               
-            if (cachedData?.data?.images?.large) {
-              // Use the official image from the cache if available
-              setImageSrc(cachedData.data.images.large);
-              console.log(`Using cached official image for card ${cardId}`);
+              if (typedCardData.images && typedCardData.images.large) {
+                setImageSrc(typedCardData.images.large);
+                console.log(`Using cached official image for card ${cardId}: ${typedCardData.images.large}`);
+                setIsLoading(false);
+                return;
+              }
+            }
+            
+            // Fallback to the image_url field if available
+            if (cachedData.image_url) {
+              setImageSrc(cachedData.image_url);
+              console.log(`Using cached image URL for card ${cardId}: ${cachedData.image_url}`);
+              setIsLoading(false);
               return;
             }
-          } catch (error) {
-            console.error('Error fetching card from cache:', error);
           }
         }
         
-        setImageSrc(urls[0]);
-        console.log(`Starting with image source: ${urls[0]} for card ${cardId || 'unknown'}`);
-      } else {
-        console.error('No image URLs available for card:', cardId);
+        // If no cache hit, try to find a working image
+        const workingUrl = await findWorkingImageUrl({ id: cardId, imageUrl });
+        if (workingUrl) {
+          setImageSrc(workingUrl);
+          setIsLoading(false);
+          return;
+        }
+        
+        // If we couldn't find a working image directly, try the regular flow
+        // Get all possible image URLs and try them sequentially
+        const card = { id: cardId, imageUrl, name: cardName };
+        const urls = getImageUrlsForCard(card);
+        setImageUrls(urls);
+        
+        if (urls.length > 0) {
+          setImageSrc(urls[0]);
+          console.log(`Starting with image source: ${urls[0]} for card ${cardName} (${cardId || 'unknown'})`);
+        } else {
+          throw new Error('No image URLs available');
+        }
+      } catch (error) {
+        console.error('Error loading card image:', error);
         setImageError(true);
         setIsLoading(false);
       }
     };
     
     loadCardImage();
-  }, [cardId, imageUrl]);
+  }, [cardId, imageUrl, cardName]);
   
   const handleImageError = () => {
     // Try the next image in the sequence
@@ -84,7 +111,7 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
   };
   
   const handleImageLoad = () => {
-    console.log(`Successfully loaded image: ${imageSrc}`);
+    console.log(`Successfully loaded image: ${imageSrc} for card ${cardName}`);
     setIsLoading(false);
   };
   
@@ -92,8 +119,19 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
     setIsLoading(true);
     setImageError(false);
     
-    // Try to find a working image by checking URLs before setting them
-    const card = { id: cardId, imageUrl };
+    // Try to find a working image directly
+    try {
+      const workingUrl = await findWorkingImageUrl({ id: cardId, imageUrl, name: cardName });
+      if (workingUrl) {
+        setImageSrc(workingUrl);
+        return;
+      }
+    } catch (error) {
+      console.error('Error finding working image:', error);
+    }
+    
+    // Fallback to the sequential approach
+    const card = { id: cardId, imageUrl, name: cardName };
     const urls = getImageUrlsForCard(card);
     
     for (let i = 0; i < urls.length; i++) {
@@ -128,7 +166,7 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
           )}
           <img 
             src={imageSrc} 
-            alt={cardName}
+            alt={`${cardName} Pokemon card`}
             className={`w-full h-auto rounded-md transition-transform duration-300 group-hover:scale-105 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
             onError={handleImageError}
             onLoad={handleImageLoad}
