@@ -292,7 +292,8 @@ export const findWorkingImageUrl = async (card: any): Promise<string> => {
     // If we got here, the card wasn't in the cache or verification failed
     // Trigger our image verification edge function
     try {
-      await fetch(`${supabase.functions.url}/verify-card-images?id=${card.id}`, {
+      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-card-images?id=${card.id}`;
+      await fetch(functionUrl, {
         method: 'GET'
       });
       // Don't wait for the response as it can be slow

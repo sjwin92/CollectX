@@ -96,12 +96,12 @@ const AddToCollectionModal = ({ isOpen, onClose, card }: AddToCollectionModalPro
           name: card.name,
           data: card,
           image_url: card.images?.small || card.images?.large,
-          cached_at: new Date()
+          cached_at: new Date().toISOString() // Convert Date to ISO string
         };
         
         const { error: cacheError } = await supabase
           .from("pokemon_cards_cache")
-          .upsert([cardData], { onConflict: 'id' });
+          .upsert(cardData, { onConflict: 'id' });
           
         if (cacheError) {
           console.warn("Error caching card:", cacheError);
@@ -110,16 +110,18 @@ const AddToCollectionModal = ({ isOpen, onClose, card }: AddToCollectionModalPro
       }
       
       // Now add to user collection
-      const { data, error } = await supabase.from("user_collections").insert({
-        card_id: card.id,
-        quantity,
-        condition,
-        notes: notes || null,
-        for_trade: forTrade,
-        grading_company: "PSA", // Default to PSA since we're using their scale
-        grading_value: condition,
-        user_id: user.id // Add the user ID from the auth context
-      });
+      const { data, error } = await supabase
+        .from("user_collections")
+        .insert({
+          card_id: card.id,
+          quantity,
+          condition,
+          notes: notes || null,
+          for_trade: forTrade,
+          grading_company: "PSA", // Default to PSA since we're using their scale
+          grading_value: condition,
+          user_id: user.id // Add the user ID from the auth context
+        });
       
       if (error) {
         throw new Error(error.message);

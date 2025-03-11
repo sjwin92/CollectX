@@ -7,6 +7,7 @@ import { PlusCircle, ArrowRightLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/useUser";
 import AddToCollectionModal from "./AddToCollectionModal";
+import { handleImageError } from "@/services/cardImageService";
 
 interface PokemonCard {
   id: string;
@@ -64,6 +65,7 @@ const PokemonCardItem = ({ card, onClick }: PokemonCardItemProps) => {
               alt={card.name}
               className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
               loading="lazy"
+              onError={(e) => handleImageError(e, card)}
             />
           )}
           
