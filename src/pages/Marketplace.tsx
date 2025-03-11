@@ -97,23 +97,24 @@ const Marketplace = () => {
   });
 
   useEffect(() => {
-    const generateListings = () => {
+    const generateListings = async () => {
       const newListings: ListingType[] = [];
       
       if (featuredCardsData?.data) {
-        featuredCardsData.data.slice(0, 4).forEach((card, index) => {
+        for (const card of featuredCardsData.data.slice(0, 4)) {
+          const imageUrl = await findWorkingImageUrl(card.id);
           const cardValue = card.tcgplayer?.prices?.holofoil?.market || 
                           card.tcgplayer?.prices?.normal?.market || 
                           card.tcgplayer?.prices?.reverseHolofoil?.market || 100;
           
           newListings.push({
             id: `featured-${card.id}`,
-            userId: `user-premium-${index}`,
-            username: `RarityHunter${index + 1}`,
+            userId: `user-premium-${newListings.length}`,
+            username: `RarityHunter${newListings.length + 1}`,
             cardOffered: {
               id: card.id,
               name: card.name,
-              imageUrl: findWorkingImageUrl(card.id),
+              imageUrl: imageUrl,
               rarity: card.rarity || "Ultra Rare",
               condition: "Near Mint",
               estimatedValue: `$${cardValue.toFixed(2)}`
@@ -124,26 +125,27 @@ const Marketplace = () => {
               `${card.name} Alt Art`
             ],
             description: `Mint condition ${card.name}. Looking to trade for other rare cards of similar value.`,
-            createdAt: new Date(Date.now() - (index * 24 * 60 * 60 * 1000)),
+            createdAt: new Date(Date.now() - (newListings.length * 24 * 60 * 60 * 1000)),
             featured: true
           });
-        });
+        }
       }
       
       if (recentCardsData?.data) {
-        recentCardsData.data.slice(0, 8).forEach((card, index) => {
+        for (const card of recentCardsData.data.slice(0, 8)) {
+          const imageUrl = await findWorkingImageUrl(card.id);
           const cardValue = card.tcgplayer?.prices?.holofoil?.market || 
                           card.tcgplayer?.prices?.normal?.market || 
                           card.tcgplayer?.prices?.reverseHolofoil?.market || 25;
           
           newListings.push({
             id: `recent-${card.id}`,
-            userId: `user-${100 + index}`,
-            username: `NewSetCollector${index + 1}`,
+            userId: `user-${100 + newListings.length}`,
+            username: `NewSetCollector${newListings.length + 1}`,
             cardOffered: {
               id: card.id,
               name: card.name,
-              imageUrl: findWorkingImageUrl(card.id),
+              imageUrl: imageUrl,
               rarity: card.rarity || "Rare",
               condition: ["Near Mint", "Excellent", "Good"][Math.floor(Math.random() * 3)],
               estimatedValue: `$${cardValue.toFixed(2)}`
@@ -154,25 +156,26 @@ const Marketplace = () => {
               `${card.name} Alt Art`
             ],
             description: `Fresh pull from a ${card.set?.name} pack! Looking for cards from other recent sets.`,
-            createdAt: new Date(Date.now() - (index * 12 * 60 * 60 * 1000)),
+            createdAt: new Date(Date.now() - (newListings.length * 12 * 60 * 60 * 1000)),
           });
-        });
+        }
       }
       
       if (trendingCardsData?.data) {
-        trendingCardsData.data.slice(0, 8).forEach((card, index) => {
+        for (const card of trendingCardsData.data.slice(0, 8)) {
+          const imageUrl = await findWorkingImageUrl(card.id);
           const cardValue = card.tcgplayer?.prices?.holofoil?.market || 
                           card.tcgplayer?.prices?.normal?.market || 
                           card.tcgplayer?.prices?.reverseHolofoil?.market || 50;
           
           newListings.push({
             id: `trending-${card.id}`,
-            userId: `user-${200 + index}`,
-            username: `TrendCollector${index + 1}`,
+            userId: `user-${200 + newListings.length}`,
+            username: `TrendCollector${newListings.length + 1}`,
             cardOffered: {
               id: card.id,
               name: card.name,
-              imageUrl: findWorkingImageUrl(card.id),
+              imageUrl: imageUrl,
               rarity: card.rarity || "Ultra Rare",
               condition: ["Near Mint", "Excellent"][Math.floor(Math.random() * 2)],
               estimatedValue: `$${cardValue.toFixed(2)}`
@@ -183,9 +186,9 @@ const Marketplace = () => {
               "Full Art Trainers"
             ],
             description: `Trending ${card.name} card for trade! Looking for other popular Pokémon cards.`,
-            createdAt: new Date(Date.now() - (index * 36 * 60 * 60 * 1000)),
+            createdAt: new Date(Date.now() - (newListings.length * 36 * 60 * 60 * 1000)),
           });
-        });
+        }
       }
       
       setListings(newListings);
@@ -257,11 +260,11 @@ const Marketplace = () => {
     },
   });
 
-  const mapToPokemonCardItems = (cards: PokemonCard[] = []): CardItemProps[] => {
-    return cards.map(card => ({
+  const mapToPokemonCardItems = async (cards: PokemonCard[] = []): Promise<CardItemProps[]> => {
+    const mappedCards = await Promise.all(cards.map(async card => ({
       id: card.id,
       name: card.name,
-      imageUrl: findWorkingImageUrl(card.id),
+      imageUrl: await findWorkingImageUrl(card.id),
       rarity: card.rarity || "Unknown",
       condition: "Near Mint",
       estimatedValue: card.tcgplayer?.prices?.holofoil?.market
@@ -269,10 +272,13 @@ const Marketplace = () => {
         : card.tcgplayer?.prices?.normal?.market
         ? `$${card.tcgplayer.prices.normal.market.toFixed(2)}`
         : "N/A"
-    }));
+    })));
+    
+    return mappedCards;
   };
 
-  const createNewListing = (cardOffered: PokemonCard, cardsWanted: string[], description: string) => {
+  const createNewListing = async (cardOffered: PokemonCard, cardsWanted: string[], description: string) => {
+    const imageUrl = await findWorkingImageUrl(cardOffered.id);
     const newListing: ListingType = {
       id: `listing-${Date.now()}`,
       userId: user.id,
@@ -280,7 +286,7 @@ const Marketplace = () => {
       cardOffered: {
         id: cardOffered.id,
         name: cardOffered.name,
-        imageUrl: findWorkingImageUrl(cardOffered.id),
+        imageUrl: imageUrl,
         rarity: cardOffered.rarity || "Unknown",
         condition: "Near Mint",
         estimatedValue: cardOffered.tcgplayer?.prices?.holofoil?.market
