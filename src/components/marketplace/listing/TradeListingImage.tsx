@@ -1,10 +1,11 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { findWorkingImageUrl } from "@/services/cardImageService";
+import { findWorkingImageUrl, getImageUrlsForCard } from "@/services/cardImageService";
+import { useToast } from "@/hooks/use-toast";
 
 interface TradeListingImageProps {
   cardId?: string;
@@ -19,67 +20,88 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
   const [imageSrc, setImageSrc] = useState<string>(imageUrl || CARD_BACK_URL);
   const [isLoading, setIsLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
-
-  useEffect(() => {
-    const loadCardImage = async () => {
-      setIsLoading(true);
-      setImageError(false);
-      
-      try {
-        if (!cardId && !imageUrl) {
-          console.log('No card ID or image URL provided for:', cardName);
-          setImageSrc(CARD_BACK_URL);
-          setIsLoading(false);
-          return;
-        }
-
-        // Query the card_alternative_images table first for verified images
-        const { data: alternativeImages } = await supabase
-          .from('card_alternative_images')
-          .select('image_url')
-          .eq('card_id', cardId)
-          .eq('is_verified', true)
-          .order('created_at', { ascending: false })
-          .limit(1);
-          
-        if (alternativeImages && alternativeImages.length > 0) {
-          console.log(`Found verified image in database for ${cardId}: ${alternativeImages[0].image_url}`);
-          setImageSrc(alternativeImages[0].image_url);
-          setIsLoading(false);
-          return;
-        }
-        
-        // If no verified images in database, try to find a working image
-        const bestImageUrl = await findWorkingImageUrl({
-          id: cardId || '',
-          name: cardName,
-          imageUrl: imageUrl
-        });
-        
-        console.log(`Found best image URL for ${cardName}:`, bestImageUrl);
-        setImageSrc(bestImageUrl);
-      } catch (error) {
-        console.error("Error loading card image:", error);
-        setImageError(true);
-        setImageSrc(CARD_BACK_URL);
-      } finally {
-        // Make sure loading state ends even if there's an error
-        setIsLoading(false);
-      }
-    };
+  const [retryCount, setRetryCount] = useState(0);
+  const { toast } = useToast();
+  
+  // Create a memoized function to load the card image
+  const loadCardImage = useCallback(async () => {
+    setIsLoading(true);
+    setImageError(false);
     
-    loadCardImage();
+    try {
+      if (!cardId && !imageUrl) {
+        console.log('No card ID or image URL provided for:', cardName);
+        setImageSrc(CARD_BACK_URL);
+        setIsLoading(false);
+        return;
+      }
+
+      // First check the database for a verified image
+      const { data: alternativeImages } = await supabase
+        .from('card_alternative_images')
+        .select('image_url')
+        .eq('card_id', cardId)
+        .eq('is_verified', true)
+        .order('created_at', { ascending: false })
+        .limit(1);
+        
+      if (alternativeImages && alternativeImages.length > 0) {
+        console.log(`Found verified image in database for ${cardId}: ${alternativeImages[0].image_url}`);
+        setImageSrc(alternativeImages[0].image_url);
+        setIsLoading(false);
+        return;
+      }
+      
+      // If no verified images, use our service to find a working image
+      const card = {
+        id: cardId || 'unknown',
+        name: cardName,
+        imageUrl: imageUrl
+      };
+      
+      const bestImageUrl = await findWorkingImageUrl(card);
+      console.log(`Found best image URL for ${cardName}:`, bestImageUrl);
+      setImageSrc(bestImageUrl);
+    } catch (error) {
+      console.error("Error loading card image:", error);
+      setImageError(true);
+      setImageSrc(CARD_BACK_URL);
+    } finally {
+      setIsLoading(false);
+    }
   }, [cardId, imageUrl, cardName]);
+  
+  // Load the image on mount and when dependencies change
+  useEffect(() => {
+    loadCardImage();
+  }, [loadCardImage, retryCount]);
   
   const handleImageLoad = () => {
     setIsLoading(false);
     console.log(`Successfully loaded image for ${cardName}: ${imageSrc}`);
   };
   
-  const handleImageError = () => {
+  const handleImageError = async () => {
     console.log(`Image failed to load for ${cardName}: ${imageSrc}`);
     
     if (imageSrc !== CARD_BACK_URL) {
+      // Try to find alternative URLs directly from our service
+      try {
+        const possibleUrls = getImageUrlsForCard({ id: cardId || 'unknown', name: cardName, imageUrl });
+        
+        // Find first URL that's not the current failing one
+        const alternativeUrl = possibleUrls.find(url => url !== imageSrc && url !== CARD_BACK_URL);
+        
+        if (alternativeUrl) {
+          console.log(`Trying alternative URL for ${cardName}: ${alternativeUrl}`);
+          setImageSrc(alternativeUrl);
+          return;
+        }
+      } catch (error) {
+        console.error("Error finding alternative URL:", error);
+      }
+      
+      // If no alternatives found, use fallback
       setImageSrc(CARD_BACK_URL);
     } else {
       setImageError(true);
@@ -87,39 +109,15 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
     }
   };
   
-  const retryImage = async () => {
+  const retryImage = () => {
     setIsLoading(true);
     setImageError(false);
+    setRetryCount(prev => prev + 1);
     
-    try {
-      // Query first from verified images in database
-      const { data: alternativeImages } = await supabase
-        .from('card_alternative_images')
-        .select('image_url')
-        .eq('card_id', cardId)
-        .order('created_at', { ascending: false })
-        .limit(1);
-        
-      if (alternativeImages && alternativeImages.length > 0) {
-        setImageSrc(alternativeImages[0].image_url);
-        return;
-      }
-      
-      // Try other sources if no database entry
-      const bestImageUrl = await findWorkingImageUrl({
-        id: cardId || '',
-        name: cardName,
-        imageUrl: imageUrl
-      });
-      
-      setImageSrc(bestImageUrl);
-    } catch (error) {
-      console.error("Error during retry:", error);
-      setImageSrc(CARD_BACK_URL);
-      setImageError(true);
-    } finally {
-      setIsLoading(false);
-    }
+    toast({
+      title: "Retrying image load",
+      description: `Attempting to find a better image for ${cardName}`
+    });
   };
 
   return (

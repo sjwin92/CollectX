@@ -4,10 +4,11 @@ import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
 import { cn } from "@/lib/utils";
-import { Info, AlertTriangle, Check, Image, RefreshCw } from "lucide-react";
+import { Info, AlertTriangle, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { getImageUrlsForCard, findWorkingImageUrl } from "@/services/cardImageService";
+import { findWorkingImageUrl, getImageUrlsForCard } from "@/services/cardImageService";
+import { useToast } from "@/hooks/use-toast";
 
 export interface CardItemProps {
   id: string;
@@ -33,38 +34,27 @@ const CardItem = ({
   onClick
 }: CardItemProps) => {
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [imageSources, setImageSources] = useState<string[]>([]);
-  const [bestImageUrl, setBestImageUrl] = useState<string>(imageUrl);
+  const [currentImageSrc, setCurrentImageSrc] = useState<string>(imageUrl);
+  const { toast } = useToast();
   
   useEffect(() => {
     // Reset when card changes
     setImageStatus("loading");
-    setCurrentImageIndex(0);
-    
-    // Get all possible image sources
-    const card = { id, name, imageUrl };
-    const sources = getImageUrlsForCard(card);
-    setImageSources(sources);
     
     // Find best working image using our service
-    const findBestImage = async () => {
+    const loadImage = async () => {
       try {
-        const url = await findWorkingImageUrl(card);
-        setBestImageUrl(url);
+        const url = await findWorkingImageUrl({ id, name, imageUrl });
+        setCurrentImageSrc(url);
         setImageStatus("loaded");
       } catch (error) {
         console.error(`Failed to find working image for ${name}:`, error);
-        // We'll continue with our fallback logic if this fails
+        setImageStatus("error");
       }
     };
     
-    findBestImage();
-    
-    console.log(`Generated ${sources.length} potential image URLs for card ${id}`);
+    loadImage();
   }, [id, imageUrl, name]);
-  
-  const currentImageSrc = bestImageUrl || imageSources[currentImageIndex] || '';
   
   // Map condition to style
   const conditionVariant = (): "success" | "warning" | "danger" | "info" => {
@@ -88,19 +78,18 @@ const CardItem = ({
     setImageStatus("loaded");
   };
 
-  const handleImageError = () => {
-    console.log(`Image failed to load: ${currentImageSrc}, current index: ${currentImageIndex}`);
+  const handleImageError = async () => {
+    console.log(`Image failed to load: ${currentImageSrc} for card ${id}`);
     
-    // If the best image URL failed, try the next one in our sequence
-    if (currentImageSrc === bestImageUrl && imageSources.length > 0) {
-      setBestImageUrl(''); // Clear the best URL so we use the fallback sequence
-    }
+    // Get alternative URLs and try the next one
+    const urls = getImageUrlsForCard({ id, name, imageUrl });
+    const currentIndex = urls.indexOf(currentImageSrc);
     
-    // Try the next image in the list
-    if (currentImageIndex < imageSources.length - 1) {
-      const nextIndex = currentImageIndex + 1;
-      console.log(`Trying alternative image source #${nextIndex + 1}: ${imageSources[nextIndex]}`);
-      setCurrentImageIndex(nextIndex);
+    if (currentIndex >= 0 && currentIndex < urls.length - 1) {
+      // Try the next URL in the sequence
+      const nextUrl = urls[currentIndex + 1];
+      console.log(`Trying alternative image source: ${nextUrl}`);
+      setCurrentImageSrc(nextUrl);
     } else {
       setImageStatus("error");
       console.log("All image sources failed for card:", id);
@@ -109,15 +98,20 @@ const CardItem = ({
   
   const retryImage = async () => {
     setImageStatus("loading");
-    setCurrentImageIndex(0);
     
     try {
-      const card = { id, name, imageUrl };
-      const url = await findWorkingImageUrl(card);
-      setBestImageUrl(url);
+      // Force refresh from the image service
+      const url = await findWorkingImageUrl({ id, name, imageUrl });
+      setCurrentImageSrc(url);
+      setImageStatus("loaded");
+      
+      toast({
+        title: "Retrying image load",
+        description: `Attempting to find a better image for ${name}`
+      });
     } catch (error) {
       console.error("Error during retry:", error);
-      setBestImageUrl('');
+      setImageStatus("error");
     }
   };
 
