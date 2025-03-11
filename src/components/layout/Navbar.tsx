@@ -24,7 +24,7 @@ const Navbar = () => {
     <nav className="border-b">
       <div className="container flex h-16 items-center px-4">
         <Link to="/" className="mr-6 flex items-center space-x-2">
-          <span className="text-xl font-bold">PokéTrades</span>
+          <span className="text-xl font-bold">CollectX</span>
         </Link>
         <div className="flex flex-1 items-center space-x-4 md:justify-between">
           <div className="flex items-center space-x-4">
