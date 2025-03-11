@@ -55,7 +55,9 @@ export const handleImageError = async (e: React.SyntheticEvent<HTMLImageElement>
 /**
  * Get all possible image URLs for a card
  */
-export const getImageUrlsForCard = (cardId: string): string[] => {
+export const getImageUrlsForCard = (cardIdOrCard: string | Card): string[] => {
+  const cardId = typeof cardIdOrCard === 'string' ? cardIdOrCard : cardIdOrCard.id;
+  
   if (!cardId) {
     return [CARD_BACK_URL];
   }
@@ -92,7 +94,10 @@ const isValidUrl = (url: string): boolean => {
 /**
  * Find a working image URL for a card
  */
-export const findWorkingImageUrl = async (cardId: string): Promise<string> => {
+export const findWorkingImageUrl = async (cardIdOrCard: string | Card): Promise<string> => {
+  const cardId = typeof cardIdOrCard === 'string' ? cardIdOrCard : cardIdOrCard.id;
+  const cardName = typeof cardIdOrCard === 'string' ? '' : cardIdOrCard.name;
+  
   if (!cardId) {
     console.warn("No card ID provided to findWorkingImageUrl");
     return CARD_BACK_URL;
