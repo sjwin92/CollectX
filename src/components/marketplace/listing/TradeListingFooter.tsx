@@ -7,11 +7,12 @@ import { Link } from "react-router-dom";
 
 interface TradeListingFooterProps {
   cardId: string;
+  tradeId?: string;
   onProposeTrade: () => void;
   featured?: boolean;
 }
 
-const TradeListingFooter = ({ cardId, onProposeTrade, featured = false }: TradeListingFooterProps) => {
+const TradeListingFooter = ({ cardId, tradeId, onProposeTrade, featured = false }: TradeListingFooterProps) => {
   return (
     <>
       <CardFooter className="pt-3 flex justify-between">
@@ -20,10 +21,22 @@ const TradeListingFooter = ({ cardId, onProposeTrade, featured = false }: TradeL
             View Card Details
           </Link>
         </Button>
-        <Button size="sm" onClick={onProposeTrade} className={featured ? "bg-amber-600 hover:bg-amber-700" : ""}>
-          <ArrowRightLeft className="h-4 w-4 mr-2" />
-          Propose Trade
-        </Button>
+        {tradeId ? (
+          <Button size="sm" variant="secondary" asChild>
+            <Link to={`/trades/${tradeId}`}>
+              View Trade Details
+            </Link>
+          </Button>
+        ) : (
+          <Button 
+            size="sm" 
+            onClick={onProposeTrade} 
+            className={featured ? "bg-amber-600 hover:bg-amber-700" : ""}
+          >
+            <ArrowRightLeft className="h-4 w-4 mr-2" />
+            Propose Trade
+          </Button>
+        )}
       </CardFooter>
     </>
   );
