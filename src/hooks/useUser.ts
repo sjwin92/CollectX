@@ -1,25 +1,33 @@
 
-import { useAuth } from "@/contexts/AuthContext";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { User } from "@supabase/supabase-js";
 
-export interface User {
-  id: string;
-  username: string;
-  email: string;
-}
+export const useUser = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-export function useUser() {
-  const { user, loading } = useAuth();
-  
-  // Convert Supabase user to our app's user format
-  const appUser: User | null = user ? {
-    id: user.id,
-    username: user.user_metadata?.username || user.email?.split('@')[0] || "User",
-    email: user.email || "",
-  } : null;
-  
-  return { 
-    user: appUser, 
-    isLoaded: !loading, 
-    isSignedIn: !!user 
+  useEffect(() => {
+    // Get the initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
+
+    // Listen for changes to auth state
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  return {
+    user,
+    isSignedIn: !!user,
+    isLoading,
   };
-}
+};
