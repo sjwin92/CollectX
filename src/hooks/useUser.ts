@@ -33,8 +33,8 @@ interface GetProfileByIdParams {
 
 // Function to fetch user profile data
 const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
-  // The RPC function needs two type parameters - the return type and the params type
-  const { data, error } = await supabase.rpc<UserProfile[], GetProfileByIdParams>(
+  // The RPC function signature is likely expecting a single return type
+  const { data, error } = await supabase.rpc<UserProfile[]>(
     'get_profile_by_id', 
     { user_id: userId }
   );
