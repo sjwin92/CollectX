@@ -26,15 +26,15 @@ interface AddToCollectionModalProps {
   card: Card | null;
 }
 
-// Map of PSA grades to conditions
+// Map of professional grading conditions with descriptions
 const conditionOptions = [
   { value: "Gem Mint", label: "Gem Mint (PSA 10)", description: "Perfect card with no visible flaws" },
   { value: "Mint", label: "Mint (PSA 9)", description: "Nearly perfect with tiny imperfections" },
   { value: "Near Mint", label: "Near Mint (PSA 8)", description: "Slight wear, minor scratches" },
-  { value: "Excellent", label: "Excellent (PSA 6-7)", description: "Noticeable wear, small edge whitening" },
-  { value: "Good", label: "Good (PSA 4-5)", description: "Obvious wear, some creases or bends" },
-  { value: "Fair", label: "Fair (PSA 2-3)", description: "Heavy wear, creases, edge chipping" },
-  { value: "Poor", label: "Poor (PSA 1)", description: "Severe damage, tears or major creases" }
+  { value: "Excellent", label: "Excellent (PSA 6-7)", description: "Noticeable wear, edge whitening" },
+  { value: "Good", label: "Good (PSA 4-5)", description: "Obvious wear, some creases" },
+  { value: "Fair", label: "Fair (PSA 2-3)", description: "Heavy wear, creases" },
+  { value: "Poor", label: "Poor (PSA 1)", description: "Severe damage or major creases" }
 ];
 
 const AddToCollectionModal = ({ isOpen, onClose, card }: AddToCollectionModalProps) => {
@@ -82,16 +82,14 @@ const AddToCollectionModal = ({ isOpen, onClose, card }: AddToCollectionModalPro
     setIsSubmitting(true);
     
     try {
-      // Call Supabase Edge Function to add card to collection
-      const { data, error } = await supabase.functions.invoke("collection", {
-        method: "POST",
-        body: {
-          cardId: card.id,
-          quantity: quantity,
-          condition,
-          notes: notes || null,
-          for_trade: forTrade
-        }
+      const { data, error } = await supabase.from("user_collections").insert({
+        card_id: card.id,
+        quantity,
+        condition,
+        notes: notes || null,
+        for_trade: forTrade,
+        grading_company: "PSA", // Default to PSA since we're using their scale
+        grading_value: condition
       });
       
       if (error) {

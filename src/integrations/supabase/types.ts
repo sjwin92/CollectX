@@ -146,8 +146,13 @@ export type Database = {
           card_id: string
           condition: string
           for_trade: boolean
+          grading_company: string | null
+          grading_value: string | null
           id: string
+          last_modified: string | null
           notes: string | null
+          purchase_currency: string | null
+          purchase_price: number | null
           quantity: number
           user_id: string
         }
@@ -156,8 +161,13 @@ export type Database = {
           card_id: string
           condition?: string
           for_trade?: boolean
+          grading_company?: string | null
+          grading_value?: string | null
           id?: string
+          last_modified?: string | null
           notes?: string | null
+          purchase_currency?: string | null
+          purchase_price?: number | null
           quantity?: number
           user_id: string
         }
@@ -166,8 +176,13 @@ export type Database = {
           card_id?: string
           condition?: string
           for_trade?: boolean
+          grading_company?: string | null
+          grading_value?: string | null
           id?: string
+          last_modified?: string | null
           notes?: string | null
+          purchase_currency?: string | null
+          purchase_price?: number | null
           quantity?: number
           user_id?: string
         }
