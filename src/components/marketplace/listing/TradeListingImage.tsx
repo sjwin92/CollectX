@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, RefreshCw } from "lucide-react";
-import { getReliableImageUrl } from "@/services/pokemonTcgApi";
+import { getImageUrlsForCard } from "@/services/cardImageService";
 
 interface TradeListingImageProps {
   cardId?: string;
@@ -14,45 +14,37 @@ interface TradeListingImageProps {
 
 const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListingImageProps) => {
   const [imageError, setImageError] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageSrc, setImageSrc] = useState(() => {
-    // Use the provided imageUrl first if available
-    if (imageUrl && imageUrl.trim() !== '') {
-      return imageUrl;
-    }
-    // Then try to use the cardId to get a reliable image URL
-    if (cardId) {
-      return getReliableImageUrl(cardId, 'small');
-    }
-    return '';
+    const card = { id: cardId, imageUrl };
+    const urls = getImageUrlsForCard(card);
+    return urls[0] || '/placeholder.svg';
   });
   
   const handleImageError = () => {
-    if (imageError) return;
+    const card = { id: cardId, imageUrl };
+    const urls = getImageUrlsForCard(card);
     
-    // If the first image source fails, try alternatives
-    if (cardId) {
-      // Try the large image as a fallback
-      const newSrc = getReliableImageUrl(cardId, 'large');
-      console.log(`Image failed to load. Trying alternative source: ${newSrc}`);
-      setImageSrc(newSrc);
-      setImageError(true); // Mark as having an error, so we don't retry infinitely
-    } else if (imageUrl) {
-      // If we were using imageUrl and it failed, try to use the card back
-      console.log('Image URL failed to load. Marking as error.');
-      setImageError(true);
+    // Try the next image in the sequence
+    const nextIndex = currentImageIndex + 1;
+    
+    if (nextIndex < urls.length) {
+      console.log(`Image failed to load. Trying alternative source #${nextIndex + 1}: ${urls[nextIndex]}`);
+      setCurrentImageIndex(nextIndex);
+      setImageSrc(urls[nextIndex]);
     } else {
+      console.log('All image sources failed. Marking as error.');
       setImageError(true);
     }
   };
   
   const retryImage = () => {
+    const card = { id: cardId, imageUrl };
+    const urls = getImageUrlsForCard(card);
+    
     setImageError(false);
-    // Reset to the original logic for determining the image source
-    if (imageUrl && imageUrl.trim() !== '') {
-      setImageSrc(imageUrl);
-    } else if (cardId) {
-      setImageSrc(getReliableImageUrl(cardId, 'small'));
-    }
+    setCurrentImageIndex(0);
+    setImageSrc(urls[0] || '/placeholder.svg');
   };
 
   return (

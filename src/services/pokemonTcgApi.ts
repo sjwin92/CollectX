@@ -159,6 +159,7 @@ export const searchCards = async (query: string, page = 1, pageSize = 20): Promi
 
 /**
  * Generate a reliable image URL for a Pokemon card
+ * @deprecated Use cardImageService.getImageUrlsForCard instead
  */
 export const getReliableImageUrl = (cardId: string, size: 'small' | 'large' = 'small'): string => {
   if (!cardId) {
@@ -170,6 +171,7 @@ export const getReliableImageUrl = (cardId: string, size: 'small' | 'large' = 's
 
 /**
  * Get all possible image URLs for a card
+ * @deprecated Use cardImageService.getImageUrlsForCard instead
  */
 export const getAllPossibleImageUrls = (card: PokemonCard): string[] => {
   if (!card || !card.id) {

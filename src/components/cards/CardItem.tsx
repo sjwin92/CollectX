@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Info, AlertTriangle, Check, Image, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
+import { getImageUrlsForCard } from "@/services/cardImageService";
 
 export interface CardItemProps {
   id: string;
@@ -32,54 +33,23 @@ const CardItem = ({
   onClick
 }: CardItemProps) => {
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
-  const [imageSrc, setImageSrc] = useState<string>(imageUrl);
-  const [retryCount, setRetryCount] = useState(0);
-  
-  // Alternative image sources to try in sequence
-  const getAlternativeImages = (): string[] => {
-    // Handle cases where the ID isn't in the expected format
-    if (!id || !id.includes('-')) {
-      return [imageUrl, "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"];
-    }
-    
-    const setId = id.split('-')[0];
-    const cardNumber = id.split('-').pop() || "";
-    
-    return [
-      imageUrl, // Original URL
-      
-      // Try different sizes from Pokemon TCG API
-      `https://images.pokemontcg.io/small/${id}.png`,
-      `https://images.pokemontcg.io/large/${id}.png`,
-      
-      // Try direct format with set ID
-      `https://images.pokemontcg.io/${setId}/${cardNumber}.png`,
-      
-      // TCGDex format
-      `https://assets.tcgdex.net/en/${setId}/${cardNumber}`,
-      `https://assets.tcgdex.net/en/${setId}/${cardNumber}.jpg`,
-      `https://assets.tcgdex.net/en/${setId}/${cardNumber}.png`,
-      
-      // Pokellector format
-      `https://assets.pokellector.com/cards/${setId}/${cardNumber.padStart(3, '0')}.webp`,
-      
-      // Pokemon.com format
-      `https://assets.pokemon.com/assets/cms2/img/cards/web/${setId.toUpperCase()}/${setId.toUpperCase()}_EN_${cardNumber}.png`,
-      
-      // PokemonCards.com format
-      `https://images.pokemoncards.com/${setId}/${cardNumber}.jpg`,
-      
-      // Last resort official card back
-      "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
-    ].filter(url => url !== undefined && url !== null && url !== "");
-  };
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [imageSources, setImageSources] = useState<string[]>([]);
   
   useEffect(() => {
     // Reset when card changes
     setImageStatus("loading");
-    setRetryCount(0);
-    setImageSrc(imageUrl);
+    setCurrentImageIndex(0);
+    
+    // Get all possible image sources
+    const card = { id, imageUrl };
+    const sources = getImageUrlsForCard(card);
+    setImageSources(sources);
+    
+    console.log(`Generated ${sources.length} potential image URLs for card ${id}`);
   }, [id, imageUrl]);
+  
+  const currentImageSrc = imageSources[currentImageIndex] || '';
   
   // Map condition to style
   const conditionVariant = (): "success" | "warning" | "danger" | "info" => {
@@ -104,15 +74,13 @@ const CardItem = ({
   };
 
   const handleImageError = () => {
-    console.log(`Image failed to load: ${imageSrc}, retry: ${retryCount}`);
+    console.log(`Image failed to load: ${currentImageSrc}, current index: ${currentImageIndex}`);
     
-    const alternatives = getAlternativeImages();
-    const nextIndex = retryCount + 1;
-    
-    if (nextIndex < alternatives.length) {
-      console.log(`Trying alternative image source: ${alternatives[nextIndex]}`);
-      setRetryCount(nextIndex);
-      setImageSrc(alternatives[nextIndex]);
+    // Try the next image in the list
+    if (currentImageIndex < imageSources.length - 1) {
+      const nextIndex = currentImageIndex + 1;
+      console.log(`Trying alternative image source #${nextIndex + 1}: ${imageSources[nextIndex]}`);
+      setCurrentImageIndex(nextIndex);
     } else {
       setImageStatus("error");
       console.log("All image sources failed for card:", id);
@@ -121,8 +89,7 @@ const CardItem = ({
   
   const retryImage = () => {
     setImageStatus("loading");
-    setRetryCount(0);
-    setImageSrc(imageUrl);
+    setCurrentImageIndex(0);
   };
 
   const CardContent = (
@@ -132,9 +99,9 @@ const CardItem = ({
     >
       <div className="relative aspect-[2/3] overflow-hidden rounded-md mb-3">
         <div className="relative h-full">
-          {imageSrc && (
+          {currentImageSrc && imageStatus !== "error" && (
             <img
-              src={imageSrc}
+              src={currentImageSrc}
               alt={`Pokémon card: ${name} - ${condition} condition, ${rarity} rarity`}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               loading="lazy"
