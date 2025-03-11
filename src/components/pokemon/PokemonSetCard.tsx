@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Calendar, Layers } from "lucide-react";
+import { Calendar, Layers, PlusCircle, ArrowRightLeft } from "lucide-react";
 import { PokemonSet, formatReleaseDate } from "@/services/pokemonSetsApi";
 
 interface PokemonSetCardProps {
@@ -66,15 +66,17 @@ const PokemonSetCard = ({ set, onClick }: PokemonSetCardProps) => {
           {set.total} cards
         </Badge>
         
-        <Button 
-          size="sm" 
-          variant="ghost" 
-          className="text-xs" 
-          asChild
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Link to={`/pokemon-cards?set=${set.id}`}>View Cards</Link>
-        </Button>
+        <div className="flex gap-1">
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className="text-xs" 
+            asChild
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Link to={`/pokemon-cards?set=${set.id}`}>View Cards</Link>
+          </Button>
+        </div>
       </CardFooter>
     </Card>
   );

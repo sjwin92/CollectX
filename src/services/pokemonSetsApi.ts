@@ -16,8 +16,29 @@ export interface PokemonSet {
   };
 }
 
+export interface PokemonCard {
+  id: string;
+  name: string;
+  number: string;
+  images: {
+    small: string;
+    large: string;
+  };
+  rarity?: string;
+  types?: string[];
+  set: {
+    id: string;
+    name: string;
+    series: string;
+  };
+}
+
 export interface PokemonSetsResponse {
   data: PokemonSet[];
+}
+
+export interface PokemonCardsResponse {
+  data: PokemonCard[];
 }
 
 const BASE_URL = 'https://api.pokemontcg.io/v2';
@@ -51,6 +72,44 @@ export const getAllSets = async (): Promise<PokemonSet[]> => {
     return sortedSets;
   } catch (error) {
     console.error('Error fetching Pokemon sets:', error);
+    return [];
+  }
+};
+
+/**
+ * Get cards from a specific set
+ */
+export const getCardsBySet = async (setId: string): Promise<PokemonCard[]> => {
+  try {
+    console.log(`Fetching cards for set: ${setId}`);
+    const response = await fetch(`${BASE_URL}/cards?q=set.id:${setId}`, {
+      headers: {
+        'X-Api-Key': API_KEY
+      }
+    });
+    
+    if (!response.ok) {
+      console.error(`Failed to fetch cards: ${response.statusText}`);
+      throw new Error(`Failed to fetch cards: ${response.statusText}`);
+    }
+    
+    const data: PokemonCardsResponse = await response.json();
+    console.log(`Successfully fetched ${data.data?.length || 0} cards for set ${setId}`);
+    
+    // Sort by card number
+    return [...data.data].sort((a, b) => {
+      // Convert the card number to a number if possible, otherwise compare as strings
+      const aNum = parseInt(a.number);
+      const bNum = parseInt(b.number);
+      
+      if (!isNaN(aNum) && !isNaN(bNum)) {
+        return aNum - bNum;
+      }
+      
+      return a.number.localeCompare(b.number);
+    });
+  } catch (error) {
+    console.error(`Error fetching cards for set ${setId}:`, error);
     return [];
   }
 };
