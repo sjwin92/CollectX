@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -15,8 +14,7 @@ export interface ExtendedUser extends User {
 
 // Function to fetch user profile data
 const fetchUserProfile = async (userId: string) => {
-  // Use a direct SQL query instead of the from() method since the profiles table
-  // isn't in the generated types yet
+  // Use the RPC function which handles the case where the profiles table doesn't exist yet
   const { data, error } = await supabase
     .rpc('get_profile_by_id', { user_id: userId });
     
@@ -25,7 +23,7 @@ const fetchUserProfile = async (userId: string) => {
     return null;
   }
   
-  return data;
+  return data?.[0] || null;
 };
 
 export const useUser = () => {
@@ -42,7 +40,7 @@ export const useUser = () => {
       reputation: profile?.reputation || 'new',
       tradeCount: profile?.trade_count || 0,
       successRate: profile?.success_rate || 0,
-      avatarUrl: profile?.avatar_url
+      avatarUrl: profile?.avatar_url || ''
     };
     
     return extendedUser;
