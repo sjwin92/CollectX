@@ -122,7 +122,11 @@ const Navbar = () => {
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="relative">
-                    {hasUnreadNotifications ? <BellDot className="h-5 w-5 text-primary" /> : <Bell className="h-5 w-5" />}
+                    {hasUnreadNotifications ? (
+                      <BellDot className="h-5 w-5 text-primary" />
+                    ) : (
+                      <Bell className="h-5 w-5" />
+                    )}
                     {hasUnreadNotifications && (
                       <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-white">
                         !
@@ -200,10 +204,22 @@ const Navbar = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button variant="default" size="sm" onClick={() => navigate("/auth")}>
-              <LogIn className="mr-2 h-4 w-4" />
-              Sign In
-            </Button>
+            <>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <MessageSquare className="h-5 w-5" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0" align="end">
+                  <ChatBox />
+                </PopoverContent>
+              </Popover>
+              <Button variant="default" size="sm" onClick={() => navigate("/auth")}>
+                <LogIn className="mr-2 h-4 w-4" />
+                Sign In
+              </Button>
+            </>
           )}
 
           {isMobile && (
