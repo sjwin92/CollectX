@@ -91,12 +91,14 @@ const AddToCollectionModal = ({ isOpen, onClose, card }: AddToCollectionModalPro
       
       // If not in cache, add it to the cache first
       if (!existingCard && !cardError) {
+        // Convert the card object to a JSON-compatible format
         const cardData = {
           id: card.id,
           name: card.name,
-          data: card,
+          // Convert the card object to a JSON-safe structure
+          data: JSON.parse(JSON.stringify(card)),
           image_url: card.images?.small || card.images?.large,
-          cached_at: new Date().toISOString() // Convert Date to ISO string
+          cached_at: new Date().toISOString()
         };
         
         const { error: cacheError } = await supabase
