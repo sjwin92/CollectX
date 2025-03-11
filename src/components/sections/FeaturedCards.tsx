@@ -45,9 +45,9 @@ const FeaturedCards = () => {
   })));
   
   useEffect(() => {
-    // Get reliable image URLs for each card
+    // Get reliable image URLs for each card using Pokemon TCG IO format
     const updatedCards = featuredCards.map(card => {
-      // Use the consistent format for card sets
+      // Use the Pokemon TCG IO URL format that works for card sets
       const imageUrl = getPokemonTcgIoUrl(card.id) || "";
       
       console.log(`Setting image URL for ${card.name}: ${imageUrl}`);

@@ -40,7 +40,7 @@ const PokemonCardItem = ({ card, onClick }: PokemonCardItemProps) => {
     
     setImageStatus("loading");
     
-    // Use the reliable format that works for card sets
+    // Use the reliable Pokemon TCG IO format
     const reliableImageUrl = getPokemonTcgIoUrl(card.id);
     if (reliableImageUrl) {
       console.log(`Setting reliable image URL for ${card.name}: ${reliableImageUrl}`);

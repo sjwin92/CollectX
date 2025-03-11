@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -42,7 +43,7 @@ const CardItem = ({
     // Reset when card changes
     setImageStatus("loading");
     
-    // Use the consistent format that works for card sets
+    // Use the Pokemon TCG IO format that works for card sets
     const reliableImageUrl = getPokemonTcgIoUrl(id);
     if (reliableImageUrl) {
       console.log(`Setting reliable image URL for ${name}: ${reliableImageUrl}`);
@@ -82,7 +83,7 @@ const CardItem = ({
   const handleImageError = () => {
     console.log(`Image failed to load: ${currentImageSrc} for card ${id}`);
     
-    // Try alternative image formats
+    // Try alternative image formats from Pokemon TCG IO
     if (id && currentImageSrc !== CARD_BACK_URL) {
       const alternativeUrls = getAlternativeImageUrls(id, imageUrl);
       const currentIndex = alternativeUrls.indexOf(currentImageSrc);
@@ -104,7 +105,7 @@ const CardItem = ({
   const retryImage = () => {
     setImageStatus("loading");
     
-    // Try the reliable URL again
+    // Try the reliable Pokemon TCG IO URL again
     const reliableImageUrl = getPokemonTcgIoUrl(id);
     if (reliableImageUrl) {
       setCurrentImageSrc(reliableImageUrl);

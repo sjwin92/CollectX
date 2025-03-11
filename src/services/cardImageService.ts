@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import React from "react";
 
@@ -121,6 +122,44 @@ export const getPokemonTcgIoUrl = (cardId: string): string | null => {
   }
   
   return null;
+};
+
+/**
+ * Get alternative image URLs for a card if the primary one fails
+ * This function provides fallback URLs in order of reliability
+ */
+export const getAlternativeImageUrls = (cardId: string, providedImageUrl?: string): string[] => {
+  if (!cardId) {
+    return [CARD_BACK_URL];
+  }
+  
+  const urls = [];
+  
+  // Parse the set code and card number from the ID
+  const parts = cardId.split("-");
+  if (parts.length >= 2) {
+    const setCode = parts[0];
+    const cardNumber = parts[1];
+    
+    // Add various formats from Pokemon TCG IO in order of preference
+    urls.push(
+      `https://images.pokemontcg.io/${setCode}/${cardNumber}_hires.png`,
+      `https://images.pokemontcg.io/${setCode}/${cardNumber}.png`,
+      `https://images.pokemontcg.io/small/${setCode}/${cardNumber}.png`,
+      `https://images.pokemontcg.io/large/${setCode}/${cardNumber}.png`
+    );
+  }
+  
+  // If provided, add the original image URL as a fallback
+  if (providedImageUrl && !urls.includes(providedImageUrl)) {
+    urls.push(providedImageUrl);
+  }
+  
+  // Add the fallback as last resort
+  urls.push(CARD_BACK_URL);
+  
+  // Filter out any invalid or duplicate URLs
+  return [...new Set(urls.filter(url => !!url && isValidUrl(url)))];
 };
 
 /**
