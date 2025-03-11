@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,12 +22,32 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
 
   useEffect(() => {
     const loadCardImage = async () => {
-      // Reset state when props change
       setIsLoading(true);
       setImageError(false);
       
       try {
-        // If we have a direct image URL, use it first
+        if (!cardId && !imageUrl) {
+          console.log('No card ID or image URL provided');
+          setImageSrc(CARD_BACK_URL);
+          return;
+        }
+
+        // First try to get image from Supabase cache if we have an ID
+        if (cardId) {
+          const { data: cachedCard } = await supabase
+            .from('pokemon_cards_cache')
+            .select('data')
+            .eq('id', cardId)
+            .maybeSingle();
+
+          if (cachedCard?.data?.images?.large) {
+            console.log(`Using cached image for card ${cardId}`);
+            setImageSrc(cachedCard.data.images.large);
+            return;
+          }
+        }
+        
+        // If we have a direct image URL, try it
         if (imageUrl && imageUrl.trim() !== '') {
           console.log(`Using provided image URL: ${imageUrl}`);
           setImageSrc(imageUrl);
@@ -61,11 +82,9 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
   const handleImageError = () => {
     console.log(`Image failed to load: ${imageSrc}`);
     
-    // If the current image failed and it's not already the card back, try the card back
     if (imageSrc !== CARD_BACK_URL) {
       setImageSrc(CARD_BACK_URL);
     } else {
-      // If even the card back fails, show the error state
       setImageError(true);
       setIsLoading(false);
     }
@@ -82,7 +101,6 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
         imageUrl: imageUrl
       };
       
-      // Force a re-fetch of the best image
       const bestImageUrl = await findWorkingImageUrl(card);
       setImageSrc(bestImageUrl);
     } catch (error) {
