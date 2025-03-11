@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -27,8 +28,9 @@ interface UserProfile {
 
 // Function to fetch user profile data
 const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
-  // Use a generic type parameter with the RPC function
-  const { data, error } = await supabase.rpc<UserProfile[]>(
+  // Use both generic type parameters with the RPC function
+  // First for the return data type, second for the params type
+  const { data, error } = await supabase.rpc<UserProfile[], { user_id: string }>(
     'get_profile_by_id', 
     { user_id: userId }
   );
