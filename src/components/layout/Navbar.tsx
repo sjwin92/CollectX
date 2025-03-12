@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -24,7 +23,8 @@ import {
   LogOut,
   MessageSquare,
   ShoppingCart,
-  Layers
+  Layers,
+  Archive
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -49,7 +49,7 @@ const Navbar = () => {
 
   const navigationItems = [
     { name: "Home", path: "/" },
-    { name: "Collection", path: "/collection" },
+    { name: "My Collection", path: "/collection", icon: <Archive className="mr-2 h-4 w-4" /> },
     { name: "Trades", path: "/trades" },
     { name: "Sets", path: "/pokemon-sets" },
     { name: "Marketplace", path: "/marketplace" },
@@ -64,6 +64,7 @@ const Navbar = () => {
             variant={location.pathname === item.path ? "default" : "ghost"}
             className="transition-all duration-300"
           >
+            {item.icon && item.icon}
             {item.name}
           </Button>
         </Link>
@@ -121,8 +122,8 @@ const Navbar = () => {
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link to="/collection">
-                  <Package className="mr-2 h-4 w-4" />
-                  <span>Collection</span>
+                  <Archive className="mr-2 h-4 w-4" />
+                  <span>My Collection</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
