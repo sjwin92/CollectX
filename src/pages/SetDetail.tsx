@@ -36,6 +36,11 @@ const SetDetail = () => {
     navigate('/pokemon-sets');
   };
 
+  const handleViewCards = () => {
+    // Navigate to Pokemon Cards page with set ID as a query parameter
+    navigate(`/pokemon-cards?setId=${id}`);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -190,7 +195,7 @@ const SetDetail = () => {
                 Released on {format(new Date(set.releaseDate), 'MMMM d, yyyy')}.
               </p>
               
-              <Button className="w-full sm:w-auto">
+              <Button className="w-full sm:w-auto" onClick={handleViewCards}>
                 <Check className="h-4 w-4 mr-2" /> View Cards in this Set
               </Button>
             </div>
