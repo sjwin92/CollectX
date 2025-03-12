@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
@@ -22,12 +21,12 @@ import CardGrid from "@/components/cards/CardGrid";
 import TradeOffer from "@/components/trades/TradeOffer";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
+import { getAllPossibleCardImageUrls } from "@/services/pokemonSetsApi";
 
 const featuredCards = [
   {
     id: "swsh4-25",  // Charizard VMAX from Vivid Voltage
     name: "Charizard VMAX",
-    imageUrl: "https://images.pokemontcg.io/swsh4/25.png",
     rarity: "Ultra Rare",
     condition: "Near Mint",
     estimatedValue: "$350-450"
@@ -35,7 +34,6 @@ const featuredCards = [
   {
     id: "swsh1-190", // Pikachu VMAX from Sword & Shield Base
     name: "Pikachu VMAX",
-    imageUrl: "https://images.pokemontcg.io/swsh1/190.png",
     rarity: "Rare",
     condition: "Mint",
     estimatedValue: "$120-150"
@@ -43,7 +41,6 @@ const featuredCards = [
   {
     id: "sm12-222", // Mewtwo & Mew GX from Cosmic Eclipse
     name: "Mewtwo & Mew GX",
-    imageUrl: "https://images.pokemontcg.io/sm12/222.png",
     rarity: "Ultra Rare",
     condition: "Excellent",
     estimatedValue: "$200-250"
@@ -51,7 +48,6 @@ const featuredCards = [
   {
     id: "swsh9-25", // Blastoise VMAX from Brilliant Stars
     name: "Blastoise VMAX",
-    imageUrl: "https://images.pokemontcg.io/swsh9/25.png",
     rarity: "Rare Holo",
     condition: "Good",
     estimatedValue: "$80-120"
@@ -70,11 +66,11 @@ const recentTrades = [
     },
     giving: {
       count: 2,
-      preview: featuredCards[0].imageUrl
+      preview: getAllPossibleCardImageUrls("swsh4-25")[0] // Use the first reliable URL
     },
     receiving: {
       count: 3,
-      preview: featuredCards[1].imageUrl
+      preview: getAllPossibleCardImageUrls("swsh1-190")[0] // Use the first reliable URL
     }
   },
   {
@@ -88,11 +84,11 @@ const recentTrades = [
     },
     giving: {
       count: 1,
-      preview: featuredCards[3].imageUrl
+      preview: getAllPossibleCardImageUrls("swsh9-25")[0] // Use the first reliable URL
     },
     receiving: {
       count: 1,
-      preview: featuredCards[2].imageUrl
+      preview: getAllPossibleCardImageUrls("sm12-222")[0] // Use the first reliable URL
     }
   }
 ];

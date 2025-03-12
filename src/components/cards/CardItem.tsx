@@ -11,7 +11,7 @@ import { getAllPossibleCardImageUrls } from "@/services/pokemonSetsApi";
 export interface CardItemProps {
   id: string;
   name: string;
-  imageUrl: string;
+  imageUrl?: string;  // Made optional since we'll fetch from sets API if not provided
   rarity: string;
   condition: string;
   estimatedValue: string;
@@ -32,7 +32,7 @@ const CardItem = ({
   onClick
 }: CardItemProps) => {
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
-  const [imageSrc, setImageSrc] = useState<string>(imageUrl);
+  const [imageSrc, setImageSrc] = useState<string>("");
   const [retryCount, setRetryCount] = useState(0);
   const [alternativeImages, setAlternativeImages] = useState<string[]>([]);
   
@@ -40,11 +40,14 @@ const CardItem = ({
     // Reset when card changes
     setImageStatus("loading");
     setRetryCount(0);
-    setImageSrc(imageUrl);
     
     // Get alternative images from our consistent source
     const alternatives = getAllPossibleCardImageUrls(id);
     setAlternativeImages(alternatives);
+    
+    // Start with the first image from our consistent set of alternatives
+    // This is more reliable than the provided imageUrl which could be inconsistent
+    setImageSrc(alternatives[0]);
   }, [id, imageUrl]);
   
   // Map condition to style
@@ -87,7 +90,7 @@ const CardItem = ({
   const retryImage = () => {
     setImageStatus("loading");
     setRetryCount(0);
-    setImageSrc(imageUrl);
+    setImageSrc(alternativeImages[0]);
   };
 
   const CardContent = (
