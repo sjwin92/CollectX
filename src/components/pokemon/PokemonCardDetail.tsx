@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from "react";
-import { PokemonCard, getAllPossibleImageUrls } from "@/services/pokemonTcgApi";
+import { PokemonCard } from "@/services/pokemonTcgApi";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
 import { formatCurrency } from "@/utils/escrowCalculator";
-import { Flame, Zap, Shield, TrendingUp, AlertTriangle, Check, Image, Info, RefreshCw } from "lucide-react";
+import { Flame, Zap, Shield, TrendingUp, AlertTriangle, Check, Info, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
+import { getAllPossibleCardImageUrls } from "@/services/pokemonSetsApi";
 
 interface PokemonCardDetailProps {
   card: PokemonCard;
@@ -24,8 +25,8 @@ const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
     setImageStatus("loading");
     setCurrentImageIndex(0);
     
-    // Get all possible image URLs for this card
-    const urls = getAllPossibleImageUrls(card);
+    // Get all possible image URLs for this card using the sets API helper
+    const urls = getAllPossibleCardImageUrls(card.id);
     setImageUrls(urls);
     
     console.log(`Generated ${urls.length} potential image URLs for card ${card.id}`);

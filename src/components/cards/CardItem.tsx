@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -7,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Info, AlertTriangle, Check, Image, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
+import { getAllPossibleCardImageUrls } from "@/services/pokemonSetsApi";
 
 export interface CardItemProps {
   id: string;
@@ -34,51 +34,17 @@ const CardItem = ({
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
   const [imageSrc, setImageSrc] = useState<string>(imageUrl);
   const [retryCount, setRetryCount] = useState(0);
-  
-  // Alternative image sources to try in sequence
-  const getAlternativeImages = (): string[] => {
-    // Handle cases where the ID isn't in the expected format
-    if (!id || !id.includes('-')) {
-      return [imageUrl, "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"];
-    }
-    
-    const setId = id.split('-')[0];
-    const cardNumber = id.split('-').pop() || "";
-    
-    return [
-      imageUrl, // Original URL
-      
-      // Try different sizes from Pokemon TCG API
-      `https://images.pokemontcg.io/small/${id}.png`,
-      `https://images.pokemontcg.io/large/${id}.png`,
-      
-      // Try direct format with set ID
-      `https://images.pokemontcg.io/${setId}/${cardNumber}.png`,
-      
-      // TCGDex format
-      `https://assets.tcgdex.net/en/${setId}/${cardNumber}`,
-      `https://assets.tcgdex.net/en/${setId}/${cardNumber}.jpg`,
-      `https://assets.tcgdex.net/en/${setId}/${cardNumber}.png`,
-      
-      // Pokellector format
-      `https://assets.pokellector.com/cards/${setId}/${cardNumber.padStart(3, '0')}.webp`,
-      
-      // Pokemon.com format
-      `https://assets.pokemon.com/assets/cms2/img/cards/web/${setId.toUpperCase()}/${setId.toUpperCase()}_EN_${cardNumber}.png`,
-      
-      // PokemonCards.com format
-      `https://images.pokemoncards.com/${setId}/${cardNumber}.jpg`,
-      
-      // Last resort official card back
-      "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
-    ].filter(url => url !== undefined && url !== null && url !== "");
-  };
+  const [alternativeImages, setAlternativeImages] = useState<string[]>([]);
   
   useEffect(() => {
     // Reset when card changes
     setImageStatus("loading");
     setRetryCount(0);
     setImageSrc(imageUrl);
+    
+    // Get alternative images from our consistent source
+    const alternatives = getAllPossibleCardImageUrls(id);
+    setAlternativeImages(alternatives);
   }, [id, imageUrl]);
   
   // Map condition to style
@@ -106,13 +72,12 @@ const CardItem = ({
   const handleImageError = () => {
     console.log(`Image failed to load: ${imageSrc}, retry: ${retryCount}`);
     
-    const alternatives = getAlternativeImages();
     const nextIndex = retryCount + 1;
     
-    if (nextIndex < alternatives.length) {
-      console.log(`Trying alternative image source: ${alternatives[nextIndex]}`);
+    if (nextIndex < alternativeImages.length) {
+      console.log(`Trying alternative image source: ${alternativeImages[nextIndex]}`);
       setRetryCount(nextIndex);
-      setImageSrc(alternatives[nextIndex]);
+      setImageSrc(alternativeImages[nextIndex]);
     } else {
       setImageStatus("error");
       console.log("All image sources failed for card:", id);

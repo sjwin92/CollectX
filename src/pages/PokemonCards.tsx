@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Database, Star, Info, X } from "lucide-react";
 import { CardItemProps } from "@/components/cards/CardItem";
 import { useToast } from "@/hooks/use-toast";
+import { getAllSets, getSetInfoForCard } from "@/services/pokemonSetsApi";
 
 const PokemonCards = () => {
   const [selectedCard, setSelectedCard] = useState<PokemonCard | null>(null);
@@ -21,15 +22,24 @@ const PokemonCards = () => {
   const [dataSource, setDataSource] = useState<"pokemontcg" | "tcgdex">("pokemontcg");
   const { toast } = useToast();
 
+  // Pre-fetch all sets for reference
+  useEffect(() => {
+    getAllSets().then(sets => {
+      console.log(`Pre-fetched ${sets.length} sets for reference`);
+    });
+  }, []);
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ['pokemonCards', currentPage, dataSource],
     queryFn: async () => {
+      let fetchedData;
+      
       if (dataSource === 'pokemontcg') {
-        return await getPokemonTcgCards(currentPage, 20);
+        fetchedData = await getPokemonTcgCards(currentPage, 20);
       } else {
         const tcgdexCards = await getTCGDexCards(currentPage, 20);
         // Convert TCGDex cards to PokemonCard format
-        return {
+        fetchedData = {
           data: tcgdexCards.map((card: TCGDexCard) => ({
             id: card.id,
             name: card.name,
@@ -71,6 +81,30 @@ const PokemonCards = () => {
           totalCount: 100 // TCGDex doesn't provide a total count
         };
       }
+      
+      // Enhance cards with set information from our source of truth
+      if (fetchedData?.data?.length) {
+        for (const card of fetchedData.data) {
+          // Check if we need to update any missing set information
+          if (!card.set?.name || !card.set?.images?.symbol) {
+            const setInfo = await getSetInfoForCard(card.id);
+            if (setInfo) {
+              // Update with accurate set information
+              card.set = {
+                ...card.set,
+                name: card.set.name || setInfo.name,
+                series: card.set.series || setInfo.series,
+                images: {
+                  symbol: card.set.images?.symbol || setInfo.images.symbol,
+                  logo: card.set.images?.logo || setInfo.images.logo
+                }
+              };
+            }
+          }
+        }
+      }
+      
+      return fetchedData;
     },
   });
 
