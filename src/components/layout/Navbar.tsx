@@ -23,7 +23,8 @@ import {
   ArrowLeftRight, 
   LogOut,
   MessageSquare,
-  ShoppingCart
+  ShoppingCart,
+  Layers
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -50,6 +51,7 @@ const Navbar = () => {
     { name: "Home", path: "/" },
     { name: "Collection", path: "/collection" },
     { name: "Trades", path: "/trades" },
+    { name: "Sets", path: "/pokemon-sets" },
     { name: "Marketplace", path: "/marketplace" },
     { name: "Profile", path: "/profile" },
   ];

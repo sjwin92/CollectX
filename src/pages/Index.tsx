@@ -13,7 +13,8 @@ import {
   Star,
   Truck,
   Database,
-  Check
+  Check,
+  Layers
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -119,6 +120,12 @@ const Index = () => {
               </Button>
               <Button size="lg" variant="outline" asChild>
                 <Link to="/pokemons">Browse Cards</Link>
+              </Button>
+              <Button size="lg" variant="secondary" asChild>
+                <Link to="/pokemon-sets">
+                  <Layers className="h-4 w-4 mr-2" />
+                  Browse Sets
+                </Link>
               </Button>
             </div>
           </div>
