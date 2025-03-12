@@ -8,10 +8,7 @@ import TradeListingDetails from "./listing/TradeListingDetails";
 import TradeListingFooter from "./listing/TradeListingFooter";
 import TradeListingProtection from "./listing/TradeListingProtection";
 import FeaturedBadge from "./listing/FeaturedBadge";
-import { Eye, ArrowRightLeft, Star } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 interface TradeListingProps {
   listing: {
@@ -29,6 +26,17 @@ interface TradeListingProps {
 }
 
 const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListingProps) => {
+  const navigate = useNavigate();
+
+  const handleProposeTrade = () => {
+    // Call the parent component's handler first
+    onProposeTrade();
+    
+    // In a real app, this would navigate to a trade proposal form with the listing ID
+    // For now we'll just navigate to the trades page
+    navigate(`/trades?propose=true&listingId=${listing.id}`);
+  };
+
   return (
     <Card className={`overflow-hidden transition-all hover:shadow-md ${featured ? 'border-amber-400 shadow-lg dark:border-amber-500 bg-gradient-to-br from-transparent to-amber-50/5' : ''}`}>
       {featured && <FeaturedBadge />}
@@ -61,7 +69,7 @@ const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListin
 
       <TradeListingFooter 
         cardId={listing.cardOffered.id}
-        onProposeTrade={onProposeTrade}
+        onProposeTrade={handleProposeTrade}
         featured={featured}
       />
       

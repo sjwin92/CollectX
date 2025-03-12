@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getCards, PokemonCard } from "@/services/pokemonTcgApi";
 import Navbar from "@/components/layout/Navbar";
@@ -45,7 +46,6 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 
-// Define the interface for listing objects with the 'featured' property
 interface ListingType {
   id: string;
   userId: string;
@@ -57,7 +57,6 @@ interface ListingType {
   featured?: boolean;
 }
 
-// Mock featured listings for demo purposes
 const FEATURED_LISTINGS: ListingType[] = [
   {
     id: "featured-1",
@@ -95,7 +94,6 @@ const FEATURED_LISTINGS: ListingType[] = [
   }
 ];
 
-// Combined with the existing mock listings from your code
 const INITIAL_LISTINGS: ListingType[] = [
   {
     id: "listing-1",
@@ -145,7 +143,6 @@ const INITIAL_LISTINGS: ListingType[] = [
     description: "Looking to trade my mint condition Mewtwo V for other Legendary Pokémon cards.",
     createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
   },
-  // Additional listings for a better browsing experience
   {
     id: "listing-4",
     userId: "user-4",
@@ -182,7 +179,9 @@ const INITIAL_LISTINGS: ListingType[] = [
 
 const Marketplace = () => {
   const [isCreateListingOpen, setCreateListingOpen] = useState(false);
+  const [isTradeModalOpen, setTradeModalOpen] = useState(false);
   const [selectedCard, setSelectedCard] = useState<PokemonCard | null>(null);
+  const [selectedListing, setSelectedListing] = useState<string | null>(null);
   const [listings, setListings] = useState<ListingType[]>([...FEATURED_LISTINGS, ...INITIAL_LISTINGS]);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<'featured' | 'recent' | 'trending'>('featured');
@@ -191,29 +190,25 @@ const Marketplace = () => {
   const [sortOrder, setSortOrder] = useState<string>("newest");
   const { toast } = useToast();
   const { user } = useUser();
+  const navigate = useNavigate();
 
-  // Filter listings based on search query, category, conditions, etc.
   const filteredListings = React.useMemo(() => {
     return listings
       .filter(listing => {
-        // Search query filter
         const matchesSearch = searchQuery === "" || 
           listing.cardOffered.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           listing.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
           listing.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
           listing.cardsWanted.some(card => card.toLowerCase().includes(searchQuery.toLowerCase()));
         
-        // Category filter
         const matchesCategory = 
           (activeCategory === 'featured' && listing.featured) ||
           (activeCategory === 'recent') ||
           (activeCategory === 'trending');
         
-        // Condition filter
         const matchesCondition = selectedConditions.length === 0 || 
           selectedConditions.includes(listing.cardOffered.condition);
         
-        // Price filter
         let matchesPrice = true;
         if (priceRange !== "all") {
           const price = parseFloat(listing.cardOffered.estimatedValue.replace(/[^0-9.]/g, ''));
@@ -236,7 +231,6 @@ const Marketplace = () => {
         return matchesSearch && matchesCategory && matchesCondition && matchesPrice;
       })
       .sort((a, b) => {
-        // Sort listings
         switch (sortOrder) {
           case "newest":
             return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -264,7 +258,7 @@ const Marketplace = () => {
         name: cardOffered.name,
         imageUrl: cardOffered.images.small,
         rarity: cardOffered.rarity || "Unknown",
-        condition: "Near Mint", // Would come from form in real app
+        condition: "Near Mint",
         estimatedValue: cardOffered.tcgplayer?.prices?.holofoil?.market
           ? `$${cardOffered.tcgplayer.prices.holofoil.market.toFixed(2)}`
           : cardOffered.tcgplayer?.prices?.normal?.market
@@ -299,10 +293,22 @@ const Marketplace = () => {
   };
 
   const handleProposeTrade = (listingId: string) => {
-    // In a real app, this would open the trade proposal form
+    setSelectedListing(listingId);
+    
+    const listing = listings.find(l => l.id === listingId);
+    
     toast({
-      title: "Coming soon!",
-      description: "Trade proposal functionality is coming soon.",
+      title: "Starting trade proposal",
+      description: `Preparing to trade for ${listing?.cardOffered.name}`,
+    });
+    
+    navigate(`/trades?propose=true&listingId=${listingId}`);
+  };
+
+  const handleViewCard = (cardId: string) => {
+    toast({
+      title: "Viewing card details",
+      description: "Navigating to card details page",
     });
   };
 
@@ -327,7 +333,6 @@ const Marketplace = () => {
           </Button>
         </div>
 
-        {/* Top Action Bar */}
         <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -409,7 +414,6 @@ const Marketplace = () => {
           </div>
         </div>
 
-        {/* Category tabs with improved marketplace emphasis */}
         <div className="border rounded-lg p-1 bg-background/50 mb-6">
           <div className="flex space-x-2 items-center">
             <button
@@ -461,7 +465,6 @@ const Marketplace = () => {
           </GlassCard>
         )}
 
-        {/* Fixed action button on mobile */}
         <div className="fixed bottom-6 right-6 md:hidden">
           <Button size="lg" className="h-14 w-14 rounded-full shadow-lg" onClick={() => setCreateListingOpen(true)}>
             <Plus className="h-6 w-6" />
