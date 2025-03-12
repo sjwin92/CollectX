@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
 import { cn } from "@/lib/utils";
-import { Info, AlertTriangle, Check, Image, RefreshCw } from "lucide-react";
+import { Info, AlertTriangle, Check, Image as LucideImage, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { getAllPossibleCardImageUrls } from "@/services/pokemonSetsApi";
@@ -53,8 +53,9 @@ const CardItem = ({
     // Preload the next few alternative images to improve loading success
     if (alternatives.length > 1) {
       alternatives.slice(1, 4).forEach(url => {
-        const img = new Image();
-        img.src = url;
+        // Use the global HTMLImageElement constructor, not the Lucide icon
+        const imgElement = new window.Image();
+        imgElement.src = url;
       });
     }
   }, [id, imageUrl]);
