@@ -1,3 +1,4 @@
+
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./App.css";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -13,6 +14,7 @@ import NotFound from "./pages/NotFound";
 import Pokemons from "./pages/Pokemons";
 import Marketplace from "./pages/Marketplace";
 import Sets from "./pages/Sets";
+import SetDetail from "./pages/SetDetail";
 
 function App() {
   return (
@@ -25,6 +27,7 @@ function App() {
           <Route path="/collection" element={<Collection />} />
           <Route path="/pokemon-cards" element={<PokemonCards />} />
           <Route path="/pokemon-sets" element={<Sets />} />
+          <Route path="/pokemon-sets/:id" element={<SetDetail />} />
           <Route path="/pokemons" element={<Pokemons />} />
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/card/:id" element={<CardDetail />} />
