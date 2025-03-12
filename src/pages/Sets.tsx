@@ -7,6 +7,7 @@ import Footer from "@/components/layout/Footer";
 import SetCard from "@/components/pokemon/SetCard";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Plus } from "lucide-react";
 
 const Sets = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -43,9 +44,16 @@ const Sets = () => {
       <main className="container py-8 flex-1">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Pokémon Card Sets</h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground mb-4">
             Browse all Pokémon Trading Card Game sets, from the latest expansions to the classic Base Set.
           </p>
+          <div className="bg-muted/50 p-4 rounded-lg border border-border mb-6">
+            <div className="flex items-center gap-2 text-sm">
+              <Plus className="h-4 w-4 text-primary" />
+              <span className="font-medium">Tip:</span>
+              <span>Hover over any set and click the + button to quickly add cards to your collection.</span>
+            </div>
+          </div>
         </div>
 
         {isLoading ? (
