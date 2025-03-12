@@ -33,22 +33,33 @@ const CardGrid: React.FC<CardGridProps> = ({
   const [searchParams] = useSearchParams();
 
   const effectiveSetId = setId || searchParams.get('setId');
-
+  const nameQuery = searchParams.get('name') || '';
+  
   const loadCards = async (pageNum = 1, append = false) => {
     if (cards) return; // Don't load from API if cards are provided as props
     
     setIsLoading(true);
     try {
-      let queryString = '';
+      let queryParts = [];
       
       if (effectiveSetId) {
-        queryString = `set.id:${effectiveSetId}`;
+        queryParts.push(`set.id:${effectiveSetId}`);
+        console.log(`Adding set filter: set.id:${effectiveSetId}`);
       }
       
-      console.log(`Loading cards with query string: ${queryString}`);
+      if (nameQuery) {
+        queryParts.push(`name:*${nameQuery}*`);
+        console.log(`Adding name filter: name:*${nameQuery}*`);
+      }
+      
+      const queryString = queryParts.join(' ');
+      
+      console.log(`Loading cards with query string: "${queryString}"`);
       const response = await searchCards(queryString, pageNum, 20);
       
       if (response && response.data) {
+        console.log(`Received ${response.data.length} cards from API`);
+        
         const formattedCards: CardItemProps[] = response.data.map(card => ({
           id: card.id,
           name: card.name,
@@ -78,17 +89,17 @@ const CardGrid: React.FC<CardGridProps> = ({
   };
 
   useEffect(() => {
-    // If cards are provided as props, use those
+    console.log(`CardGrid useEffect - effectiveSetId: ${effectiveSetId}, nameQuery: ${nameQuery}`);
+    
     if (cards) {
       setLoadedCards(cards);
       setIsLoading(false);
       return;
     }
     
-    // Reset page and load cards when setId changes
     setPage(1);
     loadCards(1, false);
-  }, [effectiveSetId, cards]);
+  }, [effectiveSetId, nameQuery, cards]);
 
   const handleLoadMore = () => {
     const nextPage = page + 1;

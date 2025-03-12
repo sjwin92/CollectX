@@ -28,6 +28,7 @@ const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = nu
       try {
         const allSets = await getAllSets();
         setSets(allSets);
+        console.log(`Loaded ${allSets.length} sets for dropdown`);
       } catch (error) {
         console.error("Error loading sets for search:", error);
       } finally {
@@ -37,6 +38,14 @@ const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = nu
     
     loadSets();
   }, []);
+  
+  // Initialize name query from URL params
+  useEffect(() => {
+    const nameFromUrl = searchParams.get('name');
+    if (nameFromUrl) {
+      setNameQuery(nameFromUrl);
+    }
+  }, [searchParams]);
   
   // Set the initial set value based on URL params or props
   useEffect(() => {
@@ -69,6 +78,7 @@ const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = nu
     }
     
     // Navigate to the same page but with new query parameters
+    console.log(`Navigating to search with params: ${params.toString()}`);
     navigate({
       pathname: '/pokemon-cards',
       search: params.toString()
@@ -76,6 +86,7 @@ const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = nu
   };
   
   const handleSetChange = (value: string) => {
+    console.log(`Set selection changed to: ${value}`);
     setSelectedSet(value);
     
     // If user is just changing the set (without a name query), 

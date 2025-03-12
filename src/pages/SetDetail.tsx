@@ -37,6 +37,7 @@ const SetDetail = () => {
 
   const handleViewCards = () => {
     if (id) {
+      console.log(`Navigating to view cards for setId: ${id}`);
       navigate(`/pokemon-cards?setId=${id}`);
       toast({
         title: "Loading cards",

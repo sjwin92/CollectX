@@ -82,7 +82,7 @@ export const getCards = async (page = 1, pageSize = 20, query = ''): Promise<Pok
     let url: string;
     
     if (query) {
-      url = `${BASE_URL}/cards?q=${query}&page=${page}&pageSize=${pageSize}`;
+      url = `${BASE_URL}/cards?q=${encodeURIComponent(query)}&page=${page}&pageSize=${pageSize}`;
     } else {
       url = `${BASE_URL}/cards?page=${page}&pageSize=${pageSize}`;
     }
@@ -141,7 +141,7 @@ export const getCardById = async (id: string): Promise<PokemonCard> => {
 export const searchCards = async (queryString: string, page = 1, pageSize = 20): Promise<PokemonCardResponse> => {
   console.log(`Searching cards with query: "${queryString}"`);
   
-  // Simple search query for better results
+  // Ensure query is properly formatted
   if (queryString) {
     return getCards(page, pageSize, queryString);
   }

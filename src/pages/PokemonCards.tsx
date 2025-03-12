@@ -15,18 +15,25 @@ const PokemonCards = () => {
   const [selectedSetName, setSelectedSetName] = useState<string | null>(null);
   const { toast } = useToast();
 
+  console.log(`PokemonCards page loaded with setId: ${setId}, nameQuery: ${nameQuery}`);
+
   // If we have a setId, load the set name
   useEffect(() => {
     if (setId) {
       const loadSetName = async () => {
         try {
+          console.log(`Fetching set details for setId: ${setId}`);
           const setData = await getSetById(setId);
           if (setData) {
             setSelectedSetName(setData.name);
             console.log(`Loaded set name: ${setData.name} for setId: ${setId}`);
+          } else {
+            console.error(`Set data not found for setId: ${setId}`);
+            setSelectedSetName(null);
           }
         } catch (error) {
           console.error("Error loading set name:", error);
+          setSelectedSetName(null);
           toast({
             title: "Error loading set",
             description: "Could not load the set details.",
