@@ -5,12 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getAllSets } from "@/services/pokemonSetsApi";
 import { Search } from "lucide-react";
+import { PokemonCard } from "@/services/pokemonTcgApi";
 
 interface PokemonCardSearchProps {
   initialSetId?: string | null;
+  onSelect?: (card: PokemonCard) => void;
 }
 
-const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = null }) => {
+const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = null, onSelect }) => {
   const [nameQuery, setNameQuery] = useState("");
   const [selectedSet, setSelectedSet] = useState<string>(initialSetId || "");
   const [sets, setSets] = useState<Array<{ id: string; name: string }>>([]);
