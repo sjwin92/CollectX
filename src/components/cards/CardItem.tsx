@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -42,20 +41,35 @@ const CardItem = ({
     setImageStatus("loading");
     setRetryCount(0);
     
-    // Get alternative images from our consistent source
-    const alternatives = getAllPossibleCardImageUrls(id);
-    setAlternativeImages(alternatives);
+    // Get alternative images from our consistent source (sets API)
+    const setsImages = getAllPossibleCardImageUrls(id);
+    console.log(`Got ${setsImages.length} alternative images for card ${id}`);
+    setAlternativeImages(setsImages);
     
-    // If provided imageUrl exists, try it first, otherwise use the first alternative
-    const initialImage = imageUrl || alternatives[0];
-    setImageSrc(initialImage);
+    // Always use sets API as primary source, with provided imageUrl as backup if it exists
+    const initialSources = imageUrl 
+      ? [imageUrl, ...setsImages] 
+      : setsImages;
+      
+    // Remove duplicates
+    const uniqueSources = [...new Set(initialSources)];
+    setAlternativeImages(uniqueSources);
+    
+    // Start with the first image
+    if (uniqueSources.length > 0) {
+      setImageSrc(uniqueSources[0]);
+      console.log(`Initial image source: ${uniqueSources[0]}`);
+    }
     
     // Preload the next few alternative images to improve loading success
-    if (alternatives.length > 1) {
-      alternatives.slice(1, 4).forEach(url => {
-        // Use the global HTMLImageElement constructor, not the Lucide icon
-        const imgElement = new window.Image();
-        imgElement.src = url;
+    if (uniqueSources.length > 1) {
+      uniqueSources.slice(1, 4).forEach((url, index) => {
+        setTimeout(() => {
+          // Use the global HTMLImageElement constructor
+          const imgElement = new window.Image();
+          imgElement.src = url;
+          console.log(`Preloading image ${index + 1}: ${url}`);
+        }, index * 200); // Stagger preloading to prevent network congestion
       });
     }
   }, [id, imageUrl]);
@@ -79,6 +93,7 @@ const CardItem = ({
   };
 
   const handleImageLoad = () => {
+    console.log(`Image loaded successfully: ${imageSrc}`);
     setImageStatus("loaded");
   };
 
@@ -88,12 +103,12 @@ const CardItem = ({
     const nextIndex = retryCount + 1;
     
     if (nextIndex < alternativeImages.length) {
-      console.log(`Trying alternative image source: ${alternativeImages[nextIndex]}`);
-      // Add a slight delay before trying the next image source to prevent rate limiting
+      console.log(`Trying alternative image source ${nextIndex}: ${alternativeImages[nextIndex]}`);
+      // Add a delay before trying the next image source to prevent rate limiting
       setTimeout(() => {
         setRetryCount(nextIndex);
         setImageSrc(alternativeImages[nextIndex]);
-      }, 100);
+      }, 250); // Increased delay to give servers more time
     } else {
       setImageStatus("error");
       console.log("All image sources failed for card:", id);
@@ -103,8 +118,10 @@ const CardItem = ({
   const retryImage = () => {
     setImageStatus("loading");
     setRetryCount(0);
-    // Try the provided imageUrl first if it exists, otherwise use the first alternative
-    setImageSrc(imageUrl || alternativeImages[0]);
+    // Start with the first alternative again
+    if (alternativeImages.length > 0) {
+      setImageSrc(alternativeImages[0]);
+    }
   };
 
   const CardContent = (

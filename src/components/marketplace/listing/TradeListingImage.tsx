@@ -1,9 +1,9 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, RefreshCw } from "lucide-react";
-import { getReliableImageUrl } from "@/services/pokemonTcgApi";
+import { getAllPossibleCardImageUrls } from "@/services/pokemonSetsApi";
 
 interface TradeListingImageProps {
   cardId?: string;
@@ -14,37 +14,76 @@ interface TradeListingImageProps {
 
 const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListingImageProps) => {
   const [imageError, setImageError] = useState(false);
-  const [imageSrc, setImageSrc] = useState(() => {
-    if (cardId) {
-      return getReliableImageUrl(cardId, 'small');
+  const [imageSrc, setImageSrc] = useState<string>("");
+  const [retryCount, setRetryCount] = useState(0);
+  const [alternativeImages, setAlternativeImages] = useState<string[]>([]);
+  
+  useEffect(() => {
+    if (!cardId && !imageUrl) {
+      setImageError(true);
+      return;
     }
-    return imageUrl;
-  });
+    
+    // Reset state
+    setImageError(false);
+    setRetryCount(0);
+    
+    // Get all possible image URLs from the sets API if we have a card ID
+    if (cardId) {
+      const possibleUrls = getAllPossibleCardImageUrls(cardId);
+      console.log(`Got ${possibleUrls.length} possible image URLs for trade listing ${cardId}`);
+      
+      // Include the provided imageUrl if it exists and is not already in the list
+      const allSources = imageUrl 
+        ? [imageUrl, ...possibleUrls]
+        : possibleUrls;
+        
+      // Remove duplicates
+      const uniqueSources = [...new Set(allSources)];
+      setAlternativeImages(uniqueSources);
+      
+      // Start with the first image
+      if (uniqueSources.length > 0) {
+        setImageSrc(uniqueSources[0]);
+      }
+    } else if (imageUrl) {
+      // If we only have imageUrl, use that
+      setImageSrc(imageUrl);
+      setAlternativeImages([imageUrl]);
+    }
+  }, [cardId, imageUrl]);
   
   const handleImageError = () => {
-    if (imageError) return;
+    console.log(`Trade listing image failed to load: ${imageSrc}, retry: ${retryCount}`);
     
-    if (cardId) {
-      const newSrc = getReliableImageUrl(cardId, 'large');
-      console.log(`Trying alternative image source: ${newSrc}`);
-      setImageSrc(newSrc);
+    const nextIndex = retryCount + 1;
+    
+    if (nextIndex < alternativeImages.length) {
+      console.log(`Trying alternative image source ${nextIndex}: ${alternativeImages[nextIndex]}`);
+      // Add a delay before trying the next image source to prevent rate limiting
+      setTimeout(() => {
+        setRetryCount(nextIndex);
+        setImageSrc(alternativeImages[nextIndex]);
+      }, 250);
     } else {
       setImageError(true);
+      console.log("All image sources failed for trade listing card");
     }
   };
   
   const retryImage = () => {
     setImageError(false);
-    if (cardId) {
-      setImageSrc(getReliableImageUrl(cardId, 'small'));
-    } else {
-      setImageSrc(imageUrl);
+    setRetryCount(0);
+    
+    // Start with the first alternative again
+    if (alternativeImages.length > 0) {
+      setImageSrc(alternativeImages[0]);
     }
   };
 
   return (
     <div className="w-1/3 relative group">
-      {!imageError ? (
+      {imageSrc && !imageError ? (
         <img 
           src={imageSrc} 
           alt={cardName}
