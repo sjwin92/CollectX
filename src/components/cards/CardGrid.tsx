@@ -37,15 +37,19 @@ const CardGrid: React.FC<CardGridProps> = ({
     
     setIsLoading(true);
     try {
-      // Build query parameters
-      const params = new URLSearchParams();
-      if (setId) {
-        params.append('q', `set.id:${setId}`);
-      }
-      params.append('page', pageNum.toString());
-      params.append('pageSize', '20');
+      // Build query string - we need to format this correctly for the API
+      let queryString = '';
       
-      const response = await searchCards(params.toString());
+      if (setId) {
+        // Directly format the query for set.id
+        queryString = `q=set.id:${setId}`;
+        queryString += `&page=${pageNum}&pageSize=20`;
+      } else {
+        queryString = `page=${pageNum}&pageSize=20`;
+      }
+      
+      console.log(`Loading cards with query: ${queryString}`);
+      const response = await searchCards(queryString);
       
       if (response && response.data) {
         const formattedCards: CardItemProps[] = response.data.map(card => ({

@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { getAllSets } from "@/services/pokemonSetsApi";
 import { Search } from "lucide-react";
 import { PokemonCard } from "@/services/pokemonTcgApi";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 interface PokemonCardSearchProps {
   initialSetId?: string | null;
@@ -17,6 +18,8 @@ const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = nu
   const [selectedSet, setSelectedSet] = useState<string>(initialSetId || "");
   const [sets, setSets] = useState<Array<{ id: string; name: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   
   // Load available sets
   useEffect(() => {
@@ -39,15 +42,51 @@ const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = nu
   useEffect(() => {
     if (initialSetId) {
       setSelectedSet(initialSetId);
+    } else {
+      // Check if setId is in URL
+      const setIdFromUrl = searchParams.get('setId');
+      if (setIdFromUrl) {
+        setSelectedSet(setIdFromUrl);
+      }
     }
-  }, [initialSetId]);
+  }, [initialSetId, searchParams]);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Trigger search logic here
-    console.log("Searching for:", { nameQuery, selectedSet });
     
-    // You would typically update URL params or call a parent component's search function
+    // Build the new URL with search parameters
+    const params = new URLSearchParams();
+    
+    if (nameQuery) {
+      params.append('name', nameQuery);
+    }
+    
+    if (selectedSet) {
+      params.append('setId', selectedSet);
+    }
+    
+    // Navigate to the same page but with new query parameters
+    navigate({
+      pathname: '/pokemon-cards',
+      search: params.toString()
+    });
+  };
+  
+  const handleSetChange = (value: string) => {
+    setSelectedSet(value);
+    
+    // If user is just changing the set (without a name query), 
+    // automatically submit the form to update results
+    if (!nameQuery) {
+      const params = new URLSearchParams();
+      if (value) {
+        params.append('setId', value);
+      }
+      navigate({
+        pathname: '/pokemon-cards',
+        search: params.toString()
+      });
+    }
   };
 
   return (
@@ -63,7 +102,7 @@ const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = nu
         </div>
         
         <div className="md:col-span-5">
-          <Select value={selectedSet} onValueChange={setSelectedSet}>
+          <Select value={selectedSet} onValueChange={handleSetChange}>
             <SelectTrigger>
               <SelectValue placeholder="Select a set" />
             </SelectTrigger>

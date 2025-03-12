@@ -11,6 +11,7 @@ import { getSetById } from "@/services/pokemonSetsApi";
 const PokemonCards = () => {
   const [searchParams] = useSearchParams();
   const setId = searchParams.get('setId');
+  const nameQuery = searchParams.get('name');
   const [selectedSetName, setSelectedSetName] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -34,6 +35,8 @@ const PokemonCards = () => {
       };
 
       loadSetName();
+    } else {
+      setSelectedSetName(null);
     }
   }, [setId, toast]);
 
@@ -49,6 +52,12 @@ const PokemonCards = () => {
         {selectedSetName && (
           <p className="text-muted-foreground mb-6">
             Viewing all cards from the {selectedSetName} set.
+          </p>
+        )}
+        
+        {nameQuery && (
+          <p className="text-muted-foreground mb-6">
+            Search results for "{nameQuery}"
           </p>
         )}
         
