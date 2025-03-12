@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -30,7 +29,6 @@ import {
   ArrowLeft,
   MessageSquare,
   Loader2,
-  RefreshCw,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { formatCurrency } from "@/utils/escrowCalculator";

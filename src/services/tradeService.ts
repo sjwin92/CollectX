@@ -1,7 +1,7 @@
+
 import { TradeProposal, TradeStatus, TradeMessage } from "@/models/escrow";
 import { v4 as uuidv4 } from 'uuid';
 import { getCardById, mapToTradeCard } from './tcgdexApi';
-import { supabase } from "@/integrations/supabase/client";
 
 const CARD_IDS = {
   CHARIZARD_GX_RR: 'sm12-150',
@@ -245,118 +245,13 @@ const createFallbackTrades = () => {
 
 let mockTradesPromise = initializeMockTrades();
 
-export const createTradeProposal = async (
-  initiatorCards: any[],
-  recipientId: string | null,
-  message: string
-): Promise<string | null> => {
-  try {
-    // Get current authenticated user
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      throw new Error('Authentication required');
-    }
-    
-    // Create the trade proposal
-    const { data: tradeProposal, error: tradeError } = await supabase
-      .from('trade_proposals')
-      .insert({
-        initiator_id: user.id,
-        recipient_id: recipientId,
-        status: 'proposed'
-      })
-      .select()
-      .single();
-    
-    if (tradeError) {
-      console.error("Error creating trade proposal:", tradeError);
-      throw tradeError;
-    }
-    
-    // Add cards to the trade
-    if (initiatorCards.length > 0) {
-      const cardsToInsert = initiatorCards.map(card => ({
-        card_id: card.id,
-        condition: card.condition || "Near Mint",
-        trade_id: tradeProposal.id,
-        user_id: user.id,
-        estimated_value: card.estimatedValue || 0,
-        currency: card.currency || "USD"
-      }));
-      
-      const { error: cardsError } = await supabase
-        .from('trade_cards')
-        .insert(cardsToInsert);
-      
-      if (cardsError) {
-        console.error("Error adding cards to trade:", cardsError);
-        throw cardsError;
-      }
-    }
-    
-    // Add initial message if provided
-    if (message) {
-      const { error: messageError } = await supabase
-        .from('trade_messages')
-        .insert({
-          trade_id: tradeProposal.id,
-          user_id: user.id,
-          message: message,
-          system_message: false
-        });
-      
-      if (messageError) {
-        console.error("Error adding message to trade:", messageError);
-        throw messageError;
-      }
-    }
-    
-    return tradeProposal.id;
-  } catch (error) {
-    console.error("Error in createTradeProposal:", error);
-    return null;
-  }
-};
-
 export const getTradeProposal = async (id: string): Promise<TradeProposal> => {
-  try {
-    // Try to get from Supabase first
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (user) {
-      const { data: tradeData, error: tradeError } = await supabase
-        .from('trade_proposals')
-        .select(`
-          *,
-          initiator_cards:trade_cards!trade_cards_trade_id_fkey(*)
-        `)
-        .eq('id', id)
-        .single();
-      
-      if (tradeData && !tradeError) {
-        // Transform Supabase data to match our TradeProposal model
-        // For now, return mock data - in a real app you'd transform the data
-        console.log("Supabase trade data found:", tradeData);
-      }
-    }
-    
-    // Fallback to mock data
-    const trades = await mockTradesPromise;
-    const trade = trades[id];
-    if (!trade) {
-      throw new Error(`Trade proposal with ID ${id} not found`);
-    }
-    return trade;
-  } catch (error) {
-    console.error("Error fetching trade proposal:", error);
-    const trades = await mockTradesPromise;
-    const trade = trades[id];
-    if (!trade) {
-      throw new Error(`Trade proposal with ID ${id} not found`);
-    }
-    return trade;
+  const trades = await mockTradesPromise;
+  const trade = trades[id];
+  if (!trade) {
+    throw new Error(`Trade proposal with ID ${id} not found`);
   }
+  return trade;
 };
 
 export const addTradeMessage = async (tradeId: string, message: string): Promise<void> => {
@@ -537,4 +432,3 @@ export const releaseTradeEscrow = async (tradeId: string): Promise<void> => {
   
   return Promise.resolve();
 };
-

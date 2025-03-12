@@ -19,7 +19,6 @@ interface TradeListingProps {
     description: string;
     createdAt: Date;
     featured?: boolean;
-    tradeId?: string;
   };
   onProposeTrade: () => void;
   featured?: boolean;
@@ -56,7 +55,6 @@ const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListin
 
       <TradeListingFooter 
         cardId={listing.cardOffered.id}
-        tradeId={listing.tradeId}
         onProposeTrade={onProposeTrade}
         featured={featured}
       />

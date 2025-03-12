@@ -1,13 +1,11 @@
 
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge, { ReputationLevel } from "@/components/ui/custom/Badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeftRight, Calendar, Package, Shield, Truck, Lock, AlertTriangle } from "lucide-react";
-import { useUser } from "@/hooks/useUser";
-import { useToast } from "@/hooks/use-toast";
 
 export interface TradeOfferProps {
   id: string;
@@ -45,10 +43,6 @@ const TradeOffer = ({
   escrowRequired = false,
   escrowPaid = false,
 }: TradeOfferProps) => {
-  const { isSignedIn } = useUser();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-
   const getStatusBadge = () => {
     switch (status) {
       case "proposed":
@@ -105,25 +99,6 @@ const TradeOffer = ({
     }).format(value);
   };
 
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.target as HTMLImageElement;
-    img.onerror = null; // Prevent infinite loop
-    img.src = "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg";
-  };
-
-  const handleViewTradeDetails = () => {
-    if (!isSignedIn) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to view trade details.",
-        variant: "destructive"
-      });
-      navigate("/auth");
-      return;
-    }
-    navigate(`/trades/${id}`);
-  };
-
   return (
     <GlassCard className="overflow-hidden">
       <div className="flex items-center justify-between mb-4">
@@ -157,7 +132,6 @@ const TradeOffer = ({
                 src={giving.preview} 
                 alt="Cards preview" 
                 className="object-cover h-full w-full"
-                onError={handleImageError}
               />
               {giving.count > 1 && (
                 <div className="absolute top-0.5 right-0.5 bg-primary/90 text-white text-[10px] font-medium h-4 w-4 rounded-full flex items-center justify-center">
@@ -188,7 +162,6 @@ const TradeOffer = ({
                 src={receiving.preview} 
                 alt="Cards preview" 
                 className="object-cover h-full w-full"
-                onError={handleImageError}
               />
               {receiving.count > 1 && (
                 <div className="absolute top-0.5 right-0.5 bg-primary/90 text-white text-[10px] font-medium h-4 w-4 rounded-full flex items-center justify-center">
@@ -208,49 +181,74 @@ const TradeOffer = ({
         </div>
       </div>
 
+      {/* Escrow Status (if applicable) */}
       {escrowRequired && (
-        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
-          <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4 text-amber-500" />
-            <span className="text-sm font-medium text-amber-800">Escrow Protection</span>
-          </div>
-          <div className="text-xs text-amber-700 mt-1">
+        <div className="mb-4 p-3 rounded-md border border-border bg-secondary/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Lock className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">Escrow Protection</span>
+            </div>
             {escrowPaid ? (
-              <div className="flex items-center gap-1">
-                <Lock className="h-3 w-3" />
-                <span>Escrow has been paid and the trade is protected</span>
-              </div>
+              <Badge variant="success" size="sm">Paid</Badge>
             ) : (
-              <div className="flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" />
-                <span>Escrow payment required to proceed with this trade</span>
-              </div>
+              <Badge variant="warning" size="sm">Required</Badge>
             )}
           </div>
         </div>
       )}
 
-      {status === "shipped" && (
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-          <div className="flex items-center gap-2">
-            <Truck className="h-4 w-4 text-blue-500" />
-            <span className="text-sm font-medium text-blue-800">Shipping Status</span>
-          </div>
-          <div className="text-xs text-blue-700 mt-1">
-            This trade is currently in transit. Tracking information is available in trade details.
+      {/* Progress tracker */}
+      {!["declined", "disputed", "cancelled"].includes(status) && (
+        <div className="relative mb-6 mt-6">
+          <div className="absolute top-1/2 left-0 right-0 h-1 bg-muted transform -translate-y-1/2" />
+          <div 
+            className="absolute top-1/2 left-0 h-1 bg-primary transform -translate-y-1/2" 
+            style={{ width: `${(step / 5) * 100}%` }}
+          />
+          <div className="relative flex justify-between">
+            <div className="flex flex-col items-center">
+              <div className={`h-6 w-6 rounded-full ${step >= 1 ? 'bg-primary' : 'bg-muted'} flex items-center justify-center text-white text-xs`}>
+                1
+              </div>
+              <span className="text-xs mt-1">Proposed</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className={`h-6 w-6 rounded-full ${step >= 2 ? 'bg-primary' : 'bg-muted'} flex items-center justify-center text-white text-xs`}>
+                2
+              </div>
+              <span className="text-xs mt-1">Accepted</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className={`h-6 w-6 rounded-full ${step >= 3 ? 'bg-primary' : 'bg-muted'} flex items-center justify-center text-white text-xs`}>
+                3
+              </div>
+              <span className="text-xs mt-1">Escrowed</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className={`h-6 w-6 rounded-full ${step >= 4 ? 'bg-primary' : 'bg-muted'} flex items-center justify-center text-white text-xs`}>
+                4
+              </div>
+              <span className="text-xs mt-1">Shipped</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className={`h-6 w-6 rounded-full ${step >= 5 ? 'bg-primary' : 'bg-muted'} flex items-center justify-center text-white text-xs`}>
+                5
+              </div>
+              <span className="text-xs mt-1">Completed</span>
+            </div>
           </div>
         </div>
       )}
 
-      <div className="flex justify-end pt-2 border-t border-border">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="text-xs"
-          onClick={handleViewTradeDetails}
-        >
-          View Trade Details
-        </Button>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+          <Shield className="h-4 w-4" />
+          <span>Trade Protected</span>
+        </div>
+        <Link to={`/trades/${id}`}>
+          <Button size="sm">View Details</Button>
+        </Link>
       </div>
     </GlassCard>
   );
