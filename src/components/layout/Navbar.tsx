@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,8 @@ import {
   MessageSquare,
   ShoppingCart,
   Layers,
-  Archive
+  Archive,
+  Home
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -48,12 +50,12 @@ const Navbar = () => {
   }, [scrolled]);
 
   const navigationItems = [
-    { name: "Home", path: "/" },
+    { name: "Home", path: "/", icon: <Home className="mr-2 h-4 w-4" /> },
     { name: "My Collection", path: "/collection", icon: <Archive className="mr-2 h-4 w-4" /> },
-    { name: "Trades", path: "/trades" },
-    { name: "Sets", path: "/pokemon-sets" },
-    { name: "Marketplace", path: "/marketplace" },
-    { name: "Profile", path: "/profile" },
+    { name: "Trades", path: "/trades", icon: <ArrowLeftRight className="mr-2 h-4 w-4" /> },
+    { name: "Sets", path: "/pokemon-sets", icon: <Layers className="mr-2 h-4 w-4" /> },
+    { name: "Marketplace", path: "/marketplace", icon: <ShoppingCart className="mr-2 h-4 w-4" /> },
+    { name: "Profile", path: "/profile", icon: <User className="mr-2 h-4 w-4" /> },
   ];
 
   const NavLinks = () => (
