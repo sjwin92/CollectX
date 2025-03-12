@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
 import { cn } from "@/lib/utils";
-import { Info, AlertTriangle, Check, Image as LucideImage, RefreshCw } from "lucide-react";
+import { Info, AlertTriangle, Check, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { getAllPossibleCardImageUrls } from "@/services/pokemonSetsApi";
@@ -37,61 +37,26 @@ const CardItem = ({
   const [alternativeImages, setAlternativeImages] = useState<string[]>([]);
   
   useEffect(() => {
-    // Reset when card changes
     setImageStatus("loading");
     setRetryCount(0);
     
-    // Get alternative images from our consistent source (sets API)
+    // Get all possible URLs from our consistent source (sets API)
     const setsImages = getAllPossibleCardImageUrls(id);
     console.log(`Got ${setsImages.length} alternative images for card ${id}`);
-    setAlternativeImages(setsImages);
     
-    // Always use sets API as primary source, with provided imageUrl as backup if it exists
-    const initialSources = imageUrl 
-      ? [imageUrl, ...setsImages] 
+    // Always use sets API as primary source
+    const uniqueSources = imageUrl 
+      ? [imageUrl, ...setsImages]
       : setsImages;
-      
-    // Remove duplicates
-    const uniqueSources = [...new Set(initialSources)];
+    
     setAlternativeImages(uniqueSources);
     
-    // Start with the first image
     if (uniqueSources.length > 0) {
       setImageSrc(uniqueSources[0]);
       console.log(`Initial image source: ${uniqueSources[0]}`);
     }
-    
-    // Preload the next few alternative images to improve loading success
-    if (uniqueSources.length > 1) {
-      uniqueSources.slice(1, 4).forEach((url, index) => {
-        setTimeout(() => {
-          // Use the global HTMLImageElement constructor
-          const imgElement = new window.Image();
-          imgElement.src = url;
-          console.log(`Preloading image ${index + 1}: ${url}`);
-        }, index * 200); // Stagger preloading to prevent network congestion
-      });
-    }
   }, [id, imageUrl]);
   
-  // Map condition to style
-  const conditionVariant = (): "success" | "warning" | "danger" | "info" => {
-    switch (condition.toLowerCase()) {
-      case "mint":
-      case "near mint":
-        return "success";
-      case "excellent":
-      case "good":
-        return "info";
-      case "played":
-        return "warning";
-      case "poor":
-        return "danger";
-      default:
-        return "info";
-    }
-  };
-
   const handleImageLoad = () => {
     console.log(`Image loaded successfully: ${imageSrc}`);
     setImageStatus("loaded");
@@ -104,11 +69,10 @@ const CardItem = ({
     
     if (nextIndex < alternativeImages.length) {
       console.log(`Trying alternative image source ${nextIndex}: ${alternativeImages[nextIndex]}`);
-      // Add a delay before trying the next image source to prevent rate limiting
       setTimeout(() => {
         setRetryCount(nextIndex);
         setImageSrc(alternativeImages[nextIndex]);
-      }, 250); // Increased delay to give servers more time
+      }, 500); // Increased delay to prevent rate limiting
     } else {
       setImageStatus("error");
       console.log("All image sources failed for card:", id);
@@ -118,7 +82,6 @@ const CardItem = ({
   const retryImage = () => {
     setImageStatus("loading");
     setRetryCount(0);
-    // Start with the first alternative again
     if (alternativeImages.length > 0) {
       setImageSrc(alternativeImages[0]);
     }
@@ -132,20 +95,22 @@ const CardItem = ({
       <div className="relative aspect-[2/3] overflow-hidden rounded-md mb-3">
         <div className="relative h-full">
           {imageSrc && (
-            <img
-              src={imageSrc}
-              alt={`Pokémon card: ${name} - ${condition} condition, ${rarity} rarity`}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-              loading="lazy"
-              onLoad={handleImageLoad}
-              onError={handleImageError}
-            />
-          )}
-          
-          {imageStatus === "loading" && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/70">
-              <div className="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-            </div>
+            <>
+              <img
+                src={imageSrc}
+                alt={`Pokémon card: ${name} - ${condition} condition, ${rarity} rarity`}
+                className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 ${
+                  imageStatus === "loading" ? "opacity-0" : "opacity-100"
+                }`}
+                onLoad={handleImageLoad}
+                onError={handleImageError}
+              />
+              {imageStatus === "loading" && (
+                <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                </div>
+              )}
+            </>
           )}
           
           {imageStatus === "error" && (
@@ -154,7 +119,7 @@ const CardItem = ({
               <span className="text-xs font-medium text-center">Image Failed to Load</span>
               <span className="text-xs text-muted-foreground text-center mt-1 mb-2">Card data still available</span>
               <Button size="sm" variant="outline" className="text-xs py-0 h-7" onClick={(e) => {
-                e.stopPropagation(); // Prevent triggering card click
+                e.stopPropagation();
                 retryImage();
               }}>
                 <RefreshCw className="h-3 w-3 mr-1" /> Retry
@@ -217,6 +182,24 @@ const CardItem = ({
       {CardContent}
     </Link>
   );
+
+  // Map condition to style
+  function conditionVariant(): "success" | "warning" | "danger" | "info" {
+    switch (condition.toLowerCase()) {
+      case "mint":
+      case "near mint":
+        return "success";
+      case "excellent":
+      case "good":
+        return "info";
+      case "played":
+        return "warning";
+      case "poor":
+        return "danger";
+      default:
+        return "info";
+    }
+  }
 };
 
 export default CardItem;

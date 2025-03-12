@@ -17,41 +17,40 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
   const [imageSrc, setImageSrc] = useState<string>("");
   const [retryCount, setRetryCount] = useState(0);
   const [alternativeImages, setAlternativeImages] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     if (!cardId && !imageUrl) {
       setImageError(true);
+      setIsLoading(false);
       return;
     }
     
-    // Reset state
     setImageError(false);
     setRetryCount(0);
+    setIsLoading(true);
     
-    // Get all possible image URLs from the sets API if we have a card ID
-    if (cardId) {
-      const possibleUrls = getAllPossibleCardImageUrls(cardId);
-      console.log(`Got ${possibleUrls.length} possible image URLs for trade listing ${cardId}`);
-      
-      // Include the provided imageUrl if it exists and is not already in the list
-      const allSources = imageUrl 
-        ? [imageUrl, ...possibleUrls]
-        : possibleUrls;
-        
-      // Remove duplicates
-      const uniqueSources = [...new Set(allSources)];
-      setAlternativeImages(uniqueSources);
-      
-      // Start with the first image
-      if (uniqueSources.length > 0) {
-        setImageSrc(uniqueSources[0]);
-      }
-    } else if (imageUrl) {
-      // If we only have imageUrl, use that
-      setImageSrc(imageUrl);
-      setAlternativeImages([imageUrl]);
+    // Get all possible URLs from the sets API
+    const possibleUrls = cardId ? getAllPossibleCardImageUrls(cardId) : [];
+    console.log(`Got ${possibleUrls.length} possible image URLs for trade listing ${cardId}`);
+    
+    // Include the provided imageUrl if it exists
+    const allSources = imageUrl ? [imageUrl, ...possibleUrls] : possibleUrls;
+    const uniqueSources = [...new Set(allSources)];
+    setAlternativeImages(uniqueSources);
+    
+    if (uniqueSources.length > 0) {
+      setImageSrc(uniqueSources[0]);
+    } else {
+      setImageError(true);
+      setIsLoading(false);
     }
   }, [cardId, imageUrl]);
+  
+  const handleImageLoad = () => {
+    console.log("Trade listing image loaded successfully:", imageSrc);
+    setIsLoading(false);
+  };
   
   const handleImageError = () => {
     console.log(`Trade listing image failed to load: ${imageSrc}, retry: ${retryCount}`);
@@ -60,13 +59,13 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
     
     if (nextIndex < alternativeImages.length) {
       console.log(`Trying alternative image source ${nextIndex}: ${alternativeImages[nextIndex]}`);
-      // Add a delay before trying the next image source to prevent rate limiting
       setTimeout(() => {
         setRetryCount(nextIndex);
         setImageSrc(alternativeImages[nextIndex]);
-      }, 250);
+      }, 500); // Increased delay to prevent rate limiting
     } else {
       setImageError(true);
+      setIsLoading(false);
       console.log("All image sources failed for trade listing card");
     }
   };
@@ -74,8 +73,8 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
   const retryImage = () => {
     setImageError(false);
     setRetryCount(0);
+    setIsLoading(true);
     
-    // Start with the first alternative again
     if (alternativeImages.length > 0) {
       setImageSrc(alternativeImages[0]);
     }
@@ -84,12 +83,20 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
   return (
     <div className="w-1/3 relative group">
       {imageSrc && !imageError ? (
-        <img 
-          src={imageSrc} 
-          alt={cardName}
-          className="w-full h-auto rounded-md transition-transform duration-300 group-hover:scale-105"
-          onError={handleImageError}
-        />
+        <>
+          <img 
+            src={imageSrc} 
+            alt={cardName}
+            className={`w-full h-auto rounded-md transition-transform duration-300 group-hover:scale-105 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+          />
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-md">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+            </div>
+          )}
+        </>
       ) : (
         <div className="w-full aspect-[2/3] bg-muted flex flex-col items-center justify-center rounded-md">
           <AlertTriangle className="h-5 w-5 text-amber-500 mb-1" />
