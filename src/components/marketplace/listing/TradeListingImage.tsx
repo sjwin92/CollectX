@@ -30,10 +30,10 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
     setRetryCount(0);
     setIsLoading(true);
     
-    // Prioritize the sets API URLs first - this is the primary source of truth
+    // Get all possible image URLs
     const possibleUrls = cardId ? getAllPossibleCardImageUrls(cardId) : [];
     
-    // Only add the provided imageUrl at the end if it exists and isn't already in the list
+    // Add the provided imageUrl only if it doesn't exist in the list
     let allSources = [...possibleUrls];
     if (imageUrl && !possibleUrls.includes(imageUrl)) {
       allSources.push(imageUrl);
@@ -57,19 +57,19 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
   const handleImageLoad = () => {
     console.log("Trade listing image loaded successfully:", imageSrc);
     setIsLoading(false);
+    setImageError(false);
   };
   
   const handleImageError = () => {
     console.log(`Trade listing image failed to load: ${imageSrc}, retry: ${retryCount}`);
     
+    // Try the next image source
     const nextIndex = retryCount + 1;
     
     if (nextIndex < alternativeImages.length) {
       console.log(`Trying alternative image source ${nextIndex}: ${alternativeImages[nextIndex]}`);
-      setTimeout(() => {
-        setRetryCount(nextIndex);
-        setImageSrc(alternativeImages[nextIndex]);
-      }, 750); // Increased delay to prevent rate limiting
+      setRetryCount(nextIndex);
+      setImageSrc(alternativeImages[nextIndex]);
     } else {
       setImageError(true);
       setIsLoading(false);
@@ -89,21 +89,23 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
 
   return (
     <div className="w-1/3 relative group">
-      {imageSrc && !imageError ? (
-        <>
-          <img 
-            src={imageSrc} 
-            alt={cardName}
-            className={`w-full h-auto rounded-md transition-transform duration-300 group-hover:scale-105 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
-            onLoad={handleImageLoad}
-            onError={handleImageError}
-          />
+      {!imageError ? (
+        <div className="relative w-full h-full">
+          {imageSrc && (
+            <img 
+              src={imageSrc} 
+              alt={cardName}
+              className={`w-full h-auto rounded-md transition-transform duration-300 group-hover:scale-105 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+            />
+          )}
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-md">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
             </div>
           )}
-        </>
+        </div>
       ) : (
         <div className="w-full aspect-[2/3] bg-muted flex flex-col items-center justify-center rounded-md">
           <AlertTriangle className="h-5 w-5 text-amber-500 mb-1" />
