@@ -1,10 +1,11 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { getPokemonTcgIoUrl, getAlternativeImageUrls } from "@/services/cardImageService";
+import { supabase } from "@/integrations/supabase/client";
+import { findWorkingImageUrl } from "@/services/cardImageService";
+import { PokemonCard } from "@/services/pokemonTcgApi";
+import { Json } from "@/integrations/supabase/types";
 
 interface TradeListingImageProps {
   cardId?: string;
@@ -16,76 +17,128 @@ interface TradeListingImageProps {
 const CARD_BACK_URL = "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg";
 
 const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListingImageProps) => {
-  const [imageSrc, setImageSrc] = useState<string>("");
+  const [imageSrc, setImageSrc] = useState<string>(CARD_BACK_URL);
   const [isLoading, setIsLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-  const { toast } = useToast();
-  
+
   useEffect(() => {
-    setIsLoading(true);
-    setImageError(false);
-    
-    if (cardId) {
-      // Try using the Pokemon TCG IO URL format first (most reliable)
-      const reliableImageUrl = getPokemonTcgIoUrl(cardId);
-      if (reliableImageUrl) {
-        console.log(`Setting reliable image URL for ${cardName}: ${reliableImageUrl}`);
-        setImageSrc(reliableImageUrl);
+    const loadCardImage = async () => {
+      setIsLoading(true);
+      setImageError(false);
+      
+      try {
+        if (!cardId && !imageUrl) {
+          console.log('No card ID or image URL provided for:', cardName);
+          return;
+        }
+
+        // First try to get image from Supabase cache if we have an ID
+        if (cardId) {
+          const { data: cachedCard } = await supabase
+            .from('pokemon_cards_cache')
+            .select('data, image_url')
+            .eq('id', cardId)
+            .maybeSingle();
+
+          if (cachedCard) {
+            // If we have a direct image_url, use that first
+            if (cachedCard.image_url) {
+              console.log(`Using cached image_url for card ${cardId}`);
+              setImageSrc(cachedCard.image_url);
+              return;
+            }
+            
+            // Otherwise check the data field
+            if (typeof cachedCard.data === 'object' && cachedCard.data !== null) {
+              // First cast to unknown, then to a record to check the structure
+              const tempData = cachedCard.data as unknown;
+              
+              // Check if it has the expected structure before treating it as a PokemonCard
+              if (isPokemonCardLike(tempData)) {
+                console.log(`Using cached image for card ${cardId}`);
+                if (tempData.images.large) {
+                  setImageSrc(tempData.images.large);
+                  return;
+                } else if (tempData.images.small) {
+                  setImageSrc(tempData.images.small);
+                  return;
+                }
+              }
+            }
+          }
+        }
+        
+        // Use our card image service to find a working image
+        const card = {
+          id: cardId,
+          name: cardName,
+          imageUrl: imageUrl
+        };
+        
+        const bestImageUrl = await findWorkingImageUrl(card);
+        console.log(`Found best image URL for ${cardName}:`, bestImageUrl);
+        setImageSrc(bestImageUrl);
+      } catch (error) {
+        console.error("Error loading card image:", error);
+        setImageError(true);
+      } finally {
+        // Make sure loading state ends even if there's an error
         setIsLoading(false);
-        return;
       }
-    }
+    };
     
-    // If we can't generate a reliable URL, use the provided image URL
-    if (imageUrl) {
-      setImageSrc(imageUrl);
-    } else {
-      setImageSrc(CARD_BACK_URL);
-      setImageError(true);
-    }
-    
-    setIsLoading(false);
-  }, [cardId, imageUrl, retryCount]);
+    loadCardImage();
+  }, [cardId, imageUrl, cardName]);
+  
+  // Helper function to type check if an object has the expected PokemonCard structure
+  const isPokemonCardLike = (obj: unknown): obj is { images: { large?: string, small?: string } } => {
+    return (
+      obj !== null &&
+      typeof obj === 'object' &&
+      'images' in obj &&
+      obj.images !== null &&
+      typeof obj.images === 'object' &&
+      (('large' in obj.images && typeof obj.images.large === 'string') || 
+       ('small' in obj.images && typeof obj.images.small === 'string'))
+    );
+  };
   
   const handleImageLoad = () => {
     setIsLoading(false);
-    setImageError(false);
     console.log(`Successfully loaded image for ${cardName}: ${imageSrc}`);
   };
   
   const handleImageError = () => {
     console.log(`Image failed to load for ${cardName}: ${imageSrc}`);
     
-    // If we have a card ID, try alternative formats
-    if (cardId && imageSrc !== CARD_BACK_URL) {
-      const alternativeUrls = getAlternativeImageUrls(cardId, imageUrl);
-      const currentIndex = alternativeUrls.indexOf(imageSrc);
-      
-      // Try the next URL in the list
-      if (currentIndex >= 0 && currentIndex < alternativeUrls.length - 1) {
-        const nextUrl = alternativeUrls[currentIndex + 1];
-        console.log(`Trying alternative URL: ${nextUrl}`);
-        setImageSrc(nextUrl);
-        return;
-      }
+    if (imageSrc !== CARD_BACK_URL) {
+      setImageSrc(CARD_BACK_URL);
+    } else {
+      setImageError(true);
+      setIsLoading(false);
     }
-    
-    // If all else fails, use card back
-    setImageSrc(CARD_BACK_URL);
-    setImageError(true);
-    setIsLoading(false);
   };
   
-  const retryImage = () => {
+  const retryImage = async () => {
     setIsLoading(true);
     setImageError(false);
-    setRetryCount(prev => prev + 1);
     
-    toast({
-      title: "Retrying image load",
-      description: `Attempting to find a better image for ${cardName}`
-    });
+    try {
+      const card = {
+        id: cardId,
+        name: cardName,
+        imageUrl: imageUrl
+      };
+      
+      const bestImageUrl = await findWorkingImageUrl(card);
+      setImageSrc(bestImageUrl);
+    } catch (error) {
+      console.error("Error during retry:", error);
+      setImageSrc(CARD_BACK_URL);
+      setImageError(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

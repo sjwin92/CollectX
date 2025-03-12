@@ -9,107 +9,27 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      card_alternative_images: {
-        Row: {
-          card_id: string
-          created_at: string | null
-          id: string
-          image_url: string
-          is_verified: boolean | null
-          source: string
-        }
-        Insert: {
-          card_id: string
-          created_at?: string | null
-          id?: string
-          image_url: string
-          is_verified?: boolean | null
-          source: string
-        }
-        Update: {
-          card_id?: string
-          created_at?: string | null
-          id?: string
-          image_url?: string
-          is_verified?: boolean | null
-          source?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "card_alternative_images_card_id_fkey"
-            columns: ["card_id"]
-            isOneToOne: false
-            referencedRelation: "pokemon_cards_cache"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       pokemon_cards_cache: {
         Row: {
-          backup_image_url: string | null
           cached_at: string
           data: Json
           id: string
           image_url: string | null
-          image_verified: boolean | null
-          last_verified: string | null
           name: string
         }
         Insert: {
-          backup_image_url?: string | null
           cached_at?: string
           data: Json
           id: string
           image_url?: string | null
-          image_verified?: boolean | null
-          last_verified?: string | null
           name: string
         }
         Update: {
-          backup_image_url?: string | null
           cached_at?: string
           data?: Json
           id?: string
           image_url?: string | null
-          image_verified?: boolean | null
-          last_verified?: string | null
           name?: string
-        }
-        Relationships: []
-      }
-      profiles: {
-        Row: {
-          avatar_url: string | null
-          created_at: string | null
-          full_name: string | null
-          id: string
-          reputation: string | null
-          success_rate: number | null
-          trade_count: number | null
-          updated_at: string | null
-          username: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          created_at?: string | null
-          full_name?: string | null
-          id: string
-          reputation?: string | null
-          success_rate?: number | null
-          trade_count?: number | null
-          updated_at?: string | null
-          username?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          created_at?: string | null
-          full_name?: string | null
-          id?: string
-          reputation?: string | null
-          success_rate?: number | null
-          trade_count?: number | null
-          updated_at?: string | null
-          username?: string | null
         }
         Relationships: []
       }
@@ -226,13 +146,8 @@ export type Database = {
           card_id: string
           condition: string
           for_trade: boolean
-          grading_company: string | null
-          grading_value: string | null
           id: string
-          last_modified: string | null
           notes: string | null
-          purchase_currency: string | null
-          purchase_price: number | null
           quantity: number
           user_id: string
         }
@@ -241,13 +156,8 @@ export type Database = {
           card_id: string
           condition?: string
           for_trade?: boolean
-          grading_company?: string | null
-          grading_value?: string | null
           id?: string
-          last_modified?: string | null
           notes?: string | null
-          purchase_currency?: string | null
-          purchase_price?: number | null
           quantity?: number
           user_id: string
         }
@@ -256,13 +166,8 @@ export type Database = {
           card_id?: string
           condition?: string
           for_trade?: boolean
-          grading_company?: string | null
-          grading_value?: string | null
           id?: string
-          last_modified?: string | null
           notes?: string | null
-          purchase_currency?: string | null
-          purchase_price?: number | null
           quantity?: number
           user_id?: string
         }

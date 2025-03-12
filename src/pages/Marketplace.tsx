@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getCards, PokemonCard, getReliableImageUrl, mapToTradeCard } from "@/services/pokemonTcgApi";
@@ -277,8 +278,10 @@ const Marketplace = () => {
     return mappedCards;
   };
 
+  // State for cards in card grid
   const [cardItems, setCardItems] = useState<CardItemProps[]>([]);
   
+  // Effect to load card data for the grid
   useEffect(() => {
     const loadCards = async () => {
       if (data?.data) {
@@ -295,7 +298,7 @@ const Marketplace = () => {
     const newListing: ListingType = {
       id: `listing-${Date.now()}`,
       userId: user.id,
-      username: user.email?.split('@')[0] || 'Anonymous User',
+      username: user.username,
       cardOffered: {
         id: cardOffered.id,
         name: cardOffered.name,

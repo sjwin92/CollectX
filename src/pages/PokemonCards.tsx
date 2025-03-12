@@ -11,36 +11,21 @@ import PokemonCardDetail from "@/components/pokemon/PokemonCardDetail";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Database, Star, Info, X, ChevronLeft } from "lucide-react";
+import { Search, Database, Star, Info, X } from "lucide-react";
 import { CardItemProps } from "@/components/cards/CardItem";
 import { useToast } from "@/hooks/use-toast";
-import { Link, useNavigate, useLocation } from "react-router-dom";
 
 const PokemonCards = () => {
   const [selectedCard, setSelectedCard] = useState<PokemonCard | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [dataSource, setDataSource] = useState<"pokemontcg" | "tcgdex">("pokemontcg");
   const { toast } = useToast();
-  const location = useLocation();
-  const navigate = useNavigate();
-  
-  // Parse query parameters
-  const queryParams = new URLSearchParams(location.search);
-  const setParam = queryParams.get("set");
-  
-  // Construct query string for API if set parameter exists
-  const constructQueryString = () => {
-    if (setParam) {
-      return `set.id:${setParam}`;
-    }
-    return '';
-  };
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['pokemonCards', currentPage, dataSource, setParam],
+    queryKey: ['pokemonCards', currentPage, dataSource],
     queryFn: async () => {
       if (dataSource === 'pokemontcg') {
-        return await getPokemonTcgCards(currentPage, 20, constructQueryString());
+        return await getPokemonTcgCards(currentPage, 20);
       } else {
         const tcgdexCards = await getTCGDexCards(currentPage, 20);
         // Convert TCGDex cards to PokemonCard format
@@ -118,10 +103,6 @@ const PokemonCards = () => {
     }
   };
 
-  const clearSetFilter = () => {
-    navigate('/pokemon-cards');
-  };
-
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -134,23 +115,6 @@ const PokemonCards = () => {
             Use this data to help you value your collection and make fair trades.
           </p>
         </div>
-
-        {setParam && (
-          <div className="mb-6 flex items-center">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={clearSetFilter}
-              className="mr-2"
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Back to All Cards
-            </Button>
-            <span className="text-sm">
-              Viewing cards from set: <span className="font-semibold">{setParam}</span>
-            </span>
-          </div>
-        )}
 
         <div className="mb-4">
           <div className="flex items-center gap-4">

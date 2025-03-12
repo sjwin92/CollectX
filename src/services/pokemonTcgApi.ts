@@ -168,7 +168,7 @@ export const getReliableImageUrl = (cardId: string, size: 'small' | 'large' = 's
   
   import('./cardImageService').then(cardImageService => {
     console.warn('getReliableImageUrl is deprecated. Use cardImageService.findWorkingImageUrl instead');
-    cardImageService.findWorkingImageUrl(cardId);
+    cardImageService.findWorkingImageUrl({ id: cardId });
   });
   
   return `${POKEMON_TCG_IO}/${size}/${cardId}.png`;
@@ -215,7 +215,11 @@ export const mapToTradeCard = (card: PokemonCard): import("@/models/escrow").Tra
   
   import('./cardImageService').then(async cardImageService => {
     try {
-      await cardImageService.findWorkingImageUrl(card.id);
+      await cardImageService.findWorkingImageUrl({ 
+        id: card.id, 
+        name: card.name, 
+        imageUrl: card.images.small 
+      });
     } catch (e) {
       // Ignore errors in this warning code
     }
@@ -224,7 +228,7 @@ export const mapToTradeCard = (card: PokemonCard): import("@/models/escrow").Tra
   return {
     id: card.id,
     name: card.name,
-    imageUrl: card.images?.small || `https://images.pokemontcg.io/small/${card.id}.png`,
+    imageUrl: card.images.small || `${POKEMON_TCG_IO}/small/${card.id}.png`,
     condition: "Near Mint",
     estimatedValue: price,
     currency: "USD"

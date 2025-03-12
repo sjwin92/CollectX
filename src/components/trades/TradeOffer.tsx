@@ -1,15 +1,13 @@
 
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge, { ReputationLevel } from "@/components/ui/custom/Badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeftRight, Calendar, Package, Shield, Truck, Lock, AlertTriangle, ExternalLink } from "lucide-react";
+import { ArrowLeftRight, Calendar, Package, Shield, Truck, Lock, AlertTriangle } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
 import { useToast } from "@/hooks/use-toast";
-import { Separator } from "@/components/ui/separator";
-import { Card, CardContent } from "@/components/ui/card";
 
 export interface TradeOfferProps {
   id: string;
@@ -35,90 +33,7 @@ export interface TradeOfferProps {
   };
   escrowRequired?: boolean;
   escrowPaid?: boolean;
-  showFooter?: boolean;
-  showProgressBar?: boolean;
 }
-
-const TradeProgressSteps = ({ status }: { status: string }) => {
-  const getStatusStep = () => {
-    switch (status) {
-      case "proposed":
-      case "pending":
-        return 1;
-      case "accepted":
-      case "processing":
-        return 2;
-      case "escrowed":
-        return 3;
-      case "shipped":
-        return 4;
-      case "completed":
-        return 5;
-      case "declined":
-      case "disputed":
-      case "cancelled":
-        return 0;
-      default:
-        return 0;
-    }
-  };
-
-  const step = getStatusStep();
-
-  return (
-    <div className="mt-3 mb-1">
-      <div className="relative flex justify-between w-full max-w-md mx-auto">
-        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-muted transform -translate-y-1/2" />
-        <div
-          className="absolute top-1/2 left-0 h-0.5 bg-primary transform -translate-y-1/2"
-          style={{ width: `${(step / 5) * 100}%` }}
-        />
-        <div className="relative flex justify-between w-full">
-          <div className="flex flex-col items-center">
-            <div
-              className={`h-4 w-4 rounded-full ${
-                step >= 1 ? "bg-primary" : "bg-muted"
-              } flex items-center justify-center text-white text-xs z-10`}
-            />
-            <span className="text-[10px] mt-1">Offered</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <div
-              className={`h-4 w-4 rounded-full ${
-                step >= 2 ? "bg-primary" : "bg-muted"
-              } flex items-center justify-center text-white text-xs z-10`}
-            />
-            <span className="text-[10px] mt-1">Accepted</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <div
-              className={`h-4 w-4 rounded-full ${
-                step >= 3 ? "bg-primary" : "bg-muted"
-              } flex items-center justify-center text-white text-xs z-10`}
-            />
-            <span className="text-[10px] mt-1">Escrowed</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <div
-              className={`h-4 w-4 rounded-full ${
-                step >= 4 ? "bg-primary" : "bg-muted"
-              } flex items-center justify-center text-white text-xs z-10`}
-            />
-            <span className="text-[10px] mt-1">Shipped</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <div
-              className={`h-4 w-4 rounded-full ${
-                step >= 5 ? "bg-primary" : "bg-muted"
-              } flex items-center justify-center text-white text-xs z-10`}
-            />
-            <span className="text-[10px] mt-1">Completed</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const TradeOffer = ({
   id,
@@ -129,8 +44,6 @@ const TradeOffer = ({
   receiving,
   escrowRequired = false,
   escrowPaid = false,
-  showFooter = true,
-  showProgressBar = false,
 }: TradeOfferProps) => {
   const { isSignedIn } = useUser();
   const navigate = useNavigate();
@@ -161,6 +74,29 @@ const TradeOffer = ({
     }
   };
 
+  const getStatusStep = () => {
+    switch (status) {
+      case "proposed":
+      case "pending":
+        return 1;
+      case "accepted":
+      case "processing":
+        return 2;
+      case "escrowed":
+        return 3;
+      case "shipped":
+        return 4;
+      case "completed":
+        return 5;
+      case "declined":
+      case "disputed":
+      case "cancelled":
+        return 0;
+    }
+  };
+
+  const step = getStatusStep();
+
   const formatCurrency = (value?: number, currency?: string): string => {
     if (value === undefined) return "";
     return new Intl.NumberFormat('en-US', {
@@ -188,8 +124,8 @@ const TradeOffer = ({
     navigate(`/trades/${id}`);
   };
 
-  const renderTradeOfferContent = () => (
-    <>
+  return (
+    <GlassCard className="overflow-hidden">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <Avatar>
@@ -305,58 +241,17 @@ const TradeOffer = ({
           </div>
         </div>
       )}
-    </>
-  );
 
-  if (showProgressBar) {
-    return (
-      <Card className="overflow-hidden">
-        <CardContent className="p-4">
-          {renderTradeOfferContent()}
-          <Separator className="my-3" />
-          <div className="flex items-center justify-between px-1">
-            <div className="text-sm font-medium">Trade Progress</div>
-            <Badge 
-              variant={
-                status === "completed" ? "success" : 
-                status === "proposed" ? "warning" : "info"
-              }
-            >
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </Badge>
-          </div>
-          <TradeProgressSteps status={status} />
-          <div className="flex justify-end mt-4 pt-3 border-t border-border">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex items-center gap-1"
-              onClick={handleViewTradeDetails}
-            >
-              View Details <ExternalLink className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <GlassCard className="overflow-hidden">
-      {renderTradeOfferContent()}
-      
-      {showFooter && (
-        <div className="flex justify-end mt-4 pt-3 border-t border-border">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-1"
-            onClick={handleViewTradeDetails}
-          >
-            View Details <ExternalLink className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      )}
+      <div className="flex justify-end pt-2 border-t border-border">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="text-xs"
+          onClick={handleViewTradeDetails}
+        >
+          View Trade Details
+        </Button>
+      </div>
     </GlassCard>
   );
 };

@@ -1,16 +1,12 @@
 
 import React, { useState, useEffect } from "react";
-import { PokemonCard } from "@/services/pokemonTcgApi";
+import { PokemonCard, getAllPossibleImageUrls } from "@/services/pokemonTcgApi";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
 import { formatCurrency } from "@/utils/escrowCalculator";
-import { Flame, Zap, Shield, TrendingUp, AlertTriangle, Check, Image, Info, RefreshCw, Plus, Minus } from "lucide-react";
+import { Flame, Zap, Shield, TrendingUp, AlertTriangle, Check, Image, Info, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { useUser } from "@/hooks/useUser";
-import { supabase } from "@/integrations/supabase/client";
-import { findWorkingImageUrl } from "@/services/cardImageService";
 
 interface PokemonCardDetailProps {
   card: PokemonCard;
@@ -18,59 +14,30 @@ interface PokemonCardDetailProps {
 
 const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
-  const [imageSrc, setImageSrc] = useState<string>("");
-  const [collectionQuantity, setCollectionQuantity] = useState(0);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const { user, isSignedIn } = useUser();
-  const { toast } = useToast();
-
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  
   useEffect(() => {
     if (!card) return;
     
+    // Reset image state when card changes
     setImageStatus("loading");
-    loadCardImage();
+    setCurrentImageIndex(0);
     
+    // Get all possible image URLs for this card
+    const urls = getAllPossibleImageUrls(card);
+    setImageUrls(urls);
+    
+    console.log(`Generated ${urls.length} potential image URLs for card ${card.id}`);
+    console.log('Image URLs:', urls);
   }, [card?.id]);
   
-  const loadCardImage = async () => {
-    if (!card) return;
-    
-    try {
-      setImageStatus("loading");
-      
-      // First check for verified images in the database
-      const { data: cachedImage } = await supabase
-        .from('card_alternative_images')
-        .select('image_url')
-        .eq('card_id', card.id)
-        .eq('is_verified', true)
-        .order('created_at', { ascending: false })
-        .limit(1);
-      
-      if (cachedImage && cachedImage.length > 0) {
-        console.log(`Found verified image in database for ${card.id}`);
-        setImageSrc(cachedImage[0].image_url);
-        return;
-      }
-      
-      // If not in database, find a working URL
-      const bestImageUrl = await findWorkingImageUrl({
-        id: card.id,
-        name: card.name,
-        images: card.images
-      });
-      
-      console.log(`Best image URL for ${card.name}: ${bestImageUrl}`);
-      setImageSrc(bestImageUrl);
-    } catch (error) {
-      console.error("Error loading card image:", error);
-      setImageStatus("error");
-    }
-  };
+  const currentImageUrl = imageUrls[currentImageIndex] || '';
   
   const getMarketPrice = () => {
     if (!card?.tcgplayer?.prices) return null;
     
+    // Try to get the price from various finishes
     const price = card.tcgplayer.prices.holofoil?.market 
       || card.tcgplayer.prices.normal?.market 
       || card.tcgplayer.prices.reverseHolofoil?.market;
@@ -80,110 +47,37 @@ const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
   
   const handleImageLoad = () => {
     setImageStatus("loaded");
-    console.log("Card image loaded successfully:", imageSrc);
+    console.log("Card image loaded successfully:", currentImageUrl);
   };
 
   const handleImageError = () => {
-    console.log(`Image failed to load: ${imageSrc}`);
-    setImageStatus("error");
+    console.log(`Image failed to load: ${currentImageUrl}`);
+    
+    // Try the next image in the list
+    if (currentImageIndex < imageUrls.length - 1) {
+      const nextIndex = currentImageIndex + 1;
+      setCurrentImageIndex(nextIndex);
+      setImageStatus("loading");
+      console.log(`Trying next image (${nextIndex + 1}/${imageUrls.length}): ${imageUrls[nextIndex]}`);
+    } else {
+      setImageStatus("error");
+      console.log("All image sources failed");
+    }
   };
   
   const retryImages = () => {
-    loadCardImage();
+    setImageStatus("loading");
+    setCurrentImageIndex(0);
   };
   
-  useEffect(() => {
-    if (isSignedIn && card) {
-      fetchUserCardQuantity();
-    }
-  }, [card?.id, isSignedIn]);
-
-  const fetchUserCardQuantity = async () => {
-    if (!card?.id || !user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('user_collections')
-        .select('quantity')
-        .eq('card_id', card.id)
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      setCollectionQuantity(data?.quantity || 0);
-    } catch (error) {
-      console.error('Error fetching card quantity:', error);
-    }
-  };
-
-  const updateCardQuantity = async (newQuantity: number) => {
-    if (!isSignedIn) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to manage your collection",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (newQuantity < 0) return;
-    setIsUpdating(true);
-
-    try {
-      if (newQuantity === 0) {
-        const { error } = await supabase
-          .from('user_collections')
-          .delete()
-          .eq('card_id', card.id)
-          .eq('user_id', user.id);
-
-        if (error) throw error;
-      } else if (collectionQuantity === 0) {
-        const { error } = await supabase
-          .from('user_collections')
-          .insert({
-            card_id: card.id,
-            user_id: user.id,
-            quantity: newQuantity,
-            condition: 'Near Mint'
-          });
-
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('user_collections')
-          .update({ quantity: newQuantity })
-          .eq('card_id', card.id)
-          .eq('user_id', user.id);
-
-        if (error) throw error;
-      }
-
-      setCollectionQuantity(newQuantity);
-      toast({
-        title: "Collection updated",
-        description: `You now have ${newQuantity} of this card`,
-      });
-    } catch (error) {
-      console.error('Error updating collection:', error);
-      toast({
-        title: "Update failed",
-        description: "Failed to update your collection",
-        variant: "destructive"
-      });
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
   return (
     <GlassCard className="overflow-hidden animate-float">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="relative aspect-[2/3] overflow-hidden rounded-lg">
           <div className="relative h-full">
-            {imageSrc && (
+            {currentImageUrl && (
               <img 
-                src={imageSrc} 
+                src={currentImageUrl} 
                 alt={`Detailed view of ${card?.name} Pokémon card from set ${card?.set?.name}`}
                 className="w-full h-full object-contain"
                 onLoad={handleImageLoad}
@@ -223,10 +117,11 @@ const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="left" className="max-w-[250px]">
-                  <p><strong>Image Source:</strong> {imageSrc ? new URL(imageSrc).hostname : "N/A"}</p>
+                  <p><strong>Image Source:</strong> {currentImageUrl ? new URL(currentImageUrl).hostname : "N/A"}</p>
                   <p><strong>Card Set:</strong> {card?.set.name}</p>
                   <p><strong>Card Number:</strong> {card?.number}</p>
                   <p><strong>Artist:</strong> {card?.artist || "Unknown"}</p>
+                  <p><strong>Source #:</strong> {currentImageIndex + 1} of {imageUrls.length}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -341,55 +236,23 @@ const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
           </div>
           
           {card?.tcgplayer && (
-            <div className="space-y-4">
-              <div className="p-3 bg-secondary/30 rounded-md">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <TrendingUp className="h-4 w-4 mr-2 text-green-500" />
-                    <span className="font-medium">Market Price</span>
-                  </div>
-                  <span className="text-lg font-bold">{getMarketPrice() || "N/A"}</span>
+            <div className="p-3 bg-secondary/30 rounded-md">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <TrendingUp className="h-4 w-4 mr-2 text-green-500" />
+                  <span className="font-medium">Market Price</span>
                 </div>
-                
-                <a 
-                  href={card.tcgplayer.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-xs text-primary hover:underline mt-1 inline-block"
-                >
-                  View on TCGPlayer
-                </a>
+                <span className="text-lg font-bold">{getMarketPrice() || "N/A"}</span>
               </div>
-
-              <div className="p-3 bg-secondary/30 rounded-md">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium">In Your Collection</span>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      onClick={() => updateCardQuantity(collectionQuantity - 1)}
-                      variant="outline"
-                      size="icon"
-                      disabled={isUpdating || collectionQuantity === 0}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                    <span className="w-8 text-center">{collectionQuantity}</span>
-                    <Button
-                      onClick={() => updateCardQuantity(collectionQuantity + 1)}
-                      variant="outline"
-                      size="icon"
-                      disabled={isUpdating}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                {!isSignedIn && (
-                  <p className="text-sm text-muted-foreground">
-                    Sign in to manage your collection
-                  </p>
-                )}
-              </div>
+              
+              <a 
+                href={card.tcgplayer.url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-xs text-primary hover:underline mt-1 inline-block"
+              >
+                View on TCGPlayer
+              </a>
             </div>
           )}
         </div>

@@ -4,16 +4,15 @@ import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
 import { cn } from "@/lib/utils";
-import { Info, AlertTriangle, RefreshCw } from "lucide-react";
+import { Info, AlertTriangle, Check, Image, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { getPokemonTcgIoUrl, getAlternativeImageUrls } from "@/services/cardImageService";
+import { getImageUrlsForCard } from "@/services/cardImageService";
 
 export interface CardItemProps {
   id: string;
   name: string;
-  imageUrl?: string;
+  imageUrl: string;
   rarity: string;
   condition: string;
   estimatedValue: string;
@@ -21,8 +20,6 @@ export interface CardItemProps {
   animation?: "fade" | "scale" | "slide" | "none";
   onClick?: () => void;
 }
-
-const CARD_BACK_URL = "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg";
 
 const CardItem = ({
   id,
@@ -36,26 +33,23 @@ const CardItem = ({
   onClick
 }: CardItemProps) => {
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
-  const [currentImageSrc, setCurrentImageSrc] = useState<string>("");
-  const { toast } = useToast();
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [imageSources, setImageSources] = useState<string[]>([]);
   
   useEffect(() => {
     // Reset when card changes
     setImageStatus("loading");
+    setCurrentImageIndex(0);
     
-    // Use the Pokemon TCG IO format that works for card sets
-    const reliableImageUrl = getPokemonTcgIoUrl(id);
-    if (reliableImageUrl) {
-      console.log(`Setting reliable image URL for ${name}: ${reliableImageUrl}`);
-      setCurrentImageSrc(reliableImageUrl);
-    } else if (imageUrl) {
-      // Fallback to provided imageUrl if we can't parse the ID
-      setCurrentImageSrc(imageUrl);
-    } else {
-      setCurrentImageSrc(CARD_BACK_URL);
-      setImageStatus("error");
-    }
-  }, [id, name, imageUrl]);
+    // Get all possible image sources
+    const card = { id, imageUrl };
+    const sources = getImageUrlsForCard(card);
+    setImageSources(sources);
+    
+    console.log(`Generated ${sources.length} potential image URLs for card ${id}`);
+  }, [id, imageUrl]);
+  
+  const currentImageSrc = imageSources[currentImageIndex] || '';
   
   // Map condition to style
   const conditionVariant = (): "success" | "warning" | "danger" | "info" => {
@@ -77,48 +71,25 @@ const CardItem = ({
 
   const handleImageLoad = () => {
     setImageStatus("loaded");
-    console.log(`Successfully loaded image for ${name}: ${currentImageSrc}`);
   };
 
   const handleImageError = () => {
-    console.log(`Image failed to load: ${currentImageSrc} for card ${id}`);
+    console.log(`Image failed to load: ${currentImageSrc}, current index: ${currentImageIndex}`);
     
-    // Try alternative image formats from Pokemon TCG IO
-    if (id && currentImageSrc !== CARD_BACK_URL) {
-      const alternativeUrls = getAlternativeImageUrls(id, imageUrl);
-      const currentIndex = alternativeUrls.indexOf(currentImageSrc);
-      
-      // Try the next URL in the list if available
-      if (currentIndex >= 0 && currentIndex < alternativeUrls.length - 1) {
-        const nextUrl = alternativeUrls[currentIndex + 1];
-        console.log(`Trying alternative URL for ${name}: ${nextUrl}`);
-        setCurrentImageSrc(nextUrl);
-        return;
-      }
+    // Try the next image in the list
+    if (currentImageIndex < imageSources.length - 1) {
+      const nextIndex = currentImageIndex + 1;
+      console.log(`Trying alternative image source #${nextIndex + 1}: ${imageSources[nextIndex]}`);
+      setCurrentImageIndex(nextIndex);
+    } else {
+      setImageStatus("error");
+      console.log("All image sources failed for card:", id);
     }
-    
-    // If all alternatives fail
-    setCurrentImageSrc(CARD_BACK_URL);
-    setImageStatus("error");
   };
   
   const retryImage = () => {
     setImageStatus("loading");
-    
-    // Try the reliable Pokemon TCG IO URL again
-    const reliableImageUrl = getPokemonTcgIoUrl(id);
-    if (reliableImageUrl) {
-      setCurrentImageSrc(reliableImageUrl);
-    } else if (imageUrl) {
-      setCurrentImageSrc(imageUrl);
-    } else {
-      setCurrentImageSrc(CARD_BACK_URL);
-    }
-    
-    toast({
-      title: "Retrying image load",
-      description: `Attempting to find a better image for ${name}`
-    });
+    setCurrentImageIndex(0);
   };
 
   const CardContent = (
