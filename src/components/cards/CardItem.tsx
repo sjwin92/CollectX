@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -40,14 +41,15 @@ const CardItem = ({
     setImageStatus("loading");
     setRetryCount(0);
     
-    // Get all possible URLs from our consistent source (sets API)
+    // Always start with the Sets API images - primary source of truth
     const setsImages = getAllPossibleCardImageUrls(id);
     console.log(`Got ${setsImages.length} alternative images for card ${id}`);
     
-    // Always use sets API as primary source
-    const uniqueSources = imageUrl 
-      ? [imageUrl, ...setsImages]
-      : setsImages;
+    // Only add the imageUrl at the end if it's not already in the list
+    let uniqueSources = [...setsImages];
+    if (imageUrl && !setsImages.includes(imageUrl)) {
+      uniqueSources.push(imageUrl);
+    }
     
     setAlternativeImages(uniqueSources);
     
@@ -72,7 +74,7 @@ const CardItem = ({
       setTimeout(() => {
         setRetryCount(nextIndex);
         setImageSrc(alternativeImages[nextIndex]);
-      }, 500); // Increased delay to prevent rate limiting
+      }, 750); // Increased delay to prevent rate limiting
     } else {
       setImageStatus("error");
       console.log("All image sources failed for card:", id);

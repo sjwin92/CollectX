@@ -30,22 +30,29 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
     setRetryCount(0);
     setIsLoading(true);
     
-    // Get all possible URLs from the sets API
+    // Prioritize the sets API URLs first - this is the primary source of truth
     const possibleUrls = cardId ? getAllPossibleCardImageUrls(cardId) : [];
-    console.log(`Got ${possibleUrls.length} possible image URLs for trade listing ${cardId}`);
     
-    // Include the provided imageUrl if it exists
-    const allSources = imageUrl ? [imageUrl, ...possibleUrls] : possibleUrls;
+    // Only add the provided imageUrl at the end if it exists and isn't already in the list
+    let allSources = [...possibleUrls];
+    if (imageUrl && !possibleUrls.includes(imageUrl)) {
+      allSources.push(imageUrl);
+    }
+    
+    // Make sure we have unique URLs
     const uniqueSources = [...new Set(allSources)];
     setAlternativeImages(uniqueSources);
     
+    console.log(`Trade listing for ${cardName}: Found ${uniqueSources.length} possible image sources`);
+    
     if (uniqueSources.length > 0) {
       setImageSrc(uniqueSources[0]);
+      console.log(`Initial image source for trade listing: ${uniqueSources[0]}`);
     } else {
       setImageError(true);
       setIsLoading(false);
     }
-  }, [cardId, imageUrl]);
+  }, [cardId, imageUrl, cardName]);
   
   const handleImageLoad = () => {
     console.log("Trade listing image loaded successfully:", imageSrc);
@@ -62,7 +69,7 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
       setTimeout(() => {
         setRetryCount(nextIndex);
         setImageSrc(alternativeImages[nextIndex]);
-      }, 500); // Increased delay to prevent rate limiting
+      }, 750); // Increased delay to prevent rate limiting
     } else {
       setImageError(true);
       setIsLoading(false);

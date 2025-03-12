@@ -1,4 +1,3 @@
-
 export interface PokemonSet {
   id: string;
   name: string;
@@ -175,32 +174,45 @@ export const getConsistentCardImageUrl = (cardId: string, size: 'small' | 'large
 
 // Get all possible image URLs for a card (for fallback purposes)
 export const getAllPossibleCardImageUrls = (cardId: string): string[] => {
-  if (!cardId || !cardId.includes('-')) {
+  if (!cardId) {
+    return ["https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"];
+  }
+  
+  const normalizedId = cardId.trim().toLowerCase();
+  
+  // If there's no hyphen, it might not be in the standard format
+  if (!normalizedId.includes('-')) {
     return [
-      `https://images.pokemontcg.io/small/${cardId}.png`,
-      `https://images.pokemontcg.io/large/${cardId}.png`,
+      `https://images.pokemontcg.io/large/${normalizedId}.png`,
+      `https://images.pokemontcg.io/small/${normalizedId}.png`,
       "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
     ];
   }
   
-  const normalizedId = normalizeCardId(cardId);
   const setId = normalizedId.split('-')[0];
   const cardNumber = normalizedId.split('-')[1];
   
+  // Order these URLs from most reliable to least reliable
   return [
-    // Primary sources from Pokemon TCG API
+    // Primary source - Pokemon TCG API
     `https://images.pokemontcg.io/large/${normalizedId}.png`,
     `https://images.pokemontcg.io/small/${normalizedId}.png`,
     
-    // Direct format with set ID
+    // Alternative format with set ID
+    `https://images.pokemontcg.io/${setId}/${cardNumber}_hires.png`,
     `https://images.pokemontcg.io/${setId}/${cardNumber}.png`,
     
     // TCGDex format
+    `https://assets.tcgdex.net/en/cards/${setId}/${cardNumber}`,
+    `https://assets.tcgdex.net/en/cards/${setId}/${cardNumber}.jpg`,
+    `https://assets.tcgdex.net/en/cards/${setId}/${cardNumber}.png`,
+    
+    // Another TCGDex format
     `https://assets.tcgdex.net/en/${setId}/${cardNumber}`,
     `https://assets.tcgdex.net/en/${setId}/${cardNumber}.jpg`,
     `https://assets.tcgdex.net/en/${setId}/${cardNumber}.png`,
     
-    // Pokellector format
+    // Pokellector format (with padding to ensure 3 digits)
     `https://assets.pokellector.com/cards/${setId}/${cardNumber.padStart(3, '0')}.webp`,
     
     // Pokemon.com format
