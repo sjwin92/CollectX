@@ -16,7 +16,10 @@ import {
   Clock, 
   TrendingUp,
   Heart,
-  Check
+  Check,
+  ArrowRightLeft,
+  ShoppingBag,
+  PackageOpen
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { CardItemProps } from "@/components/cards/CardItem";
@@ -308,11 +311,20 @@ const Marketplace = () => {
       <Navbar />
 
       <main className="container py-8 flex-1">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Trading Marketplace</h1>
-          <p className="text-muted-foreground">
-            Browse what other collectors are trading, propose trades, or list your own cards
-          </p>
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <div className="flex items-center gap-2">
+              <ArrowRightLeft className="h-6 w-6 text-primary" />
+              <h1 className="text-3xl font-bold">Trading Marketplace</h1>
+            </div>
+            <p className="text-muted-foreground mt-2">
+              Browse cards offered for trade, propose deals, or list your own cards for trade
+            </p>
+          </div>
+          <Button className="hidden md:flex" onClick={() => setCreateListingOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Listing
+          </Button>
         </div>
 
         {/* Top Action Bar */}
@@ -321,7 +333,7 @@ const Marketplace = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search trading post by card name, description, or trader..."
+              placeholder="Search for cards, traders, or descriptions..."
               className="pl-9"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -390,32 +402,32 @@ const Marketplace = () => {
               </SelectContent>
             </Select>
 
-            <Button onClick={() => setCreateListingOpen(true)}>
+            <Button className="md:hidden" onClick={() => setCreateListingOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Create Listing
+              Create
             </Button>
           </div>
         </div>
 
-        {/* Category tabs for Featured, Recent, Trending */}
-        <div className="border-b mb-6">
-          <div className="flex space-x-6">
+        {/* Category tabs with improved marketplace emphasis */}
+        <div className="border rounded-lg p-1 bg-background/50 mb-6">
+          <div className="flex space-x-2 items-center">
             <button
-              className={`pb-2 font-medium flex items-center gap-1 ${activeCategory === 'featured' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
+              className={`py-2 px-4 rounded-md font-medium flex items-center gap-1.5 transition-colors ${activeCategory === 'featured' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
               onClick={() => setActiveCategory('featured')}
             >
               <Star className="h-4 w-4" />
-              <span>Featured Trades</span>
+              <span>Featured</span>
             </button>
             <button
-              className={`pb-2 font-medium flex items-center gap-1 ${activeCategory === 'recent' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
+              className={`py-2 px-4 rounded-md font-medium flex items-center gap-1.5 transition-colors ${activeCategory === 'recent' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
               onClick={() => setActiveCategory('recent')}
             >
               <Clock className="h-4 w-4" />
-              <span>Recent Listings</span>
+              <span>New Listings</span>
             </button>
             <button
-              className={`pb-2 font-medium flex items-center gap-1 ${activeCategory === 'trending' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
+              className={`py-2 px-4 rounded-md font-medium flex items-center gap-1.5 transition-colors ${activeCategory === 'trending' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
               onClick={() => setActiveCategory('trending')}
             >
               <TrendingUp className="h-4 w-4" />
@@ -437,9 +449,10 @@ const Marketplace = () => {
           </div>
         ) : (
           <GlassCard className="p-8 text-center">
+            <PackageOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <h3 className="text-xl font-medium mb-2">No trade listings match your criteria</h3>
             <p className="text-muted-foreground mb-4">
-              Try adjusting your filters or create your own listing!
+              Try adjusting your filters or create your own listing to start trading!
             </p>
             <Button onClick={() => setCreateListingOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
@@ -447,6 +460,13 @@ const Marketplace = () => {
             </Button>
           </GlassCard>
         )}
+
+        {/* Fixed action button on mobile */}
+        <div className="fixed bottom-6 right-6 md:hidden">
+          <Button size="lg" className="h-14 w-14 rounded-full shadow-lg" onClick={() => setCreateListingOpen(true)}>
+            <Plus className="h-6 w-6" />
+          </Button>
+        </div>
 
         {isCreateListingOpen && (
           <CreateListingModal 

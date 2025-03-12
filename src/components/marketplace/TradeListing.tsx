@@ -8,6 +8,10 @@ import TradeListingDetails from "./listing/TradeListingDetails";
 import TradeListingFooter from "./listing/TradeListingFooter";
 import TradeListingProtection from "./listing/TradeListingProtection";
 import FeaturedBadge from "./listing/FeaturedBadge";
+import { Eye, ArrowRightLeft, Star } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 interface TradeListingProps {
   listing: {
@@ -26,7 +30,7 @@ interface TradeListingProps {
 
 const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListingProps) => {
   return (
-    <Card className={`overflow-hidden transition-all ${featured ? 'border-amber-400 shadow-lg dark:border-amber-500 bg-gradient-to-br from-transparent to-amber-50/5' : ''}`}>
+    <Card className={`overflow-hidden transition-all hover:shadow-md ${featured ? 'border-amber-400 shadow-lg dark:border-amber-500 bg-gradient-to-br from-transparent to-amber-50/5' : ''}`}>
       {featured && <FeaturedBadge />}
       
       <TradeListingHeader 
@@ -38,13 +42,15 @@ const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListin
       />
 
       <CardContent className="py-2">
-        <div className="flex gap-6 items-center">
-          <TradeListingImage 
-            cardId={listing.cardOffered.id}
-            imageUrl={listing.cardOffered.imageUrl}
-            cardName={listing.cardOffered.name}
-            condition={listing.cardOffered.condition}
-          />
+        <div className="flex flex-col gap-4 md:flex-row md:gap-6 md:items-center">
+          <div className="flex justify-center md:block">
+            <TradeListingImage 
+              cardId={listing.cardOffered.id}
+              imageUrl={listing.cardOffered.imageUrl}
+              cardName={listing.cardOffered.name}
+              condition={listing.cardOffered.condition}
+            />
+          </div>
           
           <TradeListingDetails 
             cardsWanted={listing.cardsWanted}
