@@ -15,7 +15,7 @@ interface PokemonCardSearchProps {
 
 const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = null, onSelect }) => {
   const [nameQuery, setNameQuery] = useState("");
-  const [selectedSet, setSelectedSet] = useState<string>(initialSetId || "");
+  const [selectedSet, setSelectedSet] = useState<string>("");
   const [sets, setSets] = useState<Array<{ id: string; name: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -38,14 +38,17 @@ const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = nu
     loadSets();
   }, []);
   
-  // Set the initial set if provided
+  // Set the initial set value based on URL params or props
   useEffect(() => {
+    // Check for initialSetId prop first
     if (initialSetId) {
+      console.log(`Setting selectedSet from initialSetId: ${initialSetId}`);
       setSelectedSet(initialSetId);
     } else {
-      // Check if setId is in URL
+      // Check URL params if no initialSetId
       const setIdFromUrl = searchParams.get('setId');
       if (setIdFromUrl) {
+        console.log(`Setting selectedSet from URL param: ${setIdFromUrl}`);
         setSelectedSet(setIdFromUrl);
       }
     }
@@ -77,16 +80,18 @@ const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = nu
     
     // If user is just changing the set (without a name query), 
     // automatically submit the form to update results
-    if (!nameQuery) {
-      const params = new URLSearchParams();
-      if (value) {
-        params.append('setId', value);
-      }
-      navigate({
-        pathname: '/pokemon-cards',
-        search: params.toString()
-      });
+    const params = new URLSearchParams();
+    if (value) {
+      params.append('setId', value);
     }
+    if (nameQuery) {
+      params.append('name', nameQuery);
+    }
+    
+    navigate({
+      pathname: '/pokemon-cards',
+      search: params.toString()
+    });
   };
 
   return (

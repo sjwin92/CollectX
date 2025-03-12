@@ -23,6 +23,7 @@ const PokemonCards = () => {
           const setData = await getSetById(setId);
           if (setData) {
             setSelectedSetName(setData.name);
+            console.log(`Loaded set name: ${setData.name} for setId: ${setId}`);
           }
         } catch (error) {
           console.error("Error loading set name:", error);
@@ -55,7 +56,7 @@ const PokemonCards = () => {
           </p>
         )}
         
-        {nameQuery && (
+        {nameQuery && !selectedSetName && (
           <p className="text-muted-foreground mb-6">
             Search results for "{nameQuery}"
           </p>
@@ -65,7 +66,7 @@ const PokemonCards = () => {
           <PokemonCardSearch initialSetId={setId} />
         </div>
         
-        <CardGrid setId={setId} />
+        <CardGrid />
       </main>
       
       <Footer />

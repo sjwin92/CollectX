@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import CardItem, { CardItemProps } from "./CardItem";
 import { Button } from "@/components/ui/button";
 import { searchCards } from "@/services/pokemonTcgApi";
@@ -31,25 +30,23 @@ const CardGrid: React.FC<CardGridProps> = ({
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const effectiveSetId = setId || searchParams.get('setId');
 
   const loadCards = async (pageNum = 1, append = false) => {
     if (cards) return; // Don't load from API if cards are provided as props
     
     setIsLoading(true);
     try {
-      // Build query string - we need to format this correctly for the API
       let queryString = '';
       
-      if (setId) {
-        // Directly format the query for set.id
-        queryString = `q=set.id:${setId}`;
-        queryString += `&page=${pageNum}&pageSize=20`;
-      } else {
-        queryString = `page=${pageNum}&pageSize=20`;
+      if (effectiveSetId) {
+        queryString = `set.id:${effectiveSetId}`;
       }
       
-      console.log(`Loading cards with query: ${queryString}`);
-      const response = await searchCards(queryString);
+      console.log(`Loading cards with query string: ${queryString}`);
+      const response = await searchCards(queryString, pageNum, 20);
       
       if (response && response.data) {
         const formattedCards: CardItemProps[] = response.data.map(card => ({
@@ -91,7 +88,7 @@ const CardGrid: React.FC<CardGridProps> = ({
     // Reset page and load cards when setId changes
     setPage(1);
     loadCards(1, false);
-  }, [setId, cards]);
+  }, [effectiveSetId, cards]);
 
   const handleLoadMore = () => {
     const nextPage = page + 1;

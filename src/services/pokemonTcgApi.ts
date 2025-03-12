@@ -82,19 +82,7 @@ export const getCards = async (page = 1, pageSize = 20, query = ''): Promise<Pok
     let url: string;
     
     if (query) {
-      // If query is already formatted with q= parameter
-      if (query.startsWith('q=')) {
-        url = `${BASE_URL}/cards?${query}`;
-      } else {
-        // For simple name queries without filter syntax
-        if (!query.includes(':')) {
-          // Use wildcards for better search results
-          url = `${BASE_URL}/cards?page=${page}&pageSize=${pageSize}&q=name:"${query}"*`;
-        } else {
-          // For advanced queries that already have filter syntax
-          url = `${BASE_URL}/cards?page=${page}&pageSize=${pageSize}&q=${query}`;
-        }
-      }
+      url = `${BASE_URL}/cards?q=${query}&page=${page}&pageSize=${pageSize}`;
     } else {
       url = `${BASE_URL}/cards?page=${page}&pageSize=${pageSize}`;
     }
@@ -150,21 +138,16 @@ export const getCardById = async (id: string): Promise<PokemonCard> => {
 /**
  * Search cards with a query string
  */
-export const searchCards = async (queryString: string): Promise<PokemonCardResponse> => {
+export const searchCards = async (queryString: string, page = 1, pageSize = 20): Promise<PokemonCardResponse> => {
   console.log(`Searching cards with query: "${queryString}"`);
   
-  // If the queryString is already formatted with parameters, use it directly
-  if (queryString.includes('=')) {
-    return getCards(1, 20, queryString);
+  // Simple search query for better results
+  if (queryString) {
+    return getCards(page, pageSize, queryString);
   }
   
-  // If the query is simple (no advanced search operators), format it for better results
-  if (!queryString.includes(':')) {
-    // Use double quotes and wildcard for partial matching
-    queryString = `name:"${queryString}"*`;
-  }
-  
-  return getCards(1, 20, queryString);
+  // If no query, get all cards
+  return getCards(page, pageSize);
 };
 
 /**
