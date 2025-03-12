@@ -1,34 +1,25 @@
-
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getCards, PokemonCard } from "@/services/pokemonTcgApi";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import CardGrid from "@/components/cards/CardGrid";
-import PokemonCardSearch from "@/components/pokemon/PokemonCardSearch";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import { useToast } from "@/hooks/use-toast";
-import TradeProposalForm from "@/components/marketplace/TradeProposalForm";
 import TradeListing from "@/components/marketplace/TradeListing";
 import { 
   Plus, 
   Search, 
-  Filter, 
-  ListFilter, 
-  LayoutGrid, 
+  Filter,
   Star, 
   Clock, 
   TrendingUp,
-  Tag,
-  Sparkles,
   Heart,
   Check
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { CardItemProps } from "@/components/cards/CardItem";
-import { Link } from "react-router-dom";
 import { useUser } from "@/hooks/useUser";
 import CreateListingModal from "@/components/marketplace/CreateListingModal";
 import { 
@@ -187,11 +178,10 @@ const INITIAL_LISTINGS: ListingType[] = [
 ];
 
 const Marketplace = () => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
   const [isCreateListingOpen, setCreateListingOpen] = useState(false);
   const [selectedCard, setSelectedCard] = useState<PokemonCard | null>(null);
   const [listings, setListings] = useState<ListingType[]>([...FEATURED_LISTINGS, ...INITIAL_LISTINGS]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<'featured' | 'recent' | 'trending'>('featured');
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<string>("all");
@@ -261,29 +251,6 @@ const Marketplace = () => {
       });
   }, [listings, searchQuery, activeCategory, selectedConditions, priceRange, sortOrder]);
 
-  // Get latest cards for marketplace browsing
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['marketplace-cards', currentPage, searchQuery],
-    queryFn: async () => {
-      return await getCards(currentPage, 20, searchQuery);
-    },
-  });
-
-  const mapToPokemonCardItems = (cards: PokemonCard[] = []): CardItemProps[] => {
-    return cards.map(card => ({
-      id: card.id,
-      name: card.name,
-      imageUrl: card.images.small,
-      rarity: card.rarity || "Unknown",
-      condition: "Near Mint",
-      estimatedValue: card.tcgplayer?.prices?.holofoil?.market
-        ? `$${card.tcgplayer.prices.holofoil.market.toFixed(2)}`
-        : card.tcgplayer?.prices?.normal?.market
-        ? `$${card.tcgplayer.prices.normal.market.toFixed(2)}`
-        : "N/A"
-    }));
-  };
-
   const createNewListing = (cardOffered: PokemonCard, cardsWanted: string[], description: string) => {
     const newListing: ListingType = {
       id: `listing-${Date.now()}`,
@@ -342,238 +309,144 @@ const Marketplace = () => {
 
       <main className="container py-8 flex-1">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Pokémon Card Marketplace</h1>
+          <h1 className="text-3xl font-bold mb-2">Trading Marketplace</h1>
           <p className="text-muted-foreground">
-            Browse trade listings, propose trades, or list your own cards for trade with our secure escrow system
+            Browse what other collectors are trading, propose trades, or list your own cards
           </p>
         </div>
 
-        <Tabs defaultValue="browse" className="space-y-6">
-          <TabsList className="mb-6">
-            <TabsTrigger value="browse">
-              <LayoutGrid className="h-4 w-4 mr-2" />
-              Browse Listings
-            </TabsTrigger>
-            <TabsTrigger value="search">
-              <Search className="h-4 w-4 mr-2" />
-              Search Cards
-            </TabsTrigger>
-            <TabsTrigger value="my-wishlist">
-              <Heart className="h-4 w-4 mr-2" />
-              My Wishlist
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="browse" className="space-y-6">
-            {/* Top Action Bar */}
-            <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search listings by card name, description, or username..."
-                  className="pl-9"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline">
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filters
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56">
-                    <DropdownMenuLabel>Filter by Condition</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuGroup>
-                      {["Mint", "Near Mint", "Excellent", "Good", "Played", "Poor"].map((condition) => (
-                        <DropdownMenuItem key={condition} className="flex items-center gap-2">
-                          <Checkbox 
-                            id={`condition-${condition}`} 
-                            checked={selectedConditions.includes(condition)}
-                            onCheckedChange={() => toggleConditionFilter(condition)}
-                          />
-                          <Label htmlFor={`condition-${condition}`}>{condition}</Label>
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuGroup>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel>Price Range</DropdownMenuLabel>
-                    <DropdownMenuGroup>
-                      {[
-                        {id: "all", label: "All Prices"},
-                        {id: "under-10", label: "Under $10"},
-                        {id: "10-50", label: "$10 - $50"},
-                        {id: "50-100", label: "$50 - $100"},
-                        {id: "over-100", label: "Over $100"}
-                      ].map((range) => (
-                        <DropdownMenuItem 
-                          key={range.id} 
-                          className="flex items-center gap-2"
-                          onClick={() => setPriceRange(range.id)}
-                        >
-                          <div className="w-4 h-4 flex items-center justify-center">
-                            {priceRange === range.id && <Check className="h-3 w-3" />}
-                          </div>
-                          <span>{range.label}</span>
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <Select
-                  value={sortOrder}
-                  onValueChange={(value) => setSortOrder(value)}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Sort by..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">Newest First</SelectItem>
-                    <SelectItem value="oldest">Oldest First</SelectItem>
-                    <SelectItem value="price-high">Price: High to Low</SelectItem>
-                    <SelectItem value="price-low">Price: Low to High</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Button onClick={() => setCreateListingOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Listing
+        {/* Top Action Bar */}
+        <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search trading post by card name, description, or trader..."
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filters
                 </Button>
-              </div>
-            </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56">
+                <DropdownMenuLabel>Filter by Condition</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  {["Mint", "Near Mint", "Excellent", "Good", "Played", "Poor"].map((condition) => (
+                    <DropdownMenuItem key={condition} className="flex items-center gap-2">
+                      <Checkbox 
+                        id={`condition-${condition}`} 
+                        checked={selectedConditions.includes(condition)}
+                        onCheckedChange={() => toggleConditionFilter(condition)}
+                      />
+                      <Label htmlFor={`condition-${condition}`}>{condition}</Label>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Price Range</DropdownMenuLabel>
+                <DropdownMenuGroup>
+                  {[
+                    {id: "all", label: "All Prices"},
+                    {id: "under-10", label: "Under $10"},
+                    {id: "10-50", label: "$10 - $50"},
+                    {id: "50-100", label: "$50 - $100"},
+                    {id: "over-100", label: "Over $100"}
+                  ].map((range) => (
+                    <DropdownMenuItem 
+                      key={range.id} 
+                      className="flex items-center gap-2"
+                      onClick={() => setPriceRange(range.id)}
+                    >
+                      <div className="w-4 h-4 flex items-center justify-center">
+                        {priceRange === range.id && <Check className="h-3 w-3" />}
+                      </div>
+                      <span>{range.label}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-            {/* Category tabs for Featured, Recent, Trending */}
-            <div className="border-b mb-6">
-              <div className="flex space-x-6">
-                <button
-                  className={`pb-2 font-medium flex items-center gap-1 ${activeCategory === 'featured' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
-                  onClick={() => setActiveCategory('featured')}
-                >
-                  <Sparkles className="h-4 w-4" />
-                  <span>Featured Listings</span>
-                </button>
-                <button
-                  className={`pb-2 font-medium flex items-center gap-1 ${activeCategory === 'recent' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
-                  onClick={() => setActiveCategory('recent')}
-                >
-                  <Clock className="h-4 w-4" />
-                  <span>Recent Trades</span>
-                </button>
-                <button
-                  className={`pb-2 font-medium flex items-center gap-1 ${activeCategory === 'trending' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
-                  onClick={() => setActiveCategory('trending')}
-                >
-                  <TrendingUp className="h-4 w-4" />
-                  <span>Trending Cards</span>
-                </button>
-              </div>
-            </div>
+            <Select
+              value={sortOrder}
+              onValueChange={(value) => setSortOrder(value)}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Sort by..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest First</SelectItem>
+                <SelectItem value="oldest">Oldest First</SelectItem>
+                <SelectItem value="price-high">Price: High to Low</SelectItem>
+                <SelectItem value="price-low">Price: Low to High</SelectItem>
+              </SelectContent>
+            </Select>
 
-            {filteredListings.length > 0 ? (
-              <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
-                {filteredListings.map(listing => (
-                  <TradeListing 
-                    key={listing.id}
-                    listing={listing}
-                    onProposeTrade={() => handleProposeTrade(listing.id)}
-                    featured={!!listing.featured}
-                  />
-                ))}
-              </div>
-            ) : (
-              <GlassCard className="p-8 text-center">
-                <h3 className="text-xl font-medium mb-2">No trade listings match your criteria</h3>
-                <p className="text-muted-foreground mb-4">
-                  Try adjusting your filters or create your own listing!
-                </p>
-                <Button onClick={() => setCreateListingOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Listing
-                </Button>
-              </GlassCard>
-            )}
-          </TabsContent>
+            <Button onClick={() => setCreateListingOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Listing
+            </Button>
+          </div>
+        </div>
 
-          <TabsContent value="search" className="space-y-6">
-            <GlassCard className="p-6 mb-6">
-              <h3 className="text-lg font-semibold mb-4">Search for cards to trade</h3>
-              <PokemonCardSearch onSelect={handleCardSelect} />
-            </GlassCard>
+        {/* Category tabs for Featured, Recent, Trending */}
+        <div className="border-b mb-6">
+          <div className="flex space-x-6">
+            <button
+              className={`pb-2 font-medium flex items-center gap-1 ${activeCategory === 'featured' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
+              onClick={() => setActiveCategory('featured')}
+            >
+              <Star className="h-4 w-4" />
+              <span>Featured Trades</span>
+            </button>
+            <button
+              className={`pb-2 font-medium flex items-center gap-1 ${activeCategory === 'recent' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
+              onClick={() => setActiveCategory('recent')}
+            >
+              <Clock className="h-4 w-4" />
+              <span>Recent Listings</span>
+            </button>
+            <button
+              className={`pb-2 font-medium flex items-center gap-1 ${activeCategory === 'trending' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
+              onClick={() => setActiveCategory('trending')}
+            >
+              <TrendingUp className="h-4 w-4" />
+              <span>Hot Trades</span>
+            </button>
+          </div>
+        </div>
 
-            {isLoading ? (
-              <div className="text-center py-12">
-                <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto"></div>
-                <p className="mt-4 text-lg font-medium">Loading cards...</p>
-              </div>
-            ) : isError ? (
-              <GlassCard variant="dark" className="p-6 text-center">
-                <h3 className="text-xl font-medium mb-2">Failed to load cards</h3>
-                <p className="text-muted-foreground mb-4">
-                  There was an error loading the Pokémon card database.
-                </p>
-                <Button onClick={() => setCurrentPage(1)}>Try Again</Button>
-              </GlassCard>
-            ) : (
-              <>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Browse Available Cards</h3>
-                  <Button variant="outline" size="sm">
-                    <Filter className="h-4 w-4 mr-2" />
-                    Filter
-                  </Button>
-                </div>
-
-                <CardGrid
-                  cards={mapToPokemonCardItems(data?.data)}
-                  columns={{ sm: 2, md: 3, lg: 4, xl: 5 }}
-                  animated
-                  staggered
-                />
-
-                <div className="flex justify-between items-center pt-6">
-                  <Button
-                    variant="outline"
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage <= 1}
-                  >
-                    Previous Page
-                  </Button>
-                  <span className="text-muted-foreground">
-                    Page {currentPage} of {Math.ceil((data?.totalCount || 0) / 20) || 1}
-                  </span>
-                  <Button
-                    variant="outline"
-                    onClick={() => setCurrentPage(prev => prev + 1)}
-                    disabled={!data || currentPage >= Math.ceil(data.totalCount / 20)}
-                  >
-                    Next Page
-                  </Button>
-                </div>
-              </>
-            )}
-          </TabsContent>
-
-          <TabsContent value="my-wishlist" className="space-y-6">
-            <GlassCard className="p-8 text-center">
-              <h3 className="text-xl font-medium mb-2">Your Wishlist</h3>
-              <p className="text-muted-foreground mb-6">
-                Add cards to your wishlist to keep track of cards you're looking for.
-                Other traders can see your wishlist and propose trades directly.
-              </p>
-              <div className="flex justify-center">
-                <Button onClick={() => setCreateListingOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Cards to Wishlist
-                </Button>
-              </div>
-            </GlassCard>
-          </TabsContent>
-        </Tabs>
+        {filteredListings.length > 0 ? (
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+            {filteredListings.map(listing => (
+              <TradeListing 
+                key={listing.id}
+                listing={listing}
+                onProposeTrade={() => handleProposeTrade(listing.id)}
+                featured={!!listing.featured}
+              />
+            ))}
+          </div>
+        ) : (
+          <GlassCard className="p-8 text-center">
+            <h3 className="text-xl font-medium mb-2">No trade listings match your criteria</h3>
+            <p className="text-muted-foreground mb-4">
+              Try adjusting your filters or create your own listing!
+            </p>
+            <Button onClick={() => setCreateListingOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Listing
+            </Button>
+          </GlassCard>
+        )}
 
         {isCreateListingOpen && (
           <CreateListingModal 
