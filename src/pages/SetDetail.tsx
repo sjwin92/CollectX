@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -37,8 +36,13 @@ const SetDetail = () => {
   };
 
   const handleViewCards = () => {
-    // Navigate to Pokemon Cards page with set ID as a query parameter
-    navigate(`/pokemon-cards?setId=${id}`);
+    if (id) {
+      navigate(`/pokemon-cards?setId=${id}`);
+      toast({
+        title: "Loading cards",
+        description: `Loading cards from ${set?.name || 'set'}...`
+      });
+    }
   };
 
   if (isLoading) {
