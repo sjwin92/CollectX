@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -45,9 +46,17 @@ const CardItem = ({
     const alternatives = getAllPossibleCardImageUrls(id);
     setAlternativeImages(alternatives);
     
-    // Start with the first image from our consistent set of alternatives
-    // This is more reliable than the provided imageUrl which could be inconsistent
-    setImageSrc(alternatives[0]);
+    // If provided imageUrl exists, try it first, otherwise use the first alternative
+    const initialImage = imageUrl || alternatives[0];
+    setImageSrc(initialImage);
+    
+    // Preload the next few alternative images to improve loading success
+    if (alternatives.length > 1) {
+      alternatives.slice(1, 4).forEach(url => {
+        const img = new Image();
+        img.src = url;
+      });
+    }
   }, [id, imageUrl]);
   
   // Map condition to style
@@ -79,8 +88,11 @@ const CardItem = ({
     
     if (nextIndex < alternativeImages.length) {
       console.log(`Trying alternative image source: ${alternativeImages[nextIndex]}`);
-      setRetryCount(nextIndex);
-      setImageSrc(alternativeImages[nextIndex]);
+      // Add a slight delay before trying the next image source to prevent rate limiting
+      setTimeout(() => {
+        setRetryCount(nextIndex);
+        setImageSrc(alternativeImages[nextIndex]);
+      }, 100);
     } else {
       setImageStatus("error");
       console.log("All image sources failed for card:", id);
@@ -90,7 +102,8 @@ const CardItem = ({
   const retryImage = () => {
     setImageStatus("loading");
     setRetryCount(0);
-    setImageSrc(alternativeImages[0]);
+    // Try the provided imageUrl first if it exists, otherwise use the first alternative
+    setImageSrc(imageUrl || alternativeImages[0]);
   };
 
   const CardContent = (
