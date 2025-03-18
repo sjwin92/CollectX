@@ -15,7 +15,8 @@ export const getConsistentCardImageUrl = (cardId: string, size: 'small' | 'large
   if (!normalizedId) return CARD_BACK_URL;
   
   // The official Pokemon TCG API format
-  return `https://images.pokemontcg.io/${size}/${normalizedId}.png`;
+  // Format: https://images.pokemontcg.io/{size}/{setId}-{cardNumber}.png
+  return `https://images.pokemontcg.io/${size === 'small' ? 'small' : 'large'}/${normalizedId}.png`;
 };
 
 // Get all possible image URLs for a card (for fallback purposes)

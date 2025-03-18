@@ -72,7 +72,7 @@ const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = nu
       params.append('name', nameQuery);
     }
     
-    if (selectedSet) {
+    if (selectedSet && selectedSet !== 'all') {
       params.append('setId', selectedSet);
     }
     
@@ -91,7 +91,7 @@ const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = nu
     // If user is just changing the set (without a name query), 
     // automatically submit the form to update results
     const params = new URLSearchParams();
-    if (value) {
+    if (value && value !== 'all') {
       params.append('setId', value);
     }
     if (nameQuery) {

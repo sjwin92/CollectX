@@ -1,3 +1,4 @@
+
 // Service for fetching and managing Pokemon cards
 import { PokemonCard, PokemonCardResponse, CARD_BACK_URL } from './pokemonTypes';
 import { BASE_URL, createApiUrl } from './pokemonApiConfig';
@@ -81,8 +82,8 @@ export const buildQueryString = (params: Record<string, string>): string => {
   
   Object.entries(params).forEach(([key, value]) => {
     if (value) {
-      // For set ID use the format set.id:
-      if (key === 'setId') {
+      // Ignore "all" value for setId as it means no filter
+      if (key === 'setId' && value !== 'all') {
         queryParts.push(`set.id:${value}`);
       } 
       // For name use the format name: with wildcards
@@ -158,7 +159,7 @@ export const getCardsBySetId = async (
   page = 1, 
   pageSize = 20
 ): Promise<PokemonCardResponse> => {
-  if (!setId) {
+  if (!setId || setId === 'all') {
     return getCards(page, pageSize);
   }
   
@@ -175,7 +176,7 @@ export const getReliableImageUrl = (cardId: string, size: 'small' | 'large' = 's
   }
   
   // The most reliable source is the official Pokemon TCG API image server
-  return `https://images.pokemontcg.io/${cardId.split('-')[0]}/${cardId.split('-')[1]}_${size}.png`;
+  return `https://images.pokemontcg.io/${size}/${cardId}.png`;
 };
 
 /**
