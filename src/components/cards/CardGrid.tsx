@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import CardItem, { CardItemProps } from "./CardItem";
 import { Button } from "@/components/ui/button";
-import { searchCards } from "@/services/pokemonTcgApi";
+import { searchCards } from "@/services/api/pokemonCardsService";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface CardGridProps {
@@ -41,22 +40,20 @@ const CardGrid: React.FC<CardGridProps> = ({
     
     setIsLoading(true);
     try {
-      let queryParts = [];
+      const searchParams: Record<string, string> = {};
       
       if (effectiveSetId) {
-        queryParts.push(`set.id:${effectiveSetId}`);
-        console.log(`Adding set filter: set.id:${effectiveSetId}`);
+        searchParams.setId = effectiveSetId;
+        console.log(`Adding set filter with setId: ${effectiveSetId}`);
       }
       
       if (nameQuery) {
-        queryParts.push(`name:*${nameQuery}*`);
-        console.log(`Adding name filter: name:*${nameQuery}*`);
+        searchParams.name = nameQuery;
+        console.log(`Adding name filter: ${nameQuery}`);
       }
       
-      const queryString = queryParts.join(' ');
-      
-      console.log(`Loading cards with query string: "${queryString}"`);
-      const response = await searchCards(queryString, pageNum, 20);
+      console.log(`Loading cards with search params:`, searchParams);
+      const response = await searchCards(searchParams, pageNum, 20);
       
       if (response && response.data) {
         console.log(`Received ${response.data.length} cards from API`);
