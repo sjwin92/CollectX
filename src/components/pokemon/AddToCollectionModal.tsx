@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { 
   Dialog,
@@ -30,7 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { PokemonSet } from "@/services/pokemonSetsApi";
+import { PokemonSet } from "@/services/api/pokemonTypes";
 
 // Define card condition options
 export const cardConditions = [
