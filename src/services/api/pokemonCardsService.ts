@@ -1,8 +1,7 @@
-
 // Service for fetching and managing Pokemon cards
 import { PokemonCard, PokemonCardResponse, CARD_BACK_URL } from './pokemonTypes';
 import { BASE_URL, createApiUrl } from './pokemonApiConfig';
-import { getAllPossibleImageUrlsFromCardObject } from './cardImageService';
+import { getAllPossibleImageUrlsFromCardObject, getConsistentCardImageUrl } from './cardImageService';
 
 /**
  * Get cards with optional filtering
@@ -175,8 +174,7 @@ export const getReliableImageUrl = (cardId: string, size: 'small' | 'large' = 's
     return CARD_BACK_URL;
   }
   
-  // The most reliable source is the official Pokemon TCG API image server
-  return `https://images.pokemontcg.io/${size}/${cardId}.png`;
+  return getConsistentCardImageUrl(cardId, size);
 };
 
 /**
@@ -188,10 +186,13 @@ export const mapToTradeCard = (card: PokemonCard): any => {
     || card.tcgplayer?.prices?.reverseHolofoil?.market
     || 0;
   
+  const imageUrls = getAllPossibleImageUrlsFromCardObject(card);
+  const bestImageUrl = imageUrls.length > 0 ? imageUrls[0] : CARD_BACK_URL;
+  
   return {
     id: card.id,
     name: card.name,
-    imageUrl: card.images.small || getReliableImageUrl(card.id),
+    imageUrl: bestImageUrl,
     condition: "Near Mint", // Default condition, would be user-specified in real app
     estimatedValue: price,
     currency: "USD"

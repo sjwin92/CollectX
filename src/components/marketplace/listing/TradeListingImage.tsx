@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, RefreshCw } from "lucide-react";
-import { getAllPossibleCardImageUrls } from "@/services/pokemonSetsApi";
+import { getAllPossibleCardImageUrls } from "@/services/api/cardImageService";
 
 interface TradeListingImageProps {
   cardId?: string;
@@ -36,7 +36,7 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
     // Add the provided imageUrl only if it doesn't exist in the list
     let allSources = [...possibleUrls];
     if (imageUrl && !possibleUrls.includes(imageUrl)) {
-      allSources.push(imageUrl);
+      allSources.unshift(imageUrl); // Put provided URL first
     }
     
     // Make sure we have unique URLs

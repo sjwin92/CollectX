@@ -1,5 +1,4 @@
 
-// Re-export functions and types from the refactored modules
-export * from './api/pokemonTypes';
-export * from './api/cardImageService';
+// Re-export from the API module
 export * from './api/pokemonSetsService';
+export * from './api/cardImageService';
