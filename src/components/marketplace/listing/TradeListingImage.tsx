@@ -30,7 +30,7 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
     setRetryCount(0);
     setIsLoading(true);
     
-    // Get all possible image URLs
+    // Get all possible image URLs - using our improved service
     const possibleUrls = cardId ? getAllPossibleCardImageUrls(cardId) : [];
     
     // Add the provided imageUrl only if it doesn't exist in the list

@@ -20,8 +20,10 @@ export const getConsistentCardImageUrl = (cardId: string, size: 'small' | 'large
   
   const [setId, cardNumber] = parts;
   
-  // The official Pokemon TCG API format
-  return `https://images.pokemontcg.io/${setId}/${cardNumber}.png`;
+  // The official Pokemon TCG API format - most reliable format
+  return size === 'large' 
+    ? `https://images.pokemontcg.io/${setId}/${cardNumber}_hires.png`
+    : `https://images.pokemontcg.io/${setId}/${cardNumber}.png`;
 };
 
 // Get all possible image URLs for a card (for fallback purposes)
@@ -35,8 +37,8 @@ export const getAllPossibleCardImageUrls = (cardId: string): string[] => {
   // If there's no hyphen, it might not be in the standard format
   if (!normalizedId.includes('-')) {
     return [
-      `https://images.pokemontcg.io/large/${normalizedId}.png`,
-      `https://images.pokemontcg.io/small/${normalizedId}.png`,
+      `https://images.pokemontcg.io/cards/large/${normalizedId}.png`,
+      `https://images.pokemontcg.io/cards/small/${normalizedId}.png`,
       CARD_BACK_URL
     ];
   }
@@ -45,32 +47,24 @@ export const getAllPossibleCardImageUrls = (cardId: string): string[] => {
   
   // Order these URLs from most reliable to least reliable
   return [
-    // Primary format that has been most reliable
-    `https://images.pokemontcg.io/${setId}/${cardNumber}.png`,
-    `https://images.pokemontcg.io/${setId}/${cardNumber}_hires.png`,
+    // Primary formats - most reliable
+    `https://images.pokemontcg.io/${setId}/${cardNumber}.png`, // Small format
+    `https://images.pokemontcg.io/${setId}/${cardNumber}_hires.png`, // Large format
     
-    // Alternative formats with size parameter
-    `https://images.pokemontcg.io/large/${normalizedId}.png`,
-    `https://images.pokemontcg.io/small/${normalizedId}.png`,
+    // Direct API formats that are also reliable
+    `https://images.pokemontcg.io/cards/large/${normalizedId}.png`,
+    `https://images.pokemontcg.io/cards/small/${normalizedId}.png`,
     
-    // TCGDex format
-    `https://assets.tcgdex.net/en/cards/${setId}/${cardNumber}`,
-    `https://assets.tcgdex.net/en/cards/${setId}/${cardNumber}.jpg`,
+    // Use TCGDex as fallback (slightly different format)
     `https://assets.tcgdex.net/en/cards/${setId}/${cardNumber}.png`,
+    `https://assets.tcgdex.net/en/cards/${setId}/${cardNumber}.jpg`,
     
-    // Another TCGDex format
-    `https://assets.tcgdex.net/en/${setId}/${cardNumber}`,
-    `https://assets.tcgdex.net/en/${setId}/${cardNumber}.jpg`,
-    `https://assets.tcgdex.net/en/${setId}/${cardNumber}.png`,
+    // Alternative formats
+    `https://images.pokemontcg.io/${setId}/${cardNumber}/high.jpg`, 
+    `https://images.pokemontcg.io/${setId}/${cardNumber}/low.jpg`,
     
     // Pokellector format (with padding to ensure 3 digits)
     `https://assets.pokellector.com/cards/${setId}/${cardNumber.padStart(3, '0')}.webp`,
-    
-    // Pokemon.com format
-    `https://assets.pokemon.com/assets/cms2/img/cards/web/${setId.toUpperCase()}/${setId.toUpperCase()}_EN_${cardNumber}.png`,
-    
-    // PokemonCards.com format
-    `https://images.pokemoncards.com/${setId}/${cardNumber}.jpg`,
     
     // Last resort official card back
     CARD_BACK_URL
@@ -94,14 +88,15 @@ export const getAllPossibleImageUrlsFromCardObject = (card: any): string[] => {
   }
   
   // Return an array of URLs to try in sequence
-  return [
+  const urls = [
     // Original API URLs if present - try these first
-    card.images?.small,
-    card.images?.large,
+    ...(card.images?.small ? [card.images.small] : []),
+    ...(card.images?.large ? [card.images.large] : []),
+    
     // Our generated URLs as fallbacks
-    getConsistentCardImageUrl(card.id, 'small'),
-    getConsistentCardImageUrl(card.id, 'large'),
-    // Last resort
-    CARD_BACK_URL
-  ].filter(url => !!url && isValidUrl(url)); // Filter out any undefined or invalid URLs
+    ...getAllPossibleCardImageUrls(card.id)
+  ];
+  
+  // Filter out any undefined or invalid URLs
+  return urls.filter(url => !!url && isValidUrl(url));
 };

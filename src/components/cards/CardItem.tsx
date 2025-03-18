@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Info, AlertTriangle, Check, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { getAllPossibleCardImageUrls } from "@/services/pokemonSetsApi";
+import { getAllPossibleCardImageUrls } from "@/services/api/cardImageService";
 
 export interface CardItemProps {
   id: string;
@@ -41,14 +41,14 @@ const CardItem = ({
     setImageStatus("loading");
     setRetryCount(0);
     
-    // Always start with the Sets API images - primary source of truth
-    const setsImages = getAllPossibleCardImageUrls(id);
-    console.log(`Got ${setsImages.length} alternative images for card ${id}`);
+    // Get all possible image URLs for this card
+    const allPossibleImages = getAllPossibleCardImageUrls(id);
+    console.log(`Got ${allPossibleImages.length} alternative images for card ${id}`);
     
-    // Only add the imageUrl at the end if it's not already in the list
-    let uniqueSources = [...setsImages];
-    if (imageUrl && !setsImages.includes(imageUrl)) {
-      uniqueSources.push(imageUrl);
+    // Add the provided imageUrl if it exists and isn't already in the list
+    let uniqueSources = [...allPossibleImages];
+    if (imageUrl && !allPossibleImages.includes(imageUrl)) {
+      uniqueSources.unshift(imageUrl); // Put provided URL first
     }
     
     setAlternativeImages(uniqueSources);
@@ -74,7 +74,7 @@ const CardItem = ({
       setTimeout(() => {
         setRetryCount(nextIndex);
         setImageSrc(alternativeImages[nextIndex]);
-      }, 750); // Increased delay to prevent rate limiting
+      }, 500); // Reduced delay to try images faster
     } else {
       setImageStatus("error");
       console.log("All image sources failed for card:", id);

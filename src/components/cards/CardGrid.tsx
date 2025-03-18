@@ -3,8 +3,9 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import CardItem, { CardItemProps } from "./CardItem";
 import { Button } from "@/components/ui/button";
-import { searchCards } from "@/services/api/pokemonCardsService";
+import { searchCards, getCardById } from "@/services/api/pokemonCardsService";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 interface CardGridProps {
   setId?: string | null;
@@ -32,6 +33,7 @@ const CardGrid: React.FC<CardGridProps> = ({
   const [hasMore, setHasMore] = useState(true);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { toast } = useToast();
 
   const effectiveSetId = setId || searchParams.get('setId');
   const nameQuery = searchParams.get('name') || '';
@@ -64,18 +66,23 @@ const CardGrid: React.FC<CardGridProps> = ({
       if (response && response.data) {
         console.log(`Received ${response.data.length} cards from API`);
         
-        const formattedCards: CardItemProps[] = response.data.map(card => ({
-          id: card.id,
-          name: card.name,
-          imageUrl: card.images?.small,
-          rarity: card.rarity || "Unknown",
-          condition: "Near Mint",
-          estimatedValue: card.tcgplayer?.prices?.holofoil?.market
-            ? `$${card.tcgplayer.prices.holofoil.market.toFixed(2)}`
-            : card.tcgplayer?.prices?.normal?.market
-            ? `$${card.tcgplayer.prices.normal.market.toFixed(2)}`
-            : "N/A"
-        }));
+        const formattedCards: CardItemProps[] = response.data.map(card => {
+          // Extract the best image URL directly from the card
+          const imgUrl = card.images?.small || card.images?.large || null;
+          
+          return {
+            id: card.id,
+            name: card.name || "Unknown Card",
+            imageUrl: imgUrl,
+            rarity: card.rarity || "Unknown",
+            condition: "Near Mint",
+            estimatedValue: card.tcgplayer?.prices?.holofoil?.market
+              ? `$${card.tcgplayer.prices.holofoil.market.toFixed(2)}`
+              : card.tcgplayer?.prices?.normal?.market
+              ? `$${card.tcgplayer.prices.normal.market.toFixed(2)}`
+              : "N/A"
+          };
+        });
         
         if (append) {
           setLoadedCards(prev => [...prev, ...formattedCards]);
@@ -84,9 +91,23 @@ const CardGrid: React.FC<CardGridProps> = ({
         }
         
         setHasMore(formattedCards.length >= 20);
+      } else {
+        if (!append) {
+          // Only show this toast when not appending (i.e., on initial load)
+          toast({
+            title: "No cards found",
+            description: "Try adjusting your search parameters",
+            variant: "destructive"
+          });
+        }
       }
     } catch (error) {
       console.error("Error fetching cards:", error);
+      toast({
+        title: "Error loading cards",
+        description: "There was a problem fetching the cards. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
