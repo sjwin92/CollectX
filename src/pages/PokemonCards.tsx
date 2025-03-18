@@ -73,7 +73,7 @@ const PokemonCards = () => {
           <PokemonCardSearch initialSetId={setId} />
         </div>
         
-        <CardGrid setId={setId} nameQuery={nameQuery} />
+        <CardGrid setId={setId} />
       </main>
       
       <Footer />

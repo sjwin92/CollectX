@@ -1,6 +1,7 @@
+
 // Service for fetching and managing Pokemon cards
-import { PokemonCard, PokemonCardResponse } from './pokemonTypes';
-import { BASE_URL, CARD_BACK_URL, createApiUrl } from './pokemonApiConfig';
+import { PokemonCard, PokemonCardResponse, CARD_BACK_URL } from './pokemonTypes';
+import { BASE_URL, createApiUrl } from './pokemonApiConfig';
 import { getAllPossibleImageUrlsFromCardObject } from './cardImageService';
 
 /**
@@ -100,20 +101,27 @@ export const buildQueryString = (params: Record<string, string>): string => {
  * Search cards with search parameters
  */
 export const searchCards = async (
-  searchParams: Record<string, string> = {}, 
+  queryString: string | Record<string, string>, 
   page = 1, 
   pageSize = 20
 ): Promise<PokemonCardResponse> => {
-  // Build query string from parameters
-  const queryString = buildQueryString(searchParams);
-  console.log(`Searching cards with query: "${queryString}"`);
+  // Convert string query to params object if needed
+  let params: Record<string, string> = {};
   
-  // If we have a query string, add it to the params
-  const params: Record<string, string> = {};
-  if (queryString) {
-    params.q = queryString;
+  if (typeof queryString === 'string') {
+    // If it's a string query, use it directly as the 'q' parameter
+    if (queryString.trim()) {
+      params.q = queryString;
+    }
+  } else {
+    // If it's already an object, use buildQueryString to process it
+    const builtQuery = buildQueryString(queryString);
+    if (builtQuery) {
+      params.q = builtQuery;
+    }
   }
   
+  console.log(`Searching cards with params:`, params);
   return getCards(page, pageSize, params);
 };
 
