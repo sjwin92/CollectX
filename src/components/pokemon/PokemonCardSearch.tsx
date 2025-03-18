@@ -122,7 +122,7 @@ const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = nu
               <SelectValue placeholder="Select a set" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Sets</SelectItem>
+              <SelectItem value="all">All Sets</SelectItem>
               {sets.map((set) => (
                 <SelectItem key={set.id} value={set.id}>
                   {set.name}

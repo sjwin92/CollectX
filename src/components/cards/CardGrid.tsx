@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import CardItem, { CardItemProps } from "./CardItem";
@@ -36,7 +37,12 @@ const CardGrid: React.FC<CardGridProps> = ({
   const nameQuery = searchParams.get('name') || '';
   
   const loadCards = async (pageNum = 1, append = false) => {
-    if (cards) return; // Don't load from API if cards are provided as props
+    if (cards) {
+      // If cards are provided as props, use them instead of fetching
+      setLoadedCards(cards);
+      setIsLoading(false);
+      return;
+    }
     
     setIsLoading(true);
     try {
@@ -130,15 +136,18 @@ const CardGrid: React.FC<CardGridProps> = ({
       <div className="text-center py-12">
         <h3 className="text-xl font-medium mb-2">No cards found</h3>
         <p className="text-muted-foreground">
-          {setId ? "No cards found in this set" : "Try adjusting your search parameters"}
+          {effectiveSetId ? "No cards found in this set" : "Try adjusting your search parameters"}
         </p>
       </div>
     );
   }
 
+  // Using template string for grid classes to avoid Tailwind purge issues
+  const gridClasses = `grid grid-cols-${columns.sm || 2} md:grid-cols-${columns.md || 3} lg:grid-cols-${columns.lg || 4} xl:grid-cols-${columns.xl || 5} gap-4`;
+
   return (
     <div className="space-y-6">
-      <div className={`grid grid-cols-${columns.sm || 2} md:grid-cols-${columns.md || 3} lg:grid-cols-${columns.lg || 4} xl:grid-cols-${columns.xl || 5} gap-4`}>
+      <div className={gridClasses}>
         {displayCards.map((card, index) => (
           <CardItem 
             key={card.id}

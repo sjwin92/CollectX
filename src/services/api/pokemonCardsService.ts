@@ -1,4 +1,3 @@
-
 // Service for fetching and managing Pokemon cards
 import { PokemonCard, PokemonCardResponse, CARD_BACK_URL } from './pokemonTypes';
 import { BASE_URL, createApiUrl } from './pokemonApiConfig';
@@ -101,28 +100,54 @@ export const buildQueryString = (params: Record<string, string>): string => {
  * Search cards with search parameters
  */
 export const searchCards = async (
-  queryString: string | Record<string, string>, 
+  queryParams: string | Record<string, string>, 
   page = 1, 
   pageSize = 20
 ): Promise<PokemonCardResponse> => {
-  // Convert string query to params object if needed
-  let params: Record<string, string> = {};
+  // Create a params object for the API call
+  let params: Record<string, string> = { page: page.toString(), pageSize: pageSize.toString() };
   
-  if (typeof queryString === 'string') {
-    // If it's a string query, use it directly as the 'q' parameter
-    if (queryString.trim()) {
-      params.q = queryString;
+  if (typeof queryParams === 'string') {
+    // If it's a raw query string, use it directly as 'q' parameter
+    if (queryParams.trim()) {
+      params.q = queryParams;
     }
   } else {
-    // If it's already an object, use buildQueryString to process it
-    const builtQuery = buildQueryString(queryString);
+    // If it's an object of search parameters, build a query string
+    const builtQuery = buildQueryString(queryParams);
     if (builtQuery) {
       params.q = builtQuery;
     }
   }
   
-  console.log(`Searching cards with params:`, params);
-  return getCards(page, pageSize, params);
+  console.log(`Searching cards with final API params:`, params);
+  
+  try {
+    const url = createApiUrl('cards', params);
+    
+    console.log('Fetching cards with URL:', url.toString());
+    const response = await fetch(url.toString());
+    
+    if (!response.ok) {
+      console.error(`Failed to fetch cards: ${response.statusText}`);
+      throw new Error(`Failed to fetch cards: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log(`Successfully fetched ${data.data?.length || 0} cards`);
+    
+    return data;
+  } catch (error) {
+    console.error('Error searching Pokemon cards:', error);
+    // Return empty response structure in case of error
+    return {
+      data: [],
+      page: page,
+      pageSize: pageSize,
+      count: 0,
+      totalCount: 0
+    };
+  }
 };
 
 /**
@@ -150,7 +175,7 @@ export const getReliableImageUrl = (cardId: string, size: 'small' | 'large' = 's
   }
   
   // The most reliable source is the official Pokemon TCG API image server
-  return `https://images.pokemontcg.io/${size}/${cardId}.png`;
+  return `https://images.pokemontcg.io/${cardId.split('-')[0]}/${cardId.split('-')[1]}_${size}.png`;
 };
 
 /**
