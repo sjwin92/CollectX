@@ -30,6 +30,8 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { fetchCardsByName } from "@/services/tcgdexApi";
 import GradedFilter from "@/components/profile/GradedFilter";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ExtendedCardItemProps } from "@/types/cardTypes";
 
 const initialCollection = [
   {

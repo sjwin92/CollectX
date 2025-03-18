@@ -4,20 +4,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Shield } from "lucide-react";
 import CardGrid from "@/components/cards/CardGrid";
-import { CardItemProps } from "@/components/cards/CardItem";
+import { ExtendedCardItemProps } from "@/types/cardTypes"; // Updated import
 import GlassCard from "@/components/ui/custom/GlassCard";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import GradedFilter from "@/components/profile/GradedFilter";
 
 interface CollectionManagerProps {
-  collection: CardItemProps[];
+  collection: ExtendedCardItemProps[]; // Updated to use ExtendedCardItemProps
 }
 
 const CollectionManager = ({ collection }: CollectionManagerProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showGradedOnly, setShowGradedOnly] = useState(false);
-  const [filteredCards, setFilteredCards] = useState<CardItemProps[]>(collection);
+  const [filteredCards, setFilteredCards] = useState<ExtendedCardItemProps[]>(collection); // Updated type
   
   // Filter cards based on search query and graded status
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,26 +74,10 @@ const CollectionManager = ({ collection }: CollectionManagerProps) => {
           />
         </div>
         
-        <div className="flex items-center space-x-2">
-          <Checkbox 
-            id="graded-filter" 
-            checked={showGradedOnly}
-            onCheckedChange={(checked) => handleGradedFilterChange(checked as boolean)}
-          />
-          <Label 
-            htmlFor="graded-filter" 
-            className="text-sm font-medium cursor-pointer flex items-center gap-1.5"
-          >
-            <Shield className="h-4 w-4" />
-            Graded Only
-          </Label>
-          
-          {showGradedOnly && (
-            <Badge variant="outline" className="bg-primary/10 text-primary">
-              Graded
-            </Badge>
-          )}
-        </div>
+        <GradedFilter 
+          showGradedOnly={showGradedOnly}
+          onGradedFilterChange={handleGradedFilterChange}
+        />
       </div>
       
       {filteredCards.length > 0 ? (
