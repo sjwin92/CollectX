@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -30,8 +29,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { fetchCardsByName } from "@/services/tcgdexApi";
+import GradedFilter from "@/components/profile/GradedFilter";
 
-// Updated collection data with proper ids
 const initialCollection = [
   {
     id: "base1-4",
@@ -39,7 +38,10 @@ const initialCollection = [
     imageUrl: "https://assets.tcgdex.net/en/base/base1/4",
     rarity: "Rare Holo",
     condition: "Near Mint",
-    estimatedValue: "$350-450"
+    estimatedValue: "$350-450",
+    graded: true,
+    gradingCompany: "PSA",
+    grade: "9"
   },
   {
     id: "swsh4-25",
@@ -47,7 +49,8 @@ const initialCollection = [
     imageUrl: "https://assets.tcgdex.net/en/swsh/swsh4/25",
     rarity: "Rare",
     condition: "Mint",
-    estimatedValue: "$120-150"
+    estimatedValue: "$120-150",
+    graded: false
   },
   {
     id: "sm10-158",
@@ -55,7 +58,10 @@ const initialCollection = [
     imageUrl: "https://assets.tcgdex.net/en/sm/sm10/158",
     rarity: "Ultra Rare",
     condition: "Excellent",
-    estimatedValue: "$200-250"
+    estimatedValue: "$200-250",
+    graded: true,
+    gradingCompany: "BGS",
+    grade: "9.5"
   },
   {
     id: "base1-2",
@@ -63,7 +69,8 @@ const initialCollection = [
     imageUrl: "https://assets.tcgdex.net/en/base/base1/2",
     rarity: "Rare Holo",
     condition: "Good",
-    estimatedValue: "$80-120"
+    estimatedValue: "$80-120",
+    graded: false
   },
   {
     id: "base1-15",
@@ -71,7 +78,10 @@ const initialCollection = [
     imageUrl: "https://assets.tcgdex.net/en/base/base1/15",
     rarity: "Rare Holo",
     condition: "Played",
-    estimatedValue: "$150-180"
+    estimatedValue: "$150-180",
+    graded: true,
+    gradingCompany: "CGC",
+    grade: "8"
   },
   {
     id: "sm12-226",
@@ -79,7 +89,8 @@ const initialCollection = [
     imageUrl: "https://assets.tcgdex.net/en/sm/sm12/226",
     rarity: "Ultra Rare",
     condition: "Near Mint",
-    estimatedValue: "$40-60"
+    estimatedValue: "$40-60",
+    graded: false
   }
 ];
 
@@ -111,26 +122,27 @@ const Collection = () => {
   const [sortOption, setSortOption] = useState("name-asc");
   const [filterRarity, setFilterRarity] = useState("all");
   const [filterCondition, setFilterCondition] = useState("all");
+  const [showGradedOnly, setShowGradedOnly] = useState(false);
   const [isAddCardOpen, setIsAddCardOpen] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [searchCardQuery, setSearchCardQuery] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
   const [selectedTab, setSelectedTab] = useState("all");
   
-  // For the new card form
   const [newCardCondition, setNewCardCondition] = useState("Mint");
   const [newCardEstValue, setNewCardEstValue] = useState("");
   const [selectedCard, setSelectedCard] = useState(null);
   const [isToWishlist, setIsToWishlist] = useState(false);
   const [isTradable, setIsTradable] = useState(false);
+  const [isGraded, setIsGraded] = useState(false);
+  const [gradingCompany, setGradingCompany] = useState("PSA");
+  const [gradeValue, setGradeValue] = useState("9");
 
-  // Calculate the total estimated value
   const calculateTotalValue = () => {
     let total = 0;
     myCollection.forEach(card => {
       const value = card.estimatedValue;
       if (value) {
-        // Extract the average from a range like "$350-450"
         const match = value.match(/\$(\d+)-(\d+)/);
         if (match) {
           const min = parseInt(match[1]);
@@ -142,11 +154,9 @@ const Collection = () => {
     return Math.round(total);
   };
 
-  // Filter and sort the cards
   const getFilteredAndSortedCards = (cards) => {
     if (!cards) return [];
     
-    // Apply search filter
     let filtered = cards;
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -157,21 +167,22 @@ const Collection = () => {
       );
     }
     
-    // Apply rarity filter
     if (filterRarity !== "all") {
       filtered = filtered.filter(card => 
         card.rarity.toLowerCase().includes(filterRarity.toLowerCase())
       );
     }
     
-    // Apply condition filter
     if (filterCondition !== "all") {
       filtered = filtered.filter(card => 
         card.condition.toLowerCase().includes(filterCondition.toLowerCase())
       );
     }
     
-    // Apply sorting
+    if (showGradedOnly) {
+      filtered = filtered.filter(card => card.graded === true);
+    }
+    
     return [...filtered].sort((a, b) => {
       switch (sortOption) {
         case "name-asc":
@@ -191,8 +202,7 @@ const Collection = () => {
       }
     });
   };
-  
-  // Helper to extract numeric value from price string
+
   const extractValue = (priceString) => {
     if (!priceString) return 0;
     const match = priceString.match(/\$(\d+)-(\d+)/);
@@ -203,8 +213,7 @@ const Collection = () => {
     }
     return 0;
   };
-  
-  // Get filtered cards based on the selected tab
+
   const getFilteredCardsByTab = () => {
     switch (selectedTab) {
       case "all":
@@ -217,8 +226,7 @@ const Collection = () => {
         return [];
     }
   };
-  
-  // Handle card search
+
   const handleCardSearch = async () => {
     if (!searchCardQuery.trim()) {
       setSearchResults([]);
@@ -228,7 +236,7 @@ const Collection = () => {
     setSearchLoading(true);
     try {
       const cards = await fetchCardsByName(searchCardQuery);
-      setSearchResults(cards.slice(0, 10)); // Limit to first 10 results
+      setSearchResults(cards.slice(0, 10));
     } catch (error) {
       console.error("Error searching for cards:", error);
       toast({
@@ -241,8 +249,7 @@ const Collection = () => {
       setSearchLoading(false);
     }
   };
-  
-  // Add a card to collection or wishlist
+
   const handleAddCard = () => {
     if (!selectedCard) {
       toast({
@@ -269,6 +276,11 @@ const Collection = () => {
       rarity: selectedCard.rarity || "Unknown",
       condition: isToWishlist ? "Any" : newCardCondition,
       estimatedValue: isToWishlist ? "Varies" : `$${newCardEstValue}`,
+      graded: isGraded,
+      ...(isGraded && {
+        gradingCompany: gradingCompany,
+        grade: gradeValue
+      })
     };
     
     if (isToWishlist) {
@@ -291,7 +303,6 @@ const Collection = () => {
       });
     }
     
-    // Reset form
     setSelectedCard(null);
     setSearchCardQuery("");
     setSearchResults([]);
@@ -299,31 +310,30 @@ const Collection = () => {
     setNewCardEstValue("");
     setIsToWishlist(false);
     setIsTradable(false);
+    setIsGraded(false);
+    setGradingCompany("PSA");
+    setGradeValue("9");
     setIsAddCardOpen(false);
   };
 
-  // Handle switching tabs
   const handleTabChange = (value) => {
     setSelectedTab(value);
   };
-  
-  // Quick action to add card to collection
+
   const handleQuickAddCard = () => {
     setIsToWishlist(false);
     setIsAddCardOpen(true);
   };
-  
-  // Quick action to add card to wishlist
+
   const handleQuickAddWishlist = () => {
     setIsToWishlist(true);
     setIsAddCardOpen(true);
   };
 
-  // Quick action to browse cards
   const handleQuickBrowseCards = () => {
     window.location.href = "/pokemon-cards";
   };
-  
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -343,7 +353,7 @@ const Collection = () => {
                 <TabsTrigger value="wishlist">Wishlist</TabsTrigger>
               </TabsList>
               
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Select value={sortOption} onValueChange={setSortOption}>
                   <SelectTrigger className="w-auto">
                     <SlidersHorizontal className="h-4 w-4 mr-2" />
@@ -388,6 +398,11 @@ const Collection = () => {
                     <SelectItem value="played">Played</SelectItem>
                   </SelectContent>
                 </Select>
+                
+                <GradedFilter 
+                  showGradedOnly={showGradedOnly}
+                  onGradedFilterChange={setShowGradedOnly}
+                />
                 
                 <Dialog open={isAddCardOpen} onOpenChange={setIsAddCardOpen}>
                   <DialogTrigger asChild>
@@ -437,7 +452,6 @@ const Collection = () => {
                                 alt={card.name} 
                                 className="h-10 w-8 object-cover rounded"
                                 onError={(e) => {
-                                  // TypeScript requires explicit casting of target to HTMLImageElement
                                   (e.target as HTMLImageElement).src = 'https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg';
                                 }}
                               />
@@ -458,7 +472,6 @@ const Collection = () => {
                               alt={selectedCard.name} 
                               className="h-24 w-auto object-contain rounded"
                               onError={(e) => {
-                                // TypeScript requires explicit casting of target to HTMLImageElement
                                 (e.target as HTMLImageElement).src = 'https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg';
                               }}
                             />
@@ -492,7 +505,6 @@ const Collection = () => {
                                         className="pl-6"
                                         value={newCardEstValue}
                                         onChange={(e) => {
-                                          // Only allow numbers
                                           const value = e.target.value.replace(/[^0-9-]/g, '');
                                           setNewCardEstValue(value);
                                         }}
@@ -500,16 +512,57 @@ const Collection = () => {
                                     </div>
                                   </div>
                                   
-                                  <div className="mt-2">
+                                  <div className="mt-2 space-y-2">
                                     <label className="flex items-center gap-2 cursor-pointer">
-                                      <input 
-                                        type="checkbox" 
+                                      <Checkbox 
+                                        id="tradable"
                                         checked={isTradable}
-                                        onChange={(e) => setIsTradable(e.target.checked)}
-                                        className="form-checkbox h-4 w-4"
+                                        onCheckedChange={(checked) => setIsTradable(!!checked)}
                                       />
                                       <span className="text-sm">Mark as tradable</span>
                                     </label>
+                                    
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                      <Checkbox 
+                                        id="graded"
+                                        checked={isGraded}
+                                        onCheckedChange={(checked) => setIsGraded(!!checked)}
+                                      />
+                                      <span className="text-sm">This card is graded</span>
+                                    </label>
+                                    
+                                    {isGraded && (
+                                      <div className="grid grid-cols-2 gap-2 mt-2 pl-6">
+                                        <Select value={gradingCompany} onValueChange={setGradingCompany}>
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Grading Company" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="PSA">PSA</SelectItem>
+                                            <SelectItem value="BGS">BGS</SelectItem>
+                                            <SelectItem value="CGC">CGC</SelectItem>
+                                            <SelectItem value="SGC">SGC</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                        
+                                        <Select value={gradeValue} onValueChange={setGradeValue}>
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Grade" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="10">10 (Gem Mint)</SelectItem>
+                                            <SelectItem value="9.5">9.5</SelectItem>
+                                            <SelectItem value="9">9</SelectItem>
+                                            <SelectItem value="8.5">8.5</SelectItem>
+                                            <SelectItem value="8">8</SelectItem>
+                                            <SelectItem value="7">7</SelectItem>
+                                            <SelectItem value="6">6</SelectItem>
+                                            <SelectItem value="5">5</SelectItem>
+                                            <SelectItem value="4">4 or below</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                    )}
                                   </div>
                                 </>
                               )}
