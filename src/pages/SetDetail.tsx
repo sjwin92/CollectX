@@ -1,7 +1,8 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { getSetById, PokemonSet } from "@/services/pokemonSetsApi";
+import { getSetById } from "@/services/api/pokemonSetsService";
+import { PokemonSet } from "@/services/api/pokemonTypes";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,7 @@ const SetDetail = () => {
   const handleViewCards = () => {
     if (id) {
       console.log(`Navigating to view cards for setId: ${id}`);
-      navigate(`/pokemon-cards?setId=${id}`);
+      navigate(`/pokemon-cards?setId=${encodeURIComponent(id)}`);
       toast({
         title: "Loading cards",
         description: `Loading cards from ${set?.name || 'set'}...`

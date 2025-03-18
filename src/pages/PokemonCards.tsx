@@ -6,7 +6,7 @@ import Footer from "@/components/layout/Footer";
 import PokemonCardSearch from "@/components/pokemon/PokemonCardSearch";
 import CardGrid from "@/components/cards/CardGrid";
 import { useToast } from "@/hooks/use-toast";
-import { getSetById } from "@/services/pokemonSetsApi";
+import { getSetById } from "@/services/api/pokemonSetsService";
 
 const PokemonCards = () => {
   const [searchParams] = useSearchParams();
@@ -73,7 +73,7 @@ const PokemonCards = () => {
           <PokemonCardSearch initialSetId={setId} />
         </div>
         
-        <CardGrid />
+        <CardGrid setId={setId} nameQuery={nameQuery} />
       </main>
       
       <Footer />

@@ -3,14 +3,13 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getAllSets } from "@/services/pokemonSetsApi";
+import { getAllSets } from "@/services/api/pokemonSetsService";
 import { Search } from "lucide-react";
-import { PokemonCard } from "@/services/pokemonTcgApi";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 interface PokemonCardSearchProps {
   initialSetId?: string | null;
-  onSelect?: (card: PokemonCard) => void;
+  onSelect?: (card: any) => void;
 }
 
 const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = null, onSelect }) => {
