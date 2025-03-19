@@ -7,11 +7,14 @@ export type TradeStatus =
   | "processing"
   | "escrowed"
   | "shipped"
+  | "received"
   | "completed"
   | "disputed"
   | "cancelled";
 
 export type UserReputation = "new" | "starter" | "established" | "trusted" | "elite";
+
+export type ReputationTier = "new" | "established" | "trusted" | "verified";
 
 export type Currency = "USD" | "EUR" | "GBP" | "AUD" | "CAD" | "JPY";
 
@@ -32,6 +35,13 @@ export interface TradeAmount {
   reputationDiscount: number;
   finalAmount: number;
   currency: Currency;
+}
+
+export interface EscrowCalculation {
+  baseAmount: number;
+  reputationDiscount: number;
+  finalAmount: number;
+  currency: string;
 }
 
 export interface TradeParticipant {
@@ -64,6 +74,7 @@ export interface TradeEscrow {
   updatedAt: string;
   completedAt?: string;
   shippingInfo?: ShippingInfo;
+  releaseCode?: string;
 }
 
 export interface TradeMessage {

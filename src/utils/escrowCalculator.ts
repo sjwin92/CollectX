@@ -1,5 +1,5 @@
 
-import { EscrowCalculation, ReputationTier } from "@/models/escrow";
+import { EscrowCalculation, ReputationTier, Currency } from "@/models/escrow";
 
 /**
  * Calculate the escrow amount required based on reputation tier and trade value
@@ -7,7 +7,7 @@ import { EscrowCalculation, ReputationTier } from "@/models/escrow";
 export const calculateEscrowAmount = (
   reputation: ReputationTier,
   tradeValue: number,
-  currency: string = "USD"
+  currency: Currency = "USD"
 ): EscrowCalculation => {
   // Base escrow rate by reputation tier (percentage of trade value)
   const escrowRates: Record<ReputationTier, number> = {
