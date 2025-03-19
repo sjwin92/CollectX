@@ -21,7 +21,7 @@ import CardGrid from "@/components/cards/CardGrid";
 import TradeOffer from "@/components/trades/TradeOffer";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
-import { getAllPossibleCardImageUrls } from "@/services/pokemonSetsApi";
+import { getAllPossibleCardImageUrls } from "@/services/api/cardImageService";
 
 const featuredCards = [
   {
@@ -29,28 +29,28 @@ const featuredCards = [
     name: "Charizard VMAX",
     rarity: "Ultra Rare",
     condition: "Near Mint",
-    estimatedValue: "$350-450"
+    estimatedValue: "£350-450"
   },
   {
     id: "swsh1-190", // Pikachu VMAX from Sword & Shield Base
     name: "Pikachu VMAX",
     rarity: "Rare",
     condition: "Mint",
-    estimatedValue: "$120-150"
+    estimatedValue: "£120-150"
   },
   {
     id: "sm12-222", // Mewtwo & Mew GX from Cosmic Eclipse
     name: "Mewtwo & Mew GX",
     rarity: "Ultra Rare",
     condition: "Excellent",
-    estimatedValue: "$200-250"
+    estimatedValue: "£200-250"
   },
   {
     id: "swsh9-25", // Blastoise VMAX from Brilliant Stars
     name: "Blastoise VMAX",
     rarity: "Rare Holo",
     condition: "Good",
-    estimatedValue: "$80-120"
+    estimatedValue: "£80-120"
   }
 ];
 
@@ -194,7 +194,7 @@ const Index = () => {
               </p>
             </div>
             <Button variant="ghost" className="hidden md:flex" asChild>
-              <Link to="/collection" className="flex items-center gap-1">
+              <Link to="/pokemon-cards" className="flex items-center gap-1">
                 View All <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
@@ -204,11 +204,12 @@ const Index = () => {
             cards={featuredCards} 
             columns={{ sm: 2, md: 3, lg: 4 }}
             animated
+            showCondition={true}
           />
           
           <div className="mt-8 text-center md:hidden">
             <Button asChild>
-              <Link to="/collection">View All Cards</Link>
+              <Link to="/pokemon-cards">View All Cards</Link>
             </Button>
           </div>
         </div>

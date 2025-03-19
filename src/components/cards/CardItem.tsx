@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -88,6 +89,23 @@ const CardItem = ({
     }
   };
 
+  // Format currency to ensure consistent display in GBP
+  const formatCurrency = (value: string): string => {
+    if (!value) return "£0";
+    
+    // If already in GBP format, return as is
+    if (value.startsWith("£")) return value;
+    
+    // If it's a range like "$100-$150" convert both values
+    if (value.includes("-")) {
+      const parts = value.replace(/\$/g, '').split("-");
+      return `£${parts[0].trim()}-£${parts[1].trim()}`;
+    }
+    
+    // If it's a plain number with $ or without currency
+    return value.replace(/\$/, "£").replace(/^([0-9.]+)$/, "£$1");
+  };
+
   const CardContent = (
     <GlassCard 
       className={cn("overflow-hidden group h-full", className)}
@@ -147,7 +165,7 @@ const CardItem = ({
                     <p><strong>Card:</strong> {name}</p>
                     <p><strong>Rarity:</strong> {rarity}</p>
                     {showCondition && <p><strong>Condition:</strong> {condition}</p>}
-                    <p><strong>Value:</strong> {estimatedValue}</p>
+                    <p><strong>Value:</strong> {formatCurrency(estimatedValue)}</p>
                     <p><strong>ID:</strong> {id}</p>
                   </div>
                 </TooltipContent>
@@ -166,7 +184,7 @@ const CardItem = ({
           <Badge variant="outline" size="sm">
             {rarity}
           </Badge>
-          <span className="text-xs font-medium">{estimatedValue}</span>
+          <span className="text-xs font-medium">{formatCurrency(estimatedValue)}</span>
         </div>
       </div>
     </GlassCard>

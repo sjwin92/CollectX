@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import CardItem, { CardItemProps } from "./CardItem";
@@ -39,6 +40,12 @@ const CardGrid: React.FC<CardGridProps> = ({
   const effectiveSetId = setId || searchParams.get('setId');
   const nameQuery = searchParams.get('name') || '';
   
+  // Format currency values to GBP
+  const formatToGBP = (value: number | null | undefined): string => {
+    if (value === null || value === undefined) return "N/A";
+    return `£${value.toFixed(2)}`;
+  };
+  
   const loadCards = async (pageNum = 1, append = false) => {
     if (cards) {
       setLoadedCards(cards);
@@ -69,17 +76,20 @@ const CardGrid: React.FC<CardGridProps> = ({
         const formattedCards: CardItemProps[] = response.data.map(card => {
           const imgUrl = card.images?.small || card.images?.large || null;
           
+          // Get the price in the correct format
+          const price = card.tcgplayer?.prices?.holofoil?.market
+            ? formatToGBP(card.tcgplayer.prices.holofoil.market)
+            : card.tcgplayer?.prices?.normal?.market
+            ? formatToGBP(card.tcgplayer.prices.normal.market)
+            : "N/A";
+          
           return {
             id: card.id,
             name: card.name || "Unknown Card",
             imageUrl: imgUrl,
             rarity: card.rarity || "Unknown",
             condition: "Near Mint",
-            estimatedValue: card.tcgplayer?.prices?.holofoil?.market
-              ? `£${card.tcgplayer.prices.holofoil.market.toFixed(2)}`
-              : card.tcgplayer?.prices?.normal?.market
-              ? `£${card.tcgplayer.prices.normal.market.toFixed(2)}`
-              : "N/A"
+            estimatedValue: price
           };
         });
         

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { PokemonCard } from "@/services/pokemonTcgApi";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -6,7 +7,7 @@ import { formatCurrency } from "@/utils/escrowCalculator";
 import { Flame, Zap, Shield, TrendingUp, AlertTriangle, Check, Info, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { getAllPossibleCardImageUrls } from "@/services/pokemonSetsApi";
+import { getAllPossibleCardImageUrls } from "@/services/api/cardImageService";
 
 interface PokemonCardDetailProps {
   card: PokemonCard;
@@ -42,7 +43,7 @@ const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
       || card.tcgplayer.prices.normal?.market 
       || card.tcgplayer.prices.reverseHolofoil?.market;
       
-    return price ? formatCurrency(price) : null;
+    return price ? formatCurrency(price, 'en-GB', 'GBP') : null;
   };
   
   const handleImageLoad = () => {
