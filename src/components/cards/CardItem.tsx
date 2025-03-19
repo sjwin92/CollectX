@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -7,19 +6,19 @@ import { cn } from "@/lib/utils";
 import { Info, AlertTriangle, Check, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { getAllPossibleCardImageUrls } from "@/services/api/cardImageService";
+import { getAllPossibleCardImageUrls, getConsistentCardImageUrl } from "@/services/api/cardImageService";
 
 export interface CardItemProps {
   id: string;
   name: string;
-  imageUrl?: string;  // Made optional since we'll fetch from sets API if not provided
+  imageUrl?: string;
   rarity: string;
   condition: string;
   estimatedValue: string;
   className?: string;
   animation?: "fade" | "scale" | "slide" | "none";
   onClick?: () => void;
-  showCondition?: boolean; // New prop to control condition badge visibility
+  showCondition?: boolean;
 }
 
 const CardItem = ({
@@ -32,7 +31,7 @@ const CardItem = ({
   className,
   animation = "none",
   onClick,
-  showCondition = true // Default to true for backward compatibility
+  showCondition = true
 }: CardItemProps) => {
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
   const [imageSrc, setImageSrc] = useState<string>("");
@@ -43,20 +42,27 @@ const CardItem = ({
     setImageStatus("loading");
     setRetryCount(0);
     
-    const allPossibleImages = getAllPossibleCardImageUrls(id);
-    console.log(`Got ${allPossibleImages.length} alternative images for card ${id}`);
+    // First try the direct imageUrl if provided
+    let initialSource = imageUrl;
     
-    let uniqueSources = [...allPossibleImages];
-    if (imageUrl && !allPossibleImages.includes(imageUrl)) {
-      uniqueSources.unshift(imageUrl); // Put provided URL first
+    // If no direct URL, get a reliable URL based on card ID
+    if (!initialSource && id) {
+      initialSource = getConsistentCardImageUrl(id);
     }
     
+    // Set this as our primary image source
+    setImageSrc(initialSource || "");
+    
+    // Get all possible alternative URLs as fallbacks
+    const allPossibleImages = getAllPossibleCardImageUrls(id);
+    
+    // Create a unique list of image sources (remove duplicates)
+    let uniqueSources = [initialSource, ...allPossibleImages].filter(Boolean);
+    uniqueSources = [...new Set(uniqueSources)] as string[];
+    
+    console.log(`CardItem ${id}: Found ${uniqueSources.length} potential image sources`);
     setAlternativeImages(uniqueSources);
     
-    if (uniqueSources.length > 0) {
-      setImageSrc(uniqueSources[0]);
-      console.log(`Initial image source: ${uniqueSources[0]}`);
-    }
   }, [id, imageUrl]);
   
   const handleImageLoad = () => {
@@ -71,17 +77,18 @@ const CardItem = ({
     
     if (nextIndex < alternativeImages.length) {
       console.log(`Trying alternative image source ${nextIndex}: ${alternativeImages[nextIndex]}`);
-      setTimeout(() => {
-        setRetryCount(nextIndex);
-        setImageSrc(alternativeImages[nextIndex]);
-      }, 500); // Reduced delay to try images faster
+      // Switch to the next image source immediately
+      setImageStatus("loading");
+      setRetryCount(nextIndex);
+      setImageSrc(alternativeImages[nextIndex]);
     } else {
       setImageStatus("error");
       console.log("All image sources failed for card:", id);
     }
   };
   
-  const retryImage = () => {
+  const retryImage = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     setImageStatus("loading");
     setRetryCount(0);
     if (alternativeImages.length > 0) {
@@ -220,6 +227,25 @@ const CardItem = ({
         return "info";
     }
   }
+
+  // Fast retry logic to prevent infinite buffering
+  useEffect(() => {
+    // If we've been in loading state for more than 3 seconds, try the next source
+    let timeoutId: number | undefined;
+    
+    if (imageStatus === "loading") {
+      timeoutId = window.setTimeout(() => {
+        if (imageStatus === "loading" && retryCount < alternativeImages.length - 1) {
+          console.log("Image loading timed out, trying next source");
+          handleImageError();
+        }
+      }, 3000);
+    }
+    
+    return () => {
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+  }, [imageStatus, retryCount, alternativeImages.length]);
 };
 
 export default CardItem;

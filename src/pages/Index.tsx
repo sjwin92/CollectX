@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -21,39 +22,45 @@ import CardGrid from "@/components/cards/CardGrid";
 import TradeOffer from "@/components/trades/TradeOffer";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
-import { getAllPossibleCardImageUrls } from "@/services/api/cardImageService";
+import { getReliableImageUrl } from "@/services/api/pokemonCardsService";
 
+// Define featured cards with more consistent IDs and guaranteed image URLs
 const featuredCards = [
   {
-    id: "swsh4-25",  // Charizard VMAX from Vivid Voltage
+    id: "swsh4-25",
     name: "Charizard VMAX",
+    imageUrl: getReliableImageUrl("swsh4-25"),
     rarity: "Ultra Rare",
     condition: "Near Mint",
-    estimatedValue: "£350-450"
+    estimatedValue: "£350"
   },
   {
-    id: "swsh1-190", // Pikachu VMAX from Sword & Shield Base
+    id: "swsh1-190",
     name: "Pikachu VMAX",
+    imageUrl: getReliableImageUrl("swsh1-190"),
     rarity: "Rare",
     condition: "Mint",
-    estimatedValue: "£120-150"
+    estimatedValue: "£120"
   },
   {
-    id: "sm12-222", // Mewtwo & Mew GX from Cosmic Eclipse
+    id: "sm12-222",
     name: "Mewtwo & Mew GX",
+    imageUrl: getReliableImageUrl("sm12-222"),
     rarity: "Ultra Rare",
     condition: "Excellent",
-    estimatedValue: "£200-250"
+    estimatedValue: "£200"
   },
   {
-    id: "swsh9-25", // Blastoise VMAX from Brilliant Stars
+    id: "swsh9-25",
     name: "Blastoise VMAX",
+    imageUrl: getReliableImageUrl("swsh9-25"),
     rarity: "Rare Holo",
     condition: "Good",
-    estimatedValue: "£80-120"
+    estimatedValue: "£80"
   }
 ];
 
+// Use the reliable image service for trade previews
 const recentTrades = [
   {
     id: "t1",
@@ -66,11 +73,11 @@ const recentTrades = [
     },
     giving: {
       count: 2,
-      preview: getAllPossibleCardImageUrls("swsh4-25")[0] // Use the first reliable URL
+      preview: getReliableImageUrl("swsh4-25")
     },
     receiving: {
       count: 3,
-      preview: getAllPossibleCardImageUrls("swsh1-190")[0] // Use the first reliable URL
+      preview: getReliableImageUrl("swsh1-190")
     }
   },
   {
@@ -84,11 +91,11 @@ const recentTrades = [
     },
     giving: {
       count: 1,
-      preview: getAllPossibleCardImageUrls("swsh9-25")[0] // Use the first reliable URL
+      preview: getReliableImageUrl("swsh9-25")
     },
     receiving: {
       count: 1,
-      preview: getAllPossibleCardImageUrls("sm12-222")[0] // Use the first reliable URL
+      preview: getReliableImageUrl("sm12-222")
     }
   }
 ];
