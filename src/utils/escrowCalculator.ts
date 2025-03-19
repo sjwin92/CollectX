@@ -7,7 +7,7 @@ import { EscrowCalculation, ReputationTier, Currency } from "@/models/escrow";
 export const calculateEscrowAmount = (
   reputation: ReputationTier,
   tradeValue: number,
-  currency: Currency = "USD"
+  currency: Currency = "GBP"
 ): EscrowCalculation => {
   // Base escrow rate by reputation tier (percentage of trade value)
   const escrowRates: Record<ReputationTier, number> = {
@@ -33,8 +33,8 @@ export const calculateEscrowAmount = (
 /**
  * Format currency values for display
  */
-export const formatCurrency = (amount: number, currency: string = "USD"): string => {
-  return new Intl.NumberFormat('en-US', {
+export const formatCurrency = (amount: number, currency: string = "GBP"): string => {
+  return new Intl.NumberFormat('en-GB', {
     style: 'currency',
     currency,
     minimumFractionDigits: 2
