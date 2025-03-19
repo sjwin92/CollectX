@@ -1,26 +1,53 @@
 
-export type TradeStatus = 
-  | "proposed" 
-  | "accepted" 
-  | "processing" 
-  | "escrowed" 
-  | "shipped" 
-  | "received" 
-  | "completed" 
-  | "disputed" 
-  | "cancelled" 
-  | "pending" 
-  | "declined";
+export type TradeStatus =
+  | "proposed"
+  | "accepted"
+  | "declined"
+  | "pending"
+  | "processing"
+  | "escrowed"
+  | "shipped"
+  | "completed"
+  | "disputed"
+  | "cancelled";
 
-export type ReputationTier = "new" | "established" | "trusted" | "verified";
+export type UserReputation = "new" | "starter" | "established" | "trusted" | "elite";
 
-export interface EscrowCalculation {
+export type Currency = "USD" | "EUR" | "GBP" | "AUD" | "CAD" | "JPY";
+
+export interface TradeCard {
+  id: string;
+  name: string;
+  imageUrl: string;
+  condition: string;
+  estimatedValue: number;
+  currency: Currency;
+  graded?: boolean;
+  gradingCompany?: string;
+  grade?: string;
+}
+
+export interface TradeAmount {
   baseAmount: number;
   reputationDiscount: number;
   finalAmount: number;
-  currency: string;
-  // Backward compatibility for existing code
-  feeAmount?: number;
+  currency: Currency;
+}
+
+export interface TradeParticipant {
+  userId: string;
+  username: string;
+  reputation: UserReputation;
+  tradeCount: number;
+  successRate: number;
+  offeringCards: TradeCard[];
+  escrowAmount: TradeAmount;
+}
+
+export interface ShippingInfo {
+  carrier: string;
+  trackingNumber: string;
+  estimatedDelivery?: string;
 }
 
 export interface TradeEscrow {
@@ -29,50 +56,14 @@ export interface TradeEscrow {
   status: TradeStatus;
   initiatorId: string;
   recipientId: string;
-  initiatorEscrowAmount: EscrowCalculation;
-  recipientEscrowAmount: EscrowCalculation;
+  initiatorEscrowAmount: TradeAmount;
+  recipientEscrowAmount: TradeAmount;
   initiatorPaid: boolean;
   recipientPaid: boolean;
   createdAt: string;
   updatedAt: string;
-  releaseCode?: string;
   completedAt?: string;
-  shippingInfo?: {
-    trackingNumber: string;
-    carrier: string;
-    estimatedDelivery?: string;
-  };
-}
-
-export interface TradeParticipant {
-  userId: string;
-  username: string;
-  reputation: ReputationTier;
-  tradeCount?: number;
-  successRate?: number;
-  offeringCards: TradeCard[];
-  escrowAmount: EscrowCalculation;
-}
-
-export interface TradeCard {
-  id: string;
-  name: string;
-  imageUrl: string;
-  condition: string;
-  estimatedValue: number;
-  currency: string;
-  rarity?: string; // Making rarity property explicit
-}
-
-export interface TradeProposal {
-  id: string;
-  status: TradeStatus;
-  initiator: TradeParticipant;
-  recipient: TradeParticipant;
-  escrow?: TradeEscrow;
-  messages: TradeMessage[];
-  createdAt: string;
-  updatedAt: string;
+  shippingInfo?: ShippingInfo;
 }
 
 export interface TradeMessage {
@@ -83,4 +74,16 @@ export interface TradeMessage {
   message: string;
   createdAt: string;
   systemMessage: boolean;
+  imageUrl: string | null;
+}
+
+export interface TradeProposal {
+  id: string;
+  status: TradeStatus;
+  createdAt: string;
+  updatedAt: string;
+  initiator: TradeParticipant;
+  recipient: TradeParticipant;
+  escrow: TradeEscrow | null;
+  messages: TradeMessage[];
 }

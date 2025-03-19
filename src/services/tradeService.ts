@@ -1,4 +1,3 @@
-
 import { TradeProposal, TradeStatus, TradeMessage } from "@/models/escrow";
 import { v4 as uuidv4 } from 'uuid';
 import { getCardById, mapToTradeCard } from './tcgdexApi';
@@ -11,6 +10,15 @@ const CARD_IDS = {
   BLASTOISE_VMAX: 'swsh35-22',
   BLASTOISE_HOLO: 'base2-2',
 };
+
+// Mock image storage
+const mockImages = [
+  "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg",
+  "https://i.imgur.com/ZZD8nya.jpeg",
+  "https://i.imgur.com/2vkGOXi.jpeg",
+  "https://i.imgur.com/EBgfOTU.jpeg",
+  "https://i.imgur.com/yEJSVSx.jpeg"
+];
 
 const initializeMockTrades = async () => {
   try {
@@ -101,7 +109,8 @@ const initializeMockTrades = async () => {
             username: "Alex Morgan",
             message: `I'm interested in your Pikachu VMAX. Would you trade it for my Charizard GX?`,
             createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-            systemMessage: false
+            systemMessage: false,
+            imageUrl: null
           },
           {
             id: "m2",
@@ -110,7 +119,8 @@ const initializeMockTrades = async () => {
             username: "Jordan Lee",
             message: `I'd prefer to include my Mewtwo EX and Blastoise VMAX in the deal. Could you add your Venusaur V?`,
             createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 30 * 60 * 1000).toISOString(),
-            systemMessage: false
+            systemMessage: false,
+            imageUrl: null
           },
           {
             id: "m3",
@@ -119,7 +129,18 @@ const initializeMockTrades = async () => {
             username: "Alex Morgan",
             message: "That sounds fair to me. Let's do it!",
             createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(),
-            systemMessage: false
+            systemMessage: false,
+            imageUrl: null
+          },
+          {
+            id: "m4",
+            tradeId: "t1",
+            userId: "u2",
+            username: "Jordan Lee",
+            message: "Here's a close-up of the Pikachu card so you can see the condition",
+            createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000).toISOString(),
+            systemMessage: false,
+            imageUrl: mockImages[1]
           }
         ]
       },
@@ -169,7 +190,18 @@ const initializeMockTrades = async () => {
             username: "Jordan Lee",
             message: `Hi, would you be interested in trading your Mewtwo EX for my Blastoise Holo?`,
             createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-            systemMessage: false
+            systemMessage: false,
+            imageUrl: null
+          },
+          {
+            id: "m5",
+            tradeId: "t2",
+            userId: "u2",
+            username: "Jordan Lee",
+            message: "Here's the Blastoise card's condition",
+            createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+            systemMessage: false,
+            imageUrl: mockImages[2]
           }
         ]
       }
@@ -236,7 +268,8 @@ const createFallbackTrades = () => {
           username: "Alex Morgan",
           message: "API is currently unavailable. This is a placeholder trade.",
           createdAt: new Date().toISOString(),
-          systemMessage: true
+          systemMessage: true,
+          imageUrl: null
         }
       ]
     }
@@ -254,7 +287,7 @@ export const getTradeProposal = async (id: string): Promise<TradeProposal> => {
   return trade;
 };
 
-export const addTradeMessage = async (tradeId: string, message: string): Promise<void> => {
+export const addTradeMessage = async (tradeId: string, message: string, imageUrl: string | null = null): Promise<void> => {
   const trades = await mockTradesPromise;
   const trade = trades[tradeId];
   if (!trade) {
@@ -264,11 +297,12 @@ export const addTradeMessage = async (tradeId: string, message: string): Promise
   const newMessage: TradeMessage = {
     id: uuidv4(),
     tradeId: tradeId,
-    userId: "currentUser",
+    userId: "user-1", // Using the current user ID from useUser hook
     username: "Current User",
     message,
     createdAt: new Date().toISOString(),
-    systemMessage: false
+    systemMessage: false,
+    imageUrl
   };
   
   trade.messages.push(newMessage);
@@ -431,4 +465,13 @@ export const releaseTradeEscrow = async (tradeId: string): Promise<void> => {
   }
   
   return Promise.resolve();
+};
+
+export const uploadTradeImage = async (file: File): Promise<string> => {
+  // In a real app, this would upload to a storage service and return the URL
+  console.log("Simulating image upload:", file.name);
+  
+  // For demonstration, return a random mock image URL
+  const randomIndex = Math.floor(Math.random() * mockImages.length);
+  return Promise.resolve(mockImages[randomIndex]);
 };

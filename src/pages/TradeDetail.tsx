@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +29,10 @@ import {
   ArrowLeft,
   MessageSquare,
   Loader2,
+  Image,
+  X,
+  Paperclip,
+  SendHorizontal,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { formatCurrency } from "@/utils/escrowCalculator";
@@ -42,6 +46,7 @@ import {
   payRecipientEscrow,
   releaseTradeEscrow,
   updateShippingInfo,
+  uploadTradeImage,
 } from "@/services/tradeService";
 import { TradeStatus, TradeProposal } from "@/models/escrow";
 import { Separator } from "@/components/ui/separator";
@@ -55,12 +60,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { useUser } from "@/hooks/useUser";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface TradeDetailProps {}
 
@@ -73,6 +79,11 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
   const [trackingNumber, setTrackingNumber] = useState("");
   const [estimatedDelivery, setEstimatedDelivery] = useState<Date | undefined>(undefined);
   const [isShippingEditMode, setIsShippingEditMode] = useState(false);
+  
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isShowingLightbox, setIsShowingLightbox] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     data: trade,
@@ -87,11 +98,36 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
   });
 
   const {
-    mutate: sendMessage,
+    mutate: uploadImage,
+    isPending: isUploadingImage,
+    isError: isUploadImageError,
+  } = useMutation({
+    mutationFn: (file: File) => uploadTradeImage(file),
+    onSuccess: (imageUrl) => {
+      if (newMessage.trim() === '') {
+        sendMessage("I've shared an image with you.", imageUrl);
+      } else {
+        sendMessage(newMessage, imageUrl);
+      }
+      setSelectedImage(null);
+      setImagePreview(null);
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Upload failed",
+        description: "There was a problem uploading your image.",
+      });
+    },
+  });
+
+  const {
+    mutate: sendMessageMutation,
     isPending: isSendingMessage,
     isError: isSendMessageError,
   } = useMutation({
-    mutationFn: (message: string) => addTradeMessage(tradeId!, message),
+    mutationFn: ({ message, imageUrl }: { message: string; imageUrl: string | null }) => 
+      addTradeMessage(tradeId!, message, imageUrl),
     onSuccess: () => {
       setNewMessage("");
       refetch();
@@ -104,6 +140,47 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
       });
     },
   });
+
+  const sendMessage = (message: string, imageUrl: string | null = null) => {
+    sendMessageMutation({ message, imageUrl });
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedImage(file);
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeSelectedImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleAttachImage = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleSendMessage = () => {
+    if (!newMessage.trim() && !selectedImage) return;
+    
+    if (selectedImage) {
+      uploadImage(selectedImage);
+    } else {
+      sendMessage(newMessage);
+    }
+  };
 
   const {
     mutate: acceptTrade,
@@ -328,6 +405,25 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
 
   return (
     <div className="container py-12">
+      {isShowingLightbox && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setIsShowingLightbox(null)}>
+          <div className="bg-background rounded-lg overflow-hidden max-w-3xl w-full">
+            <div className="p-4 flex justify-between items-center border-b">
+              <h3 className="font-medium">Image Preview</h3>
+              <Button variant="ghost" size="icon" onClick={(e) => {
+                e.stopPropagation();
+                setIsShowingLightbox(null);
+              }}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="p-4 flex justify-center">
+              <img src={isShowingLightbox} alt="Expanded view" className="max-h-[70vh] object-contain" />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mb-8 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link to="/trades" className="text-muted-foreground hover:underline">
@@ -341,7 +437,6 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
 
       <GlassCard className="mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Initiator */}
           <div>
             <div className="text-xs text-muted-foreground mb-1">
               You're giving:
@@ -392,7 +487,6 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
             </div>
           </div>
 
-          {/* Recipient */}
           <div>
             <div className="text-xs text-muted-foreground mb-1">
               You're receiving:
@@ -445,7 +539,6 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
         </div>
       </GlassCard>
 
-      {/* Escrow Status (if applicable) */}
       {trade.escrow && (
         <GlassCard className="mb-6">
           <div className="p-4">
@@ -541,7 +634,6 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
         </GlassCard>
       )}
 
-      {/* Shipping Information */}
       {showShippingInfo && (
         <GlassCard className="mb-6">
           <div className="p-4">
@@ -648,7 +740,6 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
         </GlassCard>
       )}
 
-      {/* Progress tracker */}
       {!["declined", "disputed", "cancelled"].includes(trade.status) && (
         <GlassCard className="mb-6">
           <div className="relative p-6">
@@ -709,7 +800,6 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
         </GlassCard>
       )}
 
-      {/* Action Buttons */}
       <GlassCard className="mb-6">
         <div className="flex items-center justify-around p-4">
           {canAccept && (
@@ -755,7 +845,6 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
         </div>
       </GlassCard>
 
-      {/* Chat */}
       <GlassCard>
         <div className="p-4">
           <h3 className="text-lg font-medium mb-4">Trade Chat</h3>
@@ -772,7 +861,19 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
                   <div className="text-xs text-muted-foreground">
                     {msg.userId === user?.id ? "You" : msg.username}
                   </div>
-                  <div>{msg.message}</div>
+                  {msg.message && <div className="mb-2">{msg.message}</div>}
+                  {msg.imageUrl && (
+                    <div 
+                      className="cursor-pointer rounded-md overflow-hidden mb-2"
+                      onClick={() => setIsShowingLightbox(msg.imageUrl)}
+                    >
+                      <img 
+                        src={msg.imageUrl} 
+                        alt="Trade image" 
+                        className="max-h-48 object-cover"
+                      />
+                    </div>
+                  )}
                   <div className="text-xs text-muted-foreground">
                     {format(new Date(msg.createdAt), "Pp")}
                   </div>
@@ -780,35 +881,6 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
               ))}
             </div>
           </ScrollArea>
-          <div className="flex items-center">
-            <Input
-              type="text"
-              placeholder="Type your message here..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              className="mr-2"
-            />
-            <Button
-              onClick={() => sendMessage(newMessage)}
-              disabled={isSendingMessage}
-            >
-              {isSendingMessage ? (
-                <>
-                  Sending...
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                </>
-              ) : (
-                <>
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  Send
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      </GlassCard>
-    </div>
-  );
-};
+          
+          <
 
-export default TradeDetail;

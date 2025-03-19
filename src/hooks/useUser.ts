@@ -9,8 +9,8 @@ export interface User {
 export function useUser() {
   // This is a mock implementation
   const user: User = {
-    id: "user-1",
-    username: "MockUser",
+    id: "user-1", // Use this ID to match messages from the current user
+    username: "Current User",
     email: "user@example.com"
   };
   
