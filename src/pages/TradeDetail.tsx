@@ -882,5 +882,69 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
             </div>
           </ScrollArea>
           
-          <
+          <div className="flex items-end gap-2">
+            <input 
+              type="file" 
+              className="hidden" 
+              ref={fileInputRef}
+              accept="image/*" 
+              onChange={handleImageSelect} 
+            />
+            
+            {imagePreview ? (
+              <div className="relative h-20 w-20 rounded-md overflow-hidden border border-border">
+                <img 
+                  src={imagePreview} 
+                  alt="Selected" 
+                  className="h-full w-full object-cover" 
+                />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute top-0 right-0 bg-black/50 rounded-full h-5 w-5 p-0.5"
+                  onClick={removeSelectedImage}
+                >
+                  <X className="h-3 w-3 text-white" />
+                </Button>
+              </div>
+            ) : (
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="h-10 w-10"
+                onClick={handleAttachImage}
+              >
+                <Paperclip className="h-4 w-4" />
+              </Button>
+            )}
+            
+            <Textarea
+              placeholder="Type your message..."
+              className="flex-1 resize-none"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+            />
+            <Button 
+              onClick={handleSendMessage} 
+              disabled={(!newMessage.trim() && !selectedImage) || isSendingMessage || isUploadingImage}
+            >
+              {(isSendingMessage || isUploadingImage) ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <SendHorizontal className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        </div>
+      </GlassCard>
+    </div>
+  );
+};
 
+export default TradeDetail;
