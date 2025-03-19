@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { PokemonCard } from "@/services/pokemonTcgApi";
 import GlassCard from "@/components/ui/custom/GlassCard";

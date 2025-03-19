@@ -5,6 +5,7 @@ import { getCardById } from "@/services/pokemonTcgApi";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import PokemonCardDetail from "@/components/pokemon/PokemonCardDetail";
+import QuickAddToCollection from "@/components/pokemon/QuickAddToCollection";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, AlertTriangle, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -116,6 +117,10 @@ const CardDetail = () => {
         </div>
         
         <PokemonCardDetail card={card} />
+        
+        <div className="mt-6">
+          <QuickAddToCollection card={card} />
+        </div>
       </div>
       <Footer />
     </div>
