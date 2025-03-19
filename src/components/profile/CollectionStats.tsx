@@ -2,6 +2,7 @@
 import React from "react";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import { CardItemProps } from "@/components/cards/CardItem";
+import { formatCurrency } from "@/utils/escrowCalculator";
 
 interface CollectionStatsProps {
   collection: CardItemProps[];
@@ -23,14 +24,14 @@ const CollectionStats = ({ collection }: CollectionStatsProps) => {
     let maxTotal = 0;
     
     collection.forEach(card => {
-      const valueRange = card.estimatedValue.replace('$', '').split('-');
+      const valueRange = card.estimatedValue.replace('£', '').replace('$', '').split('-');
       if (valueRange.length === 2) {
         minTotal += Number(valueRange[0]);
         maxTotal += Number(valueRange[1]);
       }
     });
     
-    return `$${minTotal.toLocaleString()}-${maxTotal.toLocaleString()}`;
+    return `${formatCurrency(minTotal)}-${formatCurrency(maxTotal)}`;
   };
 
   return (

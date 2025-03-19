@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -33,7 +32,7 @@ export interface TradeOfferProps {
   escrowPaid?: boolean;
 }
 
-const TradeOffer = ({
+const TradeListing = ({
   id,
   status,
   date,
@@ -93,9 +92,9 @@ const TradeOffer = ({
 
   const formatCurrency = (value?: number, currency?: string): string => {
     if (value === undefined) return "";
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-GB', {
       style: 'currency',
-      currency: currency || 'USD'
+      currency: currency || 'GBP'
     }).format(value);
   };
 
@@ -254,4 +253,4 @@ const TradeOffer = ({
   );
 };
 
-export default TradeOffer;
+export default TradeListing;

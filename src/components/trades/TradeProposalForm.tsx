@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -112,7 +111,7 @@ const TradeProposalForm = ({
                 <div className="flex justify-between pt-2 border-t border-border">
                   <span className="text-sm font-medium">Total Value:</span>
                   <span className="text-sm font-medium">
-                    {formatCurrency(myTotalValue, "USD")}
+                    {formatCurrency(myTotalValue, "GBP")}
                   </span>
                 </div>
               </div>
@@ -195,7 +194,7 @@ const TradeProposalForm = ({
                 <div className="flex justify-between pt-2 border-t border-border">
                   <span className="text-sm font-medium">Total Value:</span>
                   <span className="text-sm font-medium">
-                    {formatCurrency(theirTotalValue, "USD")}
+                    {formatCurrency(theirTotalValue, "GBP")}
                   </span>
                 </div>
               </div>
@@ -264,7 +263,7 @@ const TradeProposalForm = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div className="text-center">
             <div className="text-sm text-muted-foreground mb-1">You're Offering</div>
-            <div className="text-xl font-medium">{formatCurrency(myTotalValue, "USD")}</div>
+            <div className="text-xl font-medium">{formatCurrency(myTotalValue, "GBP")}</div>
             <div className="text-xs text-muted-foreground">{mySelectedCards.length} card(s)</div>
           </div>
           
@@ -274,7 +273,7 @@ const TradeProposalForm = ({
           
           <div className="text-center">
             <div className="text-sm text-muted-foreground mb-1">You're Receiving</div>
-            <div className="text-xl font-medium">{formatCurrency(theirTotalValue, "USD")}</div>
+            <div className="text-xl font-medium">{formatCurrency(theirTotalValue, "GBP")}</div>
             <div className="text-xs text-muted-foreground">{theirSelectedCards.length} card(s)</div>
           </div>
         </div>
@@ -284,8 +283,8 @@ const TradeProposalForm = ({
             <DollarSign className={`h-4 w-4 inline-block mr-1 ${isBalanced ? 'text-green-500' : 'text-yellow-500'}`} />
             <span className="text-sm">
               {isBalanced 
-                ? `Value difference of ${formatCurrency(valueDifference, "USD")} is acceptable`
-                : `Value difference of ${formatCurrency(valueDifference, "USD")} may be unbalanced`}
+                ? `Value difference of ${formatCurrency(valueDifference, "GBP")} is acceptable`
+                : `Value difference of ${formatCurrency(valueDifference, "GBP")} may be unbalanced`}
             </span>
           </div>
         )}
