@@ -43,7 +43,7 @@ const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
       || card.tcgplayer.prices.normal?.market 
       || card.tcgplayer.prices.reverseHolofoil?.market;
       
-    return price ? formatCurrency(price, 'en-GB', 'GBP') : null;
+    return price ? formatCurrency(price) : null;
   };
   
   const handleImageLoad = () => {
