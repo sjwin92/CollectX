@@ -73,7 +73,7 @@ const PokemonCards = () => {
           <PokemonCardSearch initialSetId={setId} />
         </div>
         
-        <CardGrid setId={setId} />
+        <CardGrid setId={setId} showCondition={false} />
       </main>
       
       <Footer />

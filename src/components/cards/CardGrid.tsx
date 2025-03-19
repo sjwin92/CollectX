@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import CardItem, { CardItemProps } from "./CardItem";
@@ -18,6 +17,7 @@ interface CardGridProps {
   };
   animated?: boolean;
   staggered?: boolean;
+  showCondition?: boolean;
 }
 
 const CardGrid: React.FC<CardGridProps> = ({ 
@@ -25,7 +25,8 @@ const CardGrid: React.FC<CardGridProps> = ({
   cards = undefined,
   columns = { sm: 2, md: 3, lg: 4, xl: 5 },
   animated = false,
-  staggered = false
+  staggered = false,
+  showCondition = true
 }) => {
   const [loadedCards, setLoadedCards] = useState<CardItemProps[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,7 +41,6 @@ const CardGrid: React.FC<CardGridProps> = ({
   
   const loadCards = async (pageNum = 1, append = false) => {
     if (cards) {
-      // If cards are provided as props, use them instead of fetching
       setLoadedCards(cards);
       setIsLoading(false);
       return;
@@ -67,7 +67,6 @@ const CardGrid: React.FC<CardGridProps> = ({
         console.log(`Received ${response.data.length} cards from API`);
         
         const formattedCards: CardItemProps[] = response.data.map(card => {
-          // Extract the best image URL directly from the card
           const imgUrl = card.images?.small || card.images?.large || null;
           
           return {
@@ -77,9 +76,9 @@ const CardGrid: React.FC<CardGridProps> = ({
             rarity: card.rarity || "Unknown",
             condition: "Near Mint",
             estimatedValue: card.tcgplayer?.prices?.holofoil?.market
-              ? `$${card.tcgplayer.prices.holofoil.market.toFixed(2)}`
+              ? `£${card.tcgplayer.prices.holofoil.market.toFixed(2)}`
               : card.tcgplayer?.prices?.normal?.market
-              ? `$${card.tcgplayer.prices.normal.market.toFixed(2)}`
+              ? `£${card.tcgplayer.prices.normal.market.toFixed(2)}`
               : "N/A"
           };
         });
@@ -93,7 +92,6 @@ const CardGrid: React.FC<CardGridProps> = ({
         setHasMore(formattedCards.length >= 20);
       } else {
         if (!append) {
-          // Only show this toast when not appending (i.e., on initial load)
           toast({
             title: "No cards found",
             description: "Try adjusting your search parameters",
@@ -163,7 +161,6 @@ const CardGrid: React.FC<CardGridProps> = ({
     );
   }
 
-  // Using template string for grid classes to avoid Tailwind purge issues
   const gridClasses = `grid grid-cols-${columns.sm || 2} md:grid-cols-${columns.md || 3} lg:grid-cols-${columns.lg || 4} xl:grid-cols-${columns.xl || 5} gap-4`;
 
   return (
@@ -180,6 +177,7 @@ const CardGrid: React.FC<CardGridProps> = ({
             estimatedValue={card.estimatedValue}
             animation={animated ? "fade" : "none"}
             onClick={() => handleCardClick(card.id)}
+            showCondition={showCondition}
           />
         ))}
       </div>

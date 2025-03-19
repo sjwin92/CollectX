@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -19,6 +18,7 @@ export interface CardItemProps {
   className?: string;
   animation?: "fade" | "scale" | "slide" | "none";
   onClick?: () => void;
+  showCondition?: boolean; // New prop to control condition badge visibility
 }
 
 const CardItem = ({
@@ -30,7 +30,8 @@ const CardItem = ({
   estimatedValue,
   className,
   animation = "none",
-  onClick
+  onClick,
+  showCondition = true // Default to true for backward compatibility
 }: CardItemProps) => {
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
   const [imageSrc, setImageSrc] = useState<string>("");
@@ -41,11 +42,9 @@ const CardItem = ({
     setImageStatus("loading");
     setRetryCount(0);
     
-    // Get all possible image URLs for this card
     const allPossibleImages = getAllPossibleCardImageUrls(id);
     console.log(`Got ${allPossibleImages.length} alternative images for card ${id}`);
     
-    // Add the provided imageUrl if it exists and isn't already in the list
     let uniqueSources = [...allPossibleImages];
     if (imageUrl && !allPossibleImages.includes(imageUrl)) {
       uniqueSources.unshift(imageUrl); // Put provided URL first
@@ -130,9 +129,11 @@ const CardItem = ({
           )}
           
           <div className="absolute top-2 right-2 flex gap-1">
-            <Badge variant={conditionVariant()} size="sm">
-              {condition}
-            </Badge>
+            {showCondition && (
+              <Badge variant={conditionVariant()} size="sm">
+                {condition}
+              </Badge>
+            )}
             
             <TooltipProvider>
               <Tooltip>
@@ -145,7 +146,7 @@ const CardItem = ({
                   <div className="text-xs space-y-1">
                     <p><strong>Card:</strong> {name}</p>
                     <p><strong>Rarity:</strong> {rarity}</p>
-                    <p><strong>Condition:</strong> {condition}</p>
+                    {showCondition && <p><strong>Condition:</strong> {condition}</p>}
                     <p><strong>Value:</strong> {estimatedValue}</p>
                     <p><strong>ID:</strong> {id}</p>
                   </div>
@@ -185,7 +186,6 @@ const CardItem = ({
     </Link>
   );
 
-  // Map condition to style
   function conditionVariant(): "success" | "warning" | "danger" | "info" {
     switch (condition.toLowerCase()) {
       case "mint":
