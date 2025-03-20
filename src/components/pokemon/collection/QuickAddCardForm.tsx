@@ -6,12 +6,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { quickAddFormSchema, QuickAddFormValues } from "./quickAddFormSchema";
 import { PokemonCard } from "@/services/pokemonTcgApi";
 import { useToast } from "@/hooks/use-toast";
-import { FormActionButtons } from "./FormActionButtons";
+import FormActionButtons from "./FormActionButtons";
 import QuantityField from "./QuantityField";
 import ConditionField from "./ConditionField";
 import CheckboxField from "./CheckboxField";
 import GradingFields from "./GradingFields";
 import TradeFields from "./TradeFields";
+import { ExtendedCardItemProps } from "@/types/cardTypes";
+import { addCardToCollection, addCardToTradable } from "@/services/collectionService";
 
 interface QuickAddCardFormProps {
   card: PokemonCard;
@@ -22,6 +24,7 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
   const { toast } = useToast();
   const [isGraded, setIsGraded] = useState(false);
   const [forTrade, setForTrade] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<QuickAddFormValues>({
     resolver: zodResolver(quickAddFormSchema),
@@ -35,21 +38,63 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
   });
   
   const onSubmit = (data: QuickAddFormValues) => {
-    // In a real app, this would save to a database
-    console.log("Adding to collection:", {
-      card: card.id,
-      cardName: card.name,
-      setId: card.set.id,
-      setName: card.set.name,
-      ...data
-    });
+    setIsSubmitting(true);
     
-    toast({
-      title: "Card added to collection!",
-      description: `Added ${data.quantity} ${card.name} card(s) to your collection`,
-    });
-    
-    onClose();
+    try {
+      // Create the card object to add to collection
+      const newCard: ExtendedCardItemProps = {
+        id: card.id,
+        name: card.name,
+        imageUrl: card.images?.small || card.images?.large || "",
+        rarity: card.rarity || "Unknown",
+        number: card.number || "",
+        condition: data.condition,
+        estimatedValue: "Unknown",
+        set: {
+          id: card.set.id,
+          name: card.set.name,
+        },
+        forTrade: data.forTrade,
+        graded: data.isGraded
+      };
+      
+      // Add grading info if card is graded
+      if (data.isGraded && data.gradingCompany && data.grade) {
+        newCard.gradingCompany = data.gradingCompany;
+        newCard.gradeScore = data.grade.toString();
+      }
+      
+      // Add trade preferences if marked for trade
+      if (data.forTrade && data.tradePreferences) {
+        newCard.tradePreferences = data.tradePreferences;
+      }
+      
+      console.log("Adding to collection:", newCard);
+      
+      // Add to collection
+      addCardToCollection(newCard);
+      
+      // Add to tradable cards if marked for trade
+      if (data.forTrade) {
+        addCardToTradable(newCard);
+      }
+      
+      toast({
+        title: "Card added to collection!",
+        description: `Added ${card.name} to your collection`,
+      });
+      
+      onClose();
+    } catch (error) {
+      console.error("Error adding card to collection:", error);
+      toast({
+        title: "Error adding card",
+        description: "There was a problem adding this card to your collection",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleGradedChange = (checked: boolean) => {
@@ -103,7 +148,8 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
         <div className="pt-4 flex justify-end space-x-2">
           <FormActionButtons 
             onCancel={onClose} 
-            submitLabel="Add to Collection" 
+            submitLabel="Add to Collection"
+            isSubmitting={isSubmitting}
           />
         </div>
       </form>

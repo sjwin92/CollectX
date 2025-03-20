@@ -19,6 +19,7 @@ const TradeFields = ({ form }: TradeFieldsProps) => {
     >
       <Input
         placeholder="What would you like to trade for?"
+        {...form.register("tradePreferences")}
       />
     </FormFieldWrapper>
   );

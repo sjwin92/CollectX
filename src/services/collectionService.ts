@@ -1,20 +1,33 @@
 
 import { ExtendedCardItemProps } from "@/types/cardTypes";
 import { queryClient } from "@/lib/react-query";
-import { useToast } from "@/hooks/use-toast";
+
+// Helper function to check if a card already exists in a collection
+const cardExistsInCollection = (collection: ExtendedCardItemProps[], cardId: string): boolean => {
+  return collection.some(card => card.id === cardId);
+};
+
+// Helper function to safely parse collection data from localStorage
+const safelyParseCollection = (key: string): ExtendedCardItemProps[] => {
+  const savedData = localStorage.getItem(key);
+  if (!savedData) return [];
+  
+  try {
+    return JSON.parse(savedData);
+  } catch (error) {
+    console.error(`Error parsing ${key} from localStorage:`, error);
+    return [];
+  }
+};
 
 export const addCardToCollection = (newCard: ExtendedCardItemProps): void => {
   // Get existing collection from localStorage
-  const savedCollection = localStorage.getItem('myCollection');
-  let collection: ExtendedCardItemProps[] = [];
+  let collection = safelyParseCollection('myCollection');
   
-  if (savedCollection) {
-    try {
-      collection = JSON.parse(savedCollection);
-    } catch (error) {
-      console.error("Error parsing collection", error);
-      collection = [];
-    }
+  // If card already exists, don't add it again
+  if (cardExistsInCollection(collection, newCard.id)) {
+    console.log("Card already exists in collection, not adding duplicate:", newCard.id);
+    return;
   }
   
   // Add new card to collection
@@ -31,16 +44,12 @@ export const addCardToCollection = (newCard: ExtendedCardItemProps): void => {
 export const addCardToTradable = (card: ExtendedCardItemProps): void => {
   if (!card.forTrade) return;
   
-  const savedTradable = localStorage.getItem('tradableCards');
-  let tradable: ExtendedCardItemProps[] = [];
+  let tradable = safelyParseCollection('tradableCards');
   
-  if (savedTradable) {
-    try {
-      tradable = JSON.parse(savedTradable);
-    } catch (error) {
-      console.error("Error parsing tradable cards", error);
-      tradable = [];
-    }
+  // If card already exists, don't add it again
+  if (cardExistsInCollection(tradable, card.id)) {
+    console.log("Card already exists in tradable cards, not adding duplicate:", card.id);
+    return;
   }
   
   tradable.push(card);
@@ -52,25 +61,33 @@ export const addCardToTradable = (card: ExtendedCardItemProps): void => {
 };
 
 export const getCollection = (): ExtendedCardItemProps[] => {
-  const savedCollection = localStorage.getItem('myCollection');
-  if (!savedCollection) return [];
-  
-  try {
-    return JSON.parse(savedCollection);
-  } catch (error) {
-    console.error("Error parsing collection", error);
-    return [];
-  }
+  return safelyParseCollection('myCollection');
 };
 
 export const getTradableCards = (): ExtendedCardItemProps[] => {
-  const savedTradable = localStorage.getItem('tradableCards');
-  if (!savedTradable) return [];
+  return safelyParseCollection('tradableCards');
+};
+
+// Debug function to inspect the current state of collections
+export const debugCollections = (): { collection: ExtendedCardItemProps[], tradable: ExtendedCardItemProps[] } => {
+  const collection = getCollection();
+  const tradable = getTradableCards();
   
-  try {
-    return JSON.parse(savedTradable);
-  } catch (error) {
-    console.error("Error parsing tradable cards", error);
-    return [];
-  }
+  console.log("DEBUG - Collection:", collection);
+  console.log("DEBUG - Tradable:", tradable);
+  
+  return { collection, tradable };
+};
+
+// Clear all collections (for testing)
+export const clearCollections = (): void => {
+  localStorage.removeItem('myCollection');
+  localStorage.removeItem('tradableCards');
+  localStorage.removeItem('wishlistCards');
+  
+  // Invalidate queries to refresh UI
+  queryClient.invalidateQueries({ queryKey: ['collection'] });
+  queryClient.invalidateQueries({ queryKey: ['tradableCards'] });
+  
+  console.log("All collections cleared from localStorage");
 };

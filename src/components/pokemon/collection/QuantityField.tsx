@@ -21,6 +21,7 @@ const QuantityField = ({ form }: QuantityFieldProps) => {
         type="number"
         placeholder="1"
         min={1}
+        {...form.register("quantity", { valueAsNumber: true })}
       />
     </FormFieldWrapper>
   );

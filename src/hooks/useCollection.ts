@@ -1,7 +1,8 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ExtendedCardItemProps } from "@/types/cardTypes";
 import { useLocation } from "react-router-dom";
+import { getCollection } from "@/services/collectionService";
 
 export const useCollection = (propCollection?: ExtendedCardItemProps[]) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -30,22 +31,11 @@ export const useCollection = (propCollection?: ExtendedCardItemProps[]) => {
     filterCards(searchQuery, showGradedOnly);
   }, [searchQuery, showGradedOnly, collection]);
   
-  const loadCollectionFromStorage = () => {
-    const savedCollection = localStorage.getItem('myCollection');
-    if (savedCollection) {
-      try {
-        const parsedCollection = JSON.parse(savedCollection);
-        console.log('Loaded collection from localStorage:', parsedCollection.length, 'cards');
-        setCollection(parsedCollection);
-      } catch (error) {
-        console.error('Error parsing collection from localStorage:', error);
-        setCollection([]);
-      }
-    } else {
-      console.log('No collection found in localStorage');
-      setCollection([]);
-    }
-  };
+  const loadCollectionFromStorage = useCallback(() => {
+    const loadedCollection = getCollection();
+    console.log('Loaded collection from localStorage:', loadedCollection.length, 'cards');
+    setCollection(loadedCollection);
+  }, []);
   
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase();
@@ -57,7 +47,7 @@ export const useCollection = (propCollection?: ExtendedCardItemProps[]) => {
     setShowGradedOnly(checked);
   };
   
-  const filterCards = (query: string, gradedOnly: boolean) => {
+  const filterCards = useCallback((query: string, gradedOnly: boolean) => {
     if (!collection || !Array.isArray(collection)) {
       console.log("No cards to filter or invalid cards array");
       setFilteredCards([]);
@@ -89,7 +79,7 @@ export const useCollection = (propCollection?: ExtendedCardItemProps[]) => {
     }
     
     setFilteredCards(filtered);
-  };
+  }, [collection]);
 
   return {
     searchQuery,

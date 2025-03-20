@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { ExtendedCardItemProps } from "@/types/cardTypes";
@@ -11,6 +11,7 @@ import EmptyCollection from "./EmptyCollection";
 import NoSearchResults from "./NoSearchResults";
 import CollectionStats from "./CollectionStats";
 import { useCollection } from "@/hooks/useCollection";
+import { debugCollections } from "@/services/collectionService";
 
 interface CollectionManagerProps {
   collection?: ExtendedCardItemProps[];
@@ -29,6 +30,12 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
     handleGradedFilterChange,
     loadCollectionFromStorage
   } = useCollection(propCollection);
+
+  // Debug: Log collection on mount
+  useEffect(() => {
+    console.log("CollectionManager mounted, current collection:", collection.length, "cards");
+    debugCollections();
+  }, []);
 
   const handleAddCard = () => {
     navigate("/sets");

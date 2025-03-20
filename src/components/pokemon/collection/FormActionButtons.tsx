@@ -1,28 +1,35 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { DialogFooter } from "@/components/ui/dialog";
 
 interface FormActionButtonsProps {
   onCancel: () => void;
-  isSubmitting?: boolean;
   submitLabel?: string;
+  isSubmitting?: boolean;
 }
 
 export const FormActionButtons = ({ 
   onCancel, 
-  isSubmitting, 
-  submitLabel = "Add to Collection" 
+  submitLabel = "Save",
+  isSubmitting = false
 }: FormActionButtonsProps) => {
   return (
-    <DialogFooter>
-      <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+    <div className="flex justify-end space-x-2 mt-4">
+      <Button 
+        type="button"
+        variant="outline"
+        onClick={onCancel}
+        disabled={isSubmitting}
+      >
         Cancel
       </Button>
-      <Button type="submit" disabled={isSubmitting}>
-        {submitLabel}
+      <Button 
+        type="submit"
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? "Saving..." : submitLabel}
       </Button>
-    </DialogFooter>
+    </div>
   );
 };
 
