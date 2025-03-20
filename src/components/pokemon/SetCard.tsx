@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Trophy, Calendar, Plus } from "lucide-react";
 import { format } from "date-fns";
-import { PokemonSet } from "@/services/api/pokemonTypes"; // Update the import path
+import { PokemonSet } from "@/services/api/pokemonTypes";
 import AddToCollectionModal from "./AddToCollectionModal";
 
 interface SetCardProps {

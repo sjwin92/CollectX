@@ -8,7 +8,7 @@ import { ExtendedCardItemProps } from "@/types/cardTypes";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import GradedFilter from "@/components/profile/GradedFilter";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import CollectionStats from "@/components/profile/CollectionStats";
 
 interface CollectionManagerProps {
@@ -22,6 +22,7 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
   const [collection, setCollection] = useState<ExtendedCardItemProps[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   
   // Load collection data from props or localStorage
   useEffect(() => {
@@ -32,12 +33,12 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
     }
   }, [propCollection]);
 
-  // Add an effect that runs when the component mounts or the route changes
+  // This effect runs when the component mounts or when the location changes
+  // which means it will run when navigating back to this page
   useEffect(() => {
-    // This will ensure the collection is refreshed when the user navigates to this page
     loadCollectionFromStorage();
-    console.log("CollectionManager - Loading collection on component mount");
-  }, []);
+    console.log("CollectionManager - Loading collection on component mount or route change");
+  }, [location.pathname]);
 
   // Load collection from localStorage
   const loadCollectionFromStorage = () => {

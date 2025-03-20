@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { 
   Dialog,
@@ -114,8 +115,6 @@ const AddToCollectionModal = ({
       set: {
         id: set.id,
         name: set.name,
-        // Fixing the type error by removing the 'series' property
-        // The type doesn't include 'series' in the 'set' object
       },
       forTrade: data.forTrade
     };
@@ -179,8 +178,10 @@ const AddToCollectionModal = ({
     // Close modal
     onClose();
     
-    // Redirect to collection page
-    navigate("/collection");
+    // Redirect to collection page after a short delay to ensure data is saved
+    setTimeout(() => {
+      navigate("/collection");
+    }, 100);
   };
   
   return (
