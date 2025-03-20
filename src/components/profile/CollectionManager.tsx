@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, RefreshCw } from "lucide-react";
 import CardGrid from "@/components/cards/CardGrid";
 import { ExtendedCardItemProps } from "@/types/cardTypes";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -31,6 +31,13 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
       loadCollectionFromStorage();
     }
   }, [propCollection]);
+
+  // Add an effect that runs when the component mounts or the route changes
+  useEffect(() => {
+    // This will ensure the collection is refreshed when the user navigates to this page
+    loadCollectionFromStorage();
+    console.log("CollectionManager - Loading collection on component mount");
+  }, []);
 
   // Load collection from localStorage
   const loadCollectionFromStorage = () => {
@@ -121,6 +128,7 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
         <h2 className="text-lg font-bold">My Card Collection</h2>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={refreshCollection}>
+            <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
           <Button size="sm" onClick={handleAddCard}>

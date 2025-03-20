@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { 
   Dialog,
@@ -115,8 +114,8 @@ const AddToCollectionModal = ({
       set: {
         id: set.id,
         name: set.name,
-        series: set.series,
-        releaseDate: set.releaseDate
+        // Fixing the type error by removing the 'series' property
+        // The type doesn't include 'series' in the 'set' object
       },
       forTrade: data.forTrade
     };
@@ -148,6 +147,7 @@ const AddToCollectionModal = ({
     
     // Save back to localStorage
     localStorage.setItem('myCollection', JSON.stringify(collection));
+    console.log("Added card to collection:", newCard);
     
     // If tradable, add to tradable collection
     if (data.forTrade) {
