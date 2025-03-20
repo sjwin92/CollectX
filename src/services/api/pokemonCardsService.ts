@@ -1,7 +1,11 @@
 // Service for fetching and managing Pokemon cards
 import { PokemonCard, PokemonCardResponse, CARD_BACK_URL } from './pokemonTypes';
 import { BASE_URL, createApiUrl } from './pokemonApiConfig';
-import { getAllPossibleImageUrlsFromCardObject, getConsistentCardImageUrl } from './cardImageService';
+import { 
+  getAllPossibleImageUrlsFromCardObject, 
+  getConsistentCardImageUrl,
+  getFeaturedCardImageUrl
+} from './cardImageService';
 
 /**
  * Get cards with optional filtering
@@ -174,7 +178,7 @@ export const getReliableImageUrl = (cardId: string, size: 'small' | 'large' = 's
     return CARD_BACK_URL;
   }
   
-  return getConsistentCardImageUrl(cardId, size);
+  return getFeaturedCardImageUrl(cardId, size);
 };
 
 /**

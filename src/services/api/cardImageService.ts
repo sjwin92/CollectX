@@ -1,3 +1,4 @@
+
 // Service for handling Pokemon card images
 import { CARD_BACK_URL } from './pokemonTypes';
 
@@ -37,6 +38,21 @@ export const getAllPossibleCardImageUrls = (cardId: string): string[] => {
   ];
   
   return urls;
+};
+
+// Get featured card image exclusively from set data (no alternative sources)
+export const getFeaturedCardImageUrl = (cardId: string, size: 'small' | 'large' = 'small'): string => {
+  if (!cardId) {
+    return CARD_BACK_URL;
+  }
+  
+  // Only use the official Pokemon TCG API format for featured cards
+  const [setId, number] = cardId.split('-');
+  if (!setId || !number) {
+    return CARD_BACK_URL;
+  }
+  
+  return `https://images.pokemontcg.io/${setId}/${number}_${size}.png`;
 };
 
 // Check if a URL is valid format
