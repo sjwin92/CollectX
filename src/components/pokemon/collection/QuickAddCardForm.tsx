@@ -13,7 +13,7 @@ import CheckboxField from "./CheckboxField";
 import GradingFields from "./GradingFields";
 import TradeFields from "./TradeFields";
 import { ExtendedCardItemProps } from "@/types/cardTypes";
-import { addCardToCollection, addCardToTradable } from "@/services/collectionService";
+import { addCardToCollection } from "@/services/collectionService";
 
 interface QuickAddCardFormProps {
   card: PokemonCard;
@@ -72,15 +72,8 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
       
       console.log("Adding to collection:", newCard);
       
-      // Add cards to collection based on quantity
-      for (let i = 0; i < data.quantity; i++) {
-        addCardToCollection({ ...newCard, quantity: 1 });
-        
-        // Add to tradable cards if marked for trade
-        if (data.forTrade) {
-          addCardToTradable({ ...newCard, quantity: 1 });
-        }
-      }
+      // Add card to collection with all details
+      addCardToCollection(newCard);
       
       toast({
         title: "Card added to collection!",
