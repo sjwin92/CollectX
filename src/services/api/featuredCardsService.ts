@@ -27,7 +27,7 @@ export const getFeaturedCards = async () => {
     {
       id: "swsh4-25",
       name: "Pikachu V",
-      imageUrl: "https://images.pokemontcg.io/swsh4/25_large.png",
+      imageUrl: getFeaturedCardImageUrl("swsh4-25", "large"),
       rarity: "Ultra Rare",
       condition: "Near Mint",
       estimatedValue: "£18.99"
@@ -35,7 +35,7 @@ export const getFeaturedCards = async () => {
     {
       id: "swsh1-190",
       name: "Zacian V",
-      imageUrl: "https://images.pokemontcg.io/swsh1/190_large.png",
+      imageUrl: getFeaturedCardImageUrl("swsh1-190", "large"),
       rarity: "Ultra Rare",
       condition: "Excellent",
       estimatedValue: "£24.50"
@@ -43,7 +43,7 @@ export const getFeaturedCards = async () => {
     {
       id: "sm12-222",
       name: "Charizard & Braixen GX",
-      imageUrl: "https://images.pokemontcg.io/sm12/222_large.png",
+      imageUrl: getFeaturedCardImageUrl("sm12-222", "large"),
       rarity: "Secret Rare",
       condition: "Near Mint",
       estimatedValue: "£32.75"
@@ -51,10 +51,26 @@ export const getFeaturedCards = async () => {
     {
       id: "swsh9-25",
       name: "Mew VMAX",
-      imageUrl: "https://images.pokemontcg.io/swsh9/25_large.png",
+      imageUrl: getFeaturedCardImageUrl("swsh9-25", "large"),
       rarity: "Ultra Rare",
       condition: "Mint",
       estimatedValue: "£45.00"
+    },
+    {
+      id: "sv3-193",
+      name: "Charizard ex",
+      imageUrl: getFeaturedCardImageUrl("sv3-193", "large"),
+      rarity: "Ultra Rare",
+      condition: "Near Mint",
+      estimatedValue: "£56.25"
+    },
+    {
+      id: "sv4-199",
+      name: "Gardevoir ex",
+      imageUrl: getFeaturedCardImageUrl("sv4-199", "large"),
+      rarity: "Ultra Rare",
+      condition: "Excellent",
+      estimatedValue: "£38.50"
     }
   ];
 };

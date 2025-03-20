@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -8,6 +7,7 @@ import { Info, AlertTriangle, Check, RefreshCw, BadgeCheck, Repeat, Star, BookHe
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { getAllPossibleCardImageUrls, getConsistentCardImageUrl } from "@/services/api/cardImageService";
+import { getFeaturedCardImageUrl } from "@/services/api/featuredCardsService";
 
 export interface CardItemProps {
   id: string;
@@ -20,7 +20,6 @@ export interface CardItemProps {
   animation?: "fade" | "scale" | "slide" | "none";
   onClick?: () => void;
   showCondition?: boolean;
-  // Added properties for extended card item
   graded?: boolean;
   gradingCompany?: string;
   gradeScore?: string;
@@ -45,7 +44,6 @@ const CardItem = ({
   animation = "none",
   onClick,
   showCondition = true,
-  // Include extended properties
   graded = false,
   gradingCompany,
   gradeScore,
@@ -70,6 +68,11 @@ const CardItem = ({
     // If no direct URL, get a reliable URL based on card ID
     if (!initialSource && id) {
       initialSource = getConsistentCardImageUrl(id);
+    }
+    
+    // If the initialSource looks like a placeholder, try to get the featured card URL instead
+    if ((!initialSource || initialSource.includes('placeholder') || initialSource.includes('card-back')) && id) {
+      initialSource = getFeaturedCardImageUrl(id);
     }
     
     // Set this as our primary image source
@@ -118,20 +121,16 @@ const CardItem = ({
     }
   };
 
-  // Format currency to ensure consistent display in GBP
   const formatCurrency = (value: string): string => {
     if (!value) return "£0";
     
-    // If already in GBP format, return as is
     if (value.startsWith("£")) return value;
     
-    // If it's a range like "$100-$150" convert both values
     if (value.includes("-")) {
       const parts = value.replace(/\$/g, '').split("-");
       return `£${parts[0].trim()}-£${parts[1].trim()}`;
     }
     
-    // If it's a plain number with $ or without currency
     return value.replace(/\$/, "£").replace(/^([0-9.]+)$/, "£$1");
   };
 
@@ -142,7 +141,6 @@ const CardItem = ({
     >
       <div className="relative aspect-[2/3] overflow-hidden rounded-md mb-3">
         <div className="relative h-full">
-          {/* Card image with loading states */}
           {imageSrc && (
             <>
               <img
@@ -176,9 +174,7 @@ const CardItem = ({
             </div>
           )}
           
-          {/* Card badges and info */}
           <div className="absolute top-2 right-2 flex gap-1 flex-col items-end">
-            {/* Quantity badge */}
             {quantity > 1 && (
               <Badge variant="secondary" size="sm" className="mb-1">
                 <CircleDollarSign className="h-3 w-3 mr-1" />
@@ -186,14 +182,12 @@ const CardItem = ({
               </Badge>
             )}
             
-            {/* Condition badge */}
             {showCondition && (
               <Badge variant={conditionVariant()} size="sm">
                 {condition}
               </Badge>
             )}
             
-            {/* Graded badge */}
             {graded && (
               <Badge variant="success" size="sm" className="mt-1">
                 <BadgeCheck className="h-3 w-3 mr-1" />
@@ -201,7 +195,6 @@ const CardItem = ({
               </Badge>
             )}
             
-            {/* Trade badge */}
             {forTrade && (
               <Badge variant="secondary" size="sm" className="mt-1">
                 <Repeat className="h-3 w-3 mr-1" />
@@ -209,7 +202,6 @@ const CardItem = ({
               </Badge>
             )}
             
-            {/* Card info tooltip */}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -253,7 +245,6 @@ const CardItem = ({
           <span className="text-xs font-medium">{formatCurrency(estimatedValue)}</span>
         </div>
         
-        {/* Collection details row */}
         <div className="flex flex-wrap items-center gap-1 mt-2">
           {quantity > 1 && (
             <span className="text-xs bg-secondary/50 px-1.5 py-0.5 rounded" title="Quantity">
@@ -282,7 +273,6 @@ const CardItem = ({
           )}
         </div>
         
-        {/* Show trade preferences in a compact form if available */}
         {forTrade && tradePreferences && (
           <div className="text-xs text-muted-foreground mt-1 line-clamp-1">
             <span className="font-medium">Trade for:</span> {tradePreferences}
@@ -314,15 +304,15 @@ const CardItem = ({
         return "success";
       case "excellent":
       case "good":
-      case "lp": // Lightly Played
-      case "ex": // Excellent
+      case "lp":
+      case "ex":
         return "info";
       case "played":
-      case "mp": // Moderately Played
+      case "mp":
         return "warning";
       case "poor":
-      case "hp": // Heavily Played
-      case "dmg": // Damaged
+      case "hp":
+      case "dmg":
         return "danger";
       default:
         return "info";
@@ -352,9 +342,7 @@ const CardItem = ({
     }
   }
 
-  // Fast retry logic to prevent infinite buffering
   useEffect(() => {
-    // If we've been in loading state for more than 3 seconds, try the next source
     let timeoutId: number | undefined;
     
     if (imageStatus === "loading") {
