@@ -20,6 +20,12 @@ const safelyParseCollection = (key: string): ExtendedCardItemProps[] => {
   }
 };
 
+// Helper function to notify collection changes
+const notifyCollectionChange = () => {
+  // Dispatch a storage event to notify components of collection changes
+  window.dispatchEvent(new Event('storage'));
+};
+
 export const addCardToCollection = (newCard: ExtendedCardItemProps): void => {
   // Get existing collection from localStorage
   let collection = safelyParseCollection('myCollection');
@@ -39,6 +45,9 @@ export const addCardToCollection = (newCard: ExtendedCardItemProps): void => {
   
   // Invalidate collection data to refresh UI
   queryClient.invalidateQueries({ queryKey: ['collection'] });
+  
+  // Notify collection change
+  notifyCollectionChange();
 };
 
 export const addCardToTradable = (card: ExtendedCardItemProps): void => {
@@ -58,6 +67,9 @@ export const addCardToTradable = (card: ExtendedCardItemProps): void => {
   
   // Invalidate tradable cards data to refresh UI
   queryClient.invalidateQueries({ queryKey: ['tradableCards'] });
+  
+  // Notify collection change
+  notifyCollectionChange();
 };
 
 export const getCollection = (): ExtendedCardItemProps[] => {
@@ -66,6 +78,12 @@ export const getCollection = (): ExtendedCardItemProps[] => {
 
 export const getTradableCards = (): ExtendedCardItemProps[] => {
   return safelyParseCollection('tradableCards');
+};
+
+// Function to check if a specific card is in the collection
+export const isCardInCollection = (cardId: string): boolean => {
+  const collection = getCollection();
+  return cardExistsInCollection(collection, cardId);
 };
 
 // Debug function to inspect the current state of collections
@@ -88,6 +106,9 @@ export const clearCollections = (): void => {
   // Invalidate queries to refresh UI
   queryClient.invalidateQueries({ queryKey: ['collection'] });
   queryClient.invalidateQueries({ queryKey: ['tradableCards'] });
+  
+  // Notify collection change
+  notifyCollectionChange();
   
   console.log("All collections cleared from localStorage");
 };
