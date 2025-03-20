@@ -1,3 +1,4 @@
+
 // Service for fetching and managing Pokemon cards
 import { PokemonCard, PokemonCardResponse, CARD_BACK_URL } from './pokemonTypes';
 import { BASE_URL, createApiUrl } from './pokemonApiConfig';
@@ -89,9 +90,12 @@ export const buildQueryString = (params: Record<string, string>): string => {
       if (key === 'setId' && value !== 'all') {
         queryParts.push(`set.id:${value}`);
       } 
-      // For name use the format name: with wildcards
+      // For name use the format name: with wildcards and trim any whitespace
       else if (key === 'name') {
-        queryParts.push(`name:*${value}*`);
+        const trimmedValue = value.trim();
+        if (trimmedValue) {
+          queryParts.push(`name:*${trimmedValue}*`);
+        }
       }
       // Other filters can be added here
     }
@@ -133,8 +137,9 @@ export const searchCards = async (
     const response = await fetch(url.toString());
     
     if (!response.ok) {
-      console.error(`Failed to fetch cards: ${response.statusText}`);
-      throw new Error(`Failed to fetch cards: ${response.statusText}`);
+      const errorMessage = `Failed to fetch cards: ${response.statusText}`;
+      console.error(errorMessage);
+      throw new Error(errorMessage);
     }
     
     const data = await response.json();

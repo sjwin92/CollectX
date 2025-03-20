@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,7 +69,7 @@ const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = nu
     const params = new URLSearchParams();
     
     if (nameQuery) {
-      params.append('name', nameQuery);
+      params.append('name', nameQuery.trim());
     }
     
     if (selectedSet && selectedSet !== 'all') {
@@ -89,20 +88,19 @@ const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = nu
     console.log(`Set selection changed to: ${value}`);
     setSelectedSet(value);
     
-    // If user is just changing the set (without a name query), 
-    // automatically submit the form to update results
-    const params = new URLSearchParams();
-    if (value && value !== 'all') {
-      params.append('setId', value);
+    // Only auto-submit when changing the set if there's no name query
+    if (!nameQuery.trim()) {
+      const params = new URLSearchParams();
+      if (value && value !== 'all') {
+        params.append('setId', value);
+      }
+      
+      navigate({
+        pathname: '/pokemon-cards',
+        search: params.toString()
+      });
     }
-    if (nameQuery) {
-      params.append('name', nameQuery);
-    }
-    
-    navigate({
-      pathname: '/pokemon-cards',
-      search: params.toString()
-    });
+    // Otherwise, the user will need to click the search button to submit the combined query
   };
 
   return (
