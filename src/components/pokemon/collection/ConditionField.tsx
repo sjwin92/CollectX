@@ -1,13 +1,7 @@
 
 import React from "react";
-import {
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormDescription,
-  FormMessage,
-} from "@/components/ui/form";
+import { UseFormReturn } from "react-hook-form";
+import { CardFormValues, cardConditions } from "./cardFormSchema";
 import {
   Select,
   SelectContent,
@@ -15,8 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UseFormReturn } from "react-hook-form";
-import { CardFormValues, cardConditions } from "./cardFormSchema";
+import FormFieldWrapper from "./FormFieldWrapper";
 
 interface ConditionFieldProps {
   form: UseFormReturn<CardFormValues>;
@@ -24,36 +17,25 @@ interface ConditionFieldProps {
 
 const ConditionField = ({ form }: ConditionFieldProps) => {
   return (
-    <FormField
-      control={form.control}
+    <FormFieldWrapper
+      form={form}
       name="condition"
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>Condition</FormLabel>
-          <Select
-            onValueChange={field.onChange}
-            defaultValue={field.value}
-          >
-            <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder="Select condition" />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              {cardConditions.map((condition) => (
-                <SelectItem key={condition.value} value={condition.value}>
-                  {condition.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <FormDescription>
-            The condition of the cards
-          </FormDescription>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
+      label="Condition"
+      description="The condition of the cards"
+    >
+      <Select>
+        <SelectTrigger>
+          <SelectValue placeholder="Select condition" />
+        </SelectTrigger>
+        <SelectContent>
+          {cardConditions.map((condition) => (
+            <SelectItem key={condition.value} value={condition.value}>
+              {condition.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </FormFieldWrapper>
   );
 };
 

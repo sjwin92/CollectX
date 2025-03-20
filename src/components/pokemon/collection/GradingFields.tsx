@@ -1,12 +1,7 @@
 
 import React from "react";
-import {
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from "@/components/ui/form";
+import { UseFormReturn } from "react-hook-form";
+import { CardFormValues, gradingCompanies } from "./cardFormSchema";
 import {
   Select,
   SelectContent,
@@ -15,9 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { gradingCompanies } from "./cardFormSchema";
-import { UseFormReturn } from "react-hook-form";
-import { CardFormValues } from "./cardFormSchema";
+import FormFieldWrapper from "./FormFieldWrapper";
 
 interface GradingFieldsProps {
   form: UseFormReturn<CardFormValues>;
@@ -26,54 +19,38 @@ interface GradingFieldsProps {
 const GradingFields = ({ form }: GradingFieldsProps) => {
   return (
     <div className="space-y-4">
-      <FormField
-        control={form.control}
+      <FormFieldWrapper
+        form={form}
         name="gradingCompany"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Grading Company</FormLabel>
-            <Select
-              onValueChange={field.onChange}
-              defaultValue={field.value}
-            >
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select grading company" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {gradingCompanies.map((company) => (
-                  <SelectItem key={company.value} value={company.value}>
-                    {company.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+        label="Grading Company"
+      >
+        <Select>
+          <SelectTrigger>
+            <SelectValue placeholder="Select grading company" />
+          </SelectTrigger>
+          <SelectContent>
+            {gradingCompanies.map((company) => (
+              <SelectItem key={company.value} value={company.value}>
+                {company.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </FormFieldWrapper>
       
-      <FormField
-        control={form.control}
+      <FormFieldWrapper
+        form={form}
         name="grade"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Grade (1-10)</FormLabel>
-            <FormControl>
-              <Input
-                type="number"
-                placeholder="9"
-                min={1}
-                max={10}
-                step={0.5}
-                {...field}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+        label="Grade (1-10)"
+      >
+        <Input
+          type="number"
+          placeholder="9"
+          min={1}
+          max={10}
+          step={0.5}
+        />
+      </FormFieldWrapper>
     </div>
   );
 };
