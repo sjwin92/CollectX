@@ -6,8 +6,6 @@ import { Plus, Search } from "lucide-react";
 import CardGrid from "@/components/cards/CardGrid";
 import { ExtendedCardItemProps } from "@/types/cardTypes";
 import GlassCard from "@/components/ui/custom/GlassCard";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import GradedFilter from "@/components/profile/GradedFilter";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -21,15 +19,13 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
   const [searchQuery, setSearchQuery] = useState("");
   const [showGradedOnly, setShowGradedOnly] = useState(false);
   const [filteredCards, setFilteredCards] = useState<ExtendedCardItemProps[]>([]);
+  const [collection, setCollection] = useState<ExtendedCardItemProps[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
-  
-  const [collection, setCollection] = useState<ExtendedCardItemProps[]>([]);
   
   useEffect(() => {
     if (propCollection) {
       setCollection(propCollection);
-      filterCards(searchQuery, showGradedOnly, propCollection);
     } else {
       // Load from localStorage if no prop collection is provided
       const savedCollection = localStorage.getItem('myCollection');
@@ -37,37 +33,40 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
         try {
           const parsedCollection = JSON.parse(savedCollection);
           setCollection(parsedCollection);
-          filterCards(searchQuery, showGradedOnly, parsedCollection);
         } catch (error) {
           console.error('Error parsing collection from localStorage:', error);
           setCollection([]);
-          setFilteredCards([]);
         }
+      } else {
+        setCollection([]);
       }
     }
-  }, [propCollection, searchQuery, showGradedOnly]);
+  }, [propCollection]);
+
+  // Separate useEffect for filtering to avoid dependency issues
+  useEffect(() => {
+    filterCards(searchQuery, showGradedOnly);
+  }, [searchQuery, showGradedOnly, collection]);
   
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase();
     setSearchQuery(query);
     console.log("Collection Manager - Searching for:", query);
-    filterCards(query, showGradedOnly, collection);
   };
   
   const handleGradedFilterChange = (checked: boolean) => {
     setShowGradedOnly(checked);
-    filterCards(searchQuery, checked, collection);
   };
   
-  const filterCards = (query: string, gradedOnly: boolean, cards: ExtendedCardItemProps[]) => {
-    if (!cards || !Array.isArray(cards)) {
+  const filterCards = (query: string, gradedOnly: boolean) => {
+    if (!collection || !Array.isArray(collection)) {
       console.log("No cards to filter or invalid cards array");
       setFilteredCards([]);
       return;
     }
     
-    console.log(`Filtering ${cards.length} cards with query: "${query}"`);
-    let filtered = [...cards]; // Create a copy to avoid mutating the original
+    console.log(`Filtering ${collection.length} cards with query: "${query}"`);
+    let filtered = [...collection]; // Create a copy to avoid mutating the original
     
     if (query.trim() !== "") {
       filtered = filtered.filter(card => {
