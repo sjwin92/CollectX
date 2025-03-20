@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,25 +23,34 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
   const { toast } = useToast();
   const navigate = useNavigate();
   
+  // Load collection data from props or localStorage
   useEffect(() => {
     if (propCollection) {
       setCollection(propCollection);
     } else {
-      const savedCollection = localStorage.getItem('myCollection');
-      if (savedCollection) {
-        try {
-          const parsedCollection = JSON.parse(savedCollection);
-          setCollection(parsedCollection);
-        } catch (error) {
-          console.error('Error parsing collection from localStorage:', error);
-          setCollection([]);
-        }
-      } else {
-        setCollection([]);
-      }
+      loadCollectionFromStorage();
     }
   }, [propCollection]);
 
+  // Load collection from localStorage
+  const loadCollectionFromStorage = () => {
+    const savedCollection = localStorage.getItem('myCollection');
+    if (savedCollection) {
+      try {
+        const parsedCollection = JSON.parse(savedCollection);
+        console.log('Loaded collection from localStorage:', parsedCollection.length, 'cards');
+        setCollection(parsedCollection);
+      } catch (error) {
+        console.error('Error parsing collection from localStorage:', error);
+        setCollection([]);
+      }
+    } else {
+      console.log('No collection found in localStorage');
+      setCollection([]);
+    }
+  };
+
+  // Apply filters when search query, filter settings, or collection changes
   useEffect(() => {
     filterCards(searchQuery, showGradedOnly);
   }, [searchQuery, showGradedOnly, collection]);
@@ -90,10 +100,18 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
   };
 
   const handleAddCard = () => {
-    navigate("/pokemon-sets");
+    navigate("/sets");
     toast({
       title: "Browse Sets",
       description: "Choose a set to find cards to add to your collection."
+    });
+  };
+
+  const refreshCollection = () => {
+    loadCollectionFromStorage();
+    toast({
+      title: "Collection Refreshed",
+      description: "Your collection has been updated with the latest cards."
     });
   };
 
@@ -101,10 +119,15 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
     <GlassCard className="p-6 mb-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-bold">My Card Collection</h2>
-        <Button size="sm" onClick={handleAddCard}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Cards
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={refreshCollection}>
+            Refresh
+          </Button>
+          <Button size="sm" onClick={handleAddCard}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Cards
+          </Button>
+        </div>
       </div>
       
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
