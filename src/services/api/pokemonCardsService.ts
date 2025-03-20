@@ -1,12 +1,11 @@
-
 // Service for fetching and managing Pokemon cards
 import { PokemonCard, PokemonCardResponse, CARD_BACK_URL } from './pokemonTypes';
 import { BASE_URL, createApiUrl } from './pokemonApiConfig';
 import { 
   getAllPossibleImageUrlsFromCardObject, 
-  getConsistentCardImageUrl,
-  getFeaturedCardImageUrl
+  getConsistentCardImageUrl
 } from './cardImageService';
+import { getFeaturedCardImageUrl } from './featuredCardsService';
 
 /**
  * Get cards with optional filtering
@@ -174,26 +173,39 @@ export const getCardsBySetId = async (
 /**
  * Generate a reliable image URL for a Pokemon card
  */
-export const getReliableImageUrl = (cardId: string, size: 'small' | 'large' = 'small'): string => {
+export const getReliableImageUrl = (cardId: string, size: 'small' | 'large' = 'small', isFeatured: boolean = false): string => {
   if (!cardId) {
     return CARD_BACK_URL;
   }
   
-  // Use the featured card image URL function for more consistent results
-  return getFeaturedCardImageUrl(cardId, size);
+  // Use the featured card image service for featured cards
+  if (isFeatured) {
+    return getFeaturedCardImageUrl(cardId, size);
+  }
+  
+  // Use the consistent image URL function for regular cards
+  return getConsistentCardImageUrl(cardId, size);
 };
 
 /**
  * Map Pokemon TCG card to TradeCard model
  */
-export const mapToTradeCard = (card: PokemonCard): any => {
+export const mapToTradeCard = (card: PokemonCard, isFeatured: boolean = false): any => {
   const price = card.tcgplayer?.prices?.holofoil?.market 
     || card.tcgplayer?.prices?.normal?.market 
     || card.tcgplayer?.prices?.reverseHolofoil?.market
     || 0;
   
-  const imageUrls = getAllPossibleImageUrlsFromCardObject(card);
-  const bestImageUrl = imageUrls.length > 0 ? imageUrls[0] : CARD_BACK_URL;
+  let bestImageUrl;
+  
+  if (isFeatured) {
+    // For featured cards, use our featured card service
+    bestImageUrl = getFeaturedCardImageUrl(card.id);
+  } else {
+    // For regular cards, use all possible sources
+    const imageUrls = getAllPossibleImageUrlsFromCardObject(card);
+    bestImageUrl = imageUrls.length > 0 ? imageUrls[0] : CARD_BACK_URL;
+  }
   
   return {
     id: card.id,

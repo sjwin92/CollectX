@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -22,45 +21,9 @@ import CardGrid from "@/components/cards/CardGrid";
 import TradeOffer from "@/components/trades/TradeOffer";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
-import { getFeaturedCardImageUrl } from "@/services/api/cardImageService";
+import { useQuery } from "@tanstack/react-query";
+import { getFeaturedCards, FeaturedCard } from "@/services/api/featuredCardsService";
 
-// Define featured cards with more consistent IDs and guaranteed image URLs
-const featuredCards = [
-  {
-    id: "swsh4-25",
-    name: "Charizard VMAX",
-    imageUrl: getFeaturedCardImageUrl("swsh4-25"),
-    rarity: "Ultra Rare",
-    condition: "Near Mint",
-    estimatedValue: "£350"
-  },
-  {
-    id: "swsh1-190",
-    name: "Pikachu VMAX",
-    imageUrl: getFeaturedCardImageUrl("swsh1-190"),
-    rarity: "Rare",
-    condition: "Mint",
-    estimatedValue: "£120"
-  },
-  {
-    id: "sm12-222",
-    name: "Mewtwo & Mew GX",
-    imageUrl: getFeaturedCardImageUrl("sm12-222"),
-    rarity: "Ultra Rare",
-    condition: "Excellent",
-    estimatedValue: "£200"
-  },
-  {
-    id: "swsh9-25",
-    name: "Blastoise VMAX",
-    imageUrl: getFeaturedCardImageUrl("swsh9-25"),
-    rarity: "Rare Holo",
-    condition: "Good",
-    estimatedValue: "£80"
-  }
-];
-
-// Use the reliable image service for trade previews
 const recentTrades = [
   {
     id: "t1",
@@ -101,6 +64,11 @@ const recentTrades = [
 ];
 
 const Index = () => {
+  const { data: featuredCards, isLoading, error } = useQuery({
+    queryKey: ['featuredCards'],
+    queryFn: getFeaturedCards
+  });
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -207,12 +175,22 @@ const Index = () => {
             </Button>
           </div>
           
-          <CardGrid 
-            cards={featuredCards} 
-            columns={{ sm: 2, md: 3, lg: 4 }}
-            animated
-            showCondition={true}
-          />
+          {isLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-8 text-destructive">
+              Unable to load featured cards. Please try again later.
+            </div>
+          ) : (
+            <CardGrid 
+              cards={featuredCards || []} 
+              columns={{ sm: 2, md: 3, lg: 4 }}
+              animated
+              showCondition={true}
+            />
+          )}
           
           <div className="mt-8 text-center md:hidden">
             <Button asChild>

@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { getAllPossibleCardImageUrls } from "@/services/api/cardImageService";
+import { getFeaturedCardImageUrl } from "@/services/api/featuredCardsService";
 
 interface TradeListingImageProps {
   cardId?: string;
@@ -40,8 +42,11 @@ const TradeListingImage = ({
     let allSources: string[] = [];
     
     if (isFeatured) {
-      // For featured cards, only use the provided imageUrl - no alternatives
-      if (imageUrl) {
+      // For featured cards, use our dedicated featured card service
+      if (cardId) {
+        const featuredImageUrl = getFeaturedCardImageUrl(cardId, 'large');
+        allSources = [featuredImageUrl];
+      } else if (imageUrl) {
         allSources = [imageUrl];
       }
     } else {
