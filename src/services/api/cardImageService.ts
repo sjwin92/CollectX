@@ -16,9 +16,12 @@ export const getConsistentCardImageUrl = (cardId: string, size: 'small' | 'large
   }
   
   // The Pokemon TCG API image URL format
-  const pokemonTcgApiUrl = `https://images.pokemontcg.io/${cardId.split('-')[0]}/${cardId.split('-')[1]}_${size}.png`;
+  const [setId, number] = cardId.split('-');
+  if (!setId || !number) {
+    return CARD_BACK_URL;
+  }
   
-  return pokemonTcgApiUrl;
+  return `https://images.pokemontcg.io/${setId}/${number}_${size}.png`;
 };
 
 // Get all possible image URLs for a card (for fallback purposes)

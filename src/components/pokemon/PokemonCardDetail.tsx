@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { PokemonCard } from "@/services/pokemonTcgApi";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -25,12 +24,26 @@ const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
     setImageStatus("loading");
     setCurrentImageIndex(0);
     
-    // Get all possible image URLs for this card using the sets API helper
-    const urls = getAllPossibleCardImageUrls(card.id);
-    setImageUrls(urls);
+    // First try direct image URLs from the card data
+    const initialUrls: string[] = [];
     
-    console.log(`Generated ${urls.length} potential image URLs for card ${card.id}`);
-    console.log('Image URLs:', urls);
+    // Primary source: card.images from API if available
+    if (card.images) {
+      if (card.images.large) initialUrls.push(card.images.large);
+      if (card.images.small) initialUrls.push(card.images.small);
+    }
+    
+    // Secondary source: Use the card ID to get all possible URLs
+    const backupUrls = getAllPossibleCardImageUrls(card.id);
+    
+    // Combine all sources, remove duplicates
+    const combinedUrls = [...initialUrls, ...backupUrls];
+    const uniqueUrls = [...new Set(combinedUrls)];
+    
+    setImageUrls(uniqueUrls);
+    
+    console.log(`Generated ${uniqueUrls.length} potential image URLs for card ${card.id}`);
+    console.log('Image URLs:', uniqueUrls);
   }, [card?.id]);
   
   const currentImageUrl = imageUrls[currentImageIndex] || '';
