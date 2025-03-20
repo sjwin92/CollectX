@@ -40,13 +40,28 @@ const AddToCollectionModal = (props: AddToCollectionModalProps) => {
             set: {
               id: set.id,
               name: set.name,
+              series: set.series,
+              printedTotal: set.printedTotal,
+              total: set.total,
+              legalities: set.legalities,
+              ptcgoCode: set.id, // Using set.id as a fallback 
+              releaseDate: set.releaseDate, 
+              updatedAt: new Date().toISOString(), // Current date as fallback
+              images: {
+                symbol: set.images.symbol,
+                logo: set.images.logo
+              }
             },
             images: {
               small: props.cardImage || set.images.logo || "",
               large: props.cardImage || set.images.logo || "",
             },
             rarity: props.cardRarity || "Common",
-            number: props.cardNumber || ""
+            number: props.cardNumber || "",
+            supertype: "Pokémon", // Adding required properties
+            subtypes: [],
+            legalities: set.legalities || {},
+            artist: "Unknown"
           }}
           onClose={onClose}
         />
