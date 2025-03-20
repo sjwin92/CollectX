@@ -25,6 +25,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getCardsBySetId } from "@/services/api/pokemonCardsService";
 import { getAllSets } from "@/services/api/pokemonSetsService";
 import { CARD_BACK_URL } from "@/services/api/pokemonTypes";
+import { getFeaturedCards } from "@/services/api/featuredCardsService";
 
 const recentTrades = [
   {
@@ -68,42 +69,7 @@ const recentTrades = [
 const Index = () => {
   const { data: featuredCards, isLoading, error } = useQuery({
     queryKey: ['featuredCards'],
-    queryFn: async () => {
-      try {
-        const sets = await getAllSets();
-        
-        if (sets && sets.length > 0) {
-          const latestSetId = sets[0].id;
-          const secondLatestSetId = sets[1]?.id;
-          
-          const latestSetCards = await getCardsBySetId(latestSetId, 1, 2);
-          const secondSetCards = secondLatestSetId 
-            ? await getCardsBySetId(secondLatestSetId, 1, 2)
-            : { data: [] };
-          
-          const combinedCards = [...latestSetCards.data, ...secondSetCards.data]
-            .slice(0, 4)
-            .map(card => ({
-              id: card.id,
-              name: card.name,
-              imageUrl: card.images?.small || card.images?.large || CARD_BACK_URL,
-              rarity: card.rarity || "Common",
-              condition: "Near Mint",
-              estimatedValue: card.tcgplayer?.prices?.holofoil?.market 
-                ? `£${card.tcgplayer.prices.holofoil.market.toFixed(2)}`
-                : card.tcgplayer?.prices?.normal?.market
-                ? `£${card.tcgplayer.prices.normal.market.toFixed(2)}`
-                : "£N/A"
-            }));
-          
-          return combinedCards;
-        }
-        return [];
-      } catch (error) {
-        console.error("Error fetching featured cards:", error);
-        return [];
-      }
-    }
+    queryFn: getFeaturedCards
   });
 
   return (
