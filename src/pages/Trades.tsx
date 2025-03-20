@@ -131,11 +131,12 @@ const Trades = () => {
     toast.info("This feature is coming soon!");
   };
 
-  // Display correct stats as specified
-  const totalTrades = 6;
-  const pendingCount = 1;
-  const inProgressCount = 2;
-  const completedCount = 2;
+  // Display zeros for stats
+  const totalTrades = 0;
+  const pendingCount = 0;
+  const inProgressCount = 0;
+  const completedCount = 0;
+  const declinedCount = 0;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -166,7 +167,7 @@ const Trades = () => {
             pendingCount={pendingCount}
             inProgressCount={inProgressCount}
             completedCount={completedCount}
-            declinedCount={declinedTrades.length}
+            declinedCount={declinedCount}
             onCreateTrade={handleCreateTrade}
           />
         </div>
