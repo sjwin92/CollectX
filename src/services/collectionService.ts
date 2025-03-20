@@ -36,6 +36,9 @@ export const addCardToCollection = (newCard: ExtendedCardItemProps): void => {
     return;
   }
   
+  // Log the card being added for debugging
+  console.log("Adding to collection:", newCard);
+  
   // Add new card to collection
   collection.push(newCard);
   
@@ -48,6 +51,11 @@ export const addCardToCollection = (newCard: ExtendedCardItemProps): void => {
   
   // Notify collection change
   notifyCollectionChange();
+  
+  // If card is for trade, also add to tradable cards
+  if (newCard.forTrade) {
+    addCardToTradable(newCard);
+  }
 };
 
 export const addCardToTradable = (card: ExtendedCardItemProps): void => {

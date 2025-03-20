@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
 import { cn } from "@/lib/utils";
-import { Info, AlertTriangle, Check, RefreshCw } from "lucide-react";
+import { Info, AlertTriangle, Check, RefreshCw, BadgeCheck, Repeat } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { getAllPossibleCardImageUrls, getConsistentCardImageUrl } from "@/services/api/cardImageService";
@@ -19,6 +19,17 @@ export interface CardItemProps {
   animation?: "fade" | "scale" | "slide" | "none";
   onClick?: () => void;
   showCondition?: boolean;
+  // Added properties for extended card item
+  graded?: boolean;
+  gradingCompany?: string;
+  gradeScore?: string;
+  forTrade?: boolean;
+  tradePreferences?: string;
+  set?: {
+    id?: string;
+    name?: string;
+  };
+  number?: string;
 }
 
 const CardItem = ({
@@ -31,7 +42,15 @@ const CardItem = ({
   className,
   animation = "none",
   onClick,
-  showCondition = true
+  showCondition = true,
+  // Include extended properties
+  graded = false,
+  gradingCompany,
+  gradeScore,
+  forTrade = false,
+  tradePreferences,
+  set,
+  number
 }: CardItemProps) => {
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
   const [imageSrc, setImageSrc] = useState<string>("");
@@ -153,17 +172,33 @@ const CardItem = ({
             </div>
           )}
           
-          <div className="absolute top-2 right-2 flex gap-1">
+          <div className="absolute top-2 right-2 flex gap-1 flex-col items-end">
             {showCondition && (
               <Badge variant={conditionVariant()} size="sm">
                 {condition}
               </Badge>
             )}
             
+            {/* Add graded badge if card is graded */}
+            {graded && (
+              <Badge variant="success" size="sm" className="mt-1">
+                <BadgeCheck className="h-3 w-3 mr-1" />
+                {gradingCompany} {gradeScore}
+              </Badge>
+            )}
+            
+            {/* Add trade badge if card is for trade */}
+            {forTrade && (
+              <Badge variant="secondary" size="sm" className="mt-1">
+                <Repeat className="h-3 w-3 mr-1" />
+                For Trade
+              </Badge>
+            )}
+            
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="bg-white/90 dark:bg-gray-800/90 rounded-full p-1 cursor-help">
+                  <div className="bg-white/90 dark:bg-gray-800/90 rounded-full p-1 cursor-help mt-1">
                     <Info className="h-3 w-3 text-primary" />
                   </div>
                 </TooltipTrigger>
@@ -173,6 +208,14 @@ const CardItem = ({
                     <p><strong>Rarity:</strong> {rarity}</p>
                     {showCondition && <p><strong>Condition:</strong> {condition}</p>}
                     <p><strong>Value:</strong> {formatCurrency(estimatedValue)}</p>
+                    {set?.name && <p><strong>Set:</strong> {set.name}</p>}
+                    {number && <p><strong>Number:</strong> {number}</p>}
+                    {graded && <p><strong>Graded:</strong> {gradingCompany} {gradeScore}</p>}
+                    {forTrade && (
+                      <p>
+                        <strong>Trade For:</strong> {tradePreferences || "Open to offers"}
+                      </p>
+                    )}
                     <p><strong>ID:</strong> {id}</p>
                   </div>
                 </TooltipContent>
@@ -193,6 +236,13 @@ const CardItem = ({
           </Badge>
           <span className="text-xs font-medium">{formatCurrency(estimatedValue)}</span>
         </div>
+        
+        {/* Show trade preferences in a compact form if available */}
+        {forTrade && tradePreferences && (
+          <div className="text-xs text-muted-foreground mt-1 line-clamp-1">
+            <span className="font-medium">Trade for:</span> {tradePreferences}
+          </div>
+        )}
       </div>
     </GlassCard>
   );
