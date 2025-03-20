@@ -6,4 +6,6 @@ export interface ExtendedCardItemProps extends BaseCardItemProps {
   graded?: boolean;
   gradingCompany?: string;
   grade?: string;
+  forTrade?: boolean;
+  tradePreferences?: string;
 }
