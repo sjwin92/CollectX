@@ -18,7 +18,6 @@ import { ExtendedCardItemProps } from "@/types/cardTypes";
 import CollectionStats from "@/components/profile/CollectionStats";
 import CollectionManager from "@/components/profile/CollectionManager";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
 const Collection = () => {
   const {
     toast
@@ -46,7 +45,6 @@ const Collection = () => {
   const [gradeValue, setGradeValue] = useState("9");
   const [tradePreferences, setTradePreferences] = useState("");
   const [filteredCollection, setFilteredCollection] = useState<ExtendedCardItemProps[]>([]);
-
   useEffect(() => {
     const savedCollection = localStorage.getItem('myCollection');
     const savedWishlist = localStorage.getItem('wishlistCards');
@@ -76,12 +74,11 @@ const Collection = () => {
       }
     }
   }, []);
-
   useEffect(() => {
+    // Update filtered cards whenever search query or filters change
     const filtered = getFilteredCardsByTab();
     setFilteredCollection(filtered);
   }, [searchQuery, filterRarity, filterCondition, showGradedOnly, sortOption, selectedTab, myCollection, wishlistCards, tradableCards]);
-
   useEffect(() => {
     if (myCollection.length > 0) {
       localStorage.setItem('myCollection', JSON.stringify(myCollection));
@@ -93,7 +90,6 @@ const Collection = () => {
       localStorage.setItem('tradableCards', JSON.stringify(tradableCards));
     }
   }, [myCollection, wishlistCards, tradableCards]);
-
   const calculateTotalValue = () => {
     let total = 0;
     myCollection.forEach(card => {
@@ -114,7 +110,6 @@ const Collection = () => {
     });
     return Math.round(total);
   };
-
   const getFilteredAndSortedCards = cards => {
     if (!cards || !Array.isArray(cards)) return [];
     let filtered = [...cards];
@@ -160,7 +155,6 @@ const Collection = () => {
       }
     });
   };
-
   const extractValue = priceString => {
     if (!priceString) return 0;
     const match = priceString.match(/\$(\d+)-(\d+)/);
@@ -172,7 +166,6 @@ const Collection = () => {
     const numericValue = parseFloat(priceString?.replace(/[^0-9.]/g, '') || "0");
     return isNaN(numericValue) ? 0 : numericValue;
   };
-
   const getFilteredCardsByTab = () => {
     switch (selectedTab) {
       case "all":
@@ -185,7 +178,6 @@ const Collection = () => {
         return [];
     }
   };
-
   const handleCardSearch = async () => {
     if (!searchCardQuery.trim()) {
       setSearchResults([]);
@@ -213,7 +205,6 @@ const Collection = () => {
       setSearchLoading(false);
     }
   };
-
   const handleAddCard = () => {
     if (!selectedCard) {
       toast({
@@ -276,33 +267,26 @@ const Collection = () => {
     setTradePreferences("");
     setIsAddCardOpen(false);
   };
-
   const handleTabChange = value => {
     setSelectedTab(value);
   };
-
   const handleQuickAddCard = () => {
     setIsToWishlist(false);
     setIsAddCardOpen(true);
   };
-
   const handleQuickAddWishlist = () => {
     setIsToWishlist(true);
     setIsAddCardOpen(true);
   };
-
   const handleQuickBrowseCards = () => {
-    window.location.href = "/pokemon-sets";
+    window.location.href = "/sets";
   };
-
   const handleSearchQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
     console.log("Search query changed to:", query);
   };
-
-  return (
-    <div className="min-h-screen flex flex-col">
+  return <div className="min-h-screen flex flex-col">
       <Navbar />
       
       <main className="flex-1 pt-24 pb-16">
@@ -386,7 +370,7 @@ const Collection = () => {
                     <div className="space-y-4">
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                        <Input placeholder="Search by card name or number (e.g., 25/100, SVI004)..." className="pl-9 pr-14" value={searchCardQuery} onChange={e => setSearchCardQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleCardSearch()} />
+                        
                         <div className="absolute right-1 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
                           <TooltipProvider>
                             <Tooltip>
@@ -695,8 +679,6 @@ const Collection = () => {
       </main>
       
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default Collection;
