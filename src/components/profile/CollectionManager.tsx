@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +26,6 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
     if (propCollection) {
       setCollection(propCollection);
     } else {
-      // Load from localStorage if no prop collection is provided
       const savedCollection = localStorage.getItem('myCollection');
       if (savedCollection) {
         try {
@@ -43,7 +41,6 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
     }
   }, [propCollection]);
 
-  // Separate useEffect for filtering to avoid dependency issues
   useEffect(() => {
     filterCards(searchQuery, showGradedOnly);
   }, [searchQuery, showGradedOnly, collection]);
@@ -66,7 +63,7 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
     }
     
     console.log(`Filtering ${collection.length} cards with query: "${query}"`);
-    let filtered = [...collection]; // Create a copy to avoid mutating the original
+    let filtered = [...collection];
     
     if (query.trim() !== "") {
       filtered = filtered.filter(card => {
