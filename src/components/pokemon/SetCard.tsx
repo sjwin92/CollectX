@@ -90,6 +90,8 @@ const SetCard = ({ set }: SetCardProps) => {
           set={set}
           open={showAddModal}
           onClose={() => setShowAddModal(false)}
+          cardName={`Generic card from ${set.name}`}
+          cardImage={set.images.symbol || set.images.logo}
         />
       )}
     </>
