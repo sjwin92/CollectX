@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,9 @@ import TradeOffer from "@/components/trades/TradeOffer";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
 import { useQuery } from "@tanstack/react-query";
-import { getFeaturedCards, FeaturedCard, getFeaturedCardImageUrl } from "@/services/api/featuredCardsService";
+import { getCardsBySetId } from "@/services/api/pokemonCardsService";
+import { getAllSets } from "@/services/api/pokemonSetsService";
+import { CARD_BACK_URL } from "@/services/api/pokemonTypes";
 
 const recentTrades = [
   {
@@ -37,11 +38,11 @@ const recentTrades = [
     },
     giving: {
       count: 2,
-      preview: getFeaturedCardImageUrl("swsh4-25")
+      preview: "https://images.pokemontcg.io/swsh4/25_large.png"
     },
     receiving: {
       count: 3,
-      preview: getFeaturedCardImageUrl("swsh1-190")
+      preview: "https://images.pokemontcg.io/swsh1/190_large.png"
     }
   },
   {
@@ -55,11 +56,11 @@ const recentTrades = [
     },
     giving: {
       count: 1,
-      preview: getFeaturedCardImageUrl("swsh9-25")
+      preview: "https://images.pokemontcg.io/swsh9/25_large.png"
     },
     receiving: {
       count: 1,
-      preview: getFeaturedCardImageUrl("sm12-222")
+      preview: "https://images.pokemontcg.io/sm12/222_large.png"
     }
   }
 ];
@@ -67,7 +68,42 @@ const recentTrades = [
 const Index = () => {
   const { data: featuredCards, isLoading, error } = useQuery({
     queryKey: ['featuredCards'],
-    queryFn: getFeaturedCards
+    queryFn: async () => {
+      try {
+        const sets = await getAllSets();
+        
+        if (sets && sets.length > 0) {
+          const latestSetId = sets[0].id;
+          const secondLatestSetId = sets[1]?.id;
+          
+          const latestSetCards = await getCardsBySetId(latestSetId, 1, 2);
+          const secondSetCards = secondLatestSetId 
+            ? await getCardsBySetId(secondLatestSetId, 1, 2)
+            : { data: [] };
+          
+          const combinedCards = [...latestSetCards.data, ...secondSetCards.data]
+            .slice(0, 4)
+            .map(card => ({
+              id: card.id,
+              name: card.name,
+              imageUrl: card.images?.small || card.images?.large || CARD_BACK_URL,
+              rarity: card.rarity || "Common",
+              condition: "Near Mint",
+              estimatedValue: card.tcgplayer?.prices?.holofoil?.market 
+                ? `£${card.tcgplayer.prices.holofoil.market.toFixed(2)}`
+                : card.tcgplayer?.prices?.normal?.market
+                ? `£${card.tcgplayer.prices.normal.market.toFixed(2)}`
+                : "£N/A"
+            }));
+          
+          return combinedCards;
+        }
+        return [];
+      } catch (error) {
+        console.error("Error fetching featured cards:", error);
+        return [];
+      }
+    }
   });
 
   return (
@@ -166,7 +202,7 @@ const Index = () => {
             <div>
               <h2 className="text-3xl font-bold mb-2">Featured Cards</h2>
               <p className="text-muted-foreground">
-                Discover popular cards that are available for trading right now
+                Discover popular cards from the latest sets available for trading
               </p>
             </div>
             <Button variant="ghost" className="hidden md:flex" asChild>
