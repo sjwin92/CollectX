@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getAllSets } from "@/services/api/pokemonSetsService";
-import { Search } from "lucide-react";
+import { Search, HelpCircle } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PokemonCardSearchProps {
   initialSetId?: string | null;
@@ -107,13 +108,39 @@ const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = nu
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-        <div className="md:col-span-5">
-          <Input
-            placeholder="Search card name..."
-            value={nameQuery}
-            onChange={(e) => setNameQuery(e.target.value)}
-            className="w-full"
-          />
+        <div className="md:col-span-5 relative">
+          <div className="relative">
+            <Input
+              placeholder="Search by card name or number (e.g., 25/100, SVI004)..."
+              value={nameQuery}
+              onChange={(e) => setNameQuery(e.target.value)}
+              className="w-full pr-10"
+            />
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute right-0 top-0 h-full"
+                    type="button"
+                  >
+                    <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <p className="text-sm">
+                    Search by card name (e.g., "Charizard") or card number in different formats:
+                  </p>
+                  <ul className="text-xs mt-1 list-disc pl-4">
+                    <li>Collector Number: 25/100</li>
+                    <li>Card Number only: 25</li>
+                    <li>Set Code + Number: SVI025</li>
+                  </ul>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
         
         <div className="md:col-span-5">

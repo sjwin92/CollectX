@@ -1,4 +1,3 @@
-
 // Define the TCGDexCard interface and export it
 export interface TCGDexCard {
   id: string;
@@ -82,11 +81,22 @@ export const fetchCardById = async (id: string): Promise<TCGDexCard | null> => {
 // Export getCardById as a direct alias of fetchCardById
 export const getCardById = fetchCardById;
 
-// Function to search for cards by name
-export const fetchCardsByName = async (name: string): Promise<TCGDexCard[]> => {
+// Function to search for cards by name or card number
+export const fetchCardsByName = async (searchQuery: string): Promise<TCGDexCard[]> => {
   try {
-    // Construct the API URL for search
-    const apiUrl = `https://api.tcgdex.net/v2/en/search/${encodeURIComponent(name)}`;
+    const query = searchQuery.trim();
+    // Check if the search appears to be a card number pattern
+    const isCardNumber = /^[\d]{1,3}\/[\d]{1,3}$/.test(query) || // Standard "25/100" format
+                        /^[\d]{1,3}$/.test(query) || // Just the card number
+                        /^[a-zA-Z]{2,4}[\d]{1,3}$/.test(query); // Set code + number like "SVI123"
+    
+    // If it's a card number, adjust the search URL
+    const apiUrl = isCardNumber 
+      ? `https://api.tcgdex.net/v2/en/search/number/${encodeURIComponent(query)}` 
+      : `https://api.tcgdex.net/v2/en/search/${encodeURIComponent(query)}`;
+    
+    console.log(`Searching cards with query: ${query} (isCardNumber: ${isCardNumber})`);
+    console.log(`Using API URL: ${apiUrl}`);
     
     // Make the request
     const response = await fetch(apiUrl);
@@ -127,7 +137,7 @@ export const fetchCardsByName = async (name: string): Promise<TCGDexCard[]> => {
   }
 };
 
-// Export searchCards function for use in components
+// Function to search for cards by name
 export const searchCards = async (name: string): Promise<TCGDexCard[]> => {
   try {
     const apiUrl = `https://api.tcgdex.net/v2/en/search/${encodeURIComponent(name)}`;

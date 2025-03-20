@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -23,7 +22,8 @@ import {
   Search, 
   SlidersHorizontal,
   Filter,
-  X
+  X,
+  HelpCircle
 } from "lucide-react";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
@@ -35,6 +35,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ExtendedCardItemProps } from "@/types/cardTypes";
 import CollectionStats from "@/components/profile/CollectionStats";
 import CollectionManager from "@/components/profile/CollectionManager";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const Collection = () => {
   const { toast } = useToast();
@@ -63,7 +64,6 @@ const Collection = () => {
   const [tradePreferences, setTradePreferences] = useState("");
 
   useEffect(() => {
-    // Load collection from localStorage if available
     const savedCollection = localStorage.getItem('myCollection');
     const savedWishlist = localStorage.getItem('wishlistCards');
     const savedTradable = localStorage.getItem('tradableCards');
@@ -74,7 +74,6 @@ const Collection = () => {
   }, []);
 
   useEffect(() => {
-    // Save to localStorage when collection changes
     if (myCollection.length > 0) {
       localStorage.setItem('myCollection', JSON.stringify(myCollection));
     }
@@ -165,7 +164,6 @@ const Collection = () => {
       return (min + max) / 2;
     }
     
-    // Handle single value format
     const numericValue = parseFloat(priceString?.replace(/[^0-9.]/g, '') || "0");
     return isNaN(numericValue) ? 0 : numericValue;
   };
@@ -193,6 +191,13 @@ const Collection = () => {
     try {
       const cards = await fetchCardsByName(searchCardQuery);
       setSearchResults(cards.slice(0, 10));
+      
+      if (cards.length === 0) {
+        toast({
+          title: "No Cards Found",
+          description: `No cards found matching "${searchCardQuery}". Try a different search term or format.`
+        });
+      }
     } catch (error) {
       console.error("Error searching for cards:", error);
       toast({
@@ -382,20 +387,46 @@ const Collection = () => {
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                         <Input 
-                          placeholder="Search for a card by name..." 
-                          className="pl-9"
+                          placeholder="Search by card name or number (e.g., 25/100, SVI004)..." 
+                          className="pl-9 pr-14"
                           value={searchCardQuery}
                           onChange={(e) => setSearchCardQuery(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleCardSearch()}
                         />
-                        <Button 
-                          variant="secondary" 
-                          className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7"
-                          onClick={handleCardSearch}
-                          disabled={searchLoading}
-                        >
-                          {searchLoading ? "Searching..." : "Search"}
-                        </Button>
+                        <div className="absolute right-1 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-7 w-7"
+                                  type="button"
+                                >
+                                  <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-xs">
+                                <p className="text-sm">
+                                  Search by card name (e.g., "Charizard") or card number in different formats:
+                                </p>
+                                <ul className="text-xs mt-1 list-disc pl-4">
+                                  <li>Collector Number: 25/100</li>
+                                  <li>Card Number only: 25</li>
+                                  <li>Set Code + Number: SVI025</li>
+                                </ul>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <Button 
+                            variant="secondary" 
+                            className="h-7"
+                            onClick={handleCardSearch}
+                            disabled={searchLoading}
+                          >
+                            {searchLoading ? "Searching..." : "Search"}
+                          </Button>
+                        </div>
                       </div>
                       
                       {searchResults.length > 0 && (
@@ -414,9 +445,12 @@ const Collection = () => {
                                   (e.target as HTMLImageElement).src = 'https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg';
                                 }}
                               />
-                              <div>
+                              <div className="flex-1">
                                 <div className="font-medium text-sm">{card.name}</div>
-                                <div className="text-xs text-muted-foreground">{card.set?.name || 'Unknown set'}</div>
+                                <div className="text-xs text-muted-foreground flex justify-between">
+                                  <span>{card.set?.name || 'Unknown set'}</span>
+                                  <span className="font-medium">{card.localId ? `#${card.localId}` : ''}</span>
+                                </div>
                               </div>
                             </div>
                           ))}
@@ -435,7 +469,14 @@ const Collection = () => {
                               }}
                             />
                             <div className="flex-1">
-                              <h3 className="font-bold">{selectedCard.name}</h3>
+                              <div className="flex justify-between items-start">
+                                <h3 className="font-bold">{selectedCard.name}</h3>
+                                {selectedCard.localId && (
+                                  <span className="text-xs bg-primary/10 px-2 py-1 rounded-md">
+                                    #{selectedCard.localId}
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-sm text-muted-foreground">
                                 {selectedCard.set?.name || 'Unknown set'} • {selectedCard.rarity || 'Unknown rarity'}
                               </p>
@@ -551,6 +592,7 @@ const Collection = () => {
                       {searchResults.length === 0 && searchCardQuery && !searchLoading && (
                         <div className="text-center py-3 text-muted-foreground">
                           No cards found matching "{searchCardQuery}"
+                          <p className="text-xs mt-1">Try searching by card name (e.g., "Charizard") or card number (e.g., "25/100", "25", "SVI025")</p>
                         </div>
                       )}
                     </div>
