@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, RefreshCw } from "lucide-react";
-import { getAllPossibleCardImageUrls } from "@/services/api/cardImageService";
+import { getAllPossibleCardImageUrls, getGuaranteedImageUrl } from "@/services/api/cardImageService";
 
 interface TradeListingImageProps {
   cardId?: string;
@@ -30,13 +29,24 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
     setRetryCount(0);
     setIsLoading(true);
     
+    // Try guaranteed image URL first for known cards
+    let initialSource = cardId ? getGuaranteedImageUrl(cardId) : null;
+    
+    // If no guaranteed URL, try provided imageUrl
+    if (!initialSource && imageUrl) {
+      initialSource = imageUrl;
+    }
+    
     // Get all possible image URLs - using our improved service
     const possibleUrls = cardId ? getAllPossibleCardImageUrls(cardId) : [];
     
-    // Add the provided imageUrl only if it doesn't exist in the list
-    let allSources = [...possibleUrls];
-    if (imageUrl && !possibleUrls.includes(imageUrl)) {
-      allSources.unshift(imageUrl); // Put provided URL first
+    // Combine all sources ensuring guaranteed URL is first
+    let allSources = [initialSource].filter(Boolean) as string[];
+    allSources = [...allSources, ...possibleUrls];
+    
+    // Add the provided imageUrl if not already included
+    if (imageUrl && !allSources.includes(imageUrl)) {
+      allSources.push(imageUrl);
     }
     
     // Make sure we have unique URLs
@@ -87,6 +97,27 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
     }
   };
 
+  useEffect(() => {
+    let timeoutId: number | undefined;
+    
+    if (isLoading) {
+      timeoutId = window.setTimeout(() => {
+        if (isLoading && retryCount < alternativeImages.length - 1) {
+          console.log("Trade listing image loading timed out, trying next source");
+          handleImageError();
+        } else if (isLoading && retryCount >= alternativeImages.length - 1) {
+          setImageError(true);
+          setIsLoading(false);
+          console.log("All image sources timed out for trade listing card:", cardName);
+        }
+      }, 2000);
+    }
+    
+    return () => {
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+  }, [isLoading, retryCount, alternativeImages.length, cardName]);
+  
   return (
     <div className="w-1/3 relative group">
       {!imageError ? (

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -6,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Info, AlertTriangle, Check, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { getAllPossibleCardImageUrls, getConsistentCardImageUrl } from "@/services/api/cardImageService";
+import { getAllPossibleCardImageUrls, getGuaranteedImageUrl } from "@/services/api/cardImageService";
 
 export interface CardItemProps {
   id: string;
@@ -42,12 +43,12 @@ const CardItem = ({
     setImageStatus("loading");
     setRetryCount(0);
     
-    // First try the direct imageUrl if provided
-    let initialSource = imageUrl;
+    // Try to use guaranteed method first, especially for featured cards
+    let initialSource = getGuaranteedImageUrl(id);
     
-    // If no direct URL, get a reliable URL based on card ID
-    if (!initialSource && id) {
-      initialSource = getConsistentCardImageUrl(id);
+    // If that doesn't work, fallback to provided imageUrl
+    if (!initialSource && imageUrl) {
+      initialSource = imageUrl;
     }
     
     // Set this as our primary image source
@@ -230,7 +231,7 @@ const CardItem = ({
 
   // Fast retry logic to prevent infinite buffering
   useEffect(() => {
-    // If we've been in loading state for more than 3 seconds, try the next source
+    // If we've been in loading state for more than 2 seconds, try the next source
     let timeoutId: number | undefined;
     
     if (imageStatus === "loading") {
@@ -238,14 +239,18 @@ const CardItem = ({
         if (imageStatus === "loading" && retryCount < alternativeImages.length - 1) {
           console.log("Image loading timed out, trying next source");
           handleImageError();
+        } else if (imageStatus === "loading" && retryCount >= alternativeImages.length - 1) {
+          // If we've tried all sources and still loading after timeout, show error
+          console.log("All image sources timed out for card:", id);
+          setImageStatus("error");
         }
-      }, 3000);
+      }, 2000); // Reduced timeout from 3s to 2s for faster response
     }
     
     return () => {
       if (timeoutId) window.clearTimeout(timeoutId);
     };
-  }, [imageStatus, retryCount, alternativeImages.length]);
+  }, [imageStatus, retryCount, alternativeImages.length, id]);
 };
 
 export default CardItem;
