@@ -7,7 +7,7 @@ import { formatCurrency } from "@/utils/escrowCalculator";
 import { Flame, Zap, Shield, TrendingUp, AlertTriangle, Check, Info, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { getAllPossibleCardImageUrlsSync } from "@/services/api/cardImageService";
+import { getAllPossibleCardImageUrls } from "@/services/api/cardImageService";
 
 interface PokemonCardDetailProps {
   card: PokemonCard;
@@ -25,8 +25,8 @@ const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
     setImageStatus("loading");
     setCurrentImageIndex(0);
     
-    // Get all possible image URLs for this card using the sets API helper - with sync version
-    const urls = getAllPossibleCardImageUrlsSync(card.id);
+    // Get all possible image URLs for this card using the sets API helper
+    const urls = getAllPossibleCardImageUrls(card.id);
     setImageUrls(urls);
     
     console.log(`Generated ${urls.length} potential image URLs for card ${card.id}`);
