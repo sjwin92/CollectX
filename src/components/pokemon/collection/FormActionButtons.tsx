@@ -6,16 +6,21 @@ import { DialogFooter } from "@/components/ui/dialog";
 interface FormActionButtonsProps {
   onCancel: () => void;
   isSubmitting?: boolean;
+  submitLabel?: string;
 }
 
-const FormActionButtons = ({ onCancel, isSubmitting }: FormActionButtonsProps) => {
+export const FormActionButtons = ({ 
+  onCancel, 
+  isSubmitting, 
+  submitLabel = "Add to Collection" 
+}: FormActionButtonsProps) => {
   return (
     <DialogFooter>
       <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
         Cancel
       </Button>
       <Button type="submit" disabled={isSubmitting}>
-        Add to Collection
+        {submitLabel}
       </Button>
     </DialogFooter>
   );

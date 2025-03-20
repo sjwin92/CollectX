@@ -2,14 +2,22 @@
 import React from "react";
 import { UseFormReturn } from "react-hook-form";
 import { CardFormValues } from "./cardFormSchema";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormDescription,
+} from "@/components/ui/form";
 
 interface CheckboxFieldProps {
   id: string;
   label: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
-  form?: UseFormReturn<CardFormValues>;
-  fieldName?: keyof CardFormValues;
+  form?: UseFormReturn<any>;
+  fieldName?: string;
+  description?: string;
 }
 
 const CheckboxField = ({ 
@@ -18,28 +26,34 @@ const CheckboxField = ({
   checked, 
   onChange, 
   form, 
-  fieldName 
+  fieldName,
+  description 
 }: CheckboxFieldProps) => {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.checked);
+  const handleChange = (checked: boolean) => {
+    onChange(checked);
     if (form && fieldName) {
-      form.setValue(fieldName, e.target.checked);
+      form.setValue(fieldName, checked);
     }
   };
 
   return (
-    <div className="flex items-center space-x-2">
-      <input
-        type="checkbox"
-        id={id}
-        checked={checked}
-        onChange={handleChange}
-        className="h-4 w-4 rounded border-gray-300"
-      />
-      <label htmlFor={id} className="text-sm font-medium">
-        {label}
-      </label>
-    </div>
+    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+      <FormControl>
+        <Checkbox
+          checked={checked}
+          onCheckedChange={handleChange}
+          id={id}
+        />
+      </FormControl>
+      <div className="space-y-1 leading-none">
+        <FormLabel htmlFor={id}>{label}</FormLabel>
+        {description && (
+          <FormDescription>
+            {description}
+          </FormDescription>
+        )}
+      </div>
+    </FormItem>
   );
 };
 
