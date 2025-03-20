@@ -1,7 +1,8 @@
 
 import React from "react";
 import { UseFormReturn } from "react-hook-form";
-import { CardFormValues, gradingCompanies } from "./cardFormSchema";
+import { QuickAddFormValues } from "./quickAddFormSchema";
+import { gradingCompanies } from "./quickAddFormSchema";
 import {
   Select,
   SelectContent,
@@ -13,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import FormFieldWrapper from "./FormFieldWrapper";
 
 interface GradingFieldsProps {
-  form: UseFormReturn<CardFormValues>;
+  form: UseFormReturn<any>;
 }
 
 const GradingFields = ({ form }: GradingFieldsProps) => {
