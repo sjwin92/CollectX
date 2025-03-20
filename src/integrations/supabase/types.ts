@@ -9,7 +9,273 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      card_alternative_images: {
+        Row: {
+          card_id: string
+          created_at: string | null
+          id: string
+          image_url: string
+          is_verified: boolean | null
+          source: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string | null
+          id?: string
+          image_url: string
+          is_verified?: boolean | null
+          source: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string | null
+          id?: string
+          image_url?: string
+          is_verified?: boolean | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_alternative_images_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "pokemon_cards_cache"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pokemon_cards_cache: {
+        Row: {
+          backup_image_url: string | null
+          cached_at: string
+          data: Json
+          id: string
+          image_url: string | null
+          image_verified: boolean | null
+          last_verified: string | null
+          name: string
+        }
+        Insert: {
+          backup_image_url?: string | null
+          cached_at?: string
+          data: Json
+          id: string
+          image_url?: string | null
+          image_verified?: boolean | null
+          last_verified?: string | null
+          name: string
+        }
+        Update: {
+          backup_image_url?: string | null
+          cached_at?: string
+          data?: Json
+          id?: string
+          image_url?: string | null
+          image_verified?: boolean | null
+          last_verified?: string | null
+          name?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          full_name: string | null
+          id: string
+          reputation: string | null
+          success_rate: number | null
+          trade_count: number | null
+          updated_at: string | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+          reputation?: string | null
+          success_rate?: number | null
+          trade_count?: number | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          reputation?: string | null
+          success_rate?: number | null
+          trade_count?: number | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
+      trade_cards: {
+        Row: {
+          card_id: string
+          condition: string
+          currency: string
+          estimated_value: number | null
+          id: string
+          trade_id: string
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          condition: string
+          currency?: string
+          estimated_value?: number | null
+          id?: string
+          trade_id: string
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          condition?: string
+          currency?: string
+          estimated_value?: number | null
+          id?: string
+          trade_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_cards_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "pokemon_cards_cache"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_cards_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trade_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          system_message: boolean
+          trade_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          system_message?: boolean
+          trade_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          system_message?: boolean
+          trade_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_messages_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trade_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_proposals: {
+        Row: {
+          created_at: string
+          id: string
+          initiator_id: string
+          recipient_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          initiator_id: string
+          recipient_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          initiator_id?: string
+          recipient_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_collections: {
+        Row: {
+          acquired_at: string
+          card_id: string
+          condition: string
+          for_trade: boolean
+          grading_company: string | null
+          grading_value: string | null
+          id: string
+          last_modified: string | null
+          notes: string | null
+          purchase_currency: string | null
+          purchase_price: number | null
+          quantity: number
+          user_id: string
+        }
+        Insert: {
+          acquired_at?: string
+          card_id: string
+          condition?: string
+          for_trade?: boolean
+          grading_company?: string | null
+          grading_value?: string | null
+          id?: string
+          last_modified?: string | null
+          notes?: string | null
+          purchase_currency?: string | null
+          purchase_price?: number | null
+          quantity?: number
+          user_id: string
+        }
+        Update: {
+          acquired_at?: string
+          card_id?: string
+          condition?: string
+          for_trade?: boolean
+          grading_company?: string | null
+          grading_value?: string | null
+          id?: string
+          last_modified?: string | null
+          notes?: string | null
+          purchase_currency?: string | null
+          purchase_price?: number | null
+          quantity?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_collections_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "pokemon_cards_cache"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
