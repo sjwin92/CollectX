@@ -55,7 +55,8 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
           name: card.set.name,
         },
         forTrade: data.forTrade,
-        graded: data.isGraded
+        graded: data.isGraded,
+        quantity: data.quantity
       };
       
       // Add grading info if card is graded
@@ -71,17 +72,19 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
       
       console.log("Adding to collection:", newCard);
       
-      // Add to collection
-      addCardToCollection(newCard);
-      
-      // Add to tradable cards if marked for trade
-      if (data.forTrade) {
-        addCardToTradable(newCard);
+      // Add cards to collection based on quantity
+      for (let i = 0; i < data.quantity; i++) {
+        addCardToCollection({ ...newCard, quantity: 1 });
+        
+        // Add to tradable cards if marked for trade
+        if (data.forTrade) {
+          addCardToTradable({ ...newCard, quantity: 1 });
+        }
       }
       
       toast({
         title: "Card added to collection!",
-        description: `Added ${card.name} to your collection`,
+        description: `Added ${data.quantity}x ${card.name} to your collection`,
       });
       
       onClose();

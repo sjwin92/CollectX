@@ -34,8 +34,41 @@ export const useCollection = (propCollection?: ExtendedCardItemProps[]) => {
   const loadCollectionFromStorage = useCallback(() => {
     const loadedCollection = getCollection();
     console.log('Loaded collection from localStorage:', loadedCollection.length, 'cards');
-    setCollection(loadedCollection);
+    
+    // Process the collection to combine duplicate cards and show quantity
+    const processedCollection = processDuplicateCards(loadedCollection);
+    setCollection(processedCollection);
   }, []);
+  
+  // Function to process duplicate cards and add quantity field
+  const processDuplicateCards = (cards: ExtendedCardItemProps[]): ExtendedCardItemProps[] => {
+    if (!cards || !Array.isArray(cards) || cards.length === 0) {
+      return [];
+    }
+    
+    const cardMap = new Map<string, ExtendedCardItemProps & { quantity: number }>();
+    
+    cards.forEach(card => {
+      // Only combine exact duplicates (same condition, grading, etc.)
+      const cardKey = getCardUniqueKey(card);
+      
+      if (cardMap.has(cardKey)) {
+        // Increase quantity for duplicate
+        const existingCard = cardMap.get(cardKey)!;
+        existingCard.quantity = (existingCard.quantity || 1) + 1;
+      } else {
+        // Add new card with quantity 1
+        cardMap.set(cardKey, { ...card, quantity: 1 });
+      }
+    });
+    
+    return Array.from(cardMap.values());
+  };
+  
+  // Generate a unique key for a card based on all its properties
+  const getCardUniqueKey = (card: ExtendedCardItemProps): string => {
+    return `${card.id}-${card.condition}-${card.graded ? '1' : '0'}-${card.gradingCompany || ''}-${card.gradeScore || ''}-${card.forTrade ? '1' : '0'}`;
+  };
   
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase();

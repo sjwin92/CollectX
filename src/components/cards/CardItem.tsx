@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
 import { cn } from "@/lib/utils";
-import { Info, AlertTriangle, Check, RefreshCw, BadgeCheck, Repeat } from "lucide-react";
+import { Info, AlertTriangle, Check, RefreshCw, BadgeCheck, Repeat, Star, BookHeart, CircleDollarSign } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { getAllPossibleCardImageUrls, getConsistentCardImageUrl } from "@/services/api/cardImageService";
@@ -30,6 +31,7 @@ export interface CardItemProps {
     name?: string;
   };
   number?: string;
+  quantity?: number;
 }
 
 const CardItem = ({
@@ -50,7 +52,8 @@ const CardItem = ({
   forTrade = false,
   tradePreferences,
   set,
-  number
+  number,
+  quantity = 1
 }: CardItemProps) => {
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
   const [imageSrc, setImageSrc] = useState<string>("");
@@ -139,6 +142,7 @@ const CardItem = ({
     >
       <div className="relative aspect-[2/3] overflow-hidden rounded-md mb-3">
         <div className="relative h-full">
+          {/* Card image with loading states */}
           {imageSrc && (
             <>
               <img
@@ -172,14 +176,24 @@ const CardItem = ({
             </div>
           )}
           
+          {/* Card badges and info */}
           <div className="absolute top-2 right-2 flex gap-1 flex-col items-end">
+            {/* Quantity badge */}
+            {quantity > 1 && (
+              <Badge variant="secondary" size="sm" className="mb-1">
+                <CircleDollarSign className="h-3 w-3 mr-1" />
+                {quantity}x
+              </Badge>
+            )}
+            
+            {/* Condition badge */}
             {showCondition && (
               <Badge variant={conditionVariant()} size="sm">
                 {condition}
               </Badge>
             )}
             
-            {/* Add graded badge if card is graded */}
+            {/* Graded badge */}
             {graded && (
               <Badge variant="success" size="sm" className="mt-1">
                 <BadgeCheck className="h-3 w-3 mr-1" />
@@ -187,7 +201,7 @@ const CardItem = ({
               </Badge>
             )}
             
-            {/* Add trade badge if card is for trade */}
+            {/* Trade badge */}
             {forTrade && (
               <Badge variant="secondary" size="sm" className="mt-1">
                 <Repeat className="h-3 w-3 mr-1" />
@@ -195,6 +209,7 @@ const CardItem = ({
               </Badge>
             )}
             
+            {/* Card info tooltip */}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -208,6 +223,7 @@ const CardItem = ({
                     <p><strong>Rarity:</strong> {rarity}</p>
                     {showCondition && <p><strong>Condition:</strong> {condition}</p>}
                     <p><strong>Value:</strong> {formatCurrency(estimatedValue)}</p>
+                    {quantity > 1 && <p><strong>Quantity:</strong> {quantity}</p>}
                     {set?.name && <p><strong>Set:</strong> {set.name}</p>}
                     {number && <p><strong>Number:</strong> {number}</p>}
                     {graded && <p><strong>Graded:</strong> {gradingCompany} {gradeScore}</p>}
@@ -235,6 +251,35 @@ const CardItem = ({
             {rarity}
           </Badge>
           <span className="text-xs font-medium">{formatCurrency(estimatedValue)}</span>
+        </div>
+        
+        {/* Collection details row */}
+        <div className="flex flex-wrap items-center gap-1 mt-2">
+          {quantity > 1 && (
+            <span className="text-xs bg-secondary/50 px-1.5 py-0.5 rounded" title="Quantity">
+              {quantity}x
+            </span>
+          )}
+          
+          {condition && (
+            <span className={`text-xs ${getConditionTextColor()} px-1.5 py-0.5 rounded`} title="Condition">
+              {condition}
+            </span>
+          )}
+          
+          {graded && (
+            <span className="text-xs bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 px-1.5 py-0.5 rounded flex items-center" title="Graded">
+              <BadgeCheck className="h-2.5 w-2.5 mr-0.5" />
+              {gradeScore}
+            </span>
+          )}
+          
+          {forTrade && (
+            <span className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 px-1.5 py-0.5 rounded flex items-center" title="For Trade">
+              <Repeat className="h-2.5 w-2.5 mr-0.5" />
+              Trade
+            </span>
+          )}
         </div>
         
         {/* Show trade preferences in a compact form if available */}
@@ -265,16 +310,45 @@ const CardItem = ({
     switch (condition.toLowerCase()) {
       case "mint":
       case "near mint":
+      case "nm":
         return "success";
       case "excellent":
       case "good":
+      case "lp": // Lightly Played
+      case "ex": // Excellent
         return "info";
       case "played":
+      case "mp": // Moderately Played
         return "warning";
       case "poor":
+      case "hp": // Heavily Played
+      case "dmg": // Damaged
         return "danger";
       default:
         return "info";
+    }
+  }
+  
+  function getConditionTextColor(): string {
+    switch (condition.toLowerCase()) {
+      case "mint":
+      case "near mint":
+      case "nm":
+        return "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300";
+      case "excellent":
+      case "good":
+      case "lp":
+      case "ex":
+        return "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300";
+      case "played":
+      case "mp":
+        return "bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300";
+      case "poor":
+      case "hp":
+      case "dmg":
+        return "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300";
+      default:
+        return "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300";
     }
   }
 
