@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +9,16 @@ interface TradeListingImageProps {
   imageUrl?: string;
   cardName: string;
   condition: string;
+  isFeatured?: boolean;
 }
 
-const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListingImageProps) => {
+const TradeListingImage = ({ 
+  cardId, 
+  imageUrl, 
+  cardName, 
+  condition, 
+  isFeatured = false 
+}: TradeListingImageProps) => {
   const [imageError, setImageError] = useState(false);
   const [imageSrc, setImageSrc] = useState<string>("");
   const [retryCount, setRetryCount] = useState(0);
@@ -30,20 +36,30 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
     setRetryCount(0);
     setIsLoading(true);
     
-    // Get all possible image URLs - using our improved service
-    const possibleUrls = cardId ? getAllPossibleCardImageUrls(cardId) : [];
+    // Get images based on whether this is a featured card or not
+    let allSources: string[] = [];
     
-    // Add the provided imageUrl only if it doesn't exist in the list
-    let allSources = [...possibleUrls];
-    if (imageUrl && !possibleUrls.includes(imageUrl)) {
-      allSources.unshift(imageUrl); // Put provided URL first
+    if (isFeatured) {
+      // For featured cards, only use the provided imageUrl - no alternatives
+      if (imageUrl) {
+        allSources = [imageUrl];
+      }
+    } else {
+      // For regular cards, get all possible fallbacks
+      const possibleUrls = cardId ? getAllPossibleCardImageUrls(cardId) : [];
+      
+      // Add the provided imageUrl only if it doesn't exist in the list
+      allSources = [...possibleUrls];
+      if (imageUrl && !possibleUrls.includes(imageUrl)) {
+        allSources.unshift(imageUrl); // Put provided URL first
+      }
     }
     
     // Make sure we have unique URLs
     const uniqueSources = [...new Set(allSources)];
     setAlternativeImages(uniqueSources);
     
-    console.log(`Trade listing for ${cardName}: Found ${uniqueSources.length} possible image sources`);
+    console.log(`Trade listing for ${cardName}: Found ${uniqueSources.length} possible image sources, isFeatured: ${isFeatured}`);
     
     if (uniqueSources.length > 0) {
       setImageSrc(uniqueSources[0]);
@@ -52,7 +68,7 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
       setImageError(true);
       setIsLoading(false);
     }
-  }, [cardId, imageUrl, cardName]);
+  }, [cardId, imageUrl, cardName, isFeatured]);
   
   const handleImageLoad = () => {
     console.log("Trade listing image loaded successfully:", imageSrc);

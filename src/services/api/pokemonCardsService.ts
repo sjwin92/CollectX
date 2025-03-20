@@ -1,3 +1,4 @@
+
 // Service for fetching and managing Pokemon cards
 import { PokemonCard, PokemonCardResponse, CARD_BACK_URL } from './pokemonTypes';
 import { BASE_URL, createApiUrl } from './pokemonApiConfig';
@@ -178,6 +179,7 @@ export const getReliableImageUrl = (cardId: string, size: 'small' | 'large' = 's
     return CARD_BACK_URL;
   }
   
+  // Use the featured card image URL function for more consistent results
   return getFeaturedCardImageUrl(cardId, size);
 };
 

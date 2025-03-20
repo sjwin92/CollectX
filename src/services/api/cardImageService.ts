@@ -52,6 +52,7 @@ export const getFeaturedCardImageUrl = (cardId: string, size: 'small' | 'large' 
     return CARD_BACK_URL;
   }
   
+  // For featured cards, exclusively use the Pokemon TCG API format
   return `https://images.pokemontcg.io/${setId}/${number}_${size}.png`;
 };
 
