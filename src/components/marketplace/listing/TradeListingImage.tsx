@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, RefreshCw } from "lucide-react";
-import { getAllPossibleCardImageUrls, getGuaranteedImageUrl } from "@/services/api/cardImageService";
+import { getAllPossibleCardImageUrlsSync, getGuaranteedImageUrlSync } from "@/services/api/cardImageService";
 
 interface TradeListingImageProps {
   cardId?: string;
@@ -29,16 +29,16 @@ const TradeListingImage = ({ cardId, imageUrl, cardName, condition }: TradeListi
     setRetryCount(0);
     setIsLoading(true);
     
-    // Try guaranteed image URL first for known cards
-    let initialSource = cardId ? getGuaranteedImageUrl(cardId) : null;
+    // Try guaranteed image URL first for known cards - using sync version
+    let initialSource = cardId ? getGuaranteedImageUrlSync(cardId) : null;
     
     // If no guaranteed URL, try provided imageUrl
     if (!initialSource && imageUrl) {
       initialSource = imageUrl;
     }
     
-    // Get all possible image URLs - using our improved service
-    const possibleUrls = cardId ? getAllPossibleCardImageUrls(cardId) : [];
+    // Get all possible image URLs - using our improved service with sync version
+    const possibleUrls = cardId ? getAllPossibleCardImageUrlsSync(cardId) : [];
     
     // Combine all sources ensuring guaranteed URL is first
     let allSources = [initialSource].filter(Boolean) as string[];

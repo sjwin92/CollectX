@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Info, AlertTriangle, Check, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { getAllPossibleCardImageUrls, getGuaranteedImageUrl } from "@/services/api/cardImageService";
+import { getAllPossibleCardImageUrlsSync, getGuaranteedImageUrlSync } from "@/services/api/cardImageService";
 
 export interface CardItemProps {
   id: string;
@@ -43,8 +43,8 @@ const CardItem = ({
     setImageStatus("loading");
     setRetryCount(0);
     
-    // Try to use guaranteed method first, especially for featured cards
-    let initialSource = getGuaranteedImageUrl(id);
+    // Use the synchronous version of the function to avoid Promise issues
+    let initialSource = getGuaranteedImageUrlSync(id);
     
     // If that doesn't work, fallback to provided imageUrl
     if (!initialSource && imageUrl) {
@@ -54,8 +54,8 @@ const CardItem = ({
     // Set this as our primary image source
     setImageSrc(initialSource || "");
     
-    // Get all possible alternative URLs as fallbacks
-    const allPossibleImages = getAllPossibleCardImageUrls(id);
+    // Get all possible alternative URLs as fallbacks - use sync version
+    const allPossibleImages = getAllPossibleCardImageUrlsSync(id);
     
     // Create a unique list of image sources (remove duplicates)
     let uniqueSources = [initialSource, ...allPossibleImages].filter(Boolean);

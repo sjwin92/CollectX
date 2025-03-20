@@ -22,14 +22,14 @@ import CardGrid from "@/components/cards/CardGrid";
 import TradeOffer from "@/components/trades/TradeOffer";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
-import { getGuaranteedImageUrl } from "@/services/api/cardImageService";
+import { getGuaranteedImageUrlSync } from "@/services/api/cardImageService";
 
-// Define featured cards with guaranteed working image URLs
+// Define featured cards with guaranteed working image URLs - using sync version
 const featuredCards = [
   {
     id: "swsh4-25",
     name: "Charizard VMAX",
-    imageUrl: getGuaranteedImageUrl("swsh4-25"),
+    imageUrl: getGuaranteedImageUrlSync("swsh4-25"),
     rarity: "Ultra Rare",
     condition: "Near Mint",
     estimatedValue: "£350"
@@ -37,7 +37,7 @@ const featuredCards = [
   {
     id: "swsh1-190",
     name: "Pikachu VMAX",
-    imageUrl: getGuaranteedImageUrl("swsh1-190"),
+    imageUrl: getGuaranteedImageUrlSync("swsh1-190"),
     rarity: "Rare",
     condition: "Mint",
     estimatedValue: "£120"
@@ -45,7 +45,7 @@ const featuredCards = [
   {
     id: "sm12-222",
     name: "Mewtwo & Mew GX",
-    imageUrl: getGuaranteedImageUrl("sm12-222"),
+    imageUrl: getGuaranteedImageUrlSync("sm12-222"),
     rarity: "Ultra Rare",
     condition: "Excellent",
     estimatedValue: "£200"
@@ -53,14 +53,14 @@ const featuredCards = [
   {
     id: "swsh9-25",
     name: "Blastoise VMAX",
-    imageUrl: getGuaranteedImageUrl("swsh9-25"),
+    imageUrl: getGuaranteedImageUrlSync("swsh9-25"),
     rarity: "Rare Holo",
     condition: "Good",
     estimatedValue: "£80"
   }
 ];
 
-// Use the guaranteed image service for trade previews
+// Use the guaranteed image service for trade previews - with sync version
 const recentTrades = [
   {
     id: "t1",
@@ -73,11 +73,11 @@ const recentTrades = [
     },
     giving: {
       count: 2,
-      preview: getGuaranteedImageUrl("swsh4-25")
+      preview: getGuaranteedImageUrlSync("swsh4-25")
     },
     receiving: {
       count: 3,
-      preview: getGuaranteedImageUrl("swsh1-190")
+      preview: getGuaranteedImageUrlSync("swsh1-190")
     }
   },
   {
@@ -91,11 +91,11 @@ const recentTrades = [
     },
     giving: {
       count: 1,
-      preview: getGuaranteedImageUrl("swsh9-25")
+      preview: getGuaranteedImageUrlSync("swsh9-25")
     },
     receiving: {
       count: 1,
-      preview: getGuaranteedImageUrl("sm12-222")
+      preview: getGuaranteedImageUrlSync("sm12-222")
     }
   }
 ];
