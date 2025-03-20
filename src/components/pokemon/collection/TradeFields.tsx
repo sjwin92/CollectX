@@ -15,6 +15,7 @@ const TradeFields = ({ form }: TradeFieldsProps) => {
       form={form}
       name="tradePreferences"
       label="Trade Preferences"
+      description="What would you like to trade this card for?"
     >
       <Input
         placeholder="What would you like to trade for?"
