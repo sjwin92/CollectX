@@ -41,14 +41,11 @@ const TradeListingImage = ({
     // Get images based on whether this is a featured card or not
     let allSources: string[] = [];
     
-    if (isFeatured) {
+    if (isFeatured && cardId) {
       // For featured cards, use our dedicated featured card service
-      if (cardId) {
-        const featuredImageUrl = getFeaturedCardImageUrl(cardId, 'large');
-        allSources = [featuredImageUrl];
-      } else if (imageUrl) {
-        allSources = [imageUrl];
-      }
+      const featuredImageUrl = getFeaturedCardImageUrl(cardId, 'large');
+      allSources = [featuredImageUrl];
+      console.log(`Using featured card image URL for ${cardName}: ${featuredImageUrl}`);
     } else {
       // For regular cards, get all possible fallbacks
       const possibleUrls = cardId ? getAllPossibleCardImageUrls(cardId) : [];

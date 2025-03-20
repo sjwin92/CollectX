@@ -14,7 +14,16 @@ export const getFeaturedCardImageUrl = (cardId: string, size: 'small' | 'large' 
   
   // For featured cards, we use the official Pokemon TCG API's high-quality images
   const sizeParam = size === 'large' ? 'large' : 'small';
-  return `https://images.pokemontcg.io/${cardId.split('-')[0]}/${cardId.split('-')[1]}_${sizeParam}.png`;
+  
+  // Split the ID into set and number parts
+  const parts = cardId.split('-');
+  if (parts.length !== 2) {
+    console.error(`Invalid card ID format: ${cardId}`);
+    return CARD_BACK_URL;
+  }
+  
+  // Return the properly formatted URL for the Pokemon TCG API
+  return `https://images.pokemontcg.io/${parts[0]}/${parts[1]}_${sizeParam}.png`;
 };
 
 /**
@@ -23,11 +32,11 @@ export const getFeaturedCardImageUrl = (cardId: string, size: 'small' | 'large' 
  */
 export const getFeaturedCards = async () => {
   // Return a varied selection of featured cards
-  return [
+  const featuredCards = [
     {
       id: "swsh4-25",
       name: "Pikachu V",
-      imageUrl: getFeaturedCardImageUrl("swsh4-25", "large"),
+      imageUrl: getFeaturedCardImageUrl("swsh4-25"),
       rarity: "Ultra Rare",
       condition: "Near Mint",
       estimatedValue: "£18.99"
@@ -35,7 +44,7 @@ export const getFeaturedCards = async () => {
     {
       id: "swsh1-190",
       name: "Zacian V",
-      imageUrl: getFeaturedCardImageUrl("swsh1-190", "large"),
+      imageUrl: getFeaturedCardImageUrl("swsh1-190"),
       rarity: "Ultra Rare",
       condition: "Excellent",
       estimatedValue: "£24.50"
@@ -43,7 +52,7 @@ export const getFeaturedCards = async () => {
     {
       id: "sm12-222",
       name: "Charizard & Braixen GX",
-      imageUrl: getFeaturedCardImageUrl("sm12-222", "large"),
+      imageUrl: getFeaturedCardImageUrl("sm12-222"),
       rarity: "Secret Rare",
       condition: "Near Mint",
       estimatedValue: "£32.75"
@@ -51,7 +60,7 @@ export const getFeaturedCards = async () => {
     {
       id: "swsh9-25",
       name: "Mew VMAX",
-      imageUrl: getFeaturedCardImageUrl("swsh9-25", "large"),
+      imageUrl: getFeaturedCardImageUrl("swsh9-25"),
       rarity: "Ultra Rare",
       condition: "Mint",
       estimatedValue: "£45.00"
@@ -59,7 +68,7 @@ export const getFeaturedCards = async () => {
     {
       id: "sv3-193",
       name: "Charizard ex",
-      imageUrl: getFeaturedCardImageUrl("sv3-193", "large"),
+      imageUrl: getFeaturedCardImageUrl("sv3-193"),
       rarity: "Ultra Rare",
       condition: "Near Mint",
       estimatedValue: "£56.25"
@@ -67,10 +76,17 @@ export const getFeaturedCards = async () => {
     {
       id: "sv4-199",
       name: "Gardevoir ex",
-      imageUrl: getFeaturedCardImageUrl("sv4-199", "large"),
+      imageUrl: getFeaturedCardImageUrl("sv4-199"),
       rarity: "Ultra Rare",
       condition: "Excellent",
       estimatedValue: "£38.50"
     }
   ];
+  
+  console.log("Featured cards prepared with the following image URLs:");
+  featuredCards.forEach(card => {
+    console.log(`${card.name}: ${card.imageUrl}`);
+  });
+  
+  return featuredCards;
 };

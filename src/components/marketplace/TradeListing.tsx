@@ -57,6 +57,7 @@ const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListin
               imageUrl={listing.cardOffered.imageUrl}
               cardName={listing.cardOffered.name}
               condition={listing.cardOffered.condition}
+              isFeatured={featured}
             />
           </div>
           
