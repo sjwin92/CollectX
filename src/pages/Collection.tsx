@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -62,16 +63,44 @@ const Collection = () => {
   const [gradingCompany, setGradingCompany] = useState("PSA");
   const [gradeValue, setGradeValue] = useState("9");
   const [tradePreferences, setTradePreferences] = useState("");
+  const [filteredCollection, setFilteredCollection] = useState<ExtendedCardItemProps[]>([]);
 
   useEffect(() => {
     const savedCollection = localStorage.getItem('myCollection');
     const savedWishlist = localStorage.getItem('wishlistCards');
     const savedTradable = localStorage.getItem('tradableCards');
     
-    if (savedCollection) setMyCollection(JSON.parse(savedCollection));
-    if (savedWishlist) setWishlistCards(JSON.parse(savedWishlist));
-    if (savedTradable) setTradableCards(JSON.parse(savedTradable));
+    if (savedCollection) {
+      try {
+        const parsed = JSON.parse(savedCollection);
+        setMyCollection(parsed);
+      } catch (error) {
+        console.error('Error parsing myCollection from localStorage:', error);
+      }
+    }
+    if (savedWishlist) {
+      try {
+        const parsed = JSON.parse(savedWishlist);
+        setWishlistCards(parsed);
+      } catch (error) {
+        console.error('Error parsing wishlistCards from localStorage:', error);
+      }
+    }
+    if (savedTradable) {
+      try {
+        const parsed = JSON.parse(savedTradable);
+        setTradableCards(parsed);
+      } catch (error) {
+        console.error('Error parsing tradableCards from localStorage:', error);
+      }
+    }
   }, []);
+
+  useEffect(() => {
+    // Update filtered cards whenever search query or filters change
+    const filtered = getFilteredCardsByTab();
+    setFilteredCollection(filtered);
+  }, [searchQuery, filterRarity, filterCondition, showGradedOnly, sortOption, selectedTab, myCollection, wishlistCards, tradableCards]);
 
   useEffect(() => {
     if (myCollection.length > 0) {
@@ -307,6 +336,12 @@ const Collection = () => {
 
   const handleQuickBrowseCards = () => {
     window.location.href = "/sets";
+  };
+
+  const handleSearchQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    console.log("Search query changed to:", query);
   };
 
   return (
@@ -618,7 +653,7 @@ const Collection = () => {
                 placeholder="Search by card name, set, or type..." 
                 className="pl-9"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchQueryChange}
               />
               {searchQuery && (
                 <Button 
@@ -637,7 +672,7 @@ const Collection = () => {
             
             <TabsContent value="all" className="mt-0">
               <CardGrid 
-                cards={getFilteredCardsByTab()} 
+                cards={filteredCollection} 
                 columns={{ sm: 2, md: 3, lg: 4, xl: 5 }}
               />
               
@@ -659,7 +694,7 @@ const Collection = () => {
                 </GlassCard>
               )}
               
-              {myCollection.length > 0 && getFilteredCardsByTab().length === 0 && (
+              {myCollection.length > 0 && filteredCollection.length === 0 && (
                 <GlassCard className="p-8 text-center">
                   <h3 className="text-xl font-medium mb-2">No cards match your search</h3>
                   <p className="text-muted-foreground mb-4">
@@ -679,7 +714,7 @@ const Collection = () => {
             
             <TabsContent value="tradable" className="mt-0">
               <CardGrid 
-                cards={getFilteredCardsByTab()} 
+                cards={filteredCollection} 
                 columns={{ sm: 2, md: 3, lg: 4, xl: 5 }}
               />
               
@@ -696,7 +731,7 @@ const Collection = () => {
                 </GlassCard>
               )}
               
-              {tradableCards.length > 0 && getFilteredCardsByTab().length === 0 && (
+              {tradableCards.length > 0 && filteredCollection.length === 0 && (
                 <GlassCard className="p-8 text-center">
                   <h3 className="text-xl font-medium mb-2">No tradable cards match your search</h3>
                   <p className="text-muted-foreground mb-4">
@@ -716,7 +751,7 @@ const Collection = () => {
             
             <TabsContent value="wishlist" className="mt-0">
               <CardGrid 
-                cards={getFilteredCardsByTab()} 
+                cards={filteredCollection} 
                 columns={{ sm: 2, md: 3, lg: 4, xl: 5 }}
               />
               
@@ -730,7 +765,7 @@ const Collection = () => {
                 </GlassCard>
               )}
               
-              {wishlistCards.length > 0 && getFilteredCardsByTab().length === 0 && (
+              {wishlistCards.length > 0 && filteredCollection.length === 0 && (
                 <GlassCard className="p-8 text-center">
                   <h3 className="text-xl font-medium mb-2">No wishlist cards match your search</h3>
                   <p className="text-muted-foreground mb-4">

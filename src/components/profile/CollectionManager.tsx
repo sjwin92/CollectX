@@ -34,12 +34,18 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
       // Load from localStorage if no prop collection is provided
       const savedCollection = localStorage.getItem('myCollection');
       if (savedCollection) {
-        const parsedCollection = JSON.parse(savedCollection);
-        setCollection(parsedCollection);
-        filterCards(searchQuery, showGradedOnly, parsedCollection);
+        try {
+          const parsedCollection = JSON.parse(savedCollection);
+          setCollection(parsedCollection);
+          filterCards(searchQuery, showGradedOnly, parsedCollection);
+        } catch (error) {
+          console.error('Error parsing collection from localStorage:', error);
+          setCollection([]);
+          setFilteredCards([]);
+        }
       }
     }
-  }, [propCollection]);
+  }, [propCollection, searchQuery, showGradedOnly]);
   
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase();
