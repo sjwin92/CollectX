@@ -107,16 +107,27 @@ const Collection = () => {
   };
 
   const getFilteredAndSortedCards = (cards) => {
-    if (!cards) return [];
+    if (!cards || !Array.isArray(cards)) return [];
     
-    let filtered = cards;
+    let filtered = [...cards];
+    
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(card => 
-        card.name.toLowerCase().includes(query) || 
-        card.rarity?.toLowerCase().includes(query) ||
-        card.condition?.toLowerCase().includes(query)
-      );
+      const query = searchQuery.toLowerCase().trim();
+      console.log("Searching for:", query, "in cards:", filtered.length);
+      
+      filtered = filtered.filter(card => {
+        if (!card) return false;
+        
+        const nameMatch = card.name && card.name.toLowerCase().includes(query);
+        const rarityMatch = card.rarity && card.rarity.toLowerCase().includes(query);
+        const conditionMatch = card.condition && card.condition.toLowerCase().includes(query);
+        const setMatch = card.set && card.set.name && card.set.name.toLowerCase().includes(query);
+        const numberMatch = card.number && card.number.toLowerCase().includes(query);
+        
+        return nameMatch || rarityMatch || conditionMatch || setMatch || numberMatch;
+      });
+      
+      console.log("After filtering:", filtered.length, "cards found");
     }
     
     if (filterRarity !== "all") {
@@ -614,7 +625,10 @@ const Collection = () => {
                   variant="ghost" 
                   size="icon" 
                   className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6"
-                  onClick={() => setSearchQuery("")}
+                  onClick={() => {
+                    setSearchQuery("");
+                    console.log("Search cleared");
+                  }}
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -655,6 +669,7 @@ const Collection = () => {
                     setSearchQuery("");
                     setFilterRarity("all");
                     setFilterCondition("all");
+                    console.log("Filters cleared");
                   }}>
                     Clear Filters
                   </Button>
@@ -691,6 +706,7 @@ const Collection = () => {
                     setSearchQuery("");
                     setFilterRarity("all");
                     setFilterCondition("all");
+                    console.log("Filters cleared");
                   }}>
                     Clear Filters
                   </Button>
@@ -724,6 +740,7 @@ const Collection = () => {
                     setSearchQuery("");
                     setFilterRarity("all");
                     setFilterCondition("all");
+                    console.log("Filters cleared");
                   }}>
                     Clear Filters
                   </Button>

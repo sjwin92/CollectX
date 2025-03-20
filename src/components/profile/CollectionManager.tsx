@@ -44,7 +44,7 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase();
     setSearchQuery(query);
-    
+    console.log("Collection Manager - Searching for:", query);
     filterCards(query, showGradedOnly, collection);
   };
   
@@ -54,18 +54,34 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
   };
   
   const filterCards = (query: string, gradedOnly: boolean, cards: ExtendedCardItemProps[]) => {
-    let filtered = cards || [];
+    if (!cards || !Array.isArray(cards)) {
+      console.log("No cards to filter or invalid cards array");
+      setFilteredCards([]);
+      return;
+    }
+    
+    console.log(`Filtering ${cards.length} cards with query: "${query}"`);
+    let filtered = [...cards]; // Create a copy to avoid mutating the original
     
     if (query.trim() !== "") {
-      filtered = filtered.filter(card => 
-        card.name.toLowerCase().includes(query) || 
-        (card.rarity && card.rarity.toLowerCase().includes(query)) ||
-        (card.condition && card.condition.toLowerCase().includes(query))
-      );
+      filtered = filtered.filter(card => {
+        if (!card) return false;
+        
+        const nameMatch = card.name && card.name.toLowerCase().includes(query);
+        const rarityMatch = card.rarity && card.rarity.toLowerCase().includes(query);
+        const conditionMatch = card.condition && card.condition.toLowerCase().includes(query);
+        const setMatch = card.set && card.set.name && card.set.name.toLowerCase().includes(query);
+        const numberMatch = card.number && card.number.toLowerCase().includes(query);
+        
+        return nameMatch || rarityMatch || conditionMatch || setMatch || numberMatch;
+      });
+      
+      console.log(`Found ${filtered.length} cards matching "${query}"`);
     }
     
     if (gradedOnly) {
       filtered = filtered.filter(card => card.graded === true);
+      console.log(`Found ${filtered.length} graded cards`);
     }
     
     setFilteredCards(filtered);
