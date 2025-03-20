@@ -1,22 +1,12 @@
-
 import React, { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import TradeOffer from "@/components/trades/TradeOffer";
-import GlassCard from "@/components/ui/custom/GlassCard";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import Badge from "@/components/ui/custom/Badge";
-import { HandshakeIcon, Plus, RefreshCw } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import TradeStats from "@/components/trades/TradeStats";
+import TradeActions from "@/components/trades/TradeActions";
+import TradeTabs from "@/components/trades/TradeTabs";
 
-// Placeholder trade data
+// Placeholder trade data (keeping for reference, but not using directly)
 const activeTrades = [
   {
     id: "t1",
@@ -136,21 +126,9 @@ const declinedTrades = [
 
 const Trades = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const navigate = useNavigate();
-
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    // Simulate refresh with timeout
-    setTimeout(() => {
-      setIsRefreshing(false);
-      toast.success("Trades refreshed successfully!");
-    }, 1500);
-  };
 
   const handleCreateTrade = () => {
     toast.info("This feature is coming soon!");
-    // You would typically navigate to a create trade form
-    // navigate('/trades/create');
   };
 
   // Display correct stats as specified
@@ -172,109 +150,25 @@ const Trades = () => {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <GlassCard className="p-4 text-center">
-              <div className="text-3xl font-bold mb-1">
-                {totalTrades}
-              </div>
-              <div className="text-sm text-muted-foreground">Total Trades</div>
-            </GlassCard>
-            
-            <GlassCard className="p-4 text-center">
-              <div className="text-3xl font-bold text-blue-500 mb-1">
-                {pendingCount}
-              </div>
-              <div className="text-sm text-muted-foreground">Pending</div>
-            </GlassCard>
-            
-            <GlassCard className="p-4 text-center">
-              <div className="text-3xl font-bold text-yellow-500 mb-1">
-                {inProgressCount}
-              </div>
-              <div className="text-sm text-muted-foreground">In Progress</div>
-            </GlassCard>
-            
-            <GlassCard className="p-4 text-center">
-              <div className="text-3xl font-bold text-green-500 mb-1">
-                {completedCount}
-              </div>
-              <div className="text-sm text-muted-foreground">Completed</div>
-            </GlassCard>
-          </div>
+          <TradeStats 
+            totalTrades={totalTrades}
+            pendingCount={pendingCount}
+            inProgressCount={inProgressCount}
+            completedCount={completedCount}
+          />
           
-          <div className="flex justify-between items-center mb-6">
-            <Button className="gap-2" onClick={handleCreateTrade}>
-              <Plus className="h-4 w-4" />
-              Create New Trade
-            </Button>
-            
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="gap-2" 
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-            >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              {isRefreshing ? 'Refreshing...' : 'Refresh'}
-            </Button>
-          </div>
+          <TradeActions 
+            isRefreshing={isRefreshing}
+            setIsRefreshing={setIsRefreshing}
+          />
           
-          <Tabs defaultValue="active">
-            <TabsList className="mb-6">
-              <TabsTrigger value="active">
-                Active
-                <Badge variant="default" className="ml-2">
-                  {pendingCount + inProgressCount}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="completed">
-                Completed
-                <Badge variant="default" className="ml-2">
-                  {completedCount}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="declined">
-                Declined
-                <Badge variant="default" className="ml-2">
-                  {declinedTrades.length}
-                </Badge>
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="active" className="space-y-6">
-              <GlassCard className="p-8 text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-                  <HandshakeIcon className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-xl font-medium mb-2">No active trades</h3>
-                <p className="text-muted-foreground mb-4">
-                  You don't have any active trades at the moment. 
-                  Start by creating a new trade proposal.
-                </p>
-                <Button onClick={handleCreateTrade}>Create New Trade</Button>
-              </GlassCard>
-            </TabsContent>
-            
-            <TabsContent value="completed" className="space-y-6">
-              <GlassCard className="p-8 text-center">
-                <h3 className="text-xl font-medium mb-2">No completed trades</h3>
-                <p className="text-muted-foreground mb-4">
-                  You haven't completed any trades yet. 
-                  Complete one of your active trades to see it here.
-                </p>
-              </GlassCard>
-            </TabsContent>
-            
-            <TabsContent value="declined" className="space-y-6">
-              <GlassCard className="p-8 text-center">
-                <h3 className="text-xl font-medium mb-2">No declined trades</h3>
-                <p className="text-muted-foreground">
-                  You don't have any declined trades.
-                </p>
-              </GlassCard>
-            </TabsContent>
-          </Tabs>
+          <TradeTabs 
+            pendingCount={pendingCount}
+            inProgressCount={inProgressCount}
+            completedCount={completedCount}
+            declinedCount={declinedTrades.length}
+            onCreateTrade={handleCreateTrade}
+          />
         </div>
       </main>
       
