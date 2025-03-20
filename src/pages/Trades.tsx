@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import TradeOffer from "@/components/trades/TradeOffer";
@@ -13,8 +13,10 @@ import {
 import { Button } from "@/components/ui/button";
 import Badge from "@/components/ui/custom/Badge";
 import { HandshakeIcon, Plus, RefreshCw } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
-// Dummy trade data
+// Placeholder trade data
 const activeTrades = [
   {
     id: "t1",
@@ -133,6 +135,24 @@ const declinedTrades = [
 ];
 
 const Trades = () => {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const navigate = useNavigate();
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    // Simulate refresh with timeout
+    setTimeout(() => {
+      setIsRefreshing(false);
+      toast.success("Trades refreshed successfully!");
+    }, 1500);
+  };
+
+  const handleCreateTrade = () => {
+    toast.info("This feature is coming soon!");
+    // You would typically navigate to a create trade form
+    // navigate('/trades/create');
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -177,14 +197,20 @@ const Trades = () => {
           </div>
           
           <div className="flex justify-between items-center mb-6">
-            <Button className="gap-2">
+            <Button className="gap-2" onClick={handleCreateTrade}>
               <Plus className="h-4 w-4" />
               Create New Trade
             </Button>
             
-            <Button variant="ghost" size="sm" className="gap-2">
-              <RefreshCw className="h-4 w-4" />
-              Refresh
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="gap-2" 
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
             </Button>
           </div>
           
@@ -225,7 +251,7 @@ const Trades = () => {
                     You don't have any active trades at the moment. 
                     Start by creating a new trade proposal.
                   </p>
-                  <Button>Create New Trade</Button>
+                  <Button onClick={handleCreateTrade}>Create New Trade</Button>
                 </GlassCard>
               )}
             </TabsContent>
