@@ -1,11 +1,11 @@
 
 import React from "react";
 import GlassCard from "@/components/ui/custom/GlassCard";
-import { CardItemProps } from "@/components/cards/CardItem";
+import { ExtendedCardItemProps } from "@/types/cardTypes";
 import { formatCurrency } from "@/utils/escrowCalculator";
 
 interface CollectionStatsProps {
-  collection: CardItemProps[];
+  collection: ExtendedCardItemProps[];
 }
 
 const CollectionStats = ({ collection }: CollectionStatsProps) => {
@@ -16,9 +16,8 @@ const CollectionStats = ({ collection }: CollectionStatsProps) => {
     card.rarity?.toLowerCase().includes("secret")
   ).length;
   
-  // For tradable cards, in a real app this would come from the card's properties
-  // For now, let's assume approximately 60% of cards are tradable
-  const tradableCards = Math.floor(collection.length * 0.6);
+  // Get tradable cards count
+  const tradableCards = collection.filter(card => card.forTrade).length;
   
   // Calculate estimated value range
   const calculateTotalValue = () => {
@@ -26,7 +25,7 @@ const CollectionStats = ({ collection }: CollectionStatsProps) => {
     let maxTotal = 0;
     
     collection.forEach(card => {
-      if (!card.estimatedValue || card.estimatedValue === "£N/A") return;
+      if (!card.estimatedValue) return;
       
       let valueText = card.estimatedValue.replace('£', '').replace('$', '');
       
@@ -53,6 +52,9 @@ const CollectionStats = ({ collection }: CollectionStatsProps) => {
     return `${formatCurrency(minTotal)}-${formatCurrency(maxTotal)}`;
   };
 
+  // Calculate graded cards count
+  const gradedCards = collection.filter(card => card.graded).length;
+
   return (
     <GlassCard className="p-6">
       <h3 className="text-lg font-medium mb-4">Collection Stats</h3>
@@ -68,6 +70,10 @@ const CollectionStats = ({ collection }: CollectionStatsProps) => {
         <div className="flex justify-between items-center">
           <span className="text-muted-foreground">Rare Cards</span>
           <span className="font-medium">{rareCards}</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-muted-foreground">Graded Cards</span>
+          <span className="font-medium">{gradedCards}</span>
         </div>
         <div className="flex justify-between items-center">
           <span className="text-muted-foreground">Est. Collection Value</span>

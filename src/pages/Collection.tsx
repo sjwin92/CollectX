@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -32,95 +33,15 @@ import { fetchCardsByName } from "@/services/tcgdexApi";
 import GradedFilter from "@/components/profile/GradedFilter";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ExtendedCardItemProps } from "@/types/cardTypes";
-
-const initialCollection = [
-  {
-    id: "base1-4",
-    name: "Charizard",
-    imageUrl: "https://assets.tcgdex.net/en/base/base1/4",
-    rarity: "Rare Holo",
-    condition: "Near Mint",
-    estimatedValue: "$350-450",
-    graded: true,
-    gradingCompany: "PSA",
-    grade: "9"
-  },
-  {
-    id: "swsh4-25",
-    name: "Pikachu VMAX",
-    imageUrl: "https://assets.tcgdex.net/en/swsh/swsh4/25",
-    rarity: "Rare",
-    condition: "Mint",
-    estimatedValue: "$120-150",
-    graded: false
-  },
-  {
-    id: "sm10-158",
-    name: "Mewtwo & Mew GX",
-    imageUrl: "https://assets.tcgdex.net/en/sm/sm10/158",
-    rarity: "Ultra Rare",
-    condition: "Excellent",
-    estimatedValue: "$200-250",
-    graded: true,
-    gradingCompany: "BGS",
-    grade: "9.5"
-  },
-  {
-    id: "base1-2",
-    name: "Blastoise",
-    imageUrl: "https://assets.tcgdex.net/en/base/base1/2",
-    rarity: "Rare Holo",
-    condition: "Good",
-    estimatedValue: "$80-120",
-    graded: false
-  },
-  {
-    id: "base1-15",
-    name: "Venusaur",
-    imageUrl: "https://assets.tcgdex.net/en/base/base1/15",
-    rarity: "Rare Holo",
-    condition: "Played",
-    estimatedValue: "$150-180",
-    graded: true,
-    gradingCompany: "CGC",
-    grade: "8"
-  },
-  {
-    id: "sm12-226",
-    name: "Mew V",
-    imageUrl: "https://assets.tcgdex.net/en/sm/sm12/226",
-    rarity: "Ultra Rare",
-    condition: "Near Mint",
-    estimatedValue: "$40-60",
-    graded: false
-  }
-];
-
-const initialWishlistCards = [
-  {
-    id: "sm8-159",
-    name: "Lugia GX",
-    imageUrl: "https://assets.tcgdex.net/en/sm/sm8/159",
-    rarity: "Ultra Rare",
-    condition: "Any",
-    estimatedValue: "$180-250"
-  },
-  {
-    id: "sm7-68",
-    name: "Rayquaza GX",
-    imageUrl: "https://assets.tcgdex.net/en/sm/sm7/68",
-    rarity: "Ultra Rare",
-    condition: "Near Mint or better",
-    estimatedValue: "$90-120"
-  }
-];
+import CollectionStats from "@/components/profile/CollectionStats";
+import CollectionManager from "@/components/profile/CollectionManager";
 
 const Collection = () => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
-  const [myCollection, setMyCollection] = useState(initialCollection);
-  const [wishlistCards, setWishlistCards] = useState(initialWishlistCards);
-  const [tradableCards, setTradableCards] = useState(initialCollection.slice(0, 4));
+  const [myCollection, setMyCollection] = useState<ExtendedCardItemProps[]>([]);
+  const [wishlistCards, setWishlistCards] = useState<ExtendedCardItemProps[]>([]);
+  const [tradableCards, setTradableCards] = useState<ExtendedCardItemProps[]>([]);
   const [sortOption, setSortOption] = useState("name-asc");
   const [filterRarity, setFilterRarity] = useState("all");
   const [filterCondition, setFilterCondition] = useState("all");
@@ -139,6 +60,31 @@ const Collection = () => {
   const [isGraded, setIsGraded] = useState(false);
   const [gradingCompany, setGradingCompany] = useState("PSA");
   const [gradeValue, setGradeValue] = useState("9");
+  const [tradePreferences, setTradePreferences] = useState("");
+
+  useEffect(() => {
+    // Load collection from localStorage if available
+    const savedCollection = localStorage.getItem('myCollection');
+    const savedWishlist = localStorage.getItem('wishlistCards');
+    const savedTradable = localStorage.getItem('tradableCards');
+    
+    if (savedCollection) setMyCollection(JSON.parse(savedCollection));
+    if (savedWishlist) setWishlistCards(JSON.parse(savedWishlist));
+    if (savedTradable) setTradableCards(JSON.parse(savedTradable));
+  }, []);
+
+  useEffect(() => {
+    // Save to localStorage when collection changes
+    if (myCollection.length > 0) {
+      localStorage.setItem('myCollection', JSON.stringify(myCollection));
+    }
+    if (wishlistCards.length > 0) {
+      localStorage.setItem('wishlistCards', JSON.stringify(wishlistCards));
+    }
+    if (tradableCards.length > 0) {
+      localStorage.setItem('tradableCards', JSON.stringify(tradableCards));
+    }
+  }, [myCollection, wishlistCards, tradableCards]);
 
   const calculateTotalValue = () => {
     let total = 0;
@@ -150,6 +96,11 @@ const Collection = () => {
           const min = parseInt(match[1]);
           const max = parseInt(match[2]);
           total += (min + max) / 2;
+        } else {
+          const numericValue = parseFloat(value.replace(/[^0-9.]/g, ''));
+          if (!isNaN(numericValue)) {
+            total += numericValue;
+          }
         }
       }
     });
@@ -164,20 +115,20 @@ const Collection = () => {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(card => 
         card.name.toLowerCase().includes(query) || 
-        card.rarity.toLowerCase().includes(query) ||
-        card.condition.toLowerCase().includes(query)
+        card.rarity?.toLowerCase().includes(query) ||
+        card.condition?.toLowerCase().includes(query)
       );
     }
     
     if (filterRarity !== "all") {
       filtered = filtered.filter(card => 
-        card.rarity.toLowerCase().includes(filterRarity.toLowerCase())
+        card.rarity?.toLowerCase().includes(filterRarity.toLowerCase())
       );
     }
     
     if (filterCondition !== "all") {
       filtered = filtered.filter(card => 
-        card.condition.toLowerCase().includes(filterCondition.toLowerCase())
+        card.condition?.toLowerCase().includes(filterCondition.toLowerCase())
       );
     }
     
@@ -192,9 +143,9 @@ const Collection = () => {
         case "name-desc":
           return b.name.localeCompare(a.name);
         case "rarity-asc":
-          return a.rarity.localeCompare(b.rarity);
+          return (a.rarity || "").localeCompare(b.rarity || "");
         case "rarity-desc":
-          return b.rarity.localeCompare(a.rarity);
+          return (b.rarity || "").localeCompare(a.rarity || "");
         case "value-asc":
           return extractValue(a.estimatedValue) - extractValue(b.estimatedValue);
         case "value-desc":
@@ -213,7 +164,10 @@ const Collection = () => {
       const max = parseInt(match[2]);
       return (min + max) / 2;
     }
-    return 0;
+    
+    // Handle single value format
+    const numericValue = parseFloat(priceString?.replace(/[^0-9.]/g, '') || "0");
+    return isNaN(numericValue) ? 0 : numericValue;
   };
 
   const getFilteredCardsByTab = () => {
@@ -281,8 +235,10 @@ const Collection = () => {
       graded: isGraded,
       ...(isGraded && {
         gradingCompany: gradingCompany,
-        grade: gradeValue
-      })
+        gradeScore: gradeValue
+      }),
+      forTrade: isTradable,
+      tradePreferences: tradePreferences
     };
     
     if (isToWishlist) {
@@ -315,6 +271,7 @@ const Collection = () => {
     setIsGraded(false);
     setGradingCompany("PSA");
     setGradeValue("9");
+    setTradePreferences("");
     setIsAddCardOpen(false);
   };
 
@@ -333,7 +290,7 @@ const Collection = () => {
   };
 
   const handleQuickBrowseCards = () => {
-    window.location.href = "/pokemon-cards";
+    window.location.href = "/sets";
   };
 
   return (
@@ -524,6 +481,17 @@ const Collection = () => {
                                       <span className="text-sm">Mark as tradable</span>
                                     </label>
                                     
+                                    {isTradable && (
+                                      <div className="pl-6">
+                                        <Input
+                                          placeholder="What would you trade this for?"
+                                          value={tradePreferences}
+                                          onChange={(e) => setTradePreferences(e.target.value)}
+                                          className="mt-1"
+                                        />
+                                      </div>
+                                    )}
+                                    
                                     <label className="flex items-center gap-2 cursor-pointer">
                                       <Checkbox 
                                         id="graded"
@@ -623,10 +591,15 @@ const Collection = () => {
                   <p className="text-muted-foreground mb-4">
                     Start adding cards to your collection to keep track of what you have
                   </p>
-                  <Button onClick={handleQuickAddCard}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Your First Card
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                    <Button onClick={handleQuickAddCard}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Your First Card
+                    </Button>
+                    <Button variant="outline" onClick={handleQuickBrowseCards}>
+                      Browse Sets
+                    </Button>
+                  </div>
                 </GlassCard>
               )}
               
@@ -753,7 +726,7 @@ const Collection = () => {
                 </Button>
                 <Button variant="outline" className="w-full justify-start" onClick={handleQuickBrowseCards}>
                   <Search className="h-4 w-4 mr-2" />
-                  Browse Cards
+                  Browse Sets
                 </Button>
               </div>
             </GlassCard>
