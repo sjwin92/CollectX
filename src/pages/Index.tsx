@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,7 @@ import TradeOffer from "@/components/trades/TradeOffer";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
 import { useQuery } from "@tanstack/react-query";
-import { getFeaturedCards, FeaturedCard } from "@/services/api/featuredCardsService";
+import { getFeaturedCards, FeaturedCard, getFeaturedCardImageUrl } from "@/services/api/featuredCardsService";
 
 const recentTrades = [
   {
