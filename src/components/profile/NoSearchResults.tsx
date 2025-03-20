@@ -7,14 +7,22 @@ interface NoSearchResultsProps {
 }
 
 const NoSearchResults = ({ searchQuery, showGradedOnly }: NoSearchResultsProps) => {
+  const getMessage = () => {
+    if (showGradedOnly) {
+      return "No graded cards found in your collection";
+    } 
+    
+    if (searchQuery) {
+      return `No cards matching "${searchQuery}" in your collection`;
+    }
+    
+    return "No cards in your collection";
+  };
+
   return (
     <div className="text-center py-8">
       <p className="text-muted-foreground">
-        {showGradedOnly 
-          ? "No graded cards found" 
-          : searchQuery 
-            ? `No cards matching "${searchQuery}"` 
-            : "No cards in your collection"}
+        {getMessage()}
       </p>
     </div>
   );
