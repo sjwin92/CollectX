@@ -93,7 +93,7 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
   };
 
   const handleAddCard = () => {
-    navigate("/sets");
+    navigate("/pokemon-sets");
     toast({
       title: "Browse Sets",
       description: "Choose a set to find cards to add to your collection."
