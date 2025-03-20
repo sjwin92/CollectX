@@ -1,31 +1,12 @@
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import CardGrid from "@/components/cards/CardGrid";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Plus, 
-  Search, 
-  SlidersHorizontal,
-  Filter,
-  X,
-  HelpCircle
-} from "lucide-react";
+import { Plus, Search, SlidersHorizontal, Filter, X, HelpCircle } from "lucide-react";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
@@ -37,9 +18,10 @@ import { ExtendedCardItemProps } from "@/types/cardTypes";
 import CollectionStats from "@/components/profile/CollectionStats";
 import CollectionManager from "@/components/profile/CollectionManager";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
 const Collection = () => {
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [myCollection, setMyCollection] = useState<ExtendedCardItemProps[]>([]);
   const [wishlistCards, setWishlistCards] = useState<ExtendedCardItemProps[]>([]);
@@ -53,7 +35,6 @@ const Collection = () => {
   const [searchCardQuery, setSearchCardQuery] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
   const [selectedTab, setSelectedTab] = useState("all");
-  
   const [newCardCondition, setNewCardCondition] = useState("Mint");
   const [newCardEstValue, setNewCardEstValue] = useState("");
   const [selectedCard, setSelectedCard] = useState(null);
@@ -64,12 +45,10 @@ const Collection = () => {
   const [gradeValue, setGradeValue] = useState("9");
   const [tradePreferences, setTradePreferences] = useState("");
   const [filteredCollection, setFilteredCollection] = useState<ExtendedCardItemProps[]>([]);
-
   useEffect(() => {
     const savedCollection = localStorage.getItem('myCollection');
     const savedWishlist = localStorage.getItem('wishlistCards');
     const savedTradable = localStorage.getItem('tradableCards');
-    
     if (savedCollection) {
       try {
         const parsed = JSON.parse(savedCollection);
@@ -95,13 +74,11 @@ const Collection = () => {
       }
     }
   }, []);
-
   useEffect(() => {
     // Update filtered cards whenever search query or filters change
     const filtered = getFilteredCardsByTab();
     setFilteredCollection(filtered);
   }, [searchQuery, filterRarity, filterCondition, showGradedOnly, sortOption, selectedTab, myCollection, wishlistCards, tradableCards]);
-
   useEffect(() => {
     if (myCollection.length > 0) {
       localStorage.setItem('myCollection', JSON.stringify(myCollection));
@@ -113,7 +90,6 @@ const Collection = () => {
       localStorage.setItem('tradableCards', JSON.stringify(tradableCards));
     }
   }, [myCollection, wishlistCards, tradableCards]);
-
   const calculateTotalValue = () => {
     let total = 0;
     myCollection.forEach(card => {
@@ -134,47 +110,32 @@ const Collection = () => {
     });
     return Math.round(total);
   };
-
-  const getFilteredAndSortedCards = (cards) => {
+  const getFilteredAndSortedCards = cards => {
     if (!cards || !Array.isArray(cards)) return [];
-    
     let filtered = [...cards];
-    
     if (searchQuery) {
       const query = searchQuery.toLowerCase().trim();
       console.log("Searching for:", query, "in cards:", filtered.length);
-      
       filtered = filtered.filter(card => {
         if (!card) return false;
-        
         const nameMatch = card.name && card.name.toLowerCase().includes(query);
         const rarityMatch = card.rarity && card.rarity.toLowerCase().includes(query);
         const conditionMatch = card.condition && card.condition.toLowerCase().includes(query);
         const setMatch = card.set && card.set.name && card.set.name.toLowerCase().includes(query);
         const numberMatch = card.number && card.number.toLowerCase().includes(query);
-        
         return nameMatch || rarityMatch || conditionMatch || setMatch || numberMatch;
       });
-      
       console.log("After filtering:", filtered.length, "cards found");
     }
-    
     if (filterRarity !== "all") {
-      filtered = filtered.filter(card => 
-        card.rarity?.toLowerCase().includes(filterRarity.toLowerCase())
-      );
+      filtered = filtered.filter(card => card.rarity?.toLowerCase().includes(filterRarity.toLowerCase()));
     }
-    
     if (filterCondition !== "all") {
-      filtered = filtered.filter(card => 
-        card.condition?.toLowerCase().includes(filterCondition.toLowerCase())
-      );
+      filtered = filtered.filter(card => card.condition?.toLowerCase().includes(filterCondition.toLowerCase()));
     }
-    
     if (showGradedOnly) {
       filtered = filtered.filter(card => card.graded === true);
     }
-    
     return [...filtered].sort((a, b) => {
       switch (sortOption) {
         case "name-asc":
@@ -194,8 +155,7 @@ const Collection = () => {
       }
     });
   };
-
-  const extractValue = (priceString) => {
+  const extractValue = priceString => {
     if (!priceString) return 0;
     const match = priceString.match(/\$(\d+)-(\d+)/);
     if (match) {
@@ -203,11 +163,9 @@ const Collection = () => {
       const max = parseInt(match[2]);
       return (min + max) / 2;
     }
-    
     const numericValue = parseFloat(priceString?.replace(/[^0-9.]/g, '') || "0");
     return isNaN(numericValue) ? 0 : numericValue;
   };
-
   const getFilteredCardsByTab = () => {
     switch (selectedTab) {
       case "all":
@@ -220,18 +178,15 @@ const Collection = () => {
         return [];
     }
   };
-
   const handleCardSearch = async () => {
     if (!searchCardQuery.trim()) {
       setSearchResults([]);
       return;
     }
-    
     setSearchLoading(true);
     try {
       const cards = await fetchCardsByName(searchCardQuery);
       setSearchResults(cards.slice(0, 10));
-      
       if (cards.length === 0) {
         toast({
           title: "No Cards Found",
@@ -250,7 +205,6 @@ const Collection = () => {
       setSearchLoading(false);
     }
   };
-
   const handleAddCard = () => {
     if (!selectedCard) {
       toast({
@@ -260,7 +214,6 @@ const Collection = () => {
       });
       return;
     }
-    
     if (!newCardEstValue && !isToWishlist) {
       toast({
         title: "Missing Information",
@@ -269,7 +222,6 @@ const Collection = () => {
       });
       return;
     }
-    
     const newCard = {
       id: selectedCard.id,
       name: selectedCard.name,
@@ -285,7 +237,6 @@ const Collection = () => {
       forTrade: isTradable,
       tradePreferences: tradePreferences
     };
-    
     if (isToWishlist) {
       setWishlistCards([...wishlistCards, newCard]);
       toast({
@@ -295,17 +246,14 @@ const Collection = () => {
     } else {
       const updatedCollection = [...myCollection, newCard];
       setMyCollection(updatedCollection);
-      
       if (isTradable) {
         setTradableCards([...tradableCards, newCard]);
       }
-      
       toast({
         title: "Added to Collection",
         description: `${selectedCard.name} has been added to your collection.`
       });
     }
-    
     setSelectedCard(null);
     setSearchCardQuery("");
     setSearchResults([]);
@@ -319,33 +267,26 @@ const Collection = () => {
     setTradePreferences("");
     setIsAddCardOpen(false);
   };
-
-  const handleTabChange = (value) => {
+  const handleTabChange = value => {
     setSelectedTab(value);
   };
-
   const handleQuickAddCard = () => {
     setIsToWishlist(false);
     setIsAddCardOpen(true);
   };
-
   const handleQuickAddWishlist = () => {
     setIsToWishlist(true);
     setIsAddCardOpen(true);
   };
-
   const handleQuickBrowseCards = () => {
     window.location.href = "/sets";
   };
-
   const handleSearchQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
     console.log("Search query changed to:", query);
   };
-
-  return (
-    <div className="min-h-screen flex flex-col">
+  return <div className="min-h-screen flex flex-col">
       <Navbar />
       
       <main className="flex-1 pt-24 pb-16">
@@ -409,10 +350,7 @@ const Collection = () => {
                   </SelectContent>
                 </Select>
                 
-                <GradedFilter 
-                  showGradedOnly={showGradedOnly}
-                  onGradedFilterChange={setShowGradedOnly}
-                />
+                <GradedFilter showGradedOnly={showGradedOnly} onGradedFilterChange={setShowGradedOnly} />
                 
                 <Dialog open={isAddCardOpen} onOpenChange={setIsAddCardOpen}>
                   <DialogTrigger asChild>
@@ -432,23 +370,12 @@ const Collection = () => {
                     <div className="space-y-4">
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                        <Input 
-                          placeholder="Search by card name or number (e.g., 25/100, SVI004)..." 
-                          className="pl-9 pr-14"
-                          value={searchCardQuery}
-                          onChange={(e) => setSearchCardQuery(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleCardSearch()}
-                        />
+                        <Input placeholder="Search by card name or number (e.g., 25/100, SVI004)..." className="pl-9 pr-14" value={searchCardQuery} onChange={e => setSearchCardQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleCardSearch()} />
                         <div className="absolute right-1 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-7 w-7"
-                                  type="button"
-                                >
+                                <Button variant="ghost" size="icon" className="h-7 w-7" type="button">
                                   <HelpCircle className="h-4 w-4 text-muted-foreground" />
                                 </Button>
                               </TooltipTrigger>
@@ -464,33 +391,17 @@ const Collection = () => {
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
-                          <Button 
-                            variant="secondary" 
-                            className="h-7"
-                            onClick={handleCardSearch}
-                            disabled={searchLoading}
-                          >
+                          <Button variant="secondary" className="h-7" onClick={handleCardSearch} disabled={searchLoading}>
                             {searchLoading ? "Searching..." : "Search"}
                           </Button>
                         </div>
                       </div>
                       
-                      {searchResults.length > 0 && (
-                        <div className="max-h-40 overflow-y-auto border rounded-md">
-                          {searchResults.map((card) => (
-                            <div 
-                              key={card.id} 
-                              className={`flex items-center gap-3 p-2 hover:bg-muted cursor-pointer ${selectedCard?.id === card.id ? 'bg-muted' : ''}`}
-                              onClick={() => setSelectedCard(card)}
-                            >
-                              <img 
-                                src={card.image} 
-                                alt={card.name} 
-                                className="h-10 w-8 object-cover rounded"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = 'https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg';
-                                }}
-                              />
+                      {searchResults.length > 0 && <div className="max-h-40 overflow-y-auto border rounded-md">
+                          {searchResults.map(card => <div key={card.id} className={`flex items-center gap-3 p-2 hover:bg-muted cursor-pointer ${selectedCard?.id === card.id ? 'bg-muted' : ''}`} onClick={() => setSelectedCard(card)}>
+                              <img src={card.image} alt={card.name} className="h-10 w-8 object-cover rounded" onError={e => {
+                          (e.target as HTMLImageElement).src = 'https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg';
+                        }} />
                               <div className="flex-1">
                                 <div className="font-medium text-sm">{card.name}</div>
                                 <div className="text-xs text-muted-foreground flex justify-between">
@@ -498,37 +409,26 @@ const Collection = () => {
                                   <span className="font-medium">{card.localId ? `#${card.localId}` : ''}</span>
                                 </div>
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                            </div>)}
+                        </div>}
                       
-                      {selectedCard && (
-                        <Card className="p-4">
+                      {selectedCard && <Card className="p-4">
                           <div className="flex gap-4">
-                            <img 
-                              src={selectedCard.image} 
-                              alt={selectedCard.name} 
-                              className="h-24 w-auto object-contain rounded"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = 'https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg';
-                              }}
-                            />
+                            <img src={selectedCard.image} alt={selectedCard.name} className="h-24 w-auto object-contain rounded" onError={e => {
+                          (e.target as HTMLImageElement).src = 'https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg';
+                        }} />
                             <div className="flex-1">
                               <div className="flex justify-between items-start">
                                 <h3 className="font-bold">{selectedCard.name}</h3>
-                                {selectedCard.localId && (
-                                  <span className="text-xs bg-primary/10 px-2 py-1 rounded-md">
+                                {selectedCard.localId && <span className="text-xs bg-primary/10 px-2 py-1 rounded-md">
                                     #{selectedCard.localId}
-                                  </span>
-                                )}
+                                  </span>}
                               </div>
                               <p className="text-sm text-muted-foreground">
                                 {selectedCard.set?.name || 'Unknown set'} • {selectedCard.rarity || 'Unknown rarity'}
                               </p>
                               
-                              {!isToWishlist && (
-                                <>
+                              {!isToWishlist && <>
                                   <div className="mt-2 grid grid-cols-2 gap-2">
                                     <Select value={newCardCondition} onValueChange={setNewCardCondition}>
                                       <SelectTrigger>
@@ -546,50 +446,29 @@ const Collection = () => {
                                     
                                     <div className="relative">
                                       <span className="absolute left-2 top-1/2 transform -translate-y-1/2">$</span>
-                                      <Input 
-                                        placeholder="Est. Value"
-                                        className="pl-6"
-                                        value={newCardEstValue}
-                                        onChange={(e) => {
-                                          const value = e.target.value.replace(/[^0-9-]/g, '');
-                                          setNewCardEstValue(value);
-                                        }}
-                                      />
+                                      <Input placeholder="Est. Value" className="pl-6" value={newCardEstValue} onChange={e => {
+                                  const value = e.target.value.replace(/[^0-9-]/g, '');
+                                  setNewCardEstValue(value);
+                                }} />
                                     </div>
                                   </div>
                                   
                                   <div className="mt-2 space-y-2">
                                     <label className="flex items-center gap-2 cursor-pointer">
-                                      <Checkbox 
-                                        id="tradable"
-                                        checked={isTradable}
-                                        onCheckedChange={(checked) => setIsTradable(!!checked)}
-                                      />
+                                      <Checkbox id="tradable" checked={isTradable} onCheckedChange={checked => setIsTradable(!!checked)} />
                                       <span className="text-sm">Mark as tradable</span>
                                     </label>
                                     
-                                    {isTradable && (
-                                      <div className="pl-6">
-                                        <Input
-                                          placeholder="What would you trade this for?"
-                                          value={tradePreferences}
-                                          onChange={(e) => setTradePreferences(e.target.value)}
-                                          className="mt-1"
-                                        />
-                                      </div>
-                                    )}
+                                    {isTradable && <div className="pl-6">
+                                        <Input placeholder="What would you trade this for?" value={tradePreferences} onChange={e => setTradePreferences(e.target.value)} className="mt-1" />
+                                      </div>}
                                     
                                     <label className="flex items-center gap-2 cursor-pointer">
-                                      <Checkbox 
-                                        id="graded"
-                                        checked={isGraded}
-                                        onCheckedChange={(checked) => setIsGraded(!!checked)}
-                                      />
+                                      <Checkbox id="graded" checked={isGraded} onCheckedChange={checked => setIsGraded(!!checked)} />
                                       <span className="text-sm">This card is graded</span>
                                     </label>
                                     
-                                    {isGraded && (
-                                      <div className="grid grid-cols-2 gap-2 mt-2 pl-6">
+                                    {isGraded && <div className="grid grid-cols-2 gap-2 mt-2 pl-6">
                                         <Select value={gradingCompany} onValueChange={setGradingCompany}>
                                           <SelectTrigger>
                                             <SelectValue placeholder="Grading Company" />
@@ -618,29 +497,21 @@ const Collection = () => {
                                             <SelectItem value="4">4 or below</SelectItem>
                                           </SelectContent>
                                         </Select>
-                                      </div>
-                                    )}
+                                      </div>}
                                   </div>
-                                </>
-                              )}
+                                </>}
                               
-                              <Button 
-                                className="mt-4" 
-                                onClick={handleAddCard}
-                              >
+                              <Button className="mt-4" onClick={handleAddCard}>
                                 Add to {isToWishlist ? "Wishlist" : "Collection"}
                               </Button>
                             </div>
                           </div>
-                        </Card>
-                      )}
+                        </Card>}
                       
-                      {searchResults.length === 0 && searchCardQuery && !searchLoading && (
-                        <div className="text-center py-3 text-muted-foreground">
+                      {searchResults.length === 0 && searchCardQuery && !searchLoading && <div className="text-center py-3 text-muted-foreground">
                           No cards found matching "{searchCardQuery}"
                           <p className="text-xs mt-1">Try searching by card name (e.g., "Charizard") or card number (e.g., "25/100", "25", "SVI025")</p>
-                        </div>
-                      )}
+                        </div>}
                     </div>
                   </DialogContent>
                 </Dialog>
@@ -649,77 +520,61 @@ const Collection = () => {
             
             <div className="relative mb-6">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input 
-                placeholder="Search by card name, set, or type..." 
-                className="pl-9"
-                value={searchQuery}
-                onChange={handleSearchQueryChange}
-              />
-              {searchQuery && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6"
-                  onClick={() => {
-                    setSearchQuery("");
-                    console.log("Search cleared");
-                  }}
-                >
+              <Input placeholder="Search by card name, set, or type..." className="pl-9" value={searchQuery} onChange={handleSearchQueryChange} />
+              {searchQuery && <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6" onClick={() => {
+              setSearchQuery("");
+              console.log("Search cleared");
+            }}>
                   <X className="h-4 w-4" />
-                </Button>
-              )}
+                </Button>}
             </div>
             
             <TabsContent value="all" className="mt-0">
-              <CardGrid 
-                cards={filteredCollection} 
-                columns={{ sm: 2, md: 3, lg: 4, xl: 5 }}
-              />
+              <CardGrid cards={filteredCollection} columns={{
+              sm: 2,
+              md: 3,
+              lg: 4,
+              xl: 5
+            }} />
               
-              {myCollection.length === 0 && (
-                <GlassCard className="p-8 text-center">
+              {myCollection.length === 0 && <GlassCard className="p-8 text-center">
                   <h3 className="text-xl font-medium mb-2">Your collection is empty</h3>
                   <p className="text-muted-foreground mb-4">
                     Start adding cards to your collection to keep track of what you have
                   </p>
                   <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                    <Button onClick={handleQuickAddCard}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Your First Card
-                    </Button>
+                    
                     <Button variant="outline" onClick={handleQuickBrowseCards}>
                       Browse Sets
                     </Button>
                   </div>
-                </GlassCard>
-              )}
+                </GlassCard>}
               
-              {myCollection.length > 0 && filteredCollection.length === 0 && (
-                <GlassCard className="p-8 text-center">
+              {myCollection.length > 0 && filteredCollection.length === 0 && <GlassCard className="p-8 text-center">
                   <h3 className="text-xl font-medium mb-2">No cards match your search</h3>
                   <p className="text-muted-foreground mb-4">
                     Try adjusting your search terms or filters
                   </p>
                   <Button variant="outline" onClick={() => {
-                    setSearchQuery("");
-                    setFilterRarity("all");
-                    setFilterCondition("all");
-                    console.log("Filters cleared");
-                  }}>
+                setSearchQuery("");
+                setFilterRarity("all");
+                setFilterCondition("all");
+                console.log("Filters cleared");
+              }}>
                     Clear Filters
                   </Button>
-                </GlassCard>
-              )}
+                </GlassCard>}
             </TabsContent>
             
             <TabsContent value="tradable" className="mt-0">
-              <CardGrid 
-                cards={filteredCollection} 
-                columns={{ sm: 2, md: 3, lg: 4, xl: 5 }}
-              />
+              <CardGrid cards={filteredCollection} columns={{
+              sm: 2,
+              md: 3,
+              lg: 4,
+              xl: 5
+            }} />
               
-              {tradableCards.length === 0 && (
-                <GlassCard className="p-8 text-center">
+              {tradableCards.length === 0 && <GlassCard className="p-8 text-center">
                   <h3 className="text-xl font-medium mb-2">No tradable cards</h3>
                   <p className="text-muted-foreground mb-4">
                     Mark cards as tradable to show other collectors what's available
@@ -728,59 +583,54 @@ const Collection = () => {
                     <Plus className="h-4 w-4 mr-2" />
                     Add Tradable Card
                   </Button>
-                </GlassCard>
-              )}
+                </GlassCard>}
               
-              {tradableCards.length > 0 && filteredCollection.length === 0 && (
-                <GlassCard className="p-8 text-center">
+              {tradableCards.length > 0 && filteredCollection.length === 0 && <GlassCard className="p-8 text-center">
                   <h3 className="text-xl font-medium mb-2">No tradable cards match your search</h3>
                   <p className="text-muted-foreground mb-4">
                     Try adjusting your search terms or filters
                   </p>
                   <Button variant="outline" onClick={() => {
-                    setSearchQuery("");
-                    setFilterRarity("all");
-                    setFilterCondition("all");
-                    console.log("Filters cleared");
-                  }}>
+                setSearchQuery("");
+                setFilterRarity("all");
+                setFilterCondition("all");
+                console.log("Filters cleared");
+              }}>
                     Clear Filters
                   </Button>
-                </GlassCard>
-              )}
+                </GlassCard>}
             </TabsContent>
             
             <TabsContent value="wishlist" className="mt-0">
-              <CardGrid 
-                cards={filteredCollection} 
-                columns={{ sm: 2, md: 3, lg: 4, xl: 5 }}
-              />
+              <CardGrid cards={filteredCollection} columns={{
+              sm: 2,
+              md: 3,
+              lg: 4,
+              xl: 5
+            }} />
               
-              {wishlistCards.length === 0 && (
-                <GlassCard className="p-8 text-center">
+              {wishlistCards.length === 0 && <GlassCard className="p-8 text-center">
                   <h3 className="text-xl font-medium mb-2">Your wishlist is empty</h3>
                   <p className="text-muted-foreground mb-4">
                     Add cards to your wishlist to show others what you're looking for
                   </p>
                   <Button onClick={handleQuickAddWishlist}>Add to Wishlist</Button>
-                </GlassCard>
-              )}
+                </GlassCard>}
               
-              {wishlistCards.length > 0 && filteredCollection.length === 0 && (
-                <GlassCard className="p-8 text-center">
+              {wishlistCards.length > 0 && filteredCollection.length === 0 && <GlassCard className="p-8 text-center">
                   <h3 className="text-xl font-medium mb-2">No wishlist cards match your search</h3>
                   <p className="text-muted-foreground mb-4">
                     Try adjusting your search terms or filters
                   </p>
                   <Button variant="outline" onClick={() => {
-                    setSearchQuery("");
-                    setFilterRarity("all");
-                    setFilterCondition("all");
-                    console.log("Filters cleared");
-                  }}>
+                setSearchQuery("");
+                setFilterRarity("all");
+                setFilterCondition("all");
+                console.log("Filters cleared");
+              }}>
                     Clear Filters
                   </Button>
-                </GlassCard>
-              )}
+                </GlassCard>}
             </TabsContent>
           </Tabs>
           
@@ -829,8 +679,6 @@ const Collection = () => {
       </main>
       
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default Collection;
