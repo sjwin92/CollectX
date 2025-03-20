@@ -23,18 +23,25 @@ const ConditionField = ({ form }: ConditionFieldProps) => {
       label="Condition"
       description="The condition of the cards"
     >
-      <Select>
-        <SelectTrigger>
-          <SelectValue placeholder="Select condition" />
-        </SelectTrigger>
-        <SelectContent>
-          {cardConditions.map((condition) => (
-            <SelectItem key={condition.value} value={condition.value}>
-              {condition.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {/* Spread the field props to properly bind the form control */}
+      {(field) => (
+        <Select 
+          onValueChange={field.onChange}
+          defaultValue={field.value}
+          value={field.value}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select condition" />
+          </SelectTrigger>
+          <SelectContent>
+            {cardConditions.map((condition) => (
+              <SelectItem key={condition.value} value={condition.value}>
+                {condition.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
     </FormFieldWrapper>
   );
 };

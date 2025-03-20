@@ -15,7 +15,7 @@ interface FormFieldWrapperProps {
   name: string;
   label: string;
   description?: string;
-  children: ReactNode;
+  children: ReactNode | ((fieldProps: any) => ReactNode);
 }
 
 const FormFieldWrapper = ({
@@ -33,7 +33,9 @@ const FormFieldWrapper = ({
         <FormItem>
           <FormLabel>{label}</FormLabel>
           <FormControl>
-            {React.cloneElement(children as React.ReactElement, { ...field })}
+            {typeof children === "function" 
+              ? children(field)
+              : React.cloneElement(children as React.ReactElement, { ...field })}
           </FormControl>
           {description && <FormDescription>{description}</FormDescription>}
           <FormMessage />
