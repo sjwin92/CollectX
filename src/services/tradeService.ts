@@ -344,7 +344,7 @@ export const declineTradeProposal = async (tradeId: string): Promise<void> => {
   return Promise.resolve();
 };
 
-export const payInitiatorEscrow = async (tradeId: string): Promise<void> => {
+export const payInitiatorEscrow = async (tradeId: string): Promise<boolean> => {
   const trades = await mockTradesPromise;
   const trade = trades[tradeId];
   if (!trade) {
@@ -373,16 +373,17 @@ export const payInitiatorEscrow = async (tradeId: string): Promise<void> => {
     
     if (trade.escrow.initiatorPaid && trade.escrow.recipientPaid) {
       trade.status = "escrowed";
+      trade.escrow.status = "escrowed";
       trade.updatedAt = new Date().toISOString();
     }
+    
+    return true;
   } else {
     throw new Error(`Trade is not in a state where initiator can pay escrow`);
   }
-  
-  return Promise.resolve();
 };
 
-export const payRecipientEscrow = async (tradeId: string): Promise<void> => {
+export const payRecipientEscrow = async (tradeId: string): Promise<boolean> => {
   const trades = await mockTradesPromise;
   const trade = trades[tradeId];
   if (!trade) {
@@ -411,13 +412,100 @@ export const payRecipientEscrow = async (tradeId: string): Promise<void> => {
     
     if (trade.escrow.initiatorPaid && trade.escrow.recipientPaid) {
       trade.status = "escrowed";
+      trade.escrow.status = "escrowed";
       trade.updatedAt = new Date().toISOString();
     }
+    
+    return true;
   } else {
     throw new Error(`Trade is not in a state where recipient can pay escrow`);
   }
+};
+
+export const confirmTradeReceipt = async (tradeId: string): Promise<boolean> => {
+  const trades = await mockTradesPromise;
+  const trade = trades[tradeId];
+  if (!trade) {
+    throw new Error(`Trade proposal with ID ${tradeId} not found`);
+  }
   
-  return Promise.resolve();
+  if (trade.status === "shipped" && trade.escrow) {
+    trade.status = "received";
+    trade.escrow.status = "received";
+    trade.escrow.releaseCode = Math.floor(100000 + Math.random() * 900000).toString();
+    trade.updatedAt = new Date().toISOString();
+    trade.escrow.updatedAt = new Date().toISOString();
+    
+    // Add a system message about the receipt confirmation
+    const newMessage = {
+      id: uuidv4(),
+      tradeId: tradeId,
+      userId: "system",
+      username: "System",
+      message: "The recipient has confirmed receipt of the items. The sender can now release the escrow funds using the release code.",
+      createdAt: new Date().toISOString(),
+      systemMessage: true,
+      imageUrl: null
+    };
+    
+    trade.messages.push(newMessage);
+    
+    return true;
+  } else {
+    throw new Error(`Trade is not in a state where receipt can be confirmed`);
+  }
+};
+
+export const validateReleaseEscrow = async (tradeId: string, releaseCode: string): Promise<boolean> => {
+  const trades = await mockTradesPromise;
+  const trade = trades[tradeId];
+  if (!trade) {
+    throw new Error(`Trade proposal with ID ${tradeId} not found`);
+  }
+  
+  if (trade.status === "received" && trade.escrow && trade.escrow.releaseCode === releaseCode) {
+    return true;
+  }
+  
+  return false;
+};
+
+export const releaseTradeEscrow = async (tradeId: string, releaseCode: string): Promise<boolean> => {
+  const trades = await mockTradesPromise;
+  const trade = trades[tradeId];
+  if (!trade) {
+    throw new Error(`Trade proposal with ID ${tradeId} not found`);
+  }
+  
+  if (trade.status === "received" && trade.escrow) {
+    if (trade.escrow.releaseCode !== releaseCode) {
+      return false;
+    }
+    
+    trade.escrow.completedAt = new Date().toISOString();
+    trade.status = "completed";
+    trade.escrow.status = "completed";
+    trade.updatedAt = new Date().toISOString();
+    trade.escrow.updatedAt = new Date().toISOString();
+    
+    // Add a system message about the escrow release
+    const newMessage = {
+      id: uuidv4(),
+      tradeId: tradeId,
+      userId: "system",
+      username: "System",
+      message: "The escrow has been released and the trade is now complete. Thank you for using our platform!",
+      createdAt: new Date().toISOString(),
+      systemMessage: true,
+      imageUrl: null
+    };
+    
+    trade.messages.push(newMessage);
+    
+    return true;
+  } else {
+    throw new Error(`Trade is not in a state where escrow can be released`);
+  }
 };
 
 export const updateShippingInfo = async (
@@ -443,25 +531,6 @@ export const updateShippingInfo = async (
     trade.escrow.updatedAt = new Date().toISOString();
   } else {
     throw new Error(`Trade is not in a state where shipping info can be updated`);
-  }
-  
-  return Promise.resolve();
-};
-
-export const releaseTradeEscrow = async (tradeId: string): Promise<void> => {
-  const trades = await mockTradesPromise;
-  const trade = trades[tradeId];
-  if (!trade) {
-    throw new Error(`Trade proposal with ID ${tradeId} not found`);
-  }
-  
-  if (trade.status === "shipped" && trade.escrow) {
-    trade.escrow.completedAt = new Date().toISOString();
-    trade.status = "completed";
-    trade.updatedAt = new Date().toISOString();
-    trade.escrow.updatedAt = new Date().toISOString();
-  } else {
-    throw new Error(`Trade is not in a state where escrow can be released`);
   }
   
   return Promise.resolve();

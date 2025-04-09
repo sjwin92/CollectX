@@ -1,19 +1,20 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { TradeEscrow, TradeStatus } from "@/models/escrow";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
 import { Button } from "@/components/ui/button";
-import { LockKeyhole, Shield, AlertTriangle, CheckCircle, Clock } from "lucide-react";
+import { LockKeyhole, Shield, AlertTriangle, CheckCircle, Clock, Loader2 } from "lucide-react";
 import { formatCurrency } from "@/utils/escrowCalculator";
 import { useToast } from "@/hooks/use-toast";
+import EscrowModal from "./EscrowModal";
 
 interface EscrowDetailsProps {
   escrow: TradeEscrow;
   isInitiator: boolean;
-  onPayEscrow?: () => void;
-  onReleaseEscrow?: () => void;
-  onConfirmReceipt?: () => void;
+  onPayEscrow: () => Promise<boolean>;
+  onReleaseEscrow: (releaseCode: string) => Promise<boolean>;
+  onConfirmReceipt: () => Promise<boolean>;
 }
 
 const EscrowDetails = ({
@@ -24,6 +25,9 @@ const EscrowDetails = ({
   onConfirmReceipt
 }: EscrowDetailsProps) => {
   const { toast } = useToast();
+  const [isEscrowModalOpen, setIsEscrowModalOpen] = useState(false);
+  const [isReleaseModalOpen, setIsReleaseModalOpen] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
   
   const handleCopyReleaseCode = () => {
     if (escrow.releaseCode) {
@@ -32,6 +36,33 @@ const EscrowDetails = ({
         title: "Release code copied",
         description: "The release code has been copied to your clipboard"
       });
+    }
+  };
+
+  const handleConfirmReceipt = async () => {
+    setIsConfirming(true);
+    try {
+      const success = await onConfirmReceipt();
+      if (success) {
+        toast({
+          title: "Receipt confirmed",
+          description: "You have confirmed receipt of the traded cards."
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error confirming receipt",
+          description: "There was a problem confirming your receipt. Please try again."
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error confirming receipt",
+        description: "An unexpected error occurred. Please try again later."
+      });
+    } finally {
+      setIsConfirming(false);
     }
   };
 
@@ -150,20 +181,27 @@ const EscrowDetails = ({
         )}
 
         <div className="flex justify-end gap-2 mt-4">
-          {!myPaid && escrow.status === "accepted" && onPayEscrow && (
-            <Button onClick={onPayEscrow} size="sm">
+          {!myPaid && escrow.status === "accepted" && (
+            <Button onClick={() => setIsEscrowModalOpen(true)} size="sm">
               Pay Escrow
             </Button>
           )}
           
-          {escrow.status === "shipped" && onConfirmReceipt && (
-            <Button onClick={onConfirmReceipt} size="sm">
-              Confirm Receipt
+          {escrow.status === "shipped" && (
+            <Button onClick={handleConfirmReceipt} size="sm" disabled={isConfirming}>
+              {isConfirming ? (
+                <>
+                  Confirming...
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                </>
+              ) : (
+                "Confirm Receipt"
+              )}
             </Button>
           )}
           
-          {escrow.status === "received" && onReleaseEscrow && (
-            <Button onClick={onReleaseEscrow} size="sm">
+          {escrow.status === "received" && (
+            <Button onClick={() => setIsReleaseModalOpen(true)} size="sm">
               Release Funds
             </Button>
           )}
@@ -185,9 +223,28 @@ const EscrowDetails = ({
   };
 
   return (
-    <GlassCard variant="dark" className="overflow-hidden">
-      {renderEscrowStatus()}
-    </GlassCard>
+    <>
+      <GlassCard variant="dark" className="overflow-hidden">
+        {renderEscrowStatus()}
+      </GlassCard>
+      
+      <EscrowModal
+        isOpen={isEscrowModalOpen}
+        onClose={() => setIsEscrowModalOpen(false)}
+        escrow={escrow}
+        isInitiator={isInitiator}
+        onPayEscrow={onPayEscrow}
+      />
+      
+      <EscrowModal
+        isOpen={isReleaseModalOpen}
+        onClose={() => setIsReleaseModalOpen(false)}
+        escrow={escrow}
+        isInitiator={isInitiator}
+        onPayEscrow={onPayEscrow}
+        onReleaseEscrow={onReleaseEscrow}
+      />
+    </>
   );
 };
 

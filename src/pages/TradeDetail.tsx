@@ -47,6 +47,8 @@ import {
   releaseTradeEscrow,
   updateShippingInfo,
   uploadTradeImage,
+  confirmTradeReceipt,
+  validateReleaseEscrow,
 } from "@/services/tradeService";
 import { TradeStatus, TradeProposal } from "@/models/escrow";
 import { Separator } from "@/components/ui/separator";
@@ -67,6 +69,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { useUser } from "@/hooks/useUser";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import EscrowDetails from "@/components/trades/EscrowDetails";
 
 interface TradeDetailProps {}
 
@@ -271,15 +274,15 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
   });
 
   const {
-    mutate: releaseEscrow,
-    isPending: isReleasingEscrow,
-    isError: isReleaseEscrowError,
+    mutate: confirmReceipt,
+    isPending: isConfirmingReceipt,
+    isError: isConfirmReceiptError,
   } = useMutation({
-    mutationFn: () => releaseTradeEscrow(tradeId!),
+    mutationFn: () => confirmTradeReceipt(tradeId!),
     onSuccess: () => {
       toast({
-        title: "Escrow Released",
-        description: "You have released the escrow amount.",
+        title: "Receipt confirmed",
+        description: "You have confirmed receipt of the traded cards.",
       });
       refetch();
     },
@@ -287,33 +290,100 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
       toast({
         variant: "destructive",
         title: "Uh oh! Something went wrong.",
-        description: "There was a problem releasing the escrow amount.",
+        description: "There was a problem confirming receipt.",
       });
     },
   });
 
   const {
-    mutate: updateShipping,
-    isPending: isUpdatingShipping,
-    isError: isUpdateShippingError,
+    mutate: validateRelease,
+    isPending: isValidatingRelease,
+    isError: isValidateReleaseError,
   } = useMutation({
-    mutationFn: () => updateShippingInfo(tradeId!, shippingCarrier, trackingNumber, estimatedDelivery),
-    onSuccess: () => {
-      toast({
-        title: "Shipping Info Updated",
-        description: "You have updated the shipping information.",
-      });
-      refetch();
-      setIsShippingEditMode(false);
+    mutationFn: (releaseCode: string) => validateReleaseEscrow(tradeId!, releaseCode),
+    onSuccess: (isValid, releaseCode) => {
+      if (isValid) {
+        releaseEscrow(releaseCode);
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Invalid release code",
+          description: "The release code you entered is not valid.",
+        });
+      }
     },
     onError: () => {
       toast({
         variant: "destructive",
         title: "Uh oh! Something went wrong.",
-        description: "There was a problem updating the shipping information.",
+        description: "There was a problem validating the release code.",
       });
     },
   });
+
+  const {
+    mutate: releaseEscrow,
+    isPending: isReleasingEscrow,
+    isError: isReleaseEscrowError,
+  } = useMutation({
+    mutationFn: (releaseCode: string) => releaseTradeEscrow(tradeId!, releaseCode),
+    onSuccess: (success) => {
+      if (success) {
+        toast({
+          title: "Escrow released",
+          description: "The escrow has been released and the trade is now complete.",
+        });
+        refetch();
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Release failed",
+          description: "Failed to release the escrow. Please try again.",
+        });
+      }
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "There was a problem releasing the escrow.",
+      });
+    },
+  });
+
+  const handleEscrowPayment = async (): Promise<boolean> => {
+    try {
+      if (isInitiator) {
+        await payInitiator();
+      } else {
+        await payRecipient();
+      }
+      return true;
+    } catch (error) {
+      console.error("Error paying escrow:", error);
+      return false;
+    }
+  };
+
+  const handleReleaseEscrow = async (releaseCode: string): Promise<boolean> => {
+    try {
+      const isValid = await validateRelease(releaseCode);
+      return isValid;
+    } catch (error) {
+      console.error("Error validating release code:", error);
+      return false;
+    }
+  };
+
+  const handleConfirmReceipt = async (): Promise<boolean> => {
+    try {
+      await confirmReceipt();
+      return true;
+    } catch (error) {
+      console.error("Error confirming receipt:", error);
+      return false;
+    }
+  };
 
   const getStatusBadge = (status: TradeStatus) => {
     switch (status) {
@@ -540,98 +610,13 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
       </GlassCard>
 
       {trade.escrow && (
-        <GlassCard className="mb-6">
-          <div className="p-4">
-            <h3 className="text-lg font-medium mb-2">Escrow Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Lock className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">
-                      Initiator Escrow (You)
-                    </span>
-                  </div>
-                  {trade.escrow.initiatorPaid ? (
-                    <Badge variant="success" size="sm">
-                      Paid
-                    </Badge>
-                  ) : (
-                    <Badge variant="warning" size="sm">
-                      Pending
-                    </Badge>
-                  )}
-                </div>
-                <div className="text-sm">
-                  Amount:{" "}
-                  {formatCurrency(
-                    trade.escrow.initiatorEscrowAmount.finalAmount,
-                    trade.escrow.initiatorEscrowAmount.currency
-                  )}
-                </div>
-                {!trade.escrow.initiatorPaid && canPayInitiator && (
-                  <Button
-                    size="sm"
-                    onClick={() => payInitiator()}
-                    disabled={isPayingInitiator}
-                  >
-                    {isPayingInitiator ? (
-                      <>
-                        Paying...
-                        <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                      </>
-                    ) : (
-                      "Pay Escrow"
-                    )}
-                  </Button>
-                )}
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Lock className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">
-                      Recipient Escrow
-                    </span>
-                  </div>
-                  {trade.escrow.recipientPaid ? (
-                    <Badge variant="success" size="sm">
-                      Paid
-                    </Badge>
-                  ) : (
-                    <Badge variant="warning" size="sm">
-                      Pending
-                    </Badge>
-                  )}
-                </div>
-                <div className="text-sm">
-                  Amount:{" "}
-                  {formatCurrency(
-                    trade.escrow.recipientEscrowAmount.finalAmount,
-                    trade.escrow.recipientEscrowAmount.currency
-                  )}
-                </div>
-                {!trade.escrow.recipientPaid && canPayRecipient && (
-                  <Button
-                    size="sm"
-                    onClick={() => payRecipient()}
-                    disabled={isPayingRecipient}
-                  >
-                    {isPayingRecipient ? (
-                      <>
-                        Paying...
-                        <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                      </>
-                    ) : (
-                      "Pay Escrow"
-                    )}
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-        </GlassCard>
+        <EscrowDetails
+          escrow={trade.escrow}
+          isInitiator={isInitiator}
+          onPayEscrow={handleEscrowPayment}
+          onReleaseEscrow={handleReleaseEscrow}
+          onConfirmReceipt={handleConfirmReceipt}
+        />
       )}
 
       {showShippingInfo && (
