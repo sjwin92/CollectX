@@ -31,6 +31,7 @@ const TradeListingImage = ({
     if (!cardId && !imageUrl) {
       setImageError(true);
       setIsLoading(false);
+      console.error(`No cardId or imageUrl provided for ${cardName}`);
       return;
     }
     
@@ -58,7 +59,7 @@ const TradeListingImage = ({
     }
     
     // Make sure we have unique URLs
-    const uniqueSources = [...new Set(allSources)];
+    const uniqueSources = [...new Set(allSources)].filter(Boolean);
     setAlternativeImages(uniqueSources);
     
     console.log(`Trade listing for ${cardName}: Found ${uniqueSources.length} possible image sources, isFeatured: ${isFeatured}`);
@@ -69,6 +70,7 @@ const TradeListingImage = ({
     } else {
       setImageError(true);
       setIsLoading(false);
+      console.error(`No valid image sources found for ${cardName}`);
     }
   }, [cardId, imageUrl, cardName, isFeatured]);
   
@@ -102,6 +104,7 @@ const TradeListingImage = ({
     
     if (alternativeImages.length > 0) {
       setImageSrc(alternativeImages[0]);
+      console.log(`Retrying with first image source: ${alternativeImages[0]}`);
     }
   };
 

@@ -53,15 +53,13 @@ const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListin
 
       <CardContent className="py-2">
         <div className="flex flex-col gap-4 md:flex-row md:gap-6 md:items-center">
-          <div className="flex justify-center md:block">
-            <TradeListingImage 
-              cardId={listing.cardOffered.id}
-              imageUrl={listing.cardOffered.imageUrl}
-              cardName={listing.cardOffered.name}
-              condition={listing.cardOffered.condition}
-              isFeatured={featured}
-            />
-          </div>
+          <TradeListingImage 
+            cardId={listing.cardOffered.id}
+            imageUrl={listing.cardOffered.imageUrl}
+            cardName={listing.cardOffered.name}
+            condition={listing.cardOffered.condition}
+            isFeatured={featured}
+          />
           
           <TradeListingDetails 
             cardsWanted={listing.cardsWanted}

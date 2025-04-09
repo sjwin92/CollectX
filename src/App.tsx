@@ -22,16 +22,28 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          
+          {/* Trading Routes */}
           <Route path="/trades" element={<Trades />} />
           <Route path="/trades/:id" element={<TradeDetail />} />
+          
+          {/* Collection Routes */}
           <Route path="/collection" element={<Collection />} />
+          <Route path="/profile" element={<Profile />} />
+          
+          {/* Card Routes */}
           <Route path="/pokemon-cards" element={<PokemonCards />} />
+          <Route path="/card/:id" element={<CardDetail />} />
+          <Route path="/pokemons" element={<Pokemons />} />
+          
+          {/* Set Routes */}
           <Route path="/pokemon-sets" element={<Sets />} />
           <Route path="/pokemon-sets/:id" element={<SetDetail />} />
-          <Route path="/pokemons" element={<Pokemons />} />
+          
+          {/* Marketplace */}
           <Route path="/marketplace" element={<Marketplace />} />
-          <Route path="/card/:id" element={<CardDetail />} />
-          <Route path="/profile" element={<Profile />} />
+          
+          {/* 404 Page */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
