@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+
+import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
@@ -17,15 +18,8 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import CardGrid from "@/components/cards/CardGrid";
 import TradeOffer from "@/components/trades/TradeOffer";
 import GlassCard from "@/components/ui/custom/GlassCard";
-import Badge from "@/components/ui/custom/Badge";
-import { useQuery } from "@tanstack/react-query";
-import { getCardsBySetId } from "@/services/api/pokemonCardsService";
-import { getAllSets } from "@/services/api/pokemonSetsService";
-import { CARD_BACK_URL } from "@/services/api/pokemonTypes";
-import { getFeaturedCards } from "@/services/api/featuredCardsService";
 
 const recentTrades = [
   {
@@ -67,11 +61,6 @@ const recentTrades = [
 ];
 
 const Index = () => {
-  const { data: featuredCards, isLoading, error } = useQuery({
-    queryKey: ['featuredCards'],
-    queryFn: getFeaturedCards
-  });
-
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -158,47 +147,6 @@ const Index = () => {
                 <p className="text-muted-foreground">{feature.description}</p>
               </GlassCard>
             ))}
-          </div>
-        </div>
-      </section>
-      
-      <section className="py-16 md:py-24 bg-secondary/30">
-        <div className="container">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-bold mb-2">Featured Cards</h2>
-              <p className="text-muted-foreground">
-                Discover popular cards from the latest sets available for trading
-              </p>
-            </div>
-            <Button variant="ghost" className="hidden md:flex" asChild>
-              <Link to="/pokemon-cards" className="flex items-center gap-1">
-                View All <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-          
-          {isLoading ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-            </div>
-          ) : error ? (
-            <div className="text-center py-8 text-destructive">
-              Unable to load featured cards. Please try again later.
-            </div>
-          ) : (
-            <CardGrid 
-              cards={featuredCards || []} 
-              columns={{ sm: 2, md: 3, lg: 4 }}
-              animated
-              showCondition={true}
-            />
-          )}
-          
-          <div className="mt-8 text-center md:hidden">
-            <Button asChild>
-              <Link to="/pokemon-cards">View All Cards</Link>
-            </Button>
           </div>
         </div>
       </section>
