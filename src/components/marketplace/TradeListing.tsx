@@ -32,9 +32,11 @@ const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListin
     // Call the parent component's handler first
     onProposeTrade();
     
-    // In a real app, this would navigate to a trade proposal form with the listing ID
-    // For now we'll just navigate to the trades page
-    navigate(`/trades?propose=true&listingId=${listing.id}`);
+    // Navigate to the trades page with the correct query parameters
+    navigate({
+      pathname: '/trades',
+      search: `?propose=true&listingId=${listing.id}`
+    });
   };
 
   return (

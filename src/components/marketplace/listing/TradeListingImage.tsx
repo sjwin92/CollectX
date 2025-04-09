@@ -106,7 +106,7 @@ const TradeListingImage = ({
   };
 
   return (
-    <div className="w-1/3 relative group">
+    <div className="w-full md:w-1/3 relative group">
       {!imageError ? (
         <div className="relative w-full h-full">
           {imageSrc && (

@@ -9,6 +9,7 @@ import { CARD_BACK_URL } from './pokemonTypes';
  */
 export const getFeaturedCardImageUrl = (cardId: string, size: 'small' | 'large' = 'large'): string => {
   if (!cardId) {
+    console.error("Invalid card ID: empty or undefined");
     return CARD_BACK_URL;
   }
   
