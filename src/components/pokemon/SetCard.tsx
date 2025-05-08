@@ -24,18 +24,20 @@ const SetCard = ({ set }: SetCardProps) => {
     setShowAddModal(true);
   };
 
-  // Fix URL if needed - some sets may need URL correction
+  // Improved URL fix function with direct overrides for problematic sets
   const getFixedImageUrl = (url: string | undefined, type: 'logo' | 'symbol'): string | undefined => {
-    if (!url) return undefined;
-    
-    // Check if URL is using tcgdex.net and modify if needed
-    if (url.includes('tcgdex.net')) {
-      const setId = set.id;
-      return `https://images.pokemontcg.io/${setId}/${type}.png`;
+    if (!url) {
+      // If no URL is provided, generate one based on set ID
+      return `https://images.pokemontcg.io/${set.id}/${type}.png`;
     }
     
-    // Direct fix for specific set IDs that we know have issues
+    // Special case for sv10 (Glory of Team Rocket) - force correct URL
     if (set.id === 'sv10') {
+      return `https://images.pokemontcg.io/${set.id}/${type}.png`;
+    }
+    
+    // Check if URL is using tcgdex.net (which may have issues)
+    if (url.includes('tcgdex.net')) {
       return `https://images.pokemontcg.io/${set.id}/${type}.png`;
     }
     
@@ -47,13 +49,13 @@ const SetCard = ({ set }: SetCardProps) => {
     return url;
   };
 
-  // Pre-process URLs for logo and symbol
+  // Pre-process URLs for logo and symbol with better logging
   const logoUrl = getFixedImageUrl(set.images?.logo, 'logo');
   const symbolUrl = getFixedImageUrl(set.images?.symbol, 'symbol');
 
-  // Debug
+  // Debug for problematic sets
   if (set.id === 'sv10') {
-    console.log(`Debug sv10 set: Logo URL = ${logoUrl}, Symbol URL = ${symbolUrl}`);
+    console.log(`SetCard: sv10 set image URLs - Logo URL = ${logoUrl}, Symbol URL = ${symbolUrl}`);
   }
 
   return (
@@ -61,38 +63,51 @@ const SetCard = ({ set }: SetCardProps) => {
       <Link to={`/pokemon-sets/${set.id}`}>
         <Card className="overflow-hidden h-full transition-all hover:shadow-lg hover:border-primary/50 relative group">
           <CardHeader className="space-y-4 pb-4">
-            {logoUrl && logoLoaded ? (
-              <img 
-                src={logoUrl} 
-                alt={`${set.name} logo`}
-                className="h-12 object-contain mx-auto"
-                onError={() => {
-                  console.log(`Failed to load logo image for ${set.name} (${logoUrl})`);
-                  setLogoLoaded(false);
-                }}
-              />
+            {logoUrl ? (
+              <div className="h-12 flex items-center justify-center">
+                <img 
+                  src={logoUrl} 
+                  alt={`${set.name} logo`}
+                  className="max-h-12 object-contain mx-auto"
+                  onError={() => {
+                    console.log(`Failed to load logo image for ${set.name} (${logoUrl})`);
+                    setLogoLoaded(false);
+                  }}
+                  style={{ display: logoLoaded ? 'block' : 'none' }}
+                />
+                {!logoLoaded && (
+                  <div className="flex flex-col items-center">
+                    <h3 className="text-lg font-semibold text-center">{set.name}</h3>
+                    <div className="flex items-center text-muted-foreground text-xs">
+                      <ImageOff className="h-3 w-3 mr-1" />
+                      <span>Image unavailable</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="flex items-center justify-center">
                 <h3 className="text-lg font-semibold text-center">{set.name}</h3>
-                {!logoLoaded && logoUrl && (
-                  <ImageOff className="h-4 w-4 ml-2 text-muted-foreground" />
-                )}
               </div>
             )}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                {symbolUrl && symbolLoaded ? (
-                  <img 
-                    src={symbolUrl} 
-                    alt={`${set.name} symbol`}
-                    className="h-6 w-6 object-contain"
-                    onError={() => {
-                      console.log(`Failed to load symbol image for ${set.name} (${symbolUrl})`);
-                      setSymbolLoaded(false);
-                    }}
-                  />
+                {symbolUrl ? (
+                  <div className="h-6 w-6 flex items-center justify-center">
+                    <img 
+                      src={symbolUrl} 
+                      alt={`${set.name} symbol`}
+                      className="max-h-6 max-w-6 object-contain"
+                      onError={() => {
+                        console.log(`Failed to load symbol image for ${set.name} (${symbolUrl})`);
+                        setSymbolLoaded(false);
+                      }}
+                      style={{ display: symbolLoaded ? 'block' : 'none' }}
+                    />
+                    {!symbolLoaded && <ImageOff className="h-3 w-3 text-muted-foreground" />}
+                  </div>
                 ) : (
-                  symbolLoaded === false && <ImageOff className="h-3 w-3 text-muted-foreground" />
+                  <ImageOff className="h-3 w-3 text-muted-foreground" />
                 )}
                 <span className="text-sm font-medium">{set.series}</span>
               </div>
