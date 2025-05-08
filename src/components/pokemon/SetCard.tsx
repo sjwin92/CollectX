@@ -24,38 +24,54 @@ const SetCard = ({ set }: SetCardProps) => {
     setShowAddModal(true);
   };
 
+  // Fix URL if needed - some sets may need URL correction
+  const getFixedImageUrl = (url: string | undefined, type: 'logo' | 'symbol'): string | undefined => {
+    if (!url) return undefined;
+    
+    // Check if URL is using tcgdex.net and modify if needed
+    if (url.includes('tcgdex.net')) {
+      const setId = set.id;
+      return `https://images.pokemontcg.io/${setId}/${type}.png`;
+    }
+    
+    return url;
+  };
+
+  const logoUrl = getFixedImageUrl(set.images?.logo, 'logo');
+  const symbolUrl = getFixedImageUrl(set.images?.symbol, 'symbol');
+
   return (
     <>
       <Link to={`/pokemon-sets/${set.id}`}>
         <Card className="overflow-hidden h-full transition-all hover:shadow-lg hover:border-primary/50 relative group">
           <CardHeader className="space-y-4 pb-4">
-            {set.images?.logo && logoLoaded ? (
+            {logoUrl && logoLoaded ? (
               <img 
-                src={set.images.logo} 
+                src={logoUrl} 
                 alt={`${set.name} logo`}
                 className="h-12 object-contain mx-auto"
                 onError={() => {
-                  console.log(`Failed to load logo image for ${set.name}`);
+                  console.log(`Failed to load logo image for ${set.name} (${logoUrl})`);
                   setLogoLoaded(false);
                 }}
               />
             ) : (
               <div className="flex items-center justify-center">
                 <h3 className="text-lg font-semibold text-center">{set.name}</h3>
-                {!logoLoaded && set.images?.logo && (
+                {!logoLoaded && logoUrl && (
                   <ImageOff className="h-4 w-4 ml-2 text-muted-foreground" />
                 )}
               </div>
             )}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                {set.images?.symbol && symbolLoaded ? (
+                {symbolUrl && symbolLoaded ? (
                   <img 
-                    src={set.images.symbol} 
+                    src={symbolUrl} 
                     alt={`${set.name} symbol`}
                     className="h-6 w-6 object-contain"
                     onError={() => {
-                      console.log(`Failed to load symbol image for ${set.name}`);
+                      console.log(`Failed to load symbol image for ${set.name} (${symbolUrl})`);
                       setSymbolLoaded(false);
                     }}
                   />
@@ -108,7 +124,7 @@ const SetCard = ({ set }: SetCardProps) => {
           open={showAddModal}
           onClose={() => setShowAddModal(false)}
           cardName={`Card from ${set.name}`}
-          cardImage={set.images?.symbol || set.images?.logo}
+          cardImage={getFixedImageUrl(set.images?.symbol || set.images?.logo, 'symbol')}
           cardRarity="Common"
           cardNumber={`${set.id}-1`}
         />

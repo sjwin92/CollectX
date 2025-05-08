@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getSets } from "@/services/pokemonSetsApi";
@@ -29,8 +28,8 @@ const newReleases = [
     releaseDate: "2025/05/24",
     updatedAt: "2025/05/23 16:00:00",
     images: {
-      symbol: "https://assets.tcgdex.net/en/sv10/symbol.png",
-      logo: "https://assets.tcgdex.net/en/sv10/logo.png"
+      symbol: "https://images.pokemontcg.io/sv10/symbol.png",
+      logo: "https://images.pokemontcg.io/sv10/logo.png"
     }
   }
 ];
