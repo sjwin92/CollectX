@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trophy, Calendar, Plus } from "lucide-react";
+import { Trophy, Calendar, Plus, ImageOff } from "lucide-react";
 import { format } from "date-fns";
 import { PokemonSet } from "@/services/api/pokemonTypes";
 import AddToCollectionModal from "./AddToCollectionModal";
@@ -15,6 +15,8 @@ interface SetCardProps {
 
 const SetCard = ({ set }: SetCardProps) => {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [logoLoaded, setLogoLoaded] = useState(true);
+  const [symbolLoaded, setSymbolLoaded] = useState(true);
 
   const openAddModal = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -27,38 +29,38 @@ const SetCard = ({ set }: SetCardProps) => {
       <Link to={`/pokemon-sets/${set.id}`}>
         <Card className="overflow-hidden h-full transition-all hover:shadow-lg hover:border-primary/50 relative group">
           <CardHeader className="space-y-4 pb-4">
-            {set.images?.logo ? (
+            {set.images?.logo && logoLoaded ? (
               <img 
                 src={set.images.logo} 
                 alt={`${set.name} logo`}
                 className="h-12 object-contain mx-auto"
-                onError={(e) => {
-                  // If image fails to load, replace with text
-                  const target = e.target as HTMLImageElement;
-                  const parent = target.parentElement;
-                  if (parent) {
-                    const nameElement = document.createElement('h3');
-                    nameElement.className = 'text-lg font-semibold';
-                    nameElement.textContent = set.name;
-                    parent.replaceChild(nameElement, target);
-                  }
+                onError={() => {
+                  console.log(`Failed to load logo image for ${set.name}`);
+                  setLogoLoaded(false);
                 }}
               />
             ) : (
-              <h3 className="text-lg font-semibold">{set.name}</h3>
+              <div className="flex items-center justify-center">
+                <h3 className="text-lg font-semibold text-center">{set.name}</h3>
+                {!logoLoaded && set.images?.logo && (
+                  <ImageOff className="h-4 w-4 ml-2 text-muted-foreground" />
+                )}
+              </div>
             )}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                {set.images?.symbol && (
+                {set.images?.symbol && symbolLoaded ? (
                   <img 
                     src={set.images.symbol} 
                     alt={`${set.name} symbol`}
                     className="h-6 w-6 object-contain"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
+                    onError={() => {
+                      console.log(`Failed to load symbol image for ${set.name}`);
+                      setSymbolLoaded(false);
                     }}
                   />
+                ) : (
+                  symbolLoaded === false && <ImageOff className="h-3 w-3 text-muted-foreground" />
                 )}
                 <span className="text-sm font-medium">{set.series}</span>
               </div>
