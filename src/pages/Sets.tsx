@@ -120,12 +120,23 @@ const Sets = () => {
                       <FeaturedBadge />
                     </div>
                     <CardHeader className="pt-10">
-                      {set.images.logo ? (
+                      {set.images?.logo ? (
                         <div className="flex justify-center mb-2">
                           <img 
                             src={set.images.logo} 
                             alt={`${set.name} logo`}
-                            className="h-16 object-contain"
+                            className="h-16 object-contain mx-auto"
+                            onError={(e) => {
+                              // If image fails to load, replace with text
+                              const target = e.target as HTMLImageElement;
+                              const parent = target.parentElement;
+                              if (parent) {
+                                const nameElement = document.createElement('h3');
+                                nameElement.className = 'text-lg font-semibold text-center';
+                                nameElement.textContent = set.name;
+                                parent.replaceChild(nameElement, target);
+                              }
+                            }}
                           />
                         </div>
                       ) : (
@@ -135,11 +146,15 @@ const Sets = () => {
                     <CardContent className="pb-4">
                       <div className="flex justify-between items-center mt-2">
                         <div className="flex items-center gap-2">
-                          {set.images.symbol && (
+                          {set.images?.symbol && (
                             <img 
                               src={set.images.symbol} 
                               alt={`${set.name} symbol`}
                               className="h-6 w-6 object-contain"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                              }}
                             />
                           )}
                           <span className="text-sm font-medium">{set.series}</span>

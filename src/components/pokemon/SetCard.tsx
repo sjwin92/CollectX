@@ -27,22 +27,37 @@ const SetCard = ({ set }: SetCardProps) => {
       <Link to={`/pokemon-sets/${set.id}`}>
         <Card className="overflow-hidden h-full transition-all hover:shadow-lg hover:border-primary/50 relative group">
           <CardHeader className="space-y-4 pb-4">
-            {set.images.logo ? (
+            {set.images?.logo ? (
               <img 
                 src={set.images.logo} 
                 alt={`${set.name} logo`}
-                className="h-12 object-contain"
+                className="h-12 object-contain mx-auto"
+                onError={(e) => {
+                  // If image fails to load, replace with text
+                  const target = e.target as HTMLImageElement;
+                  const parent = target.parentElement;
+                  if (parent) {
+                    const nameElement = document.createElement('h3');
+                    nameElement.className = 'text-lg font-semibold';
+                    nameElement.textContent = set.name;
+                    parent.replaceChild(nameElement, target);
+                  }
+                }}
               />
             ) : (
               <h3 className="text-lg font-semibold">{set.name}</h3>
             )}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                {set.images.symbol && (
+                {set.images?.symbol && (
                   <img 
                     src={set.images.symbol} 
                     alt={`${set.name} symbol`}
                     className="h-6 w-6 object-contain"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                    }}
                   />
                 )}
                 <span className="text-sm font-medium">{set.series}</span>
@@ -61,10 +76,10 @@ const SetCard = ({ set }: SetCardProps) => {
                 {format(new Date(set.releaseDate), 'MMM d, yyyy')}
               </div>
               <div className="flex gap-2">
-                {set.legalities.standard === 'Legal' && (
+                {set.legalities?.standard === 'Legal' && (
                   <Badge variant="default" className="text-xs">Standard</Badge>
                 )}
-                {set.legalities.expanded === 'Legal' && (
+                {set.legalities?.expanded === 'Legal' && (
                   <Badge variant="secondary" className="text-xs">Expanded</Badge>
                 )}
               </div>
@@ -91,7 +106,7 @@ const SetCard = ({ set }: SetCardProps) => {
           open={showAddModal}
           onClose={() => setShowAddModal(false)}
           cardName={`Card from ${set.name}`}
-          cardImage={set.images.symbol || set.images.logo}
+          cardImage={set.images?.symbol || set.images?.logo}
           cardRarity="Common"
           cardNumber={`${set.id}-1`}
         />
