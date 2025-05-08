@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Star } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import FeaturedBadge from "@/components/marketplace/listing/FeaturedBadge";
 
 const Sets = () => {
@@ -79,22 +79,25 @@ const Sets = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {featuredSets.map(set => (
-                <Link key={set.id} to={`/pokemon-sets/${set.id}`}>
+                <Link key={set.id} to={`/pokemon-sets/${set.id}`} className="block h-full">
                   <Card className="overflow-hidden h-full transition-all hover:shadow-lg hover:border-primary/50 relative group border-amber-400/50 shadow">
                     <div className="absolute top-0 left-0 right-0">
                       <FeaturedBadge />
                     </div>
-                    <CardContent className="pt-10 pb-4">
+                    <CardHeader className="pt-10">
                       {set.images.logo ? (
-                        <img 
-                          src={set.images.logo} 
-                          alt={`${set.name} logo`}
-                          className="h-16 object-contain mb-4"
-                        />
+                        <div className="flex justify-center mb-2">
+                          <img 
+                            src={set.images.logo} 
+                            alt={`${set.name} logo`}
+                            className="h-16 object-contain"
+                          />
+                        </div>
                       ) : (
-                        <h3 className="text-lg font-semibold mb-2">{set.name}</h3>
+                        <h3 className="text-lg font-semibold text-center">{set.name}</h3>
                       )}
-                      
+                    </CardHeader>
+                    <CardContent className="pb-4">
                       <div className="flex justify-between items-center mt-2">
                         <div className="flex items-center gap-2">
                           {set.images.symbol && (
@@ -106,10 +109,8 @@ const Sets = () => {
                           )}
                           <span className="text-sm font-medium">{set.series}</span>
                         </div>
-                        <Button variant="outline" size="sm" asChild>
-                          <Link to={`/pokemon-cards?setId=${set.id}`}>
-                            View Cards
-                          </Link>
+                        <Button variant="outline" size="sm">
+                          View Cards
                         </Button>
                       </div>
                     </CardContent>
