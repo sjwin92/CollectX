@@ -1,13 +1,13 @@
+
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getSetById } from "@/services/api/pokemonSetsService";
-import { PokemonSet } from "@/services/api/pokemonTypes";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Calendar, Trophy, Bookmark, Check } from "lucide-react";
+import { ArrowLeft, Calendar, Trophy, Bookmark, Check, ImageOff } from "lucide-react";
 import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,8 @@ const SetDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [logoLoaded, setLogoLoaded] = React.useState(true);
+  const [symbolLoaded, setSymbolLoaded] = React.useState(true);
 
   const { data: set, isLoading, isError } = useQuery({
     queryKey: ['pokemonSet', id],
@@ -46,6 +48,27 @@ const SetDetail = () => {
       });
     }
   };
+
+  // Fix URL if needed - some sets may need URL correction
+  const getFixedImageUrl = (url: string | undefined, setId: string | undefined, type: 'logo' | 'symbol'): string | undefined => {
+    if (!url || !setId) return undefined;
+    
+    // Check if URL is using tcgdex.net and modify if needed
+    if (url.includes('tcgdex.net')) {
+      return `https://images.pokemontcg.io/${setId}/${type}.png`;
+    }
+    
+    // Fix URLs that don't include the correct domain
+    if (!url.includes('://')) {
+      return `https://images.pokemontcg.io/${url}`;
+    }
+    
+    return url;
+  };
+
+  // Process URLs if set is available
+  const logoUrl = set ? getFixedImageUrl(set.images?.logo, set.id, 'logo') : undefined;
+  const symbolUrl = set ? getFixedImageUrl(set.images?.symbol, set.id, 'symbol') : undefined;
 
   if (isLoading) {
     return (
@@ -106,31 +129,56 @@ const SetDetail = () => {
         <div className="w-full flex flex-col md:flex-row gap-8">
           {/* Set Logo and Symbol */}
           <div className="md:w-1/3 space-y-6">
-            {set.images.logo ? (
+            {logoUrl && logoLoaded ? (
               <div className="bg-card border rounded-lg p-4 flex items-center justify-center">
                 <img 
-                  src={set.images.logo} 
+                  src={logoUrl} 
                   alt={`${set.name} logo`} 
                   className="max-w-full max-h-40 object-contain"
+                  onError={() => {
+                    console.log(`Failed to load logo image for detail page: ${set.name} (${logoUrl})`);
+                    setLogoLoaded(false);
+                  }}
                 />
               </div>
             ) : (
               <div className="bg-card border rounded-lg p-4">
                 <h2 className="text-2xl font-bold text-center">{set.name}</h2>
+                {!logoLoaded && logoUrl && (
+                  <div className="flex justify-center mt-2">
+                    <ImageOff className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                )}
               </div>
             )}
             
-            {set.images.symbol && (
+            {symbolUrl && symbolLoaded ? (
               <Card>
                 <CardContent className="p-4 flex items-center gap-3">
                   <img 
-                    src={set.images.symbol} 
+                    src={symbolUrl} 
                     alt={`${set.name} symbol`} 
                     className="w-10 h-10 object-contain"
+                    onError={() => {
+                      console.log(`Failed to load symbol image for detail page: ${set.name} (${symbolUrl})`);
+                      setSymbolLoaded(false);
+                    }}
                   />
                   <div>
                     <h3 className="font-medium">Set Symbol</h3>
                     <p className="text-sm text-muted-foreground">Official symbol used on cards</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : symbolLoaded === false && (
+              <Card>
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 flex items-center justify-center text-muted-foreground">
+                    <ImageOff className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Set Symbol</h3>
+                    <p className="text-sm text-muted-foreground">Image not available</p>
                   </div>
                 </CardContent>
               </Card>

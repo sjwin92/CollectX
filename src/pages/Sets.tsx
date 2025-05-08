@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getSets } from "@/services/pokemonSetsApi";
 import Navbar from "@/components/layout/Navbar";
@@ -38,7 +39,7 @@ const Sets = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
   const [imageLoadState, setImageLoadState] = useState<Record<string, boolean>>({});
-
+  
   const { data, isLoading, isError } = useQuery({
     queryKey: ['pokemonSets', currentPage],
     queryFn: () => getSets(currentPage, 20),
@@ -52,6 +53,23 @@ const Sets = () => {
       }
     }
   });
+
+  // Function to fix image URLs if needed
+  const getFixedImageUrl = (url: string | undefined, setId: string, type: 'logo' | 'symbol'): string | undefined => {
+    if (!url) return undefined;
+    
+    // Check if URL is using tcgdex.net and modify if needed
+    if (url.includes('tcgdex.net')) {
+      return `https://images.pokemontcg.io/${setId}/${type}.png`;
+    }
+    
+    // Fix URLs that don't include the correct domain
+    if (!url.includes('://')) {
+      return `https://images.pokemontcg.io/${url}`;
+    }
+    
+    return url;
+  };
 
   // Combine API data with manually added new releases
   const combinedData = React.useMemo(() => {
@@ -118,64 +136,74 @@ const Sets = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredSets.map(set => (
-                <Link key={set.id} to={`/pokemon-sets/${set.id}`} className="block h-full">
-                  <Card className="overflow-hidden h-full transition-all hover:shadow-lg hover:border-primary/50 relative group border-amber-400/50 shadow">
-                    <div className="absolute top-0 left-0 right-0">
-                      <FeaturedBadge />
-                    </div>
-                    <CardHeader className="pt-10">
-                      {set.images?.logo && imageLoadState[set.id] !== false ? (
-                        <div className="flex justify-center mb-2">
-                          <img 
-                            src={set.images.logo} 
-                            alt={`${set.name} logo`}
-                            className="h-16 object-contain mx-auto"
-                            onError={() => handleImageError(set.id)}
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center">
-                          <h3 className="text-lg font-semibold text-center">{set.name}</h3>
-                          {imageLoadState[set.id] === false && (
-                            <div className="text-muted-foreground flex items-center mt-1 text-xs">
-                              <ImageOff className="h-3 w-3 mr-1" />
-                              <span>Image unavailable</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </CardHeader>
-                    <CardContent className="pb-4">
-                      <div className="flex justify-between items-center mt-2">
-                        <div className="flex items-center gap-2">
-                          {set.images?.symbol && imageLoadState[`${set.id}-symbol`] !== false ? (
-                            <img 
-                              src={set.images.symbol} 
-                              alt={`${set.name} symbol`}
-                              className="h-6 w-6 object-contain"
-                              onError={() => {
-                                setImageLoadState(prev => ({
-                                  ...prev,
-                                  [`${set.id}-symbol`]: false
-                                }));
-                              }}
-                            />
-                          ) : (
-                            imageLoadState[`${set.id}-symbol`] === false && (
-                              <ImageOff className="h-4 w-4 text-muted-foreground" />
-                            )
-                          )}
-                          <span className="text-sm font-medium">{set.series}</span>
-                        </div>
-                        <Button variant="outline" size="sm">
-                          View Cards
-                        </Button>
+              {featuredSets.map(set => {
+                // Fix URLs for images
+                const logoUrl = getFixedImageUrl(set.images?.logo, set.id, 'logo');
+                const symbolUrl = getFixedImageUrl(set.images?.symbol, set.id, 'symbol');
+                
+                if (set.id === 'sv10') {
+                  console.log(`Featured sv10 set: Logo URL = ${logoUrl}, Symbol URL = ${symbolUrl}`);
+                }
+                
+                return (
+                  <Link key={set.id} to={`/pokemon-sets/${set.id}`} className="block h-full">
+                    <Card className="overflow-hidden h-full transition-all hover:shadow-lg hover:border-primary/50 relative group border-amber-400/50 shadow">
+                      <div className="absolute top-0 left-0 right-0">
+                        <FeaturedBadge />
                       </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
+                      <CardHeader className="pt-10">
+                        {logoUrl && imageLoadState[set.id] !== false ? (
+                          <div className="flex justify-center mb-2">
+                            <img 
+                              src={logoUrl} 
+                              alt={`${set.name} logo`}
+                              className="h-16 object-contain mx-auto"
+                              onError={() => handleImageError(set.id)}
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center">
+                            <h3 className="text-lg font-semibold text-center">{set.name}</h3>
+                            {imageLoadState[set.id] === false && (
+                              <div className="text-muted-foreground flex items-center mt-1 text-xs">
+                                <ImageOff className="h-3 w-3 mr-1" />
+                                <span>Image unavailable</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </CardHeader>
+                      <CardContent className="pb-4">
+                        <div className="flex justify-between items-center mt-2">
+                          <div className="flex items-center gap-2">
+                            {symbolUrl && imageLoadState[`${set.id}-symbol`] !== false ? (
+                              <img 
+                                src={symbolUrl} 
+                                alt={`${set.name} symbol`}
+                                className="h-6 w-6 object-contain"
+                                onError={() => {
+                                  setImageLoadState(prev => ({
+                                    ...prev,
+                                    [`${set.id}-symbol`]: false
+                                  }));
+                                }}
+                              />
+                            ) : (
+                              imageLoadState[`${set.id}-symbol`] === false && (
+                                <ImageOff className="h-4 w-4 text-muted-foreground" />
+                              )
+                            )}
+                            <span className="text-sm font-medium">{set.series}</span>
+                          </div>
+                          <Button variant="outline" size="sm">
+                            View Cards
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
             </div>
           </section>
         )}

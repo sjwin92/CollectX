@@ -34,11 +34,27 @@ const SetCard = ({ set }: SetCardProps) => {
       return `https://images.pokemontcg.io/${setId}/${type}.png`;
     }
     
+    // Direct fix for specific set IDs that we know have issues
+    if (set.id === 'sv10') {
+      return `https://images.pokemontcg.io/${set.id}/${type}.png`;
+    }
+    
+    // Fix URLs that don't include the correct domain
+    if (!url.includes('://')) {
+      return `https://images.pokemontcg.io/${url}`;
+    }
+    
     return url;
   };
 
+  // Pre-process URLs for logo and symbol
   const logoUrl = getFixedImageUrl(set.images?.logo, 'logo');
   const symbolUrl = getFixedImageUrl(set.images?.symbol, 'symbol');
+
+  // Debug
+  if (set.id === 'sv10') {
+    console.log(`Debug sv10 set: Logo URL = ${logoUrl}, Symbol URL = ${symbolUrl}`);
+  }
 
   return (
     <>
