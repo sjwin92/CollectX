@@ -12,6 +12,29 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import FeaturedBadge from "@/components/marketplace/listing/FeaturedBadge";
 
+// Manual data for latest sets that might not be in the API yet
+const newReleases = [
+  {
+    id: "sv10",
+    name: "Glory of Team Rocket",
+    series: "Scarlet & Violet",
+    printedTotal: 178,
+    total: 240,
+    legalities: {
+      unlimited: "Legal",
+      standard: "Legal",
+      expanded: "Legal"
+    },
+    ptcgoCode: "GTR",
+    releaseDate: "2025/05/24",
+    updatedAt: "2025/05/23 16:00:00",
+    images: {
+      symbol: "https://images.pokemontcg.io/sv9/symbol.png", // Using placeholder until official image
+      logo: "https://cdn2.bulbagarden.net/upload/thumb/3/30/Glory_of_Team_Rocket_logo.png/300px-Glory_of_Team_Rocket_logo.png"
+    }
+  }
+];
+
 const Sets = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
@@ -30,8 +53,20 @@ const Sets = () => {
     }
   });
 
-  // Get featured sets (first 4 sets from the returned data)
-  const featuredSets = data?.data.slice(0, 4) || [];
+  // Combine API data with manually added new releases
+  const combinedData = React.useMemo(() => {
+    if (isLoading || isError || !data) return [];
+    
+    // For first page only, prepend our new releases
+    if (currentPage === 1) {
+      return [...newReleases, ...data.data];
+    }
+    
+    return data.data;
+  }, [data, isLoading, isError, currentPage]);
+
+  // Get featured sets (first 4 sets from the combined data)
+  const featuredSets = combinedData.slice(0, 4) || [];
 
   const loadNextPage = () => {
     setCurrentPage(prev => prev + 1);
@@ -136,7 +171,7 @@ const Sets = () => {
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {data?.data.map(set => (
+              {combinedData.map(set => (
                 <SetCard key={set.id} set={set} />
               ))}
             </div>
@@ -150,7 +185,7 @@ const Sets = () => {
                 Previous Page
               </Button>
               <span className="text-muted-foreground">
-                Page {currentPage} of {Math.ceil((data?.totalCount || 0) / 20)}
+                Page {currentPage} of {Math.ceil(((data?.totalCount || 0) + (currentPage === 1 ? newReleases.length : 0)) / 20)}
               </span>
               <Button
                 variant="outline"
