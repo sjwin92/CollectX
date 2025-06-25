@@ -94,13 +94,37 @@ export const useCollection = (propCollection?: ExtendedCardItemProps[]) => {
       filtered = filtered.filter(card => {
         if (!card) return false;
         
-        const nameMatch = card.name && card.name.toLowerCase().includes(query);
-        const rarityMatch = card.rarity && card.rarity.toLowerCase().includes(query);
-        const conditionMatch = card.condition && card.condition.toLowerCase().includes(query);
-        const setMatch = card.set && card.set.name && card.set.name.toLowerCase().includes(query);
-        const numberMatch = card.number && card.number.toLowerCase().includes(query);
+        const searchLower = query.toLowerCase();
         
-        return nameMatch || rarityMatch || conditionMatch || setMatch || numberMatch;
+        // Search in card name
+        const nameMatch = card.name && card.name.toLowerCase().includes(searchLower);
+        
+        // Search in rarity
+        const rarityMatch = card.rarity && card.rarity.toLowerCase().includes(searchLower);
+        
+        // Search in condition
+        const conditionMatch = card.condition && card.condition.toLowerCase().includes(searchLower);
+        
+        // Search in set name
+        const setMatch = card.set && card.set.name && card.set.name.toLowerCase().includes(searchLower);
+        
+        // Search in card number
+        const numberMatch = card.number && card.number.toLowerCase().includes(searchLower);
+        
+        // Search in card ID
+        const idMatch = card.id && card.id.toLowerCase().includes(searchLower);
+        
+        // Search in estimated value
+        const valueMatch = card.estimatedValue && card.estimatedValue.toLowerCase().includes(searchLower);
+        
+        // Search in grading company
+        const gradingMatch = card.gradingCompany && card.gradingCompany.toLowerCase().includes(searchLower);
+        
+        // Search in grade score
+        const gradeMatch = card.gradeScore && card.gradeScore.toLowerCase().includes(searchLower);
+        
+        return nameMatch || rarityMatch || conditionMatch || setMatch || numberMatch || 
+               idMatch || valueMatch || gradingMatch || gradeMatch;
       });
       
       console.log(`Found ${filtered.length} cards matching "${query}"`);

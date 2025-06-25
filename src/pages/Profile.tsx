@@ -142,10 +142,17 @@ const Profile = () => {
       const filtered = userCollection.filter(card => 
         card.name.toLowerCase().includes(query) || 
         card.rarity.toLowerCase().includes(query) ||
-        card.condition.toLowerCase().includes(query)
+        card.condition.toLowerCase().includes(query) ||
+        (card.id && card.id.toLowerCase().includes(query)) ||
+        (card.estimatedValue && card.estimatedValue.toLowerCase().includes(query))
       );
       setFilteredCards(filtered);
     }
+  };
+
+  const handleAddCards = () => {
+    // Navigate to Pokemon sets instead of generic sets
+    window.location.href = '/pokemon-sets';
   };
 
   return (
@@ -350,7 +357,7 @@ const Profile = () => {
                   <GlassCard className="p-6 mb-6">
                     <div className="flex justify-between items-center mb-6">
                       <h2 className="text-lg font-bold">My Card Collection</h2>
-                      <Button size="sm">
+                      <Button size="sm" onClick={handleAddCards}>
                         <Plus className="h-4 w-4 mr-2" />
                         Add Cards
                       </Button>
@@ -359,7 +366,7 @@ const Profile = () => {
                     <div className="relative mb-6">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input 
-                        placeholder="Search your collection..." 
+                        placeholder="Search by name, rarity, condition, ID, or value..." 
                         className="pl-9"
                         value={searchQuery}
                         onChange={handleSearchChange}
@@ -372,17 +379,18 @@ const Profile = () => {
                         columns={{ sm: 1, md: 2, lg: 3 }} 
                         animated
                       />
-                    ) : (
+                    ) : searchQuery ? (
                       <div className="text-center py-8">
                         <p className="text-muted-foreground">No cards matching "{searchQuery}"</p>
+                        <Button variant="outline" className="mt-2" onClick={() => setSearchQuery("")}>
+                          Clear Search
+                        </Button>
                       </div>
-                    )}
-                    
-                    {userCollection.length === 0 && (
+                    ) : (
                       <div className="text-center py-10">
                         <h3 className="text-xl font-medium mb-2">Your collection is empty</h3>
                         <p className="text-muted-foreground mb-4">Start adding cards to showcase your collection</p>
-                        <Button>
+                        <Button onClick={handleAddCards}>
                           <Plus className="h-4 w-4 mr-2" />
                           Add Your First Card
                         </Button>

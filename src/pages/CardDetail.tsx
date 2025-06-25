@@ -1,91 +1,110 @@
 
-import React from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import { getCardById } from "@/services/pokemonTcgApi";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import PokemonCardDetail from "@/components/pokemon/PokemonCardDetail";
-import QuickAddToCollection from "@/components/pokemon/QuickAddToCollection";
+import GlassCard from "@/components/ui/custom/GlassCard";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, AlertTriangle, RefreshCw } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import GlassCard from "@/components/ui/custom/GlassCard";
-import { useQuery } from "@tanstack/react-query";
+import PokemonCardDetail from "@/components/pokemon/PokemonCardDetail";
+import { getCardById } from "@/services/api/pokemonCardsService";
+import { PokemonCard } from "@/services/api/pokemonTypes";
 
 const CardDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const [card, setCard] = useState<PokemonCard | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const { 
-    data: card, 
-    isLoading, 
-    isError, 
-    error,
-    refetch
-  } = useQuery({
-    queryKey: ['pokemonCard', id],
-    queryFn: async () => {
-      if (!id) {
-        throw new Error('Card ID is required');
-      }
-      console.log(`Fetching card details for ID: ${id}`);
-      return await getCardById(id);
-    },
-    retry: 2,
-    meta: {
-      onError: (err: Error) => {
-        console.error('Error loading card:', err);
-        toast({
-          title: "Failed to load card",
-          description: `Could not find card with ID: ${id}`,
-          variant: "destructive"
-        });
-      }
+  useEffect(() => {
+    if (!id) {
+      setError("No card ID provided");
+      setLoading(false);
+      return;
     }
-  });
 
-  if (isLoading) {
+    const fetchCard = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        console.log(`Fetching card details for ID: ${id}`);
+        
+        const cardData = await getCardById(id);
+        setCard(cardData);
+        console.log(`Successfully loaded card: ${cardData.name}`);
+      } catch (err) {
+        console.error("Error fetching card:", err);
+        setError(err instanceof Error ? err.message : "Failed to load card");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCard();
+  }, [id]);
+
+  const handleRetry = () => {
+    if (id) {
+      setError(null);
+      setLoading(true);
+      // Re-trigger the effect by updating the dependency
+      window.location.reload();
+    }
+  };
+
+  if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <div className="container py-8 flex-1">
-          <div className="text-center py-12">
-            <div className="animate-pulse text-xl">Loading card details...</div>
+        <main className="flex-1 pt-24 pb-16">
+          <div className="container">
+            <div className="flex items-center justify-center min-h-[60vh]">
+              <div className="text-center">
+                <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading card details...</p>
+              </div>
+            </div>
           </div>
-        </div>
+        </main>
         <Footer />
       </div>
     );
   }
 
-  if (isError || !card) {
+  if (error || !card) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <div className="container py-8 flex-1">
-          <div className="mb-6">
-            <Button variant="ghost" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-4 w-4 mr-2" /> Back
+        <main className="flex-1 pt-24 pb-16">
+          <div className="container">
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate(-1)}
+              className="mb-6"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
             </Button>
+            
+            <GlassCard className="p-8 text-center">
+              <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+              <h1 className="text-2xl font-bold mb-2">Card Not Found</h1>
+              <p className="text-muted-foreground mb-6">
+                {error || "The requested card could not be found."}
+              </p>
+              <div className="flex gap-2 justify-center">
+                <Button onClick={handleRetry}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Try Again
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/pokemon-cards')}>
+                  Browse Cards
+                </Button>
+              </div>
+            </GlassCard>
           </div>
-          
-          <GlassCard className="p-8 text-center">
-            <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold mb-2">Card Not Found</h1>
-            <p className="text-muted-foreground mb-6">
-              We couldn't find the card with ID: {id}
-            </p>
-            <div className="flex justify-center gap-4">
-              <Button variant="outline" onClick={() => refetch()}>
-                <RefreshCw className="h-4 w-4 mr-2" /> Try Again
-              </Button>
-              <Link to="/pokemon-cards">
-                <Button>Browse All Cards</Button>
-              </Link>
-            </div>
-          </GlassCard>
-        </div>
+        </main>
         <Footer />
       </div>
     );
@@ -94,34 +113,22 @@ const CardDetail = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <div className="container py-8 flex-1">
-        <div className="mb-6">
-          <Button variant="ghost" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4 mr-2" /> Back
+      
+      <main className="flex-1 pt-24 pb-16">
+        <div className="container">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate(-1)}
+            className="mb-6"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
           </Button>
+          
+          <PokemonCardDetail card={card} />
         </div>
-        
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">{card?.name}</h1>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <span>{card?.set.name}</span>
-            <span>•</span>
-            <span>Card #{card?.number}</span>
-            {card?.rarity && (
-              <>
-                <span>•</span>
-                <span>{card?.rarity}</span>
-              </>
-            )}
-          </div>
-        </div>
-        
-        <PokemonCardDetail card={card} />
-        
-        <div className="mt-6">
-          <QuickAddToCollection card={card} />
-        </div>
-      </div>
+      </main>
+      
       <Footer />
     </div>
   );
