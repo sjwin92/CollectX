@@ -29,8 +29,8 @@ const newReleases = [
     releaseDate: "2025/05/24",
     updatedAt: "2025/05/23 16:00:00",
     images: {
-      symbol: "https://images.pokemontcg.io/sv10/symbol.png",
-      logo: "https://images.pokemontcg.io/sv10/logo.png"
+      symbol: undefined, // Remove broken URLs to trigger fallback
+      logo: undefined
     }
   }
 ];

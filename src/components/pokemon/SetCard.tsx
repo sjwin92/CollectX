@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -24,16 +23,10 @@ const SetCard = ({ set }: SetCardProps) => {
     setShowAddModal(true);
   };
 
-  // Improved URL fix function with direct overrides for problematic sets
+  // Improved URL fix function
   const getFixedImageUrl = (url: string | undefined, type: 'logo' | 'symbol'): string | undefined => {
     if (!url) {
-      // If no URL is provided, generate one based on set ID
-      return `https://images.pokemontcg.io/${set.id}/${type}.png`;
-    }
-    
-    // Special case for sv10 (Glory of Team Rocket) - force correct URL
-    if (set.id === 'sv10') {
-      return `https://images.pokemontcg.io/${set.id}/${type}.png`;
+      return undefined; // Don't generate URLs for sets without proper images
     }
     
     // Check if URL is using tcgdex.net (which may have issues)
@@ -49,14 +42,9 @@ const SetCard = ({ set }: SetCardProps) => {
     return url;
   };
 
-  // Pre-process URLs for logo and symbol with better logging
+  // Pre-process URLs for logo and symbol
   const logoUrl = getFixedImageUrl(set.images?.logo, 'logo');
   const symbolUrl = getFixedImageUrl(set.images?.symbol, 'symbol');
-
-  // Debug for problematic sets
-  if (set.id === 'sv10') {
-    console.log(`SetCard: sv10 set image URLs - Logo URL = ${logoUrl}, Symbol URL = ${symbolUrl}`);
-  }
 
   return (
     <>
@@ -70,7 +58,6 @@ const SetCard = ({ set }: SetCardProps) => {
                   alt={`${set.name} logo`}
                   className="max-h-12 object-contain mx-auto"
                   onError={() => {
-                    console.log(`Failed to load logo image for ${set.name} (${logoUrl})`);
                     setLogoLoaded(false);
                   }}
                   style={{ display: logoLoaded ? 'block' : 'none' }}
@@ -99,7 +86,6 @@ const SetCard = ({ set }: SetCardProps) => {
                       alt={`${set.name} symbol`}
                       className="max-h-6 max-w-6 object-contain"
                       onError={() => {
-                        console.log(`Failed to load symbol image for ${set.name} (${symbolUrl})`);
                         setSymbolLoaded(false);
                       }}
                       style={{ display: symbolLoaded ? 'block' : 'none' }}
@@ -155,7 +141,7 @@ const SetCard = ({ set }: SetCardProps) => {
           open={showAddModal}
           onClose={() => setShowAddModal(false)}
           cardName={`Card from ${set.name}`}
-          cardImage={getFixedImageUrl(set.images?.symbol || set.images?.logo, 'symbol')}
+          cardImage={symbolUrl || logoUrl}
           cardRarity="Common"
           cardNumber={`${set.id}-1`}
         />
