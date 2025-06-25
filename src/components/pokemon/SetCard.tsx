@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -7,6 +8,7 @@ import { Trophy, Calendar, Plus, ImageOff } from "lucide-react";
 import { format } from "date-fns";
 import { PokemonSet } from "@/services/api/pokemonTypes";
 import AddToCollectionModal from "./AddToCollectionModal";
+import { fixImageUrl } from "@/services/api/cardImageService";
 
 interface SetCardProps {
   set: PokemonSet;
@@ -23,28 +25,9 @@ const SetCard = ({ set }: SetCardProps) => {
     setShowAddModal(true);
   };
 
-  // Improved URL fix function
-  const getFixedImageUrl = (url: string | undefined, type: 'logo' | 'symbol'): string | undefined => {
-    if (!url) {
-      return undefined; // Don't generate URLs for sets without proper images
-    }
-    
-    // Check if URL is using tcgdex.net (which may have issues)
-    if (url.includes('tcgdex.net')) {
-      return `https://images.pokemontcg.io/${set.id}/${type}.png`;
-    }
-    
-    // Fix URLs that don't include the correct domain
-    if (!url.includes('://')) {
-      return `https://images.pokemontcg.io/${url}`;
-    }
-    
-    return url;
-  };
-
-  // Pre-process URLs for logo and symbol
-  const logoUrl = getFixedImageUrl(set.images?.logo, 'logo');
-  const symbolUrl = getFixedImageUrl(set.images?.symbol, 'symbol');
+  // Fix image URLs
+  const logoUrl = fixImageUrl(set.images?.logo, set.id, 'logo');
+  const symbolUrl = fixImageUrl(set.images?.symbol, set.id, 'symbol');
 
   return (
     <>
@@ -57,9 +40,7 @@ const SetCard = ({ set }: SetCardProps) => {
                   src={logoUrl} 
                   alt={`${set.name} logo`}
                   className="max-h-12 object-contain mx-auto"
-                  onError={() => {
-                    setLogoLoaded(false);
-                  }}
+                  onError={() => setLogoLoaded(false)}
                   style={{ display: logoLoaded ? 'block' : 'none' }}
                 />
                 {!logoLoaded && (
@@ -67,16 +48,17 @@ const SetCard = ({ set }: SetCardProps) => {
                     <h3 className="text-lg font-semibold text-center">{set.name}</h3>
                     <div className="flex items-center text-muted-foreground text-xs">
                       <ImageOff className="h-3 w-3 mr-1" />
-                      <span>Image unavailable</span>
+                      <span>Logo unavailable</span>
                     </div>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="flex items-center justify-center">
+              <div className="flex items-center justify-center h-12">
                 <h3 className="text-lg font-semibold text-center">{set.name}</h3>
               </div>
             )}
+            
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 {symbolUrl ? (
@@ -85,9 +67,7 @@ const SetCard = ({ set }: SetCardProps) => {
                       src={symbolUrl} 
                       alt={`${set.name} symbol`}
                       className="max-h-6 max-w-6 object-contain"
-                      onError={() => {
-                        setSymbolLoaded(false);
-                      }}
+                      onError={() => setSymbolLoaded(false)}
                       style={{ display: symbolLoaded ? 'block' : 'none' }}
                     />
                     {!symbolLoaded && <ImageOff className="h-3 w-3 text-muted-foreground" />}
@@ -121,7 +101,6 @@ const SetCard = ({ set }: SetCardProps) => {
             </div>
           </CardContent>
           
-          {/* Add to Collection Button - Visible on hover */}
           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <Button 
               variant="default" 

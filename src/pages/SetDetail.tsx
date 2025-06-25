@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { fixImageUrl } from "@/services/api/cardImageService";
 
 const SetDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -40,7 +41,6 @@ const SetDetail = () => {
 
   const handleViewCards = () => {
     if (id) {
-      console.log(`Navigating to view cards for setId: ${id}`);
       navigate(`/pokemon-cards?setId=${encodeURIComponent(id)}`);
       toast({
         title: "Loading cards",
@@ -49,26 +49,9 @@ const SetDetail = () => {
     }
   };
 
-  // Fix URL if needed - some sets may need URL correction
-  const getFixedImageUrl = (url: string | undefined, setId: string | undefined, type: 'logo' | 'symbol'): string | undefined => {
-    if (!url || !setId) return undefined;
-    
-    // Check if URL is using tcgdex.net and modify if needed
-    if (url.includes('tcgdex.net')) {
-      return `https://images.pokemontcg.io/${setId}/${type}.png`;
-    }
-    
-    // Fix URLs that don't include the correct domain
-    if (!url.includes('://')) {
-      return `https://images.pokemontcg.io/${url}`;
-    }
-    
-    return url;
-  };
-
   // Process URLs if set is available
-  const logoUrl = set ? getFixedImageUrl(set.images?.logo, set.id, 'logo') : undefined;
-  const symbolUrl = set ? getFixedImageUrl(set.images?.symbol, set.id, 'symbol') : undefined;
+  const logoUrl = set ? fixImageUrl(set.images?.logo, set.id, 'logo') : undefined;
+  const symbolUrl = set ? fixImageUrl(set.images?.symbol, set.id, 'symbol') : undefined;
 
   if (isLoading) {
     return (
@@ -135,10 +118,7 @@ const SetDetail = () => {
                   src={logoUrl} 
                   alt={`${set.name} logo`} 
                   className="max-w-full max-h-40 object-contain"
-                  onError={() => {
-                    console.log(`Failed to load logo image for detail page: ${set.name} (${logoUrl})`);
-                    setLogoLoaded(false);
-                  }}
+                  onError={() => setLogoLoaded(false)}
                 />
               </div>
             ) : (
@@ -159,10 +139,7 @@ const SetDetail = () => {
                     src={symbolUrl} 
                     alt={`${set.name} symbol`} 
                     className="w-10 h-10 object-contain"
-                    onError={() => {
-                      console.log(`Failed to load symbol image for detail page: ${set.name} (${symbolUrl})`);
-                      setSymbolLoaded(false);
-                    }}
+                    onError={() => setSymbolLoaded(false)}
                   />
                   <div>
                     <h3 className="font-medium">Set Symbol</h3>

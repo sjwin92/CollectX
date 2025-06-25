@@ -6,58 +6,49 @@ import { formatCurrency } from "@/utils/escrowCalculator";
 import { Flame, Zap, Shield, TrendingUp, AlertTriangle, Check, Info, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { getAllPossibleCardImageUrls } from "@/services/api/cardImageService";
+import { getAllPossibleImageUrlsFromCardObject } from "@/services/api/cardImageService";
+
 interface PokemonCardDetailProps {
   card: PokemonCard;
 }
-const PokemonCardDetail = ({
-  card
-}: PokemonCardDetailProps) => {
+
+const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
+
   useEffect(() => {
     if (!card) return;
 
-    // Reset image state when card changes
     setImageStatus("loading");
     setCurrentImageIndex(0);
 
-    // First try direct image URLs from the card data
-    const initialUrls: string[] = [];
-
-    // Primary source: card.images from API if available
-    if (card.images) {
-      if (card.images.large) initialUrls.push(card.images.large);
-      if (card.images.small) initialUrls.push(card.images.small);
-    }
-
-    // Secondary source: Use the card ID to get all possible URLs
-    const backupUrls = getAllPossibleCardImageUrls(card.id);
-
-    // Combine all sources, remove duplicates
-    const combinedUrls = [...initialUrls, ...backupUrls];
-    const uniqueUrls = [...new Set(combinedUrls)];
-    setImageUrls(uniqueUrls);
-    console.log(`Generated ${uniqueUrls.length} potential image URLs for card ${card.id}`);
-    console.log('Image URLs:', uniqueUrls);
+    // Get all possible image URLs for this card
+    const urls = getAllPossibleImageUrlsFromCardObject(card);
+    setImageUrls(urls);
+    
+    console.log(`Generated ${urls.length} potential image URLs for card ${card.id}`);
   }, [card?.id]);
+
   const currentImageUrl = imageUrls[currentImageIndex] || '';
+
   const getMarketPrice = () => {
     if (!card?.tcgplayer?.prices) return null;
 
-    // Try to get the price from various finishes
-    const price = card.tcgplayer.prices.holofoil?.market || card.tcgplayer.prices.normal?.market || card.tcgplayer.prices.reverseHolofoil?.market;
+    const price = card.tcgplayer.prices.holofoil?.market || 
+                 card.tcgplayer.prices.normal?.market || 
+                 card.tcgplayer.prices.reverseHolofoil?.market;
     return price ? formatCurrency(price) : null;
   };
+
   const handleImageLoad = () => {
     setImageStatus("loaded");
     console.log("Card image loaded successfully:", currentImageUrl);
   };
+
   const handleImageError = () => {
     console.log(`Image failed to load: ${currentImageUrl}`);
 
-    // Try the next image in the list
     if (currentImageIndex < imageUrls.length - 1) {
       const nextIndex = currentImageIndex + 1;
       setCurrentImageIndex(nextIndex);
@@ -68,21 +59,35 @@ const PokemonCardDetail = ({
       console.log("All image sources failed");
     }
   };
+
   const retryImages = () => {
     setImageStatus("loading");
     setCurrentImageIndex(0);
   };
-  return <GlassCard className="overflow-hidden animate-float">
+
+  return (
+    <GlassCard className="overflow-hidden animate-float">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="relative aspect-[2/3] overflow-hidden rounded-lg">
           <div className="relative h-full">
-            {currentImageUrl && <img src={currentImageUrl} alt={`Detailed view of ${card?.name} Pokémon card from set ${card?.set?.name}`} className="w-full h-full object-contain" onLoad={handleImageLoad} onError={handleImageError} />}
+            {currentImageUrl && (
+              <img 
+                src={currentImageUrl} 
+                alt={`Detailed view of ${card?.name} Pokémon card from set ${card?.set?.name}`} 
+                className="w-full h-full object-contain" 
+                onLoad={handleImageLoad} 
+                onError={handleImageError} 
+              />
+            )}
             
-            {imageStatus === "loading" && <div className="absolute inset-0 flex items-center justify-center bg-background/50">
+            {imageStatus === "loading" && (
+              <div className="absolute inset-0 flex items-center justify-center bg-background/50">
                 <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-              </div>}
+              </div>
+            )}
             
-            {imageStatus === "error" && <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/90">
+            {imageStatus === "error" && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/90">
                 <AlertTriangle className="h-10 w-10 text-amber-500 mb-2" />
                 <p className="text-center px-4">Image could not be loaded</p>
                 <p className="text-sm text-muted-foreground mt-1 mb-3">Card data is still available</p>
@@ -90,11 +95,14 @@ const PokemonCardDetail = ({
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Retry Images
                 </Button>
-              </div>}
+              </div>
+            )}
             
-            {imageStatus === "loaded" && <div className="absolute top-2 right-2 bg-black/60 rounded-full p-1.5">
+            {imageStatus === "loaded" && (
+              <div className="absolute top-2 right-2 bg-black/60 rounded-full p-1.5">
                 <Check className="h-4 w-4 text-green-400" />
-              </div>}
+              </div>
+            )}
             
             <TooltipProvider>
               <Tooltip>
@@ -127,49 +135,67 @@ const PokemonCardDetail = ({
             </div>
           </div>
           
-          {card?.types && <div>
+          {card?.types && (
+            <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-1">Types</h3>
               <div className="flex gap-2">
-                {card.types.map(type => <Badge key={type} className="bg-primary/80 text-slate-50">
+                {card.types.map(type => (
+                  <Badge key={type} className="bg-primary/80 text-slate-50">
                     <Flame className="h-3 w-3 mr-1" /> {type}
-                  </Badge>)}
+                  </Badge>
+                ))}
               </div>
-            </div>}
+            </div>
+          )}
           
-          {card?.attacks && card.attacks.length > 0 && <div>
+          {card?.attacks && card.attacks.length > 0 && (
+            <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-1">Attacks</h3>
               <div className="space-y-2">
-                {card.attacks.map(attack => <div key={attack.name} className="p-2 rounded-md bg-secondary/30">
+                {card.attacks.map(attack => (
+                  <div key={attack.name} className="p-2 rounded-md bg-secondary/30">
                     <div className="flex items-center justify-between">
                       <div className="font-medium">{attack.name}</div>
-                      {attack.damage && <div className="flex items-center">
+                      {attack.damage && (
+                        <div className="flex items-center">
                           <Zap className="h-3 w-3 mr-1 text-yellow-500" />
                           <span className="text-sm">{attack.damage}</span>
-                        </div>}
+                        </div>
+                      )}
                     </div>
                     {attack.text && <p className="text-sm text-muted-foreground mt-1">{attack.text}</p>}
-                  </div>)}
+                  </div>
+                ))}
               </div>
-            </div>}
+            </div>
+          )}
           
           <div className="grid grid-cols-2 gap-4">
-            {card?.weaknesses && <div>
+            {card?.weaknesses && (
+              <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-1">Weaknesses</h3>
                 <div className="flex gap-1 flex-wrap">
-                  {card.weaknesses.map(weakness => <Badge key={weakness.type} variant="destructive">
+                  {card.weaknesses.map(weakness => (
+                    <Badge key={weakness.type} variant="destructive">
                       {weakness.type} {weakness.value}
-                    </Badge>)}
+                    </Badge>
+                  ))}
                 </div>
-              </div>}
+              </div>
+            )}
             
-            {card?.resistances && <div>
+            {card?.resistances && (
+              <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-1">Resistances</h3>
                 <div className="flex gap-1 flex-wrap">
-                  {card.resistances.map(resistance => <Badge key={resistance.type} variant="success">
+                  {card.resistances.map(resistance => (
+                    <Badge key={resistance.type} variant="success">
                       <Shield className="h-3 w-3 mr-1" /> {resistance.type} {resistance.value}
-                    </Badge>)}
+                    </Badge>
+                  ))}
                 </div>
-              </div>}
+              </div>
+            )}
           </div>
           
           <div className="pt-4 border-t border-border">
@@ -177,9 +203,16 @@ const PokemonCardDetail = ({
               <div>
                 <div className="text-sm text-muted-foreground">Set</div>
                 <div className="flex items-center mt-1">
-                  {card?.set.images.symbol && <img src={card.set.images.symbol} alt={card.set.name} className="h-6 w-6 mr-2" onError={e => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }} />}
+                  {card?.set.images.symbol && (
+                    <img 
+                      src={card.set.images.symbol} 
+                      alt={card.set.name} 
+                      className="h-6 w-6 mr-2" 
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }} 
+                    />
+                  )}
                   <span>{card?.set.name}</span>
                 </div>
               </div>
@@ -191,7 +224,8 @@ const PokemonCardDetail = ({
             </div>
           </div>
           
-          {card?.tcgplayer && <div className="p-3 bg-secondary/30 rounded-md">
+          {card?.tcgplayer && (
+            <div className="p-3 bg-secondary/30 rounded-md">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <TrendingUp className="h-4 w-4 mr-2 text-green-500" />
@@ -203,9 +237,12 @@ const PokemonCardDetail = ({
               <a href={card.tcgplayer.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 inline-block">
                 View on TCGPlayer
               </a>
-            </div>}
+            </div>
+          )}
         </div>
       </div>
-    </GlassCard>;
+    </GlassCard>
+  );
 };
+
 export default PokemonCardDetail;
