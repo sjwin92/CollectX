@@ -12,6 +12,8 @@ import ConditionField from "./ConditionField";
 import CheckboxField from "./CheckboxField";
 import GradingFields from "./GradingFields";
 import TradeFields from "./TradeFields";
+import ProductTypeSelector from "./ProductTypeSelector";
+import SealedProductFields from "./SealedProductFields";
 import { ExtendedCardItemProps } from "@/types/cardTypes";
 import { addCardToCollection } from "@/services/collectionService";
 
@@ -34,8 +36,14 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
       isGraded: false,
       forTrade: false,
       tradePreferences: "",
+      productType: "card",
+      isSealed: false,
+      packCount: undefined,
+      setCode: "",
     },
   });
+  
+  const watchedProductType = form.watch("productType");
   
   const onSubmit = (data: QuickAddFormValues) => {
     setIsSubmitting(true);
@@ -56,7 +64,11 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
         },
         forTrade: data.forTrade,
         graded: data.isGraded,
-        quantity: data.quantity
+        quantity: data.quantity,
+        productType: data.productType || "card",
+        isSealed: data.isSealed,
+        packCount: data.packCount,
+        setCode: data.setCode
       };
       
       // Add grading info if card is graded
@@ -75,17 +87,19 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
       // Add card to collection with all details
       addCardToCollection(newCard);
       
+      const productTypeLabel = watchedProductType === 'card' ? 'card' : `${watchedProductType.replace('-', ' ')}`;
+      
       toast({
-        title: "Card added to collection!",
-        description: `Added ${data.quantity}x ${card.name} to your collection`,
+        title: "Item added to collection!",
+        description: `Added ${data.quantity}x ${card.name} (${productTypeLabel}) to your collection`,
       });
       
       onClose();
     } catch (error) {
-      console.error("Error adding card to collection:", error);
+      console.error("Error adding item to collection:", error);
       toast({
-        title: "Error adding card",
-        description: "There was a problem adding this card to your collection",
+        title: "Error adding item",
+        description: "There was a problem adding this item to your collection",
         variant: "destructive"
       });
     } finally {
@@ -113,21 +127,27 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+        <ProductTypeSelector form={form} />
+        
         <QuantityField form={form} />
         
         <ConditionField form={form} />
         
-        <CheckboxField 
-          id="isGraded"
-          label="Graded Card"
-          checked={isGraded}
-          onChange={handleGradedChange}
-          form={form}
-          fieldName="isGraded"
-          description="Check if this card has been professionally graded"
-        />
+        <SealedProductFields form={form} productType={watchedProductType || "card"} />
         
-        {isGraded && <GradingFields form={form} />}
+        {watchedProductType === 'card' && (
+          <CheckboxField 
+            id="isGraded"
+            label="Graded Card"
+            checked={isGraded}
+            onChange={handleGradedChange}
+            form={form}
+            fieldName="isGraded"
+            description="Check if this card has been professionally graded"
+          />
+        )}
+        
+        {isGraded && watchedProductType === 'card' && <GradingFields form={form} />}
         
         <CheckboxField 
           id="forTrade"
@@ -136,7 +156,7 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
           onChange={handleTradeChange}
           form={form}
           fieldName="forTrade"
-          description="Mark this card as available for trading with other collectors"
+          description="Mark this item as available for trading with other collectors"
         />
         
         {forTrade && <TradeFields form={form} />}

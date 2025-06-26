@@ -1,4 +1,3 @@
-
 import { ExtendedCardItemProps } from "@/types/cardTypes";
 import { queryClient } from "@/lib/react-query";
 
@@ -72,7 +71,7 @@ export const addCardToCollection = (newCard: ExtendedCardItemProps): void => {
 
 // Generate a unique key for a card based on all its properties
 export const getCardUniqueKey = (card: ExtendedCardItemProps): string => {
-  return `${card.id}-${card.condition || ''}-${card.graded ? '1' : '0'}-${card.gradingCompany || ''}-${card.gradeScore || ''}-${card.forTrade ? '1' : '0'}`;
+  return `${card.id}-${card.condition || ''}-${card.graded ? '1' : '0'}-${card.gradingCompany || ''}-${card.gradeScore || ''}-${card.forTrade ? '1' : '0'}-${card.productType || 'card'}-${card.isSealed ? '1' : '0'}-${card.packCount || ''}`;
 };
 
 export const addCardToTradable = (card: ExtendedCardItemProps): void => {
