@@ -222,13 +222,14 @@ const Collection = () => {
       });
       return;
     }
-    const newCard = {
+    const newCard: ExtendedCardItemProps = {
       id: selectedCard.id,
       name: selectedCard.name,
       imageUrl: selectedCard.image,
       rarity: selectedCard.rarity || "Unknown",
       condition: isToWishlist ? "Any" : newCardCondition,
       estimatedValue: isToWishlist ? "Varies" : `$${newCardEstValue}`,
+      number: selectedCard.localId || "Unknown",
       graded: isGraded,
       ...(isGraded && {
         gradingCompany: gradingCompany,
@@ -237,6 +238,7 @@ const Collection = () => {
       forTrade: isTradable,
       tradePreferences: tradePreferences
     };
+    
     if (isToWishlist) {
       setWishlistCards([...wishlistCards, newCard]);
       toast({
@@ -254,6 +256,7 @@ const Collection = () => {
         description: `${selectedCard.name} has been added to your collection.`
       });
     }
+    
     setSelectedCard(null);
     setSearchCardQuery("");
     setSearchResults([]);

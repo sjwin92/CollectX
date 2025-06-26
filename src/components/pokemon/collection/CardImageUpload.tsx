@@ -1,8 +1,9 @@
+
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Upload, X, Camera, AlertCircle } from 'lucide-react';
-import { uploadCardImage, CardImageUpload, UploadedCardImage } from '@/services/cardImageUploadService';
+import { uploadCardImage, type CardImageUpload, UploadedCardImage } from '@/services/cardImageUploadService';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 

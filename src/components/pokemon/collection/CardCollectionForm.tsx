@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -10,6 +11,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { PokemonCard } from "@/services/api/pokemonTypes";
 import { CardItemProps } from "@/components/cards/CardItem";
@@ -105,7 +108,6 @@ const CardCollectionForm = ({ card, onSubmit, onCancel, initialData }: CardColle
       name: card.name,
       imageUrl: card.images.small,
       rarity: card.rarity,
-      series: card.series,
       set: card.set,
       number: card.number,
       condition: values.condition,
@@ -179,11 +181,9 @@ const CardCollectionForm = ({ card, onSubmit, onCancel, initialData }: CardColle
                   <FormDescription>Is this card professionally graded?</FormDescription>
                 </div>
                 <FormControl>
-                  <Input
-                    type="checkbox"
+                  <Checkbox
                     checked={field.value}
                     onCheckedChange={field.onChange}
-                    className="ml-2 h-5 w-5 rounded-sm border border-primary accent-primary"
                   />
                 </FormControl>
               </FormItem>
@@ -234,11 +234,9 @@ const CardCollectionForm = ({ card, onSubmit, onCancel, initialData }: CardColle
                   </FormDescription>
                 </div>
                 <FormControl>
-                  <Input
-                    type="checkbox"
+                  <Checkbox
                     checked={field.value}
                     onCheckedChange={field.onChange}
-                    className="ml-2 h-5 w-5 rounded-sm border border-primary accent-primary"
                   />
                 </FormControl>
               </FormItem>
@@ -287,5 +285,3 @@ const CardCollectionForm = ({ card, onSubmit, onCancel, initialData }: CardColle
 };
 
 export default CardCollectionForm;
-
-import { FormDescription } from "@/components/ui/form"

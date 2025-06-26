@@ -1,3 +1,4 @@
+
 export interface CardItemProps {
   id: string;
   name: string;
@@ -27,4 +28,5 @@ export interface UploadedCardImage {
 export interface ExtendedCardItemProps extends CardItemProps {
   quantity?: number;
   conditionImages?: UploadedCardImage[];
+  tradePreferences?: string;
 }
