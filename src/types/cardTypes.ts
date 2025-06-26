@@ -1,18 +1,30 @@
-
-import { CardItemProps as BaseCardItemProps } from "@/components/cards/CardItem";
-
-// Extend the CardItemProps type with grading info and quantity
-export interface ExtendedCardItemProps extends BaseCardItemProps {
+export interface CardItemProps {
+  id: string;
+  name: string;
+  imageUrl: string;
+  rarity: string;
+  condition: string;
+  estimatedValue: string;
   graded?: boolean;
   gradingCompany?: string;
-  grade?: string;
   gradeScore?: string;
   forTrade?: boolean;
-  tradePreferences?: string;
   set?: {
-    id?: string;
-    name?: string;
+    id: string;
+    name: string;
   };
-  number?: string;
+  number: string;
+}
+
+export interface UploadedCardImage {
+  id: string;
+  url: string;
+  cardId: string;
+  userId: string;
+  uploadedAt: string;
+}
+
+export interface ExtendedCardItemProps extends CardItemProps {
   quantity?: number;
+  conditionImages?: UploadedCardImage[];
 }
