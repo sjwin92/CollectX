@@ -15,6 +15,7 @@ import Pokemons from "./pages/Pokemons";
 import Marketplace from "./pages/Marketplace";
 import Sets from "./pages/Sets";
 import SetDetail from "./pages/SetDetail";
+import Products from "./pages/Products";
 
 function App() {
   return (
@@ -39,6 +40,9 @@ function App() {
           {/* Set Routes */}
           <Route path="/pokemon-sets" element={<Sets />} />
           <Route path="/pokemon-sets/:id" element={<SetDetail />} />
+          
+          {/* Products Route */}
+          <Route path="/products" element={<Products />} />
           
           {/* Marketplace */}
           <Route path="/marketplace" element={<Marketplace />} />
