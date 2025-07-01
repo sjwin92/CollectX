@@ -25,8 +25,8 @@ const TradeListingFooter = ({ cardId, onProposeTrade, featured = false }: TradeL
   };
 
   return (
-    <CardFooter className="pt-3 flex flex-col gap-3 border-t mt-2">
-      <Button variant="outline" size="sm" asChild className="w-full">
+    <CardFooter className="pt-3 pb-0 flex gap-3 border-t mt-2">
+      <Button variant="outline" size="sm" asChild className="flex-1">
         <Link to={`/card/${cardId}`}>
           <Eye className="h-4 w-4 mr-2" />
           View Card
@@ -35,7 +35,7 @@ const TradeListingFooter = ({ cardId, onProposeTrade, featured = false }: TradeL
       <Button 
         size="sm" 
         onClick={handleProposeTrade} 
-        className={`w-full ${featured ? "bg-amber-600 hover:bg-amber-700" : ""}`}
+        className={`flex-1 ${featured ? "bg-amber-600 hover:bg-amber-700" : ""}`}
       >
         <ArrowRightLeft className="h-4 w-4 mr-2" />
         Propose Trade
