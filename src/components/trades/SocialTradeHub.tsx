@@ -25,6 +25,12 @@ import {
 interface SocialTradeHubProps {
   isOpen: boolean;
   onClose: () => void;
+  newTradeProposal?: {
+    user: { name: string; avatar?: string };
+    message?: string;
+    targetCard?: any;
+    offeredCards?: any[];
+  };
 }
 
 interface Message {
@@ -54,60 +60,53 @@ const SocialTradeHub = ({ isOpen, onClose }: SocialTradeHubProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Initial conversation data with proper message structure
-  const initialConversations: Conversation[] = [
-    {
-      id: '1',
-      user: { name: 'Alex Morgan', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' },
-      lastMessage: 'Sounds good! When can you ship?',
-      timestamp: 'now',
-      unread: 2,
-      tradeStatus: 'negotiating',
-      messages: [
-        { id: '1', sender: 'them', text: 'Hey! Interested in your Charizard Base Set', time: '2:30 PM', type: 'text' },
-        { id: '2', sender: 'me', text: "Sure! It's Near Mint condition. What do you have to offer?", time: '2:32 PM', type: 'text' },
-        { id: '3', sender: 'them', text: 'I have a Blastoise Base Set in excellent condition plus $50', time: '2:35 PM', type: 'text' },
-        { id: '4', sender: 'me', text: 'That works for me! Can I see photos first?', time: '2:36 PM', type: 'text' },
-        { id: '5', sender: 'them', text: 'Sounds good! When can you ship?', time: '2:40 PM', type: 'text' }
-      ]
-    },
-    {
-      id: '2', 
-      user: { name: 'Jordan Lee', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' },
-      lastMessage: 'Package shipped! Tracking: 1Z999AA1234567890',
-      timestamp: '1h',
-      unread: 0,
-      tradeStatus: 'shipped',
-      messages: [
-        { id: '1', sender: 'them', text: 'Package shipped! Tracking: 1Z999AA1234567890', time: '1:00 PM', type: 'text' },
-        { id: '2', sender: 'me', text: 'Awesome! Thanks for the quick shipping', time: '1:15 PM', type: 'text' }
-      ]
-    },
-    {
-      id: '3',
-      user: { name: 'Taylor Kim', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' },
-      lastMessage: 'Thanks for the awesome trade! ⭐⭐⭐⭐⭐',
-      timestamp: '2d',
-      unread: 0,
-      tradeStatus: 'completed',
-      messages: [
-        { id: '1', sender: 'them', text: 'Thanks for the awesome trade! ⭐⭐⭐⭐⭐', time: 'Yesterday', type: 'text' }
-      ]
-    },
-    {
-      id: '4',
-      user: { name: 'Sam Wilson', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' },
-      lastMessage: 'Hey, do you have any Pokémon from the new set?',
-      timestamp: '3d',
-      unread: 0,
-      tradeStatus: 'inquiry',
-      messages: [
-        { id: '1', sender: 'them', text: 'Hey, do you have any Pokémon from the new set?', time: '3 days ago', type: 'text' }
-      ]
+  // Load conversations from localStorage on mount
+  const [conversations, setConversations] = useState<Conversation[]>(() => {
+    const savedConversations = localStorage.getItem('tradeConversations');
+    if (savedConversations) {
+      try {
+        return JSON.parse(savedConversations);
+      } catch (error) {
+        console.error('Error loading conversations:', error);
+      }
     }
-  ];
+    
+    // Return initial conversations if no saved data
+    return [
+      {
+        id: '1',
+        user: { name: 'Alex Morgan', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' },
+        lastMessage: 'Sounds good! When can you ship?',
+        timestamp: 'now',
+        unread: 2,
+        tradeStatus: 'negotiating',
+        messages: [
+          { id: '1', sender: 'them', text: 'Hey! Interested in your Charizard Base Set', time: '2:30 PM', type: 'text' },
+          { id: '2', sender: 'me', text: "Sure! It's Near Mint condition. What do you have to offer?", time: '2:32 PM', type: 'text' },
+          { id: '3', sender: 'them', text: 'I have a Blastoise Base Set in excellent condition plus $50', time: '2:35 PM', type: 'text' },
+          { id: '4', sender: 'me', text: 'That works for me! Can I see photos first?', time: '2:36 PM', type: 'text' },
+          { id: '5', sender: 'them', text: 'Sounds good! When can you ship?', time: '2:40 PM', type: 'text' }
+        ]
+      },
+      {
+        id: '2', 
+        user: { name: 'Jordan Lee', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' },
+        lastMessage: 'Package shipped! Tracking: 1Z999AA1234567890',
+        timestamp: '1h',
+        unread: 0,
+        tradeStatus: 'shipped',
+        messages: [
+          { id: '1', sender: 'them', text: 'Package shipped! Tracking: 1Z999AA1234567890', time: '1:00 PM', type: 'text' },
+          { id: '2', sender: 'me', text: 'Awesome! Thanks for the quick shipping', time: '1:15 PM', type: 'text' }
+        ]
+      }
+    ];
+  });
 
-  const [conversations, setConversations] = useState(initialConversations);
+  // Save conversations to localStorage whenever they change
+  React.useEffect(() => {
+    localStorage.setItem('tradeConversations', JSON.stringify(conversations));
+  }, [conversations]);
 
   const getTradeStatusColor = (status: string) => {
     switch (status) {
