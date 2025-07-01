@@ -25,9 +25,9 @@ const TradeListingFooter = ({ cardId, onProposeTrade, featured = false }: TradeL
   };
 
   return (
-    <CardFooter className="pt-3 flex justify-between items-center border-t mt-2 gap-2">
+    <CardFooter className="pt-3 flex gap-3 border-t mt-2">
       <Button variant="outline" size="sm" asChild className="flex-1">
-        <Link to={`/card/${cardId}`}>
+        <Link to={`/card/${cardId}`} className="flex items-center justify-center">
           <Eye className="h-4 w-4 mr-2" />
           View Card
         </Link>
