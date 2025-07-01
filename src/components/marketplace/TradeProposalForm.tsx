@@ -179,6 +179,32 @@ const TradeProposalForm = ({
                   />
                 </div>
 
+                {/* Cards from Selected Box */}
+                {selectedBoxId && (
+                  <div className="mb-4 p-4 border rounded-lg bg-muted/30">
+                    <h4 className="text-sm font-medium mb-3">Cards in this box:</h4>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+                      {mockUserCollection.map((card, index) => (
+                        <div
+                          key={`${card.id}-${index}`}
+                          className="cursor-pointer p-2 rounded border hover:border-primary/50 transition-colors"
+                          onClick={() => handleCardSelect(card)}
+                        >
+                          <img
+                            src={card.images.small}
+                            alt={card.name}
+                            className="w-full aspect-[3/4] object-cover rounded"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "/placeholder.svg";
+                            }}
+                          />
+                          <p className="text-xs mt-1 truncate">{card.name}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {selectedCards.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {selectedCards.map((card, index) => (
