@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useToast } from '@/hooks/use-toast';
 import { 
   MessageSquare, 
   Search, 
@@ -16,8 +17,9 @@ import {
   CheckCircle,
   X,
   MoreHorizontal,
-  Phone,
-  Info
+  Image as ImageIcon,
+  Paperclip,
+  Plus
 } from 'lucide-react';
 
 interface SocialTradeHubProps {
@@ -25,13 +27,35 @@ interface SocialTradeHubProps {
   onClose: () => void;
 }
 
+interface Message {
+  id: string;
+  sender: 'me' | 'them';
+  text: string;
+  time: string;
+  type: 'text' | 'image';
+  imageUrl?: string;
+}
+
+interface Conversation {
+  id: string;
+  user: { name: string; avatar: string };
+  lastMessage: string;
+  timestamp: string;
+  unread: number;
+  tradeStatus: string;
+  messages: Message[];
+}
+
 const SocialTradeHub = ({ isOpen, onClose }: SocialTradeHubProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedChat, setSelectedChat] = useState<string | null>('1');
   const [messageInput, setMessageInput] = useState('');
+  const [showTradeProposal, setShowTradeProposal] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
-  // Mock conversation data - simplified for iMessage-style layout
-  const conversations = [
+  // Initial conversation data with proper message structure
+  const initialConversations: Conversation[] = [
     {
       id: '1',
       user: { name: 'Alex Morgan', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' },
@@ -40,11 +64,11 @@ const SocialTradeHub = ({ isOpen, onClose }: SocialTradeHubProps) => {
       unread: 2,
       tradeStatus: 'negotiating',
       messages: [
-        { id: '1', sender: 'them', text: 'Hey! Interested in your Charizard Base Set', time: '2:30 PM' },
-        { id: '2', sender: 'me', text: "Sure! It's Near Mint condition. What do you have to offer?", time: '2:32 PM' },
-        { id: '3', sender: 'them', text: 'I have a Blastoise Base Set in excellent condition plus $50', time: '2:35 PM' },
-        { id: '4', sender: 'me', text: 'That works for me! Can I see photos first?', time: '2:36 PM' },
-        { id: '5', sender: 'them', text: 'Sounds good! When can you ship?', time: '2:40 PM' }
+        { id: '1', sender: 'them', text: 'Hey! Interested in your Charizard Base Set', time: '2:30 PM', type: 'text' },
+        { id: '2', sender: 'me', text: "Sure! It's Near Mint condition. What do you have to offer?", time: '2:32 PM', type: 'text' },
+        { id: '3', sender: 'them', text: 'I have a Blastoise Base Set in excellent condition plus $50', time: '2:35 PM', type: 'text' },
+        { id: '4', sender: 'me', text: 'That works for me! Can I see photos first?', time: '2:36 PM', type: 'text' },
+        { id: '5', sender: 'them', text: 'Sounds good! When can you ship?', time: '2:40 PM', type: 'text' }
       ]
     },
     {
@@ -54,7 +78,10 @@ const SocialTradeHub = ({ isOpen, onClose }: SocialTradeHubProps) => {
       timestamp: '1h',
       unread: 0,
       tradeStatus: 'shipped',
-      messages: []
+      messages: [
+        { id: '1', sender: 'them', text: 'Package shipped! Tracking: 1Z999AA1234567890', time: '1:00 PM', type: 'text' },
+        { id: '2', sender: 'me', text: 'Awesome! Thanks for the quick shipping', time: '1:15 PM', type: 'text' }
+      ]
     },
     {
       id: '3',
@@ -63,7 +90,9 @@ const SocialTradeHub = ({ isOpen, onClose }: SocialTradeHubProps) => {
       timestamp: '2d',
       unread: 0,
       tradeStatus: 'completed',
-      messages: []
+      messages: [
+        { id: '1', sender: 'them', text: 'Thanks for the awesome trade! ⭐⭐⭐⭐⭐', time: 'Yesterday', type: 'text' }
+      ]
     },
     {
       id: '4',
@@ -72,9 +101,13 @@ const SocialTradeHub = ({ isOpen, onClose }: SocialTradeHubProps) => {
       timestamp: '3d',
       unread: 0,
       tradeStatus: 'inquiry',
-      messages: []
+      messages: [
+        { id: '1', sender: 'them', text: 'Hey, do you have any Pokémon from the new set?', time: '3 days ago', type: 'text' }
+      ]
     }
   ];
+
+  const [conversations, setConversations] = useState(initialConversations);
 
   const getTradeStatusColor = (status: string) => {
     switch (status) {
@@ -96,9 +129,108 @@ const SocialTradeHub = ({ isOpen, onClose }: SocialTradeHubProps) => {
 
   const sendMessage = () => {
     if (messageInput.trim() && selectedChat) {
-      console.log(`Sending message to ${selectedChat}: ${messageInput}`);
+      const newMessage = {
+        id: Date.now().toString(),
+        sender: 'me' as const,
+        text: messageInput.trim(),
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        type: 'text' as const
+      };
+
+      setConversations(prev => prev.map(conv => {
+        if (conv.id === selectedChat) {
+          return {
+            ...conv,
+            messages: [...conv.messages, newMessage],
+            lastMessage: messageInput.trim(),
+            timestamp: 'now'
+          };
+        }
+        return conv;
+      }));
+
       setMessageInput('');
+      
+      toast({
+        title: "Message sent",
+        description: "Your message has been delivered",
+      });
+
+      // Simulate a response after 2 seconds
+      setTimeout(() => {
+        const responses = [
+          "That sounds great! Let me check.",
+          "I'll get back to you shortly.",
+          "Perfect! I'm interested.",
+          "Can you send more details?",
+          "Let's make this happen!"
+        ];
+        
+        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+        const responseMessage = {
+          id: (Date.now() + 1).toString(),
+          sender: 'them' as const,
+          text: randomResponse,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          type: 'text' as const
+        };
+
+        setConversations(prev => prev.map(conv => {
+          if (conv.id === selectedChat) {
+            return {
+              ...conv,
+              messages: [...conv.messages, responseMessage],
+              lastMessage: randomResponse,
+              timestamp: 'now'
+            };
+          }
+          return conv;
+        }));
+      }, 2000);
     }
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && selectedChat) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageMessage = {
+          id: Date.now().toString(),
+          sender: 'me' as const,
+          text: '',
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          type: 'image' as const,
+          imageUrl: e.target?.result as string
+        };
+
+        setConversations(prev => prev.map(conv => {
+          if (conv.id === selectedChat) {
+            return {
+              ...conv,
+              messages: [...conv.messages, imageMessage],
+              lastMessage: '📷 Image',
+              timestamp: 'now'
+            };
+          }
+          return conv;
+        }));
+
+        toast({
+          title: "Image sent",
+          description: "Your image has been shared",
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const openTradeProposal = () => {
+    setShowTradeProposal(true);
+    toast({
+      title: "Opening trade proposal",
+      description: "Create a formal trade offer",
+    });
   };
 
   const selectedConversation = conversations.find(c => c.id === selectedChat);
@@ -118,7 +250,7 @@ const SocialTradeHub = ({ isOpen, onClose }: SocialTradeHubProps) => {
               </div>
             </div>
             <ScrollArea className="w-full">
-              <div className="flex gap-2 p-4 min-w-max">
+              <div className="flex gap-2 p-4 min-w-max overflow-x-auto scrollbar-hide">
                 {conversations.map((conversation) => (
                   <div
                     key={conversation.id}
@@ -254,7 +386,7 @@ const SocialTradeHub = ({ isOpen, onClose }: SocialTradeHubProps) => {
                   </div>
                   <div className="flex items-center gap-1 md:gap-2">
                     {selectedConversation.tradeStatus === 'negotiating' && (
-                      <Button size="sm" variant="outline" className="text-xs">
+                      <Button size="sm" variant="outline" className="text-xs" onClick={openTradeProposal}>
                         <ArrowLeftRight className="h-3 w-3 mr-1" />
                         Propose Trade
                       </Button>
@@ -264,6 +396,40 @@ const SocialTradeHub = ({ isOpen, onClose }: SocialTradeHubProps) => {
                     </Button>
                   </div>
                 </div>
+
+                {/* Trade Proposal Modal */}
+                {showTradeProposal && (
+                  <div className="p-4 bg-muted/50 border-b">
+                    <div className="bg-background rounded-lg p-4 border">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold">Create Trade Proposal</h4>
+                        <Button size="sm" variant="ghost" onClick={() => setShowTradeProposal(false)}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-sm font-medium">Your Cards</label>
+                            <div className="border rounded p-2 text-sm text-muted-foreground">
+                              Select from collection...
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Their Cards</label>
+                            <div className="border rounded p-2 text-sm text-muted-foreground">
+                              {selectedConversation.user.name}'s cards...
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" className="flex-1">Send Proposal</Button>
+                          <Button size="sm" variant="outline" onClick={() => setShowTradeProposal(false)}>Cancel</Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Messages */}
                 <ScrollArea className="flex-1 p-3 md:p-4">
@@ -278,7 +444,18 @@ const SocialTradeHub = ({ isOpen, onClose }: SocialTradeHubProps) => {
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-muted'
                         }`}>
-                          <p className="text-sm">{message.text}</p>
+                          {message.type === 'image' && message.imageUrl ? (
+                            <div className="mb-2">
+                              <img 
+                                src={message.imageUrl} 
+                                alt="Shared image" 
+                                className="max-w-full h-auto rounded-lg"
+                                style={{ maxHeight: '200px' }}
+                              />
+                            </div>
+                          ) : (
+                            <p className="text-sm">{message.text}</p>
+                          )}
                           <span className={`text-xs ${
                             message.sender === 'me' ? 'text-primary-foreground/70' : 'text-muted-foreground'
                           }`}>
@@ -293,9 +470,24 @@ const SocialTradeHub = ({ isOpen, onClose }: SocialTradeHubProps) => {
                 {/* Message Input */}
                 <div className="p-3 md:p-4 border-t bg-background">
                   <div className="flex gap-2 items-end">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 md:h-10 md:w-10"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <ImageIcon className="h-4 w-4" />
+                    </Button>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleImageUpload}
+                      accept="image/*"
+                      className="hidden"
+                    />
                     <div className="flex-1 bg-muted rounded-full px-3 md:px-4 py-2 flex items-center gap-2">
                       <Input
-                        placeholder="iMessage"
+                        placeholder="Type a message..."
                         value={messageInput}
                         onChange={(e) => setMessageInput(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
