@@ -245,7 +245,7 @@ const CardItem = ({
         </div>
         
         <div className="text-center">
-          <span className="text-sm font-semibold text-primary">{formatCurrency(estimatedValue)}</span>
+          <span className="text-sm font-semibold text-white">{formatCurrency(estimatedValue)}</span>
         </div>
         
         {/* Compact info row - only show if we have additional details */}
