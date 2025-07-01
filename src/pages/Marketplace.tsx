@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import { useToast } from "@/hooks/use-toast";
 import TradeListing from "@/components/marketplace/TradeListing";
+import SocialTradeHub from "@/components/trades/SocialTradeHub";
 import { 
   Plus, 
   Search, 
@@ -297,13 +298,16 @@ const Marketplace = () => {
     
     const listing = listings.find(l => l.id === listingId);
     
-    toast({
-      title: "Starting trade proposal",
-      description: `Preparing to trade for ${listing?.cardOffered.name}`,
-    });
+    // Open the social hub with the conversation for this listing
+    setIsSocialHubOpen(true);
     
-    navigate(`/trades?propose=true&listingId=${listingId}`);
+    toast({
+      title: "Opening trade conversation",
+      description: `Starting chat with ${listing?.username} about ${listing?.cardOffered.name}`,
+    });
   };
+
+  const [isSocialHubOpen, setIsSocialHubOpen] = useState(false);
 
   const handleViewCard = (cardId: string) => {
     toast({
@@ -479,6 +483,12 @@ const Marketplace = () => {
             onCreateListing={createNewListing}
           />
         )}
+
+        {/* Social Trade Hub */}
+        <SocialTradeHub 
+          isOpen={isSocialHubOpen} 
+          onClose={() => setIsSocialHubOpen(false)} 
+        />
       </main>
 
       <Footer />

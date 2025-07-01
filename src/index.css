@@ -1,4 +1,5 @@
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -115,6 +116,23 @@
   opacity: 0;
   transform: translateY(-10px);
   transition: opacity 300ms, transform 300ms;
+  }
+
+  /* Smooth horizontal scrolling */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Better touch scrolling on mobile */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
 }
 
 /* Apple-inspired text gradient */
