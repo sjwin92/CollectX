@@ -1,5 +1,7 @@
 
 import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getProducts, getFeaturedProducts } from "@/services/api/pokemonProductsService";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import ProductCard from "@/components/pokemon/ProductCard";
@@ -7,128 +9,39 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Package, Star, Filter } from "lucide-react";
 import { getProductTypeLabel } from "@/types/cardTypes";
-
-// Mock product data - in a real app this would come from an API
-const products = [
-  // Elite Trainer Boxes
-  {
-    id: "sv10-etb",
-    name: "Glory of Team Rocket Elite Trainer Box",
-    series: "Scarlet & Violet",
-    setId: "sv10",
-    productType: "etb" as const,
-    packCount: 9,
-    releaseDate: "2025-05-24",
-    msrp: 49.99,
-    description: "Contains 9 booster packs, energy cards, card sleeves, and more from the Glory of Team Rocket expansion."
-  },
-  {
-    id: "sv9-etb",
-    name: "Surging Sparks Elite Trainer Box",
-    series: "Scarlet & Violet",
-    setId: "sv9",
-    productType: "etb" as const,
-    packCount: 9,
-    releaseDate: "2024-11-08",
-    msrp: 49.99,
-    description: "Contains 9 booster packs plus premium accessories from the Surging Sparks set."
-  },
-  // Booster Boxes
-  {
-    id: "sv10-bb",
-    name: "Glory of Team Rocket Booster Box",
-    series: "Scarlet & Violet",
-    setId: "sv10",
-    productType: "box" as const,
-    packCount: 36,
-    releaseDate: "2025-05-24",
-    msrp: 143.99,
-    description: "Contains 36 booster packs from the Glory of Team Rocket expansion."
-  },
-  {
-    id: "sv9-bb",
-    name: "Surging Sparks Booster Box",
-    series: "Scarlet & Violet",
-    setId: "sv9",
-    productType: "box" as const,
-    packCount: 36,
-    releaseDate: "2024-11-08",
-    msrp: 143.99,
-    description: "Contains 36 booster packs from the Surging Sparks set."
-  },
-  // Blister Packs
-  {
-    id: "sv10-blister-3",
-    name: "Glory of Team Rocket 3-Pack Blister",
-    series: "Scarlet & Violet",
-    setId: "sv10",
-    productType: "blister-pack" as const,
-    packCount: 3,
-    releaseDate: "2025-05-24",
-    msrp: 14.99,
-    description: "Contains 3 booster packs with promo card from Glory of Team Rocket."
-  },
-  {
-    id: "sv9-blister-1",
-    name: "Surging Sparks Single Pack Blister",
-    series: "Scarlet & Violet",
-    setId: "sv9",
-    productType: "blister-pack" as const,
-    packCount: 1,
-    releaseDate: "2024-11-08",
-    msrp: 4.99,
-    description: "Single booster pack blister from Surging Sparks."
-  },
-  // Tins
-  {
-    id: "sv10-tin-charizard",
-    name: "Charizard ex Tin - Glory of Team Rocket",
-    series: "Scarlet & Violet",
-    setId: "sv10",
-    productType: "tin" as const,
-    packCount: 4,
-    releaseDate: "2025-05-24",
-    msrp: 24.99,
-    description: "Collector tin featuring Charizard ex with 4 booster packs and promo cards."
-  },
-  {
-    id: "sv9-tin-pikachu",
-    name: "Pikachu ex Tin - Surging Sparks",
-    series: "Scarlet & Violet",
-    setId: "sv9",
-    productType: "tin" as const,
-    packCount: 4,
-    releaseDate: "2024-11-08",
-    msrp: 24.99,
-    description: "Special Pikachu ex collector tin with 4 booster packs."
-  },
-  // Theme Decks
-  {
-    id: "sv10-deck-rocket",
-    name: "Team Rocket's Meowth Battle Deck",
-    series: "Scarlet & Violet",
-    setId: "sv10",
-    productType: "deck" as const,
-    releaseDate: "2025-05-24",
-    msrp: 19.99,
-    description: "Ready-to-play 60-card deck featuring Team Rocket's Meowth."
-  },
-  {
-    id: "sv9-deck-lightning",
-    name: "Lightning Storm Battle Deck",
-    series: "Scarlet & Violet",
-    setId: "sv9",
-    productType: "deck" as const,
-    releaseDate: "2024-11-08",
-    msrp: 19.99,
-    description: "Electric-type themed battle deck with powerful Lightning Pokémon."
-  }
-];
+import { useToast } from "@/hooks/use-toast";
 
 const Products = () => {
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const { toast } = useToast();
   const itemsPerPage = 12;
+
+  // Fetch products with React Query
+  const { data: products = [], isLoading, isError } = useQuery({
+    queryKey: ['products', currentPage, itemsPerPage],
+    queryFn: () => getProducts(currentPage, itemsPerPage),
+    meta: {
+      onError: (error: Error) => {
+        toast({
+          title: "Error loading products",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
+    }
+  });
+
+  // Fetch featured products
+  const { data: featuredProducts = [] } = useQuery({
+    queryKey: ['featuredProducts'],
+    queryFn: getFeaturedProducts,
+    meta: {
+      onError: (error: Error) => {
+        console.error('Error loading featured products:', error);
+      }
+    }
+  });
 
   // Get unique product types for filtering
   const productTypes = Array.from(new Set(products.map(p => p.productType)));
@@ -137,20 +50,9 @@ const Products = () => {
   const filteredProducts = selectedFilter === "all" 
     ? products 
     : products.filter(p => p.productType === selectedFilter);
-  
-  // Paginate filtered products
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentProducts = filteredProducts.slice(startIndex, endIndex);
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  
-  // Featured products (first 4)
-  const featuredProducts = products.slice(0, 4);
 
   const loadNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(prev => prev + 1);
-    }
+    setCurrentPage(prev => prev + 1);
   };
 
   const loadPreviousPage = () => {
@@ -158,6 +60,34 @@ const Products = () => {
       setCurrentPage(prev => prev - 1);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="container py-8 flex-1">
+          <div className="text-center py-12">
+            <div className="animate-pulse text-xl">Loading products...</div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="container py-8 flex-1">
+          <div className="text-center py-12 text-destructive">
+            Failed to load products. Please try again.
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -179,25 +109,27 @@ const Products = () => {
         </div>
 
         {/* Featured Products Section */}
-        <section className="mb-12">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold mb-2 flex items-center">
-                <Star className="h-5 w-5 text-amber-400 mr-2 fill-amber-400" />
-                Featured Products
-              </h2>
-              <p className="text-muted-foreground">
-                Latest and most popular Pokémon TCG products
-              </p>
+        {featuredProducts.length > 0 && (
+          <section className="mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold mb-2 flex items-center">
+                  <Star className="h-5 w-5 text-amber-400 mr-2 fill-amber-400" />
+                  Featured Products
+                </h2>
+                <p className="text-muted-foreground">
+                  Latest and most popular Pokémon TCG products
+                </p>
+              </div>
             </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredProducts.map(product => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </section>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {featuredProducts.map(product => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Filter Section */}
         <div className="mb-6">
@@ -215,7 +147,6 @@ const Products = () => {
               className="cursor-pointer"
               onClick={() => {
                 setSelectedFilter("all");
-                setCurrentPage(1);
               }}
             >
               All Products ({products.length})
@@ -229,7 +160,6 @@ const Products = () => {
                   className="cursor-pointer"
                   onClick={() => {
                     setSelectedFilter(type);
-                    setCurrentPage(1);
                   }}
                 >
                   {getProductTypeLabel(type)} ({count})
@@ -240,12 +170,12 @@ const Products = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {currentProducts.map(product => (
+          {filteredProducts.map(product => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
 
-        {totalPages > 1 && (
+        {products.length > 0 && (
           <div className="flex justify-between items-center mt-8">
             <Button
               variant="outline"
@@ -255,12 +185,12 @@ const Products = () => {
               Previous Page
             </Button>
             <span className="text-muted-foreground">
-              Page {currentPage} of {totalPages} • {filteredProducts.length} products
+              Page {currentPage} • {filteredProducts.length} products
             </span>
             <Button
               variant="outline"
               onClick={loadNextPage}
-              disabled={currentPage >= totalPages}
+              disabled={products.length < itemsPerPage}
             >
               Next Page
             </Button>
