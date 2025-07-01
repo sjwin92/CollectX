@@ -238,11 +238,14 @@ const CardItem = ({
           {name}
         </h3>
         
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-center">
           <Badge variant="outline" size="sm" className="shrink-0">
             {rarity}
           </Badge>
-          <span className="text-sm font-semibold text-right">{formatCurrency(estimatedValue)}</span>
+        </div>
+        
+        <div className="text-center">
+          <span className="text-sm font-semibold text-primary">{formatCurrency(estimatedValue)}</span>
         </div>
         
         {/* Compact info row - only show if we have additional details */}
