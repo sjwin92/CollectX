@@ -25,7 +25,9 @@ import {
   ShoppingCart,
   Layers,
   Archive,
-  Home
+  Home,
+  Camera,
+  Settings
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import SocialTradeHub from "@/components/trades/SocialTradeHub";
@@ -113,13 +115,33 @@ const Navbar = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="/placeholder.svg" alt="User" />
-                    <AvatarFallback>TC</AvatarFallback>
+                    <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="User Profile" />
+                    <AvatarFallback className="bg-primary text-primary-foreground">TC</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 animate-fade-in">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuLabel className="flex items-center gap-2">
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="User Profile" />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">TC</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="font-medium">TradeCollector</div>
+                    <div className="text-xs text-muted-foreground">trader@collectx.com</div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <Camera className="mr-2 h-4 w-4" />
+                  <span>Update Profile Picture</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/profile">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Account Settings</span>
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link to="/profile">
