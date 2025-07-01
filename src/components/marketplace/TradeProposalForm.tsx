@@ -10,7 +10,7 @@ import { ArrowRightLeft, Plus, Calculator, DollarSign } from "lucide-react";
 import { formatCurrency } from "@/utils/escrowCalculator";
 import { estimateCardValue, calculateTradeBalance } from "@/services/valueEstimationService";
 import { TradeCard } from "@/models/escrow";
-import TradeBalancePayment from "@/components/trades/TradeBalancePayment";
+import TradeCardSuggestions from "@/components/trades/TradeCardSuggestions";
 
 interface TradeProposalFormProps {
   isOpen: boolean;
@@ -29,6 +29,28 @@ const TradeProposalForm = ({
   const [selectedCards, setSelectedCards] = useState<PokemonCard[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
+  
+  // Mock user collection - in real app this would come from user's actual collection
+  const mockUserCollection: PokemonCard[] = [
+    {
+      id: "base1-6",
+      name: "Charizard",
+      images: { small: "https://images.pokemontcg.io/base1/6.png" },
+      set: { name: "Base Set", releaseDate: "1999-01-09" }
+    },
+    {
+      id: "base1-2", 
+      name: "Blastoise",
+      images: { small: "https://images.pokemontcg.io/base1/2.png" },
+      set: { name: "Base Set", releaseDate: "1999-01-09" }
+    },
+    {
+      id: "sm12-190",
+      name: "Mewtwo & Mew GX",
+      images: { small: "https://images.pokemontcg.io/sm12/190.png" },
+      set: { name: "Cosmic Eclipse", releaseDate: "2019-11-01" }
+    }
+  ] as PokemonCard[];
 
   // Convert cards to TradeCard format for value calculation
   const convertToTradeCards = (cards: PokemonCard[]): TradeCard[] => {
@@ -59,7 +81,10 @@ const TradeProposalForm = ({
   };
 
   const myTradeCards = convertToTradeCards(selectedCards);
-  const tradeBalance = calculateTradeBalance(myTradeCards, [targetTradeCard]);
+  
+  // Calculate total values for display only (no payment logic at proposal stage)
+  const myTotalValue = myTradeCards.reduce((sum, card) => sum + card.estimatedValue, 0);
+  const targetValue = targetTradeCard.estimatedValue;
 
   const handleCardSelect = (card: PokemonCard) => {
     setSelectedCards(prev => [...prev, card]);
@@ -71,16 +96,9 @@ const TradeProposalForm = ({
   };
 
   const handleSubmit = () => {
-    if (tradeBalance.needsPayment && tradeBalance.whoPays === "me" && !paymentCompleted) {
-      return; // Payment required but not completed
-    }
-    
-    onSubmitProposal(message, selectedCards, paymentCompleted);
+    // No payment logic at proposal stage - that happens during escrow/negotiation
+    onSubmitProposal(message, selectedCards);
     onClose();
-  };
-
-  const handlePaymentComplete = (success: boolean) => {
-    setPaymentCompleted(success);
   };
 
   return (
@@ -104,7 +122,7 @@ const TradeProposalForm = ({
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
                 <div className="text-sm text-muted-foreground">You're Offering</div>
-                <div className="text-lg font-semibold">{formatCurrency(tradeBalance.myValue, "USD")}</div>
+                <div className="text-lg font-semibold">{formatCurrency(myTotalValue, "USD")}</div>
                 <div className="text-xs text-muted-foreground">{selectedCards.length} card(s)</div>
               </div>
               
@@ -114,32 +132,19 @@ const TradeProposalForm = ({
               
               <div>
                 <div className="text-sm text-muted-foreground">You're Getting</div>
-                <div className="text-lg font-semibold">{formatCurrency(tradeBalance.theirValue, "USD")}</div>
+                <div className="text-lg font-semibold">{formatCurrency(targetValue, "USD")}</div>
                 <div className="text-xs text-muted-foreground">1 card</div>
               </div>
             </div>
             
-            {tradeBalance.needsPayment && (
-              <div className="mt-3 p-2 rounded bg-yellow-500/10 border border-yellow-500/20">
-                <div className="flex items-center justify-center gap-2 text-yellow-600">
-                  <DollarSign className="h-4 w-4" />
-                  <span className="text-sm font-medium">
-                    Balance required: {formatCurrency(tradeBalance.paymentAmount, "USD")}
-                    {tradeBalance.whoPays === "me" ? " (you pay)" : " (they pay)"}
-                  </span>
-                </div>
+            <div className="mt-3 p-2 rounded bg-blue-500/10 border border-blue-500/20">
+              <div className="flex items-center justify-center gap-2 text-blue-600">
+                <span className="text-sm font-medium">
+                  Initial proposal - final value balance will be calculated during negotiation
+                </span>
               </div>
-            )}
+            </div>
           </div>
-
-          {/* Payment Section */}
-          {tradeBalance.needsPayment && (
-            <TradeBalancePayment
-              paymentAmount={tradeBalance.paymentAmount}
-              whoPays={tradeBalance.whoPays as "me" | "them"}
-              onPaymentComplete={handlePaymentComplete}
-            />
-          )}
 
           <div className="flex flex-col sm:flex-row gap-4 items-start">
             <div className="sm:w-1/4 w-1/2 mx-auto sm:mx-0">
@@ -220,6 +225,13 @@ const TradeProposalForm = ({
             </div>
           </div>
 
+          {/* Smart Trade Suggestions */}
+          <TradeCardSuggestions 
+            targetCard={targetCard}
+            userCollection={mockUserCollection}
+            onSelectCard={handleCardSelect}
+          />
+
           {isSearching && (
             <div className="border rounded-md p-4">
               <h3 className="text-lg font-medium mb-4">Select a card to offer</h3>
@@ -232,10 +244,7 @@ const TradeProposalForm = ({
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button 
             onClick={handleSubmit} 
-            disabled={
-              selectedCards.length === 0 || 
-              (tradeBalance.needsPayment && tradeBalance.whoPays === "me" && !paymentCompleted)
-            }
+            disabled={selectedCards.length === 0}
           >
             <ArrowRightLeft className="h-4 w-4 mr-2" />
             Send Trade Proposal
