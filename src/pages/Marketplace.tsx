@@ -414,24 +414,24 @@ const Marketplace = () => {
           </div>
         </div>
 
-        <div className="border rounded-lg p-1 bg-background/50 mb-6">
-          <div className="flex space-x-2 items-center">
+        <div className="border rounded-lg p-1 bg-background/50 mb-6 overflow-hidden">
+          <div className="flex space-x-2 items-center overflow-x-auto scrollbar-hide pb-1">
             <button
-              className={`py-2 px-4 rounded-md font-medium flex items-center gap-1.5 transition-colors ${activeCategory === 'featured' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+              className={`py-2 px-4 rounded-md font-medium flex items-center gap-1.5 transition-colors shrink-0 ${activeCategory === 'featured' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
               onClick={() => setActiveCategory('featured')}
             >
               <Star className="h-4 w-4" />
               <span>Featured</span>
             </button>
             <button
-              className={`py-2 px-4 rounded-md font-medium flex items-center gap-1.5 transition-colors ${activeCategory === 'recent' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+              className={`py-2 px-4 rounded-md font-medium flex items-center gap-1.5 transition-colors shrink-0 ${activeCategory === 'recent' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
               onClick={() => setActiveCategory('recent')}
             >
               <Clock className="h-4 w-4" />
               <span>New Listings</span>
             </button>
             <button
-              className={`py-2 px-4 rounded-md font-medium flex items-center gap-1.5 transition-colors ${activeCategory === 'trending' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+              className={`py-2 px-4 rounded-md font-medium flex items-center gap-1.5 transition-colors shrink-0 ${activeCategory === 'trending' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
               onClick={() => setActiveCategory('trending')}
             >
               <TrendingUp className="h-4 w-4" />
