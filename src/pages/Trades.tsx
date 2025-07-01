@@ -9,6 +9,31 @@ import TradeTabs from "@/components/trades/TradeTabs";
 import TradeProposalForm from "@/components/marketplace/TradeProposalForm";
 import { CardItemProps } from "@/components/cards/CardItem";
 
+type TradeStatus = "pending" | "accepted" | "shipped" | "completed" | "declined";
+type ReputationType = "trusted" | "established" | "new";
+
+interface Trade {
+  id: string;
+  status: TradeStatus;
+  date: string;
+  user: {
+    id: string;
+    name: string;
+    reputation: ReputationType;
+  };
+  giving: {
+    count: number;
+    preview: string;
+  };
+  receiving: {
+    count: number;
+    preview: string;
+  };
+  message?: string;
+  offeredCards?: any[];
+  targetCard?: CardItemProps;
+}
+
 // Placeholder trade data (keeping for reference, but not using directly)
 const activeTrades = [
   {
@@ -158,6 +183,28 @@ const Trades = () => {
   const [isTradeProposalOpen, setIsTradeProposalOpen] = useState(false);
   const [selectedTargetCard, setSelectedTargetCard] = useState<CardItemProps | null>(null);
   const [searchParams] = useSearchParams();
+  
+  // Dynamic trades state
+  const [userTrades, setUserTrades] = useState<Trade[]>([
+    {
+      id: "t1",
+      status: "pending",
+      date: "2 hours ago",
+      user: {
+        id: "u1",
+        name: "Alex Morgan",
+        reputation: "trusted"
+      },
+      giving: {
+        count: 2,
+        preview: "https://images.unsplash.com/photo-1605979257913-1704eb7b6246?q=80&w=1470&auto=format&fit=crop"
+      },
+      receiving: {
+        count: 3,
+        preview: "https://images.unsplash.com/photo-1607736703050-d0666c1d1278?q=80&w=1470&auto=format&fit=crop"
+      }
+    }
+  ]);
 
   useEffect(() => {
     const shouldPropose = searchParams.get('propose') === 'true';
@@ -179,6 +226,33 @@ const Trades = () => {
 
   const handleSubmitProposal = (message: string, offeredCards: any[], paymentCompleted?: boolean) => {
     console.log('Trade proposal submitted:', { message, offeredCards, paymentCompleted });
+    
+    // Create new trade entry
+    const newTrade = {
+      id: `t-${Date.now()}`,
+      status: "pending" as const,
+      date: "just now",
+      user: {
+        id: "marketplace-user",
+        name: "Marketplace Trader",
+        reputation: "new" as const
+      },
+      giving: {
+        count: offeredCards.length,
+        preview: offeredCards[0]?.images?.small || "https://images.unsplash.com/photo-1605979257913-1704eb7b6246?q=80&w=1470&auto=format&fit=crop"
+      },
+      receiving: {
+        count: 1,
+        preview: selectedTargetCard?.imageUrl || "https://images.unsplash.com/photo-1607736703050-d0666c1d1278?q=80&w=1470&auto=format&fit=crop"
+      },
+      message,
+      offeredCards,
+      targetCard: selectedTargetCard
+    };
+    
+    // Add to trades list
+    setUserTrades(prev => [newTrade, ...prev]);
+    
     toast.success('Trade proposal sent successfully!');
     setIsTradeProposalOpen(false);
     
@@ -192,12 +266,12 @@ const Trades = () => {
     window.history.replaceState({}, '', '/trades');
   };
 
-  // Display zeros for stats
-  const totalTrades = 0;
-  const pendingCount = 0;
-  const inProgressCount = 0;
-  const completedCount = 0;
-  const declinedCount = 0;
+  // Calculate stats from actual trades
+  const totalTrades = userTrades.length;
+  const pendingCount = userTrades.filter(t => t.status === 'pending').length;
+  const inProgressCount = userTrades.filter(t => t.status === 'accepted' || t.status === 'shipped').length;
+  const completedCount = userTrades.filter(t => t.status === 'completed').length;
+  const declinedCount = userTrades.filter(t => t.status === 'declined').length;
 
   return (
     <div className="min-h-screen flex flex-col">
