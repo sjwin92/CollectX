@@ -3,11 +3,13 @@ import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getSetById } from "@/services/api/pokemonSetsService";
+import { getProducts } from "@/services/api/pokemonProductsService";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import ProductCard from "@/components/pokemon/ProductCard";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Calendar, Trophy, Bookmark, Check, ImageOff } from "lucide-react";
+import { ArrowLeft, Calendar, Trophy, Bookmark, Check, ImageOff, Package } from "lucide-react";
 import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +36,19 @@ const SetDetail = () => {
       }
     }
   });
+
+  // Fetch products and filter by the current set
+  const { data: allProducts = [] } = useQuery({
+    queryKey: ['setProducts', id],
+    queryFn: () => getProducts(1, 100), // Get more products to find matches
+    enabled: !!id,
+  });
+
+  // Filter products that match this set
+  const setProducts = React.useMemo(() => {
+    if (!id || !allProducts.length) return [];
+    return allProducts.filter(product => product.setId === id);
+  }, [allProducts, id]);
 
   const handleBack = () => {
     navigate('/pokemon-sets');
@@ -232,6 +247,29 @@ const SetDetail = () => {
             </div>
           </div>
         </div>
+
+        {/* Products Section */}
+        {setProducts.length > 0 && (
+          <section className="mt-12">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold mb-2 flex items-center">
+                  <Package className="h-5 w-5 text-primary mr-2" />
+                  Available Products
+                </h2>
+                <p className="text-muted-foreground">
+                  All product types available for {set.name}
+                </p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {setProducts.map(product => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          </section>
+        )}
       </main>
       
       <Footer />
