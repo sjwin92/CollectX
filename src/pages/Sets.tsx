@@ -54,12 +54,14 @@ const Sets = () => {
     }
   });
 
-  // Combine API data with manually added new releases
+  // Combine API data with manually added new releases (avoid duplicates)
   const combinedData = React.useMemo(() => {
     if (isLoading || isError || !data) return [];
     
     if (currentPage === 1) {
-      return [...newReleases, ...data.data];
+      // Filter out any sets from API data that match our manually added sets
+      const apiData = data.data.filter(set => !newReleases.some(newSet => newSet.id === set.id));
+      return [...newReleases, ...apiData];
     }
     
     return data.data;
