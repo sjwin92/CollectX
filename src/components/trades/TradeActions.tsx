@@ -3,6 +3,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface TradeActionsProps {
   isRefreshing: boolean;
@@ -10,6 +11,8 @@ interface TradeActionsProps {
 }
 
 const TradeActions = ({ isRefreshing, setIsRefreshing }: TradeActionsProps) => {
+  const navigate = useNavigate();
+
   const handleRefresh = () => {
     setIsRefreshing(true);
     // Simulate refresh with timeout
@@ -20,9 +23,9 @@ const TradeActions = ({ isRefreshing, setIsRefreshing }: TradeActionsProps) => {
   };
 
   const handleCreateTrade = () => {
-    toast.info("This feature is coming soon!");
-    // You would typically navigate to a create trade form
-    // navigate('/trades/create');
+    // Navigate to marketplace where users can browse and propose trades
+    navigate('/marketplace');
+    toast.info("Browse cards in the marketplace to start a trade proposal");
   };
   
   return (

@@ -128,7 +128,8 @@ const Trades = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleCreateTrade = () => {
-    toast.info("This feature is coming soon!");
+    // Navigate to marketplace to browse and propose trades
+    window.location.href = '/marketplace';
   };
 
   // Display zeros for stats
