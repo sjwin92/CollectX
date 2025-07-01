@@ -50,7 +50,7 @@ const TradeProposalForm = ({
   };
 
   const targetTradeCard: TradeCard = {
-    id: targetCard.cardNumber || "target",
+    id: targetCard.number || "target",
     name: targetCard.name,
     imageUrl: targetCard.imageUrl,
     condition: targetCard.condition,
@@ -136,7 +136,7 @@ const TradeProposalForm = ({
           {tradeBalance.needsPayment && (
             <TradeBalancePayment
               paymentAmount={tradeBalance.paymentAmount}
-              whoPays={tradeBalance.whoPays}
+              whoPays={tradeBalance.whoPays as "me" | "them"}
               onPaymentComplete={handlePaymentComplete}
             />
           )}

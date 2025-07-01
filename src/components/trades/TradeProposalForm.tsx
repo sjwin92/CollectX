@@ -160,7 +160,7 @@ const TradeProposalForm = ({
       {tradeBalance.needsPayment && (
         <TradeBalancePayment
           paymentAmount={tradeBalance.paymentAmount}
-          whoPays={tradeBalance.whoPays}
+          whoPays={tradeBalance.whoPays as "me" | "them"}
           onPaymentComplete={handlePaymentComplete}
         />
       )}
