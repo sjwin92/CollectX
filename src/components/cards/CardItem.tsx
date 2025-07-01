@@ -233,49 +233,47 @@ const CardItem = ({
         </div>
       </div>
       
-      <div className="space-y-1">
-        <h3 className="font-medium text-sm line-clamp-1 group-hover:text-primary transition-colors">
+      <div className="space-y-2">
+        <h3 className="font-medium text-sm line-clamp-2 leading-tight group-hover:text-primary transition-colors">
           {name}
         </h3>
         
-        <div className="flex items-center justify-between">
-          <Badge variant="outline" size="sm">
+        <div className="flex items-center justify-between gap-2">
+          <Badge variant="outline" size="sm" className="shrink-0">
             {rarity}
           </Badge>
-          <span className="text-xs font-medium">{formatCurrency(estimatedValue)}</span>
+          <span className="text-sm font-semibold text-right">{formatCurrency(estimatedValue)}</span>
         </div>
         
-        <div className="flex flex-wrap items-center gap-1 mt-2">
-          {quantity > 1 && (
-            <span className="text-xs bg-secondary/50 px-1.5 py-0.5 rounded" title="Quantity">
-              {quantity}x
-            </span>
-          )}
-          
-          {condition && (
-            <span className={`text-xs ${getConditionTextColor()} px-1.5 py-0.5 rounded`} title="Condition">
-              {condition}
-            </span>
-          )}
-          
-          {graded && (
-            <span className="text-xs bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 px-1.5 py-0.5 rounded flex items-center" title="Graded">
-              <BadgeCheck className="h-2.5 w-2.5 mr-0.5" />
-              {gradeScore}
-            </span>
-          )}
-          
-          {forTrade && (
-            <span className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 px-1.5 py-0.5 rounded flex items-center" title="For Trade">
-              <Repeat className="h-2.5 w-2.5 mr-0.5" />
-              Trade
-            </span>
-          )}
-        </div>
+        {/* Compact info row - only show if we have additional details */}
+        {(quantity > 1 || graded || forTrade) && (
+          <div className="flex flex-wrap items-center gap-1 min-h-[20px]">
+            {quantity > 1 && (
+              <span className="text-xs bg-secondary/50 px-1.5 py-0.5 rounded shrink-0" title="Quantity">
+                {quantity}x
+              </span>
+            )}
+            
+            {graded && (
+              <span className="text-xs bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 px-1.5 py-0.5 rounded flex items-center shrink-0" title="Graded">
+                <BadgeCheck className="h-2.5 w-2.5 mr-0.5" />
+                {gradeScore}
+              </span>
+            )}
+            
+            {forTrade && (
+              <span className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 px-1.5 py-0.5 rounded flex items-center shrink-0" title="For Trade">
+                <Repeat className="h-2.5 w-2.5 mr-0.5" />
+                Trade
+              </span>
+            )}
+          </div>
+        )}
         
+        {/* Trade preferences - separate line to avoid overlap */}
         {forTrade && tradePreferences && (
-          <div className="text-xs text-muted-foreground mt-1 line-clamp-1">
-            <span className="font-medium">Trade for:</span> {tradePreferences}
+          <div className="text-xs text-muted-foreground line-clamp-1 leading-tight">
+            <span className="font-medium">Want:</span> {tradePreferences}
           </div>
         )}
       </div>
