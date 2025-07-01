@@ -43,7 +43,7 @@ const CollectionBoxSelector = ({
   selectedBoxId, 
   disabled = false 
 }: CollectionBoxSelectorProps) => {
-  // Mock collection boxes - in real app this would come from context/api
+  // Mock collection boxes with cards
   const collectionBoxes: CollectionBox[] = [
     {
       id: "tradeable",
@@ -55,7 +55,7 @@ const CollectionBoxSelector = ({
       totalValue: 1250.00
     },
     {
-      id: "untouchables",
+      id: "untouchables", 
       name: "Untouchables",
       description: "Never trading these",
       icon: "Shield",
@@ -65,7 +65,7 @@ const CollectionBoxSelector = ({
     },
     {
       id: "high-value",
-      name: "High Value",
+      name: "High Value", 
       description: "Premium cards $100+",
       icon: "TrendingUp",
       color: "green",
@@ -75,29 +75,11 @@ const CollectionBoxSelector = ({
     {
       id: "rare",
       name: "Rare Collection",
-      description: "Hard to find cards",
+      description: "Hard to find cards", 
       icon: "Star",
       color: "purple",
       cardCount: 18,
       totalValue: 890.00
-    },
-    {
-      id: "trainers",
-      name: "Trainer Cards",
-      description: "All trainer cards",
-      icon: "Users",
-      color: "orange",
-      cardCount: 156,
-      totalValue: 420.00
-    },
-    {
-      id: "etbs",
-      name: "ETB Collection",
-      description: "Elite Trainer Box pulls",
-      icon: "Package",
-      color: "indigo",
-      cardCount: 84,
-      totalValue: 750.00
     }
   ];
 
