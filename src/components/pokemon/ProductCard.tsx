@@ -28,11 +28,17 @@ interface ProductCardProps {
 const ProductCard = ({ product }: ProductCardProps) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(true);
+  const [imageError, setImageError] = useState(false);
 
   const openAddModal = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setShowAddModal(true);
+  };
+
+  const handleImageError = () => {
+    setImageLoaded(false);
+    setImageError(true);
   };
 
   const productTypeIcon = getProductTypeIcon(product.productType);
@@ -42,42 +48,42 @@ const ProductCard = ({ product }: ProductCardProps) => {
     <>
       <Card className="overflow-hidden h-full transition-all hover:shadow-lg hover:border-primary/50 relative group">
         <CardHeader className="space-y-4 pb-4">
-          {product.imageUrl ? (
-            <div className="h-32 flex items-center justify-center bg-muted/30 rounded-lg">
+          <div className="h-32 flex items-center justify-center bg-gradient-to-br from-muted/30 to-muted/60 rounded-lg">
+            {product.imageUrl && !imageError ? (
               <img 
                 src={product.imageUrl} 
                 alt={`${product.name}`}
-                className="max-h-32 max-w-full object-contain"
-                onError={() => setImageLoaded(false)}
-                style={{ display: imageLoaded ? 'block' : 'none' }}
+                className="max-h-32 max-w-full object-contain transition-opacity duration-200"
+                onError={handleImageError}
+                style={{ display: imageLoaded && !imageError ? 'block' : 'none' }}
               />
-              {!imageLoaded && (
-                <div className="flex flex-col items-center text-muted-foreground">
-                  <ImageOff className="h-8 w-8 mb-2" />
-                  <span className="text-sm">Image unavailable</span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="h-32 flex items-center justify-center bg-muted/30 rounded-lg">
+            ) : null}
+            
+            {(!product.imageUrl || imageError || !imageLoaded) && (
               <div className="flex flex-col items-center text-muted-foreground">
-                <span className="text-2xl mb-2">{productTypeIcon}</span>
-                <span className="text-sm">{productTypeLabel}</span>
+                <span className="text-3xl mb-2">{productTypeIcon}</span>
+                <span className="text-sm font-medium">{productTypeLabel}</span>
+                {imageError && (
+                  <div className="flex items-center mt-1 text-xs">
+                    <ImageOff className="h-3 w-3 mr-1" />
+                    <span>Image unavailable</span>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            )}
+          </div>
           
           <div>
-            <h3 className="text-lg font-semibold text-center mb-2">{product.name}</h3>
+            <h3 className="text-lg font-semibold text-center mb-2 line-clamp-2">{product.name}</h3>
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">{product.series}</span>
               <div className="flex gap-2">
-                <Badge variant="secondary">
+                <Badge variant="secondary" className="text-xs">
                   <span className="mr-1">{productTypeIcon}</span>
                   {productTypeLabel}
                 </Badge>
                 {product.packCount && (
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="text-xs">
                     <Package className="h-3 w-3 mr-1" />
                     {product.packCount} packs
                   </Badge>
@@ -97,7 +103,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
                 <Calendar className="h-4 w-4" />
                 {format(new Date(product.releaseDate), 'MMM d, yyyy')}
               </div>
-              <span className="font-semibold text-primary">
+              <span className="font-semibold text-primary text-lg">
                 ${product.msrp}
               </span>
             </div>
@@ -108,7 +114,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           <Button 
             variant="default" 
             size="sm" 
-            className="h-8 w-8 p-0 rounded-full"
+            className="h-8 w-8 p-0 rounded-full shadow-lg"
             onClick={openAddModal}
           >
             <Plus className="h-4 w-4" />

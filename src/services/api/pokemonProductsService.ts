@@ -1,6 +1,7 @@
 
 // Service for fetching Pokémon TCG products including ETBs, booster boxes, etc.
 import { BASE_URL, createApiUrl } from './pokemonApiConfig';
+import { resolveProductImage } from './productImageService';
 
 export interface ProductSet {
   id: string;
@@ -31,16 +32,16 @@ export interface ProductResponse {
 }
 
 // Transform set data into product data with different product types
-const transformSetToProducts = (set: ProductSet) => {
+const transformSetToProducts = async (set: ProductSet) => {
   const baseProduct = {
     series: set.series,
     setId: set.id,
     releaseDate: set.releaseDate,
     description: `From the ${set.name} expansion in the ${set.series} series.`,
-    imageUrl: set.images?.logo
   };
 
-  return [
+  // Create products with proper images
+  const products = [
     // Elite Trainer Box
     {
       id: `${set.id}-etb`,
@@ -95,6 +96,19 @@ const transformSetToProducts = (set: ProductSet) => {
       ...baseProduct
     }
   ];
+
+  // Resolve images for each product
+  const productsWithImages = await Promise.all(
+    products.map(async (product) => {
+      const imageUrl = await resolveProductImage(set.id, product.productType, set.name);
+      return {
+        ...product,
+        imageUrl: imageUrl || set.images?.logo // Fallback to set logo
+      };
+    })
+  );
+
+  return productsWithImages;
 };
 
 export const getProducts = async (page = 1, pageSize = 20): Promise<any[]> => {
@@ -118,8 +132,10 @@ export const getProducts = async (page = 1, pageSize = 20): Promise<any[]> => {
     const data = await response.json();
     console.log(`Successfully fetched ${data.data?.length || 0} sets for product generation`);
     
-    // Transform sets into products
-    const allProducts = data.data?.flatMap(transformSetToProducts) || [];
+    // Transform sets into products with proper images
+    const allProductsPromises = data.data?.map(transformSetToProducts) || [];
+    const allProductArrays = await Promise.all(allProductsPromises);
+    const allProducts = allProductArrays.flat();
     
     // Apply pagination to the products
     const startIndex = (page - 1) * pageSize;
@@ -150,10 +166,12 @@ export const getFeaturedProducts = async (): Promise<any[]> => {
     
     const data = await response.json();
     
-    // Generate products from the latest sets and take the first 4
-    const featuredProducts = data.data?.flatMap(transformSetToProducts).slice(0, 4) || [];
+    // Generate products from the latest sets with images and take the first 4
+    const featuredProductsPromises = data.data?.slice(0, 1).map(transformSetToProducts) || [];
+    const featuredProductArrays = await Promise.all(featuredProductsPromises);
+    const featuredProducts = featuredProductArrays.flat().slice(0, 4);
     
-    console.log(`Generated ${featuredProducts.length} featured products`);
+    console.log(`Generated ${featuredProducts.length} featured products with images`);
     return featuredProducts;
   } catch (error) {
     console.error('Error fetching featured products:', error);
