@@ -1,16 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
 import { TradeCard } from "@/models/escrow";
-import { ArrowLeftRight, Plus, X, DollarSign, Check, AlertCircle } from "lucide-react";
+import { ArrowLeftRight, Plus, X, DollarSign, Check, AlertCircle, Calculator } from "lucide-react";
 import { formatCurrency } from "@/utils/escrowCalculator";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  estimateCardValue, 
+  calculateTradeBalance, 
+  calculateTradeValue 
+} from "@/services/valueEstimationService";
+import TradeBalancePayment from "./TradeBalancePayment";
 
 interface TradeProposalFormProps {
   myCards: TradeCard[];
   theirCards: TradeCard[];
-  onSubmit: (mySelectedCards: TradeCard[], theirSelectedCards: TradeCard[]) => void;
+  onSubmit: (mySelectedCards: TradeCard[], theirSelectedCards: TradeCard[], paymentCompleted?: boolean) => void;
   onCancel: () => void;
 }
 
@@ -22,10 +28,28 @@ const TradeProposalForm = ({
 }: TradeProposalFormProps) => {
   const [mySelectedCards, setMySelectedCards] = useState<TradeCard[]>([]);
   const [theirSelectedCards, setTheirSelectedCards] = useState<TradeCard[]>([]);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
   const { toast } = useToast();
   
+  // Update card values when cards are selected
+  useEffect(() => {
+    const updateCardValues = (cards: TradeCard[]) => {
+      return cards.map(card => ({
+        ...card,
+        estimatedValue: card.estimatedValue || estimateCardValue(card)
+      }));
+    };
+
+    setMySelectedCards(prev => updateCardValues(prev));
+    setTheirSelectedCards(prev => updateCardValues(prev));
+  }, []);
+  
   const handleAddMyCard = (card: TradeCard) => {
-    setMySelectedCards([...mySelectedCards, card]);
+    const cardWithValue = {
+      ...card,
+      estimatedValue: card.estimatedValue || estimateCardValue(card)
+    };
+    setMySelectedCards([...mySelectedCards, cardWithValue]);
   };
   
   const handleRemoveMyCard = (cardId: string) => {
@@ -33,21 +57,19 @@ const TradeProposalForm = ({
   };
   
   const handleAddTheirCard = (card: TradeCard) => {
-    setTheirSelectedCards([...theirSelectedCards, card]);
+    const cardWithValue = {
+      ...card,
+      estimatedValue: card.estimatedValue || estimateCardValue(card)
+    };
+    setTheirSelectedCards([...theirSelectedCards, cardWithValue]);
   };
   
   const handleRemoveTheirCard = (cardId: string) => {
     setTheirSelectedCards(theirSelectedCards.filter(card => card.id !== cardId));
   };
   
-  const calculateTotalValue = (cards: TradeCard[]): number => {
-    return cards.reduce((sum, card) => sum + card.estimatedValue, 0);
-  };
-  
-  const myTotalValue = calculateTotalValue(mySelectedCards);
-  const theirTotalValue = calculateTotalValue(theirSelectedCards);
-  const valueDifference = Math.abs(myTotalValue - theirTotalValue);
-  const isBalanced = valueDifference <= myTotalValue * 0.1; // Within 10% is considered balanced
+  const tradeBalance = calculateTradeBalance(mySelectedCards, theirSelectedCards);
+  const isBalanced = !tradeBalance.needsPayment;
   
   const handleSubmitProposal = () => {
     if (mySelectedCards.length === 0 || theirSelectedCards.length === 0) {
@@ -59,20 +81,90 @@ const TradeProposalForm = ({
       return;
     }
     
-    if (!isBalanced) {
+    if (tradeBalance.needsPayment && tradeBalance.whoPays === "me" && !paymentCompleted) {
       toast({
-        title: "Value imbalance",
-        description: "The trade values are significantly different. Consider adjusting your offer.",
+        title: "Payment required",
+        description: "Please complete payment to cover the trade balance.",
         variant: "destructive"
       });
       return;
     }
     
-    onSubmit(mySelectedCards, theirSelectedCards);
+    onSubmit(mySelectedCards, theirSelectedCards, paymentCompleted);
+  };
+
+  const handlePaymentComplete = (success: boolean) => {
+    setPaymentCompleted(success);
+    if (success) {
+      toast({
+        title: "Payment completed",
+        description: "You can now submit your trade proposal."
+      });
+    }
   };
   
   return (
     <div className="space-y-6">
+      {/* Value Summary Card */}
+      <GlassCard variant="dark" className="p-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Calculator className="h-5 w-5" />
+          <h3 className="text-lg font-medium">Trade Value Analysis</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="text-center">
+            <div className="text-sm text-muted-foreground mb-1">Your Offering</div>
+            <div className="text-xl font-medium">{formatCurrency(tradeBalance.myValue, "USD")}</div>
+            <div className="text-xs text-muted-foreground">{mySelectedCards.length} item(s)</div>
+          </div>
+          
+          <div className="flex items-center justify-center">
+            <ArrowLeftRight className="h-6 w-6 text-muted-foreground" />
+          </div>
+          
+          <div className="text-center">
+            <div className="text-sm text-muted-foreground mb-1">You're Receiving</div>
+            <div className="text-xl font-medium">{formatCurrency(tradeBalance.theirValue, "USD")}</div>
+            <div className="text-xs text-muted-foreground">{theirSelectedCards.length} item(s)</div>
+          </div>
+        </div>
+        
+        <div className={`text-center p-3 rounded-md ${
+          isBalanced 
+            ? 'bg-green-500/10 border border-green-500/20' 
+            : 'bg-yellow-500/10 border border-yellow-500/20'
+        }`}>
+          <div className={`flex items-center justify-center gap-2 ${
+            isBalanced ? 'text-green-500' : 'text-yellow-500'
+          }`}>
+            {isBalanced ? (
+              <>
+                <Check className="h-5 w-5" />
+                <span className="font-medium">Trade is balanced</span>
+              </>
+            ) : (
+              <>
+                <DollarSign className="h-5 w-5" />
+                <span className="font-medium">
+                  Balance required: {formatCurrency(tradeBalance.paymentAmount, "USD")}
+                  {tradeBalance.whoPays === "me" ? " (you pay)" : " (they pay)"}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      </GlassCard>
+
+      {/* Payment Section */}
+      {tradeBalance.needsPayment && (
+        <TradeBalancePayment
+          paymentAmount={tradeBalance.paymentAmount}
+          whoPays={tradeBalance.whoPays}
+          onPaymentComplete={handlePaymentComplete}
+        />
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <h3 className="text-lg font-medium mb-3">Your Offering</h3>
@@ -94,7 +186,7 @@ const TradeProposalForm = ({
                       <div>
                         <div className="text-sm font-medium">{card.name}</div>
                         <div className="text-xs text-muted-foreground">
-                          {card.condition} · {formatCurrency(card.estimatedValue, card.currency)}
+                          {card.condition} · {formatCurrency(card.estimatedValue || 0, "USD")}
                         </div>
                       </div>
                     </div>
@@ -111,7 +203,7 @@ const TradeProposalForm = ({
                 <div className="flex justify-between pt-2 border-t border-border">
                   <span className="text-sm font-medium">Total Value:</span>
                   <span className="text-sm font-medium">
-                    {formatCurrency(myTotalValue, "GBP")}
+                    {formatCurrency(calculateTradeValue(mySelectedCards), "USD")}
                   </span>
                 </div>
               </div>
@@ -124,35 +216,38 @@ const TradeProposalForm = ({
             <div className="h-[300px] overflow-y-auto pr-2 space-y-2">
               {myCards
                 .filter(card => !mySelectedCards.some(selected => selected.id === card.id))
-                .map(card => (
-                  <div 
-                    key={card.id} 
-                    className="flex items-center justify-between p-2 rounded-md hover:bg-secondary/30 cursor-pointer transition-colors"
-                    onClick={() => handleAddMyCard(card)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="h-10 w-10 rounded-md overflow-hidden">
-                        <img 
-                          src={card.imageUrl} 
-                          alt={card.name} 
-                          className="h-full w-full object-cover" 
-                        />
-                      </div>
-                      <div>
-                        <div className="text-sm">{card.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {card.condition}
+                .map(card => {
+                  const estimatedValue = card.estimatedValue || estimateCardValue(card);
+                  return (
+                    <div 
+                      key={card.id} 
+                      className="flex items-center justify-between p-2 rounded-md hover:bg-secondary/30 cursor-pointer transition-colors"
+                      onClick={() => handleAddMyCard({...card, estimatedValue})}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="h-10 w-10 rounded-md overflow-hidden">
+                          <img 
+                            src={card.imageUrl} 
+                            alt={card.name} 
+                            className="h-full w-full object-cover" 
+                          />
+                        </div>
+                        <div>
+                          <div className="text-sm">{card.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {card.condition}
+                          </div>
                         </div>
                       </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium">
+                          {formatCurrency(estimatedValue, "USD")}
+                        </span>
+                        <Plus className="h-4 w-4" />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium">
-                        {formatCurrency(card.estimatedValue, card.currency)}
-                      </span>
-                      <Plus className="h-4 w-4" />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
             </div>
           </div>
         </div>
@@ -177,7 +272,7 @@ const TradeProposalForm = ({
                       <div>
                         <div className="text-sm font-medium">{card.name}</div>
                         <div className="text-xs text-muted-foreground">
-                          {card.condition} · {formatCurrency(card.estimatedValue, card.currency)}
+                          {card.condition} · {formatCurrency(card.estimatedValue || 0, "USD")}
                         </div>
                       </div>
                     </div>
@@ -194,7 +289,7 @@ const TradeProposalForm = ({
                 <div className="flex justify-between pt-2 border-t border-border">
                   <span className="text-sm font-medium">Total Value:</span>
                   <span className="text-sm font-medium">
-                    {formatCurrency(theirTotalValue, "GBP")}
+                    {formatCurrency(calculateTradeValue(theirSelectedCards), "USD")}
                   </span>
                 </div>
               </div>
@@ -207,100 +302,54 @@ const TradeProposalForm = ({
             <div className="h-[300px] overflow-y-auto pr-2 space-y-2">
               {theirCards
                 .filter(card => !theirSelectedCards.some(selected => selected.id === card.id))
-                .map(card => (
-                  <div 
-                    key={card.id} 
-                    className="flex items-center justify-between p-2 rounded-md hover:bg-secondary/30 cursor-pointer transition-colors"
-                    onClick={() => handleAddTheirCard(card)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="h-10 w-10 rounded-md overflow-hidden">
-                        <img 
-                          src={card.imageUrl} 
-                          alt={card.name} 
-                          className="h-full w-full object-cover" 
-                        />
-                      </div>
-                      <div>
-                        <div className="text-sm">{card.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {card.condition}
+                .map(card => {
+                  const estimatedValue = card.estimatedValue || estimateCardValue(card);
+                  return (
+                    <div 
+                      key={card.id} 
+                      className="flex items-center justify-between p-2 rounded-md hover:bg-secondary/30 cursor-pointer transition-colors"
+                      onClick={() => handleAddTheirCard({...card, estimatedValue})}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="h-10 w-10 rounded-md overflow-hidden">
+                          <img 
+                            src={card.imageUrl} 
+                            alt={card.name} 
+                            className="h-full w-full object-cover" 
+                          />
+                        </div>
+                        <div>
+                          <div className="text-sm">{card.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {card.condition}
+                          </div>
                         </div>
                       </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium">
+                          {formatCurrency(estimatedValue, "USD")}
+                        </span>
+                        <Plus className="h-4 w-4" />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium">
-                        {formatCurrency(card.estimatedValue, card.currency)}
-                      </span>
-                      <Plus className="h-4 w-4" />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
             </div>
           </div>
         </div>
       </div>
       
-      {/* Trade summary */}
-      <GlassCard variant="dark" className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium">Trade Summary</h3>
-          <div className={`flex items-center gap-2 ${isBalanced ? 'text-green-500' : 'text-yellow-500'}`}>
-            {isBalanced ? (
-              <>
-                <Check className="h-5 w-5" />
-                <span className="text-sm font-medium">Fair Trade</span>
-              </>
-            ) : (
-              <>
-                <AlertCircle className="h-5 w-5" />
-                <span className="text-sm font-medium">Value Imbalance</span>
-              </>
-            )}
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div className="text-center">
-            <div className="text-sm text-muted-foreground mb-1">You're Offering</div>
-            <div className="text-xl font-medium">{formatCurrency(myTotalValue, "GBP")}</div>
-            <div className="text-xs text-muted-foreground">{mySelectedCards.length} card(s)</div>
-          </div>
-          
-          <div className="flex items-center justify-center">
-            <ArrowLeftRight className="h-6 w-6 text-muted-foreground" />
-          </div>
-          
-          <div className="text-center">
-            <div className="text-sm text-muted-foreground mb-1">You're Receiving</div>
-            <div className="text-xl font-medium">{formatCurrency(theirTotalValue, "GBP")}</div>
-            <div className="text-xs text-muted-foreground">{theirSelectedCards.length} card(s)</div>
-          </div>
-        </div>
-        
-        {valueDifference > 0 && (
-          <div className={`text-center mb-4 p-2 rounded ${isBalanced ? 'bg-green-500/10' : 'bg-yellow-500/10'}`}>
-            <DollarSign className={`h-4 w-4 inline-block mr-1 ${isBalanced ? 'text-green-500' : 'text-yellow-500'}`} />
-            <span className="text-sm">
-              {isBalanced 
-                ? `Value difference of ${formatCurrency(valueDifference, "GBP")} is acceptable`
-                : `Value difference of ${formatCurrency(valueDifference, "GBP")} may be unbalanced`}
-            </span>
-          </div>
-        )}
-        
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleSubmitProposal}
-            disabled={mySelectedCards.length === 0 || theirSelectedCards.length === 0}
-          >
-            Submit Trade Proposal
-          </Button>
-        </div>
-      </GlassCard>
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button 
+          onClick={handleSubmitProposal}
+          disabled={mySelectedCards.length === 0 || theirSelectedCards.length === 0}
+        >
+          Submit Trade Proposal
+        </Button>
+      </div>
     </div>
   );
 };
