@@ -1,10 +1,10 @@
 
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trophy, Calendar, Plus, ImageOff } from "lucide-react";
+import { Trophy, Calendar, Plus, ImageOff, Package } from "lucide-react";
 import { format } from "date-fns";
 import { PokemonSet } from "@/services/api/pokemonTypes";
 import AddToCollectionModal from "./AddToCollectionModal";
@@ -18,11 +18,18 @@ const SetCard = ({ set }: SetCardProps) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [logoLoaded, setLogoLoaded] = useState(true);
   const [symbolLoaded, setSymbolLoaded] = useState(true);
+  const navigate = useNavigate();
 
   const openAddModal = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setShowAddModal(true);
+  };
+
+  const handleViewProducts = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate(`/products?setId=${encodeURIComponent(set.id)}`);
   };
 
   // Fix image URLs
@@ -85,7 +92,7 @@ const SetCard = ({ set }: SetCardProps) => {
           </CardHeader>
           
           <CardContent className="pb-4">
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
               <div className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
                 {format(new Date(set.releaseDate), 'MMM d, yyyy')}
@@ -99,6 +106,16 @@ const SetCard = ({ set }: SetCardProps) => {
                 )}
               </div>
             </div>
+
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full"
+              onClick={handleViewProducts}
+            >
+              <Package className="h-4 w-4 mr-2" />
+              View Products
+            </Button>
           </CardContent>
           
           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
