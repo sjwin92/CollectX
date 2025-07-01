@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/react-query";
 import Trades from "./pages/Trades";
 import Collection from "./pages/Collection";
+import CollectionBoxes from "./pages/CollectionBoxes";
 import Index from "./pages/Index";
 import TradeDetail from "./pages/TradeDetail";
 import PokemonCards from "./pages/PokemonCards";
@@ -30,6 +31,7 @@ function App() {
           
           {/* Collection Routes */}
           <Route path="/collection" element={<Collection />} />
+          <Route path="/collection-boxes" element={<CollectionBoxes />} />
           <Route path="/profile" element={<Profile />} />
           
           {/* Card Routes */}

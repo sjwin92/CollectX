@@ -27,7 +27,8 @@ import {
   Archive,
   Home,
   Camera,
-  Settings
+  Settings,
+  Box
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import SocialTradeHub from "@/components/trades/SocialTradeHub";
@@ -153,6 +154,12 @@ const Navbar = () => {
                   <Link to="/collection">
                     <Archive className="mr-2 h-4 w-4" />
                     <span>My Collection</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/collection-boxes">
+                    <Box className="mr-2 h-4 w-4" />
+                    <span>Collection Boxes</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

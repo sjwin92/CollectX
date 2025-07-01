@@ -11,6 +11,7 @@ import { formatCurrency } from "@/utils/escrowCalculator";
 import { estimateCardValue, calculateTradeBalance } from "@/services/valueEstimationService";
 import { TradeCard } from "@/models/escrow";
 import TradeCardSuggestions from "@/components/trades/TradeCardSuggestions";
+import CollectionBoxSelector from "@/components/collection/CollectionBoxSelector";
 
 interface TradeProposalFormProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ const TradeProposalForm = ({
   const [selectedCards, setSelectedCards] = useState<PokemonCard[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
+  const [selectedBoxId, setSelectedBoxId] = useState<string>("");
   
   // Mock user collection - in real app this would come from user's actual collection
   const mockUserCollection: PokemonCard[] = [
@@ -167,10 +169,14 @@ const TradeProposalForm = ({
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="text-lg font-semibold">Your offer:</h3>
-                  <Button size="sm" variant="outline" onClick={() => setIsSearching(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Card
-                  </Button>
+                </div>
+
+                {/* Collection Box Selector */}
+                <div className="mb-4">
+                  <CollectionBoxSelector
+                    onSelectBox={setSelectedBoxId}
+                    selectedBoxId={selectedBoxId}
+                  />
                 </div>
 
                 {selectedCards.length > 0 ? (
