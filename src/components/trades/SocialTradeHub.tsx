@@ -1,25 +1,24 @@
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { 
   MessageSquare, 
-  Users, 
-  ArrowLeftRight, 
   Search, 
   Send,
-  Star,
+  ArrowLeftRight,
+  Package,
   Clock,
   CheckCircle,
-  AlertCircle
+  X,
+  MoreHorizontal,
+  Phone,
+  Info
 } from 'lucide-react';
-import ReputationBadge from './ReputationBadge';
 
 interface SocialTradeHubProps {
   isOpen: boolean;
@@ -28,268 +27,247 @@ interface SocialTradeHubProps {
 
 const SocialTradeHub = ({ isOpen, onClose }: SocialTradeHubProps) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedChat, setSelectedChat] = useState<string | null>(null);
+  const [selectedChat, setSelectedChat] = useState<string | null>('1');
   const [messageInput, setMessageInput] = useState('');
 
-  // Mock data for active chats and trades
-  const activeChats = [
+  // Mock conversation data - simplified for iMessage-style layout
+  const conversations = [
     {
       id: '1',
-      user: { name: 'Alex Morgan', avatar: '/placeholder.svg', reputation: 'trusted' as const },
-      lastMessage: 'Hey, are you still interested in trading that Charizard?',
-      timestamp: '2 min ago',
+      user: { name: 'Alex Morgan', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' },
+      lastMessage: 'Sounds good! When can you ship?',
+      timestamp: 'now',
       unread: 2,
-      tradeId: 't1'
+      tradeStatus: 'negotiating',
+      messages: [
+        { id: '1', sender: 'them', text: 'Hey! Interested in your Charizard Base Set', time: '2:30 PM' },
+        { id: '2', sender: 'me', text: "Sure! It's Near Mint condition. What do you have to offer?", time: '2:32 PM' },
+        { id: '3', sender: 'them', text: 'I have a Blastoise Base Set in excellent condition plus $50', time: '2:35 PM' },
+        { id: '4', sender: 'me', text: 'That works for me! Can I see photos first?', time: '2:36 PM' },
+        { id: '5', sender: 'them', text: 'Sounds good! When can you ship?', time: '2:40 PM' }
+      ]
     },
     {
       id: '2', 
-      user: { name: 'Jordan Lee', avatar: '/placeholder.svg', reputation: 'established' as const },
-      lastMessage: 'Package shipped! Tracking: 1234567890',
-      timestamp: '1 hour ago',
+      user: { name: 'Jordan Lee', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' },
+      lastMessage: 'Package shipped! Tracking: 1Z999AA1234567890',
+      timestamp: '1h',
       unread: 0,
-      tradeId: 't2'
+      tradeStatus: 'shipped',
+      messages: []
     },
     {
       id: '3',
-      user: { name: 'Taylor Kim', avatar: '/placeholder.svg', reputation: 'new' as const },
-      lastMessage: 'Thanks for the smooth trade!',
-      timestamp: '1 day ago', 
+      user: { name: 'Taylor Kim', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' },
+      lastMessage: 'Thanks for the awesome trade! ⭐⭐⭐⭐⭐',
+      timestamp: '2d',
       unread: 0,
-      tradeId: 't3'
+      tradeStatus: 'completed',
+      messages: []
+    },
+    {
+      id: '4',
+      user: { name: 'Sam Wilson', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' },
+      lastMessage: 'Hey, do you have any Pokémon from the new set?',
+      timestamp: '3d',
+      unread: 0,
+      tradeStatus: 'inquiry',
+      messages: []
     }
   ];
 
-  const onlineUsers = [
-    { id: '1', name: 'Sarah Chen', avatar: '/placeholder.svg', reputation: 'trusted' as const, status: 'Looking for vintage cards' },
-    { id: '2', name: 'Mike Johnson', avatar: '/placeholder.svg', reputation: 'established' as const, status: 'Trading modern sets' },
-    { id: '3', name: 'Emma Davis', avatar: '/placeholder.svg', reputation: 'trusted' as const, status: 'Graded cards only' }
-  ];
-
-  const recentTrades = [
-    { id: 't1', status: 'pending' as const, user: 'Alex Morgan', cards: 3, value: '$150' },
-    { id: 't2', status: 'shipped' as const, user: 'Jordan Lee', cards: 2, value: '$89' },
-    { id: 't3', status: 'completed' as const, user: 'Taylor Kim', cards: 1, value: '$45' }
-  ];
-
-  const getStatusIcon = (status: string) => {
+  const getTradeStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return <Clock className="h-4 w-4 text-yellow-500" />;
-      case 'shipped': return <ArrowLeftRight className="h-4 w-4 text-blue-500" />;
-      case 'completed': return <CheckCircle className="h-4 w-4 text-green-500" />;
-      default: return <AlertCircle className="h-4 w-4 text-gray-500" />;
+      case 'negotiating': return 'bg-blue-500';
+      case 'shipped': return 'bg-yellow-500';
+      case 'completed': return 'bg-green-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const getTradeStatusIcon = (status: string) => {
+    switch (status) {
+      case 'negotiating': return <ArrowLeftRight className="h-3 w-3" />;
+      case 'shipped': return <Package className="h-3 w-3" />;
+      case 'completed': return <CheckCircle className="h-3 w-3" />;
+      default: return <MessageSquare className="h-3 w-3" />;
     }
   };
 
   const sendMessage = () => {
     if (messageInput.trim() && selectedChat) {
-      // TODO: Implement actual message sending
       console.log(`Sending message to ${selectedChat}: ${messageInput}`);
       setMessageInput('');
     }
   };
 
+  const selectedConversation = conversations.find(c => c.id === selectedChat);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl h-[80vh] p-0">
-        <DialogHeader className="p-6 pb-0">
-          <DialogTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
-            Social & Trade Hub
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-5xl h-[85vh] p-0 bg-background border-0">
+        <div className="flex h-full rounded-lg overflow-hidden">
+          {/* Sidebar - Conversations List */}
+          <div className="w-80 bg-muted/30 border-r flex flex-col">
+            {/* Header */}
+            <div className="p-4 border-b bg-background/50">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold">Messages</h2>
+                <Button variant="ghost" size="icon" onClick={onClose}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search conversations..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 bg-background"
+                />
+              </div>
+            </div>
 
-        <Tabs defaultValue="chats" className="flex-1 flex flex-col">
-          <TabsList className="mx-6 grid w-full grid-cols-3">
-            <TabsTrigger value="chats" className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              Chats
-            </TabsTrigger>
-            <TabsTrigger value="community" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Community
-            </TabsTrigger>
-            <TabsTrigger value="trades" className="flex items-center gap-2">
-              <ArrowLeftRight className="h-4 w-4" />
-              Quick Trades
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="chats" className="flex-1 flex m-0">
-            <div className="w-1/3 border-r p-4">
-              <div className="space-y-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search conversations..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-                
-                <ScrollArea className="h-[400px]">
-                  <div className="space-y-2">
-                    {activeChats.map((chat) => (
-                      <div
-                        key={chat.id}
-                        className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                          selectedChat === chat.id ? 'bg-primary/10' : 'hover:bg-muted/50'
-                        }`}
-                        onClick={() => setSelectedChat(chat.id)}
-                      >
-                        <div className="flex items-start gap-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage src={chat.user.avatar} />
-                            <AvatarFallback>{chat.user.name.slice(0, 2)}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium text-sm truncate">{chat.user.name}</span>
-                              <ReputationBadge reputation={chat.user.reputation} size="sm" />
+            {/* Conversations List */}
+            <ScrollArea className="flex-1">
+              <div className="p-2">
+                {conversations.map((conversation) => (
+                  <div
+                    key={conversation.id}
+                    className={`p-3 rounded-lg cursor-pointer transition-all duration-200 mb-1 ${
+                      selectedChat === conversation.id 
+                        ? 'bg-primary/10 border border-primary/20' 
+                        : 'hover:bg-background/50'
+                    }`}
+                    onClick={() => setSelectedChat(conversation.id)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="relative">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={conversation.user.avatar} />
+                          <AvatarFallback>{conversation.user.name.slice(0, 2)}</AvatarFallback>
+                        </Avatar>
+                        <div className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full flex items-center justify-center ${getTradeStatusColor(conversation.tradeStatus)}`}>
+                          {getTradeStatusIcon(conversation.tradeStatus)}
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium text-sm truncate">{conversation.user.name}</span>
+                          <span className="text-xs text-muted-foreground">{conversation.timestamp}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate mb-1">{conversation.lastMessage}</p>
+                        <div className="flex items-center justify-between">
+                          <Badge variant="outline" className="text-xs px-1.5 py-0.5">
+                            {conversation.tradeStatus}
+                          </Badge>
+                          {conversation.unread > 0 && (
+                            <div className="h-5 w-5 bg-primary rounded-full flex items-center justify-center">
+                              <span className="text-xs text-white">{conversation.unread}</span>
                             </div>
-                            <p className="text-xs text-muted-foreground truncate">{chat.lastMessage}</p>
-                            <span className="text-xs text-muted-foreground">{chat.timestamp}</span>
-                          </div>
-                          {chat.unread > 0 && (
-                            <Badge variant="destructive" className="h-5 w-5 p-0 flex items-center justify-center text-xs">
-                              {chat.unread}
-                            </Badge>
                           )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+
+          {/* Main Chat Area */}
+          <div className="flex-1 flex flex-col bg-background">
+            {selectedConversation ? (
+              <>
+                {/* Chat Header */}
+                <div className="p-4 border-b bg-background flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={selectedConversation.user.avatar} />
+                      <AvatarFallback>{selectedConversation.user.name.slice(0, 2)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{selectedConversation.user.name}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {selectedConversation.tradeStatus}
+                        </Badge>
+                      </div>
+                      <span className="text-sm text-muted-foreground">Active trader • Online now</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon">
+                      <Phone className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon">
+                      <Info className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Messages */}
+                <ScrollArea className="flex-1 p-4">
+                  <div className="space-y-4">
+                    {selectedConversation.messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`flex ${message.sender === 'me' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
+                          message.sender === 'me'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted'
+                        }`}>
+                          <p className="text-sm">{message.text}</p>
+                          <span className={`text-xs ${
+                            message.sender === 'me' ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                          }`}>
+                            {message.time}
+                          </span>
                         </div>
                       </div>
                     ))}
                   </div>
                 </ScrollArea>
-              </div>
-            </div>
 
-            <div className="flex-1 flex flex-col">
-              {selectedChat ? (
-                <>
-                  <div className="p-4 border-b">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src="/placeholder.svg" />
-                        <AvatarFallback>AM</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">Alex Morgan</span>
-                          <ReputationBadge reputation="trusted" size="sm" />
-                        </div>
-                        <span className="text-sm text-muted-foreground">Trade ID: #t1</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <ScrollArea className="flex-1 p-4">
-                    <div className="space-y-4">
-                      <div className="flex gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src="/placeholder.svg" />
-                          <AvatarFallback>AM</AvatarFallback>
-                        </Avatar>
-                        <div className="bg-muted p-3 rounded-lg max-w-xs">
-                          <p className="text-sm">Hey, are you still interested in trading that Charizard?</p>
-                          <span className="text-xs text-muted-foreground">2 min ago</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex gap-3 justify-end">
-                        <div className="bg-primary text-primary-foreground p-3 rounded-lg max-w-xs">
-                          <p className="text-sm">Yes! Let me check the condition and get back to you.</p>
-                          <span className="text-xs opacity-70">1 min ago</span>
-                        </div>
-                      </div>
-                    </div>
-                  </ScrollArea>
-
-                  <div className="p-4 border-t">
-                    <div className="flex gap-2">
+                {/* Message Input */}
+                <div className="p-4 border-t bg-background">
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1 bg-muted rounded-full px-4 py-2 flex items-center gap-2">
                       <Input
-                        placeholder="Type a message..."
+                        placeholder="iMessage"
                         value={messageInput}
                         onChange={(e) => setMessageInput(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                        className="flex-1"
+                        className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
                       />
-                      <Button onClick={sendMessage} size="icon">
-                        <Send className="h-4 w-4" />
-                      </Button>
                     </div>
-                  </div>
-                </>
-              ) : (
-                <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                  <div className="text-center">
-                    <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Select a conversation to start chatting</p>
+                    <Button 
+                      onClick={sendMessage} 
+                      size="icon" 
+                      className="rounded-full h-10 w-10"
+                      disabled={!messageInput.trim()}
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="community" className="flex-1 p-6">
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Online Traders</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                  {onlineUsers.map((user) => (
-                    <div key={user.id} className="p-4 border rounded-lg">
-                      <div className="flex items-center gap-3 mb-2">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={user.avatar} />
-                          <AvatarFallback>{user.name.slice(0, 2)}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium">{user.name}</span>
-                            <ReputationBadge reputation={user.reputation} size="sm" />
-                          </div>
-                          <p className="text-sm text-muted-foreground">{user.status}</p>
-                        </div>
-                        <Button size="sm" variant="outline">
-                          <MessageSquare className="h-4 w-4 mr-1" />
-                          Chat
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                  <MessageSquare className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                  <h3 className="text-lg font-medium mb-2">No conversation selected</h3>
+                  <p className="text-sm">Choose a conversation from the sidebar to start messaging</p>
                 </div>
               </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="trades" className="flex-1 p-6">
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Recent Trade Activity</h3>
-                <div className="space-y-3">
-                  {recentTrades.map((trade) => (
-                    <div key={trade.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        {getStatusIcon(trade.status)}
-                        <div>
-                          <p className="font-medium">Trade with {trade.user}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {trade.cards} cards • {trade.value} value
-                          </p>
-                        </div>
-                      </div>
-                      <Badge variant={
-                        trade.status === 'completed' ? 'default' :
-                        trade.status === 'shipped' ? 'secondary' : 'outline'
-                      }>
-                        {trade.status}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
+            )}
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
