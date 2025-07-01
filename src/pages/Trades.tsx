@@ -1,10 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { toast } from "sonner";
 import TradeStats from "@/components/trades/TradeStats";
 import TradeActions from "@/components/trades/TradeActions";
 import TradeTabs from "@/components/trades/TradeTabs";
+import TradeProposalForm from "@/components/marketplace/TradeProposalForm";
+import { CardItemProps } from "@/components/cards/CardItem";
 
 // Placeholder trade data (keeping for reference, but not using directly)
 const activeTrades = [
@@ -124,12 +127,69 @@ const declinedTrades = [
   }
 ];
 
+// Mock marketplace listings - in a real app this would come from your database
+const MARKETPLACE_LISTINGS = [
+  {
+    id: "featured-1",
+    cardOffered: {
+      id: "base1-4",
+      name: "Charizard Base Set",
+      imageUrl: "https://images.pokemontcg.io/base1/4.png",
+      rarity: "Holo Rare",
+      condition: "Near Mint",
+      estimatedValue: "$500"
+    }
+  },
+  {
+    id: "featured-2", 
+    cardOffered: {
+      id: "sm12-190",
+      name: "Mewtwo & Mew GX (Rainbow)",
+      imageUrl: "https://images.pokemontcg.io/sm12/190.png",
+      rarity: "Ultra Rare", 
+      condition: "Mint",
+      estimatedValue: "$120"
+    }
+  }
+];
+
 const Trades = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isTradeProposalOpen, setIsTradeProposalOpen] = useState(false);
+  const [selectedTargetCard, setSelectedTargetCard] = useState<CardItemProps | null>(null);
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const shouldPropose = searchParams.get('propose') === 'true';
+    const listingId = searchParams.get('listingId');
+    
+    if (shouldPropose && listingId) {
+      const listing = MARKETPLACE_LISTINGS.find(l => l.id === listingId);
+      if (listing) {
+        setSelectedTargetCard(listing.cardOffered);
+        setIsTradeProposalOpen(true);
+      }
+    }
+  }, [searchParams]);
 
   const handleCreateTrade = () => {
     // Navigate to marketplace to browse and propose trades
     window.location.href = '/marketplace';
+  };
+
+  const handleSubmitProposal = (message: string, offeredCards: any[], paymentCompleted?: boolean) => {
+    console.log('Trade proposal submitted:', { message, offeredCards, paymentCompleted });
+    toast.success('Trade proposal sent successfully!');
+    setIsTradeProposalOpen(false);
+    
+    // Clear URL parameters
+    window.history.replaceState({}, '', '/trades');
+  };
+
+  const handleCloseProposal = () => {
+    setIsTradeProposalOpen(false);
+    // Clear URL parameters
+    window.history.replaceState({}, '', '/trades');
   };
 
   // Display zeros for stats
@@ -175,6 +235,15 @@ const Trades = () => {
       </main>
       
       <Footer />
+      
+      {isTradeProposalOpen && selectedTargetCard && (
+        <TradeProposalForm
+          isOpen={isTradeProposalOpen}
+          onClose={handleCloseProposal}
+          targetCard={selectedTargetCard}
+          onSubmitProposal={handleSubmitProposal}
+        />
+      )}
     </div>
   );
 };
