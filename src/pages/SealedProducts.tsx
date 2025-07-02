@@ -180,9 +180,9 @@ const SealedProducts = () => {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          // Try fallback to a generic Pokemon product image
-                          if (!target.src.includes('unsplash')) {
-                            target.src = 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=400&h=400&fit=crop&auto=format';
+                          // If current image fails, try the set logo as fallback
+                          if (!target.src.includes('logo.png') && !target.src.includes('symbol.png')) {
+                            target.src = `https://images.pokemontcg.io/${product.setId}/logo.png`;
                           } else {
                             // Final fallback to placeholder
                             target.src = '/placeholder.svg';
