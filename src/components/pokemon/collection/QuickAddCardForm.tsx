@@ -127,7 +127,7 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-        <ProductTypeSelector form={form} />
+        <ProductTypeSelector form={form} lockedToCard={true} />
         
         <QuantityField form={form} />
         

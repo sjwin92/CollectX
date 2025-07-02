@@ -8,9 +8,32 @@ import { productTypes } from "@/types/cardTypes";
 interface ProductTypeSelectorProps {
   form: UseFormReturn<any>;
   fieldName?: string;
+  lockedToCard?: boolean;
 }
 
-const ProductTypeSelector = ({ form, fieldName = "productType" }: ProductTypeSelectorProps) => {
+const ProductTypeSelector = ({ form, fieldName = "productType", lockedToCard = false }: ProductTypeSelectorProps) => {
+  const cardType = productTypes.find(type => type.value === "card");
+  
+  if (lockedToCard) {
+    return (
+      <FormField
+        control={form.control}
+        name={fieldName}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Product Type</FormLabel>
+            <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/30">
+              <span>{cardType?.icon}</span>
+              <span className="font-medium">{cardType?.label}</span>
+              <span className="text-sm text-muted-foreground ml-auto">(Individual Card)</span>
+            </div>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    );
+  }
+
   return (
     <FormField
       control={form.control}
