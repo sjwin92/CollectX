@@ -7,7 +7,6 @@ import { Trophy, Calendar, Plus, ImageOff, Package } from "lucide-react";
 import { format } from "date-fns";
 import { PokemonSet } from "@/services/api/pokemonTypes";
 import AddToCollectionModal from "./AddToCollectionModal";
-import { fixImageUrl } from "@/services/api/cardImageService";
 
 interface SetCardProps {
   set: PokemonSet;
@@ -15,6 +14,8 @@ interface SetCardProps {
 
 const SetCard = ({ set }: SetCardProps) => {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [logoError, setLogoError] = useState(false);
+  const [symbolError, setSymbolError] = useState(false);
   const navigate = useNavigate();
 
   const openAddModal = (e: React.MouseEvent) => {
@@ -29,58 +30,56 @@ const SetCard = ({ set }: SetCardProps) => {
     navigate(`/products?setId=${encodeURIComponent(set.id)}`);
   };
 
-  // Scarlet & Violet sets typically don't have working logo/symbol images
-  const isScarletVioletSet = set.id.startsWith('sv');
-  
-  const logoUrl = !isScarletVioletSet ? fixImageUrl(set.images?.logo, set.id, 'logo') : undefined;
-  const symbolUrl = !isScarletVioletSet ? fixImageUrl(set.images?.symbol, set.id, 'symbol') : undefined;
+  const handleLogoError = () => {
+    setLogoError(true);
+  };
+
+  const handleSymbolError = () => {
+    setSymbolError(true);
+  };
+
+  // Use images directly from API, let error handling take care of failures
+  const logoUrl = set.images?.logo;
+  const symbolUrl = set.images?.symbol;
 
   return (
     <>
       <Link to={`/pokemon-sets/${set.id}`}>
         <Card className="overflow-hidden h-full transition-all hover:shadow-lg hover:border-primary/50 relative group">
           <CardHeader className="space-y-4 pb-4">
-            {logoUrl ? (
-              <div className="h-12 flex items-center justify-center">
+            <div className="h-12 flex items-center justify-center">
+              {logoUrl && !logoError ? (
                 <img 
                   src={logoUrl} 
                   alt={`${set.name} logo`}
                   className="max-h-12 object-contain mx-auto"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
+                  onError={handleLogoError}
                 />
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-12">
+              ) : (
                 <div className="flex flex-col items-center">
                   <h3 className="text-lg font-semibold text-center">{set.name}</h3>
-                  {isScarletVioletSet && (
-                    <div className="flex items-center text-muted-foreground text-xs mt-1">
-                      <ImageOff className="h-3 w-3 mr-1" />
-                      <span>Logo unavailable</span>
-                    </div>
-                  )}
+                  <div className="flex items-center text-muted-foreground text-xs mt-1">
+                    <ImageOff className="h-3 w-3 mr-1" />
+                    <span>Logo unavailable</span>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
             
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                {symbolUrl ? (
-                  <div className="h-6 w-6 flex items-center justify-center">
+                <div className="h-6 w-6 flex items-center justify-center">
+                  {symbolUrl && !symbolError ? (
                     <img 
                       src={symbolUrl} 
                       alt={`${set.name} symbol`}
                       className="max-h-6 max-w-6 object-contain"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
+                      onError={handleSymbolError}
                     />
-                  </div>
-                ) : (
-                  <ImageOff className="h-4 w-4 text-muted-foreground" />
-                )}
+                  ) : (
+                    <ImageOff className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </div>
                 <span className="text-sm font-medium">{set.series}</span>
               </div>
               <Badge variant="outline">

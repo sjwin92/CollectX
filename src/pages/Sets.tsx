@@ -32,20 +32,14 @@ const Sets = () => {
     }
   });
 
-  // Use API data directly - it already includes the latest sets
+  // Use API data directly
   const combinedData = React.useMemo(() => {
     if (isLoading || isError || !data) return [];
     return data.data;
   }, [data, isLoading, isError]);
 
-  // Get featured sets (exclude Scarlet & Violet sets for better images)
-  const featuredSets = React.useMemo(() => {
-    if (!combinedData || combinedData.length === 0) return [];
-    
-    // Filter out SV sets and take first 4 that have working images
-    const setsWithImages = combinedData.filter(set => !set.id.startsWith('sv'));
-    return setsWithImages.slice(0, 4);
-  }, [combinedData]);
+  // Get featured sets (first 4 sets from API data)
+  const featuredSets = combinedData.slice(0, 4) || [];
 
   const loadNextPage = () => {
     setCurrentPage(prev => prev + 1);
