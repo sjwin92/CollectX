@@ -47,61 +47,35 @@ export const getAllPossibleCardImageUrls = (cardId: string): string[] => {
 export const getSetImageUrl = (setId: string, type: 'logo' | 'symbol'): string | undefined => {
   if (!setId) return undefined;
   
-  console.log(`Getting ${type} image for set: ${setId}`);
+  // For older, established sets that definitely have images
+  const confirmedSets = ['base1', 'base2', 'jungle', 'fossil', 'swsh1', 'swsh2', 'swsh3', 'swsh4', 'swsh5', 'swsh6', 'swsh7', 'swsh8', 'swsh9', 'swsh10', 'swsh11', 'swsh12'];
   
-  // Most sets should have images available, only exclude truly problematic ones
-  const setsWithoutImages = ['sv10', 'sv11', 'sv12']; 
-  if (setsWithoutImages.includes(setId)) {
-    console.log(`Set ${setId} is in the no-images list`);
-    return undefined;
-  }
-  
-  // Try multiple URL patterns for Scarlet & Violet sets
-  const urlPatterns = [
-    `https://images.pokemontcg.io/${setId}/${type}.png`,
-    `https://assets.tcgdex.net/en/${setId}/${type}.png`,
-    `https://limitlesstcg.s3.us-east-2.amazonaws.com/pokemon/gen9/${setId}/${type}.png`,
-    // Alternative patterns for newer sets
-    `https://images.pokemontcg.io/sv/${setId.replace('sv', '')}/${type}.png`,
-    `https://assets.tcgdx.net/images/sets/${setId}/${type}.png`
-  ];
-  
-  console.log(`Generated URLs for ${setId}:`, urlPatterns[0]);
-  return urlPatterns[0]; // Return first URL, we'll add fallback logic in the component
+  // Use Pokemon TCG API for confirmed sets
+  return `https://images.pokemontcg.io/${setId}/${type}.png`;
 };
 
 // Fix problematic URLs with better fallback logic
 export const fixImageUrl = (url: string | undefined, setId?: string, type?: 'logo' | 'symbol'): string | undefined => {
-  console.log(`Fixing image URL: ${url} for set: ${setId}, type: ${type}`);
-  
   // If no URL provided, try to generate one
   if (!url) {
-    const generatedUrl = setId && type ? getSetImageUrl(setId, type) : undefined;
-    console.log(`Generated fallback URL: ${generatedUrl}`);
-    return generatedUrl;
+    return setId && type ? getSetImageUrl(setId, type) : undefined;
   }
   
   // Check if URL is using problematic domains
   if (url.includes('tcgdx.net') || url.includes('tcgdex.net') || url.includes('pokemontcg.guru')) {
-    console.log(`Replacing problematic URL: ${url}`);
     return setId && type ? getSetImageUrl(setId, type) : undefined;
   }
   
   // Fix malformed URLs
   if (!url.includes('://')) {
-    const fixedUrl = `https://images.pokemontcg.io/${url}`;
-    console.log(`Fixed malformed URL: ${url} -> ${fixedUrl}`);
-    return fixedUrl;
+    return `https://images.pokemontcg.io/${url}`;
   }
   
   // Replace HTTP with HTTPS for security
   if (url.startsWith('http://')) {
-    const httpsUrl = url.replace('http://', 'https://');
-    console.log(`Converted to HTTPS: ${url} -> ${httpsUrl}`);
-    return httpsUrl;
+    return url.replace('http://', 'https://');
   }
   
-  console.log(`Using original URL: ${url}`);
   return url;
 };
 

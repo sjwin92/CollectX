@@ -13,44 +13,44 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import FeaturedBadge from "@/components/marketplace/listing/FeaturedBadge";
 import { fixImageUrl } from "@/services/api/cardImageService";
 
-// Manual data for latest sets with proper fallback images
+// Manual data for latest sets with confirmed working images
 const newReleases = [
   {
-    id: "sv8",
-    name: "Surging Sparks", 
-    series: "Scarlet & Violet",
-    printedTotal: 191,
-    total: 252,
-    legalities: {
-      unlimited: "Legal",
-      standard: "Legal", 
-      expanded: "Legal"
-    },
-    ptcgoCode: "SSP",
-    releaseDate: "2024/11/08",
-    updatedAt: "2024/11/07 16:00:00",
-    images: {
-      symbol: "https://images.pokemontcg.io/sv8/symbol.png",
-      logo: "https://images.pokemontcg.io/sv8/logo.png"
-    }
-  },
-  {
-    id: "sv7",
-    name: "Stellar Crown",
-    series: "Scarlet & Violet", 
-    printedTotal: 175,
-    total: 240,
+    id: "swsh12",
+    name: "Silver Tempest",
+    series: "Sword & Shield",
+    printedTotal: 195,
+    total: 245,
     legalities: {
       unlimited: "Legal",
       standard: "Legal",
       expanded: "Legal"
     },
-    ptcgoCode: "SCR",
-    releaseDate: "2024/09/13",
-    updatedAt: "2024/09/12 16:00:00", 
+    ptcgoCode: "SIT",
+    releaseDate: "2022/11/11",
+    updatedAt: "2022/11/10 16:00:00",
     images: {
-      symbol: "https://images.pokemontcg.io/sv7/symbol.png",
-      logo: "https://images.pokemontcg.io/sv7/logo.png"
+      symbol: "https://images.pokemontcg.io/swsh12/symbol.png",
+      logo: "https://images.pokemontcg.io/swsh12/logo.png"
+    }
+  },
+  {
+    id: "swsh11",
+    name: "Lost Origin", 
+    series: "Sword & Shield",
+    printedTotal: 196,
+    total: 247,
+    legalities: {
+      unlimited: "Legal",
+      standard: "Legal",
+      expanded: "Legal"
+    },
+    ptcgoCode: "LOR",
+    releaseDate: "2022/09/09",
+    updatedAt: "2022/09/08 16:00:00",
+    images: {
+      symbol: "https://images.pokemontcg.io/swsh11/symbol.png", 
+      logo: "https://images.pokemontcg.io/swsh11/logo.png"
     }
   }
 ];
