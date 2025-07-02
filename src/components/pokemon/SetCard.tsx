@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -16,36 +15,7 @@ interface SetCardProps {
 
 const SetCard = ({ set }: SetCardProps) => {
   const [showAddModal, setShowAddModal] = useState(false);
-  const [logoLoaded, setLogoLoaded] = useState(true);
-  const [symbolLoaded, setSymbolLoaded] = useState(true);
-  const [logoUrlIndex, setLogoUrlIndex] = useState(0);
-  const [symbolUrlIndex, setSymbolUrlIndex] = useState(0);
   const navigate = useNavigate();
-
-  // Generate multiple fallback URLs for logos and symbols
-  const getMultipleUrls = (setId: string, type: 'logo' | 'symbol') => {
-    const urls = [
-      `https://images.pokemontcg.io/${setId}/${type}.png`,
-      `https://assets.tcgdex.net/en/${setId}/${type}.png`,
-      `https://limitlesstcg.s3.us-east-2.amazonaws.com/pokemon/gen9/${setId}/${type}.png`
-    ];
-    
-    // For Scarlet & Violet sets, try additional patterns
-    if (setId.startsWith('sv')) {
-      urls.push(
-        `https://images.pokemontcg.io/swsh${setId.slice(2)}/${type}.png`,
-        `https://assets.tcgdx.net/images/sets/${setId}/${type}.png`
-      );
-    }
-    
-    return urls;
-  };
-
-  const logoUrls = getMultipleUrls(set.id, 'logo');
-  const symbolUrls = getMultipleUrls(set.id, 'symbol');
-
-  const currentLogoUrl = fixImageUrl(set.images?.logo, set.id, 'logo') || logoUrls[logoUrlIndex];
-  const currentSymbolUrl = fixImageUrl(set.images?.symbol, set.id, 'symbol') || symbolUrls[symbolUrlIndex];
 
   const openAddModal = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -59,67 +29,57 @@ const SetCard = ({ set }: SetCardProps) => {
     navigate(`/products?setId=${encodeURIComponent(set.id)}`);
   };
 
-  const handleLogoError = () => {
-    if (logoUrlIndex < logoUrls.length - 1) {
-      setLogoUrlIndex(prev => prev + 1);
-    } else {
-      setLogoLoaded(false);
-    }
-  };
-
-  const handleSymbolError = () => {
-    if (symbolUrlIndex < symbolUrls.length - 1) {
-      setSymbolUrlIndex(prev => prev + 1);
-    } else {
-      setSymbolLoaded(false);
-    }
-  };
+  // Scarlet & Violet sets typically don't have working logo/symbol images
+  const isScarletVioletSet = set.id.startsWith('sv');
+  
+  const logoUrl = !isScarletVioletSet ? fixImageUrl(set.images?.logo, set.id, 'logo') : undefined;
+  const symbolUrl = !isScarletVioletSet ? fixImageUrl(set.images?.symbol, set.id, 'symbol') : undefined;
 
   return (
     <>
       <Link to={`/pokemon-sets/${set.id}`}>
         <Card className="overflow-hidden h-full transition-all hover:shadow-lg hover:border-primary/50 relative group">
           <CardHeader className="space-y-4 pb-4">
-            {currentLogoUrl ? (
+            {logoUrl ? (
               <div className="h-12 flex items-center justify-center">
                 <img 
-                  src={currentLogoUrl} 
+                  src={logoUrl} 
                   alt={`${set.name} logo`}
                   className="max-h-12 object-contain mx-auto"
-                  onError={handleLogoError}
-                  style={{ display: logoLoaded ? 'block' : 'none' }}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
                 />
-                {!logoLoaded && (
-                  <div className="flex flex-col items-center">
-                    <h3 className="text-lg font-semibold text-center">{set.name}</h3>
-                    <div className="flex items-center text-muted-foreground text-xs">
-                      <ImageOff className="h-3 w-3 mr-1" />
-                      <span>Logo unavailable</span>
-                    </div>
-                  </div>
-                )}
               </div>
             ) : (
               <div className="flex items-center justify-center h-12">
-                <h3 className="text-lg font-semibold text-center">{set.name}</h3>
+                <div className="flex flex-col items-center">
+                  <h3 className="text-lg font-semibold text-center">{set.name}</h3>
+                  {isScarletVioletSet && (
+                    <div className="flex items-center text-muted-foreground text-xs mt-1">
+                      <ImageOff className="h-3 w-3 mr-1" />
+                      <span>Logo unavailable</span>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                {currentSymbolUrl ? (
+                {symbolUrl ? (
                   <div className="h-6 w-6 flex items-center justify-center">
                     <img 
-                      src={currentSymbolUrl} 
+                      src={symbolUrl} 
                       alt={`${set.name} symbol`}
                       className="max-h-6 max-w-6 object-contain"
-                      onError={handleSymbolError}
-                      style={{ display: symbolLoaded ? 'block' : 'none' }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
                     />
-                    {!symbolLoaded && <ImageOff className="h-3 w-3 text-muted-foreground" />}
                   </div>
                 ) : (
-                  <ImageOff className="h-3 w-3 text-muted-foreground" />
+                  <ImageOff className="h-4 w-4 text-muted-foreground" />
                 )}
                 <span className="text-sm font-medium">{set.series}</span>
               </div>
@@ -176,7 +136,7 @@ const SetCard = ({ set }: SetCardProps) => {
           open={showAddModal}
           onClose={() => setShowAddModal(false)}
           cardName={`Card from ${set.name}`}
-          cardImage={currentSymbolUrl || currentLogoUrl}
+          cardImage={symbolUrl || logoUrl}
           cardRarity="Common"
           cardNumber={`${set.id}-1`}
         />
