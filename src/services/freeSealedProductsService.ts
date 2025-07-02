@@ -43,15 +43,44 @@ const fetchPokemonSets = async (): Promise<PokemonSet[]> => {
 
 // Get product image from multiple free sources
 const getProductImage = (setId: string, productType: string): string => {
-  const imageOptions = [
-    `https://images.pokemontcg.io/${setId}/logo.png`,
-    `https://assets.tcgdx.net/en/sets/${setId}/logo.png`,
-    `https://images.pokemontcg.io/${setId}/symbol.png`,
-    `https://limitlesstcg.s3.us-east-2.amazonaws.com/sets/${setId}/logo.png`
+  const typeMapping: { [key: string]: string[] } = {
+    'Booster Box': [
+      `https://images.pokemontcg.io/${setId}/booster-box.png`,
+      `https://assets.tcgdx.net/en/sets/${setId}/booster-box.png`,
+      `https://images.pokemontcg.io/products/${setId}/booster-box.png`,
+      `https://tcgplayer-cdn.tcgplayer.com/product/${setId}_booster_box.jpg`
+    ],
+    'Elite Trainer Box': [
+      `https://images.pokemontcg.io/${setId}/etb.png`,
+      `https://assets.tcgdx.net/en/sets/${setId}/etb.png`,
+      `https://images.pokemontcg.io/products/${setId}/etb.png`,
+      `https://tcgplayer-cdn.tcgplayer.com/product/${setId}_etb.jpg`
+    ],
+    'Collection Box': [
+      `https://images.pokemontcg.io/${setId}/collection-box.png`,
+      `https://assets.tcgdx.net/en/sets/${setId}/collection-box.png`,
+      `https://images.pokemontcg.io/products/${setId}/collection.png`,
+      `https://tcgplayer-cdn.tcgplayer.com/product/${setId}_collection.jpg`
+    ],
+    'Tin': [
+      `https://images.pokemontcg.io/${setId}/tin.png`,
+      `https://assets.tcgdx.net/en/sets/${setId}/tin.png`,
+      `https://images.pokemontcg.io/products/${setId}/tin.png`,
+      `https://tcgplayer-cdn.tcgplayer.com/product/${setId}_tin.jpg`
+    ],
+    'Blister Pack': [
+      `https://images.pokemontcg.io/${setId}/blister.png`,
+      `https://assets.tcgdx.net/en/sets/${setId}/blister.png`,
+      `https://images.pokemontcg.io/products/${setId}/blister.png`,
+      `https://tcgplayer-cdn.tcgplayer.com/product/${setId}_blister.jpg`
+    ]
+  };
+  
+  const urls = typeMapping[productType] || [
+    `https://images.pokemontcg.io/${setId}/logo.png`
   ];
   
-  // Return first option - will fallback in component if needed
-  return imageOptions[0];
+  return urls[0];
 };
 
 // Generate realistic price variation
@@ -95,7 +124,7 @@ export const fetchFreeSealedProducts = async (): Promise<FreeSealedProduct[]> =>
             currency: 'USD',
             source: 'Market Average'
           },
-          imageUrl: getProductImage(set.id, productType.suffix),
+          imageUrl: getProductImage(set.id, productType.type),
           availability: Math.random() > 0.3 ? 'in-stock' : 
                        Math.random() > 0.5 ? 'pre-order' : 'out-of-stock',
           releaseDate: set.releaseDate,
