@@ -7,6 +7,7 @@ import { Flame, Zap, Shield, TrendingUp, AlertTriangle, Check, Info, RefreshCw }
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { getAllPossibleImageUrlsFromCardObject } from "@/services/api/cardImageService";
+import QuickAddToCollection from "./QuickAddToCollection";
 
 interface PokemonCardDetailProps {
   card: PokemonCard;
@@ -224,24 +225,28 @@ const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
             </div>
           </div>
           
-          {card?.tcgplayer && (
-            <div className="p-3 bg-secondary/30 rounded-md">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <TrendingUp className="h-4 w-4 mr-2 text-green-500" />
-                  <span className="font-medium">Market Price</span>
-                </div>
-                <span className="text-lg font-bold">{getMarketPrice() || "N/A"}</span>
-              </div>
-              
-              <a href={card.tcgplayer.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 inline-block">
-                View on TCGPlayer
-              </a>
-            </div>
-          )}
-        </div>
-      </div>
-    </GlassCard>
+           {card?.tcgplayer && (
+             <div className="p-3 bg-secondary/30 rounded-md">
+               <div className="flex items-center justify-between">
+                 <div className="flex items-center">
+                   <TrendingUp className="h-4 w-4 mr-2 text-green-500" />
+                   <span className="font-medium">Market Price</span>
+                 </div>
+                 <span className="text-lg font-bold">{getMarketPrice() || "N/A"}</span>
+               </div>
+               
+               <a href={card.tcgplayer.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 inline-block">
+                 View on TCGPlayer
+               </a>
+             </div>
+           )}
+           
+           <div className="pt-4">
+             <QuickAddToCollection card={card} />
+           </div>
+         </div>
+       </div>
+     </GlassCard>
   );
 };
 
