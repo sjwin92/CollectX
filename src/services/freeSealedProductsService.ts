@@ -1,4 +1,5 @@
-// Free sealed products service using Pokemon TCG API and TCGdx
+// Free sealed products service using Pokemon TCG API and enhanced images
+import { getEnhancedProductImage } from './sealedProductImageService';
 import { PokemonSet } from './api/pokemonTypes';
 
 export interface FreeSealedProduct {
@@ -124,7 +125,7 @@ export const fetchFreeSealedProducts = async (): Promise<FreeSealedProduct[]> =>
             currency: 'USD',
             source: 'Market Average'
           },
-          imageUrl: getProductImage(set.id, productType.type),
+          imageUrl: getEnhancedProductImage(set.id, productType.type, set.name),
           availability: Math.random() > 0.3 ? 'in-stock' : 
                        Math.random() > 0.5 ? 'pre-order' : 'out-of-stock',
           releaseDate: set.releaseDate,

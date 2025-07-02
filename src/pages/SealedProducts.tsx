@@ -84,9 +84,9 @@ const SealedProducts = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Free Sealed Products</h1>
+              <h1 className="text-3xl font-bold mb-2">Sealed Products</h1>
               <p className="text-muted-foreground">
-                Pokemon TCG sealed products with estimated market prices using free APIs.
+                Pokemon TCG sealed products with estimated pricing and product details.
               </p>
             </div>
           </div>
@@ -136,20 +136,20 @@ const SealedProducts = () => {
           
           {/* Results count */}
           <div className="flex items-center justify-between mb-6">
-            <p className="text-sm text-muted-foreground">
-              Showing {filteredProducts.length} real sealed products
-            </p>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Package className="h-4 w-4" />
-              <span>Live market data</span>
-            </div>
+             <p className="text-sm text-muted-foreground">
+               Showing {filteredProducts.length} sealed products
+             </p>
+             <div className="flex items-center gap-2 text-sm text-muted-foreground">
+               <Package className="h-4 w-4" />
+               <span>Product catalog</span>
+             </div>
           </div>
         </div>
 
         {isLoading ? (
           <div className="text-center py-12">
-            <div className="animate-pulse text-xl">Loading real sealed products...</div>
-            <p className="text-muted-foreground mt-2">Fetching current market data...</p>
+            <div className="animate-pulse text-xl">Loading sealed products...</div>
+            <p className="text-muted-foreground mt-2">Fetching product data...</p>
           </div>
         ) : isError ? (
           <div className="text-center py-12">
