@@ -38,14 +38,8 @@ const Sets = () => {
     return data.data;
   }, [data, isLoading, isError]);
 
-  // Get featured sets (exclude SV sets since their images don't work, use sets with working images)
-  const featuredSets = React.useMemo(() => {
-    if (!combinedData || combinedData.length === 0) return [];
-    
-    // Filter out Scarlet & Violet sets and get first 4 sets with working images
-    const nonSVSets = combinedData.filter(set => !set.id.startsWith('sv'));
-    return nonSVSets.slice(0, 4);
-  }, [combinedData]);
+  // Get featured sets (first 4 sets with enhanced SV image loading)
+  const featuredSets = combinedData.slice(0, 4) || [];
 
   const loadNextPage = () => {
     setCurrentPage(prev => prev + 1);

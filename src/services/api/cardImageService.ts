@@ -47,10 +47,17 @@ export const getAllPossibleCardImageUrls = (cardId: string): string[] => {
 export const getSetImageUrl = (setId: string, type: 'logo' | 'symbol'): string | undefined => {
   if (!setId) return undefined;
   
-  // For older, established sets that definitely have images
-  const confirmedSets = ['base1', 'base2', 'jungle', 'fossil', 'swsh1', 'swsh2', 'swsh3', 'swsh4', 'swsh5', 'swsh6', 'swsh7', 'swsh8', 'swsh9', 'swsh10', 'swsh11', 'swsh12'];
+  // For Scarlet & Violet sets, use alternative sources since Pokemon TCG API doesn't have proper logos
+  if (setId.startsWith('sv')) {
+    const alternativeUrls = [
+      `https://assets.tcgdex.net/en/swsh/${setId}/${type}.png`,
+      `https://limitlesstcg.s3.us-east-2.amazonaws.com/pokemon/gen9/${setId}/${type}.png`,
+      `https://images.pokemontcg.io/swsh12/${type}.png`, // Fallback to a working set
+    ];
+    return alternativeUrls[0];
+  }
   
-  // Use Pokemon TCG API for confirmed sets
+  // Use Pokemon TCG API for other sets
   return `https://images.pokemontcg.io/${setId}/${type}.png`;
 };
 

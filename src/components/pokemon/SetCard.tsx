@@ -7,6 +7,7 @@ import { Trophy, Calendar, Plus, ImageOff, Package } from "lucide-react";
 import { format } from "date-fns";
 import { PokemonSet } from "@/services/api/pokemonTypes";
 import AddToCollectionModal from "./AddToCollectionModal";
+import { fixImageUrl } from "@/services/api/cardImageService";
 
 interface SetCardProps {
   set: PokemonSet;
@@ -16,7 +17,20 @@ const SetCard = ({ set }: SetCardProps) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [logoError, setLogoError] = useState(false);
   const [symbolError, setSymbolError] = useState(false);
+  const [logoFallbackIndex, setLogoFallbackIndex] = useState(0);
+  const [symbolFallbackIndex, setSymbolFallbackIndex] = useState(0);
   const navigate = useNavigate();
+
+  // Generate multiple fallback URLs specifically for Scarlet & Violet sets
+  const getSVFallbackUrls = (setId: string, type: 'logo' | 'symbol') => {
+    return [
+      `https://assets.tcgdex.net/en/${setId}/${type}.png`,
+      `https://limitlesstcg.s3.us-east-2.amazonaws.com/pokemon/gen9/${setId}/${type}.png`,
+      `https://images.pokemontcg.io/swsh12/${type}.png`, // Known working fallback
+      // Additional creative fallbacks
+      `https://assets.tcgdex.net/en/sv1/${type}.png`, // Use base SV set
+    ];
+  };
 
   const openAddModal = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -31,16 +45,46 @@ const SetCard = ({ set }: SetCardProps) => {
   };
 
   const handleLogoError = () => {
+    if (set.id.startsWith('sv')) {
+      const fallbackUrls = getSVFallbackUrls(set.id, 'logo');
+      if (logoFallbackIndex < fallbackUrls.length - 1) {
+        setLogoFallbackIndex(prev => prev + 1);
+        return;
+      }
+    }
     setLogoError(true);
   };
 
   const handleSymbolError = () => {
+    if (set.id.startsWith('sv')) {
+      const fallbackUrls = getSVFallbackUrls(set.id, 'symbol');
+      if (symbolFallbackIndex < fallbackUrls.length - 1) {
+        setSymbolFallbackIndex(prev => prev + 1);
+        return;
+      }
+    }
     setSymbolError(true);
   };
 
-  // Use images directly from API, let error handling take care of failures
-  const logoUrl = set.images?.logo;
-  const symbolUrl = set.images?.symbol;
+  // Get current image URLs
+  const getLogoUrl = () => {
+    if (set.id.startsWith('sv')) {
+      const fallbackUrls = getSVFallbackUrls(set.id, 'logo');
+      return fallbackUrls[logoFallbackIndex];
+    }
+    return fixImageUrl(set.images?.logo, set.id, 'logo');
+  };
+
+  const getSymbolUrl = () => {
+    if (set.id.startsWith('sv')) {
+      const fallbackUrls = getSVFallbackUrls(set.id, 'symbol');
+      return fallbackUrls[symbolFallbackIndex];
+    }
+    return fixImageUrl(set.images?.symbol, set.id, 'symbol');
+  };
+
+  const logoUrl = getLogoUrl();
+  const symbolUrl = getSymbolUrl();
 
   return (
     <>
