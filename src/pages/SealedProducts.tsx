@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchRealSealedProducts, RealSealedProduct } from "@/services/realSealedProductsService";
+import { fetchFreeSealedProducts, FreeSealedProduct } from "@/services/freeSealedProductsService";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -27,23 +27,11 @@ const SealedProducts = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("all");
   const [sortBy, setSortBy] = useState("name");
-  const [apiKey, setApiKey] = useState("");
-  const [showApiKeyInput, setShowApiKeyInput] = useState(true);
   const { toast } = useToast();
-  
-  // Load API key from localStorage
-  useEffect(() => {
-    const savedApiKey = localStorage.getItem('perplexity_api_key');
-    if (savedApiKey) {
-      setApiKey(savedApiKey);
-      setShowApiKeyInput(false);
-    }
-  }, []);
 
-  const { data: realProducts, isLoading, isError, refetch } = useQuery({
-    queryKey: ['realSealedProducts', apiKey],
-    queryFn: () => fetchRealSealedProducts(apiKey),
-    enabled: !!apiKey,
+  const { data: products, isLoading, isError, refetch } = useQuery({
+    queryKey: ['freeSealedProducts'],
+    queryFn: fetchFreeSealedProducts,
     meta: {
       onError: (error: Error) => {
         toast({
@@ -55,37 +43,11 @@ const SealedProducts = () => {
     }
   });
 
-  const handleApiKeySubmit = () => {
-    if (!apiKey.trim()) {
-      toast({
-        title: "API Key Required",
-        description: "Please enter your Perplexity API key",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Save to localStorage
-    localStorage.setItem('perplexity_api_key', apiKey);
-    setShowApiKeyInput(false);
-    
-    toast({
-      title: "API Key Saved",
-      description: "Loading real sealed product data...",
-    });
-  };
-
-  const handleClearApiKey = () => {
-    localStorage.removeItem('perplexity_api_key');
-    setApiKey("");
-    setShowApiKeyInput(true);
-  };
-
   // Filter and sort products
   const filteredProducts = React.useMemo(() => {
-    if (!realProducts) return [];
+    if (!products) return [];
     
-    let filtered = realProducts.filter((product: RealSealedProduct) => {
+    let filtered = products.filter((product: FreeSealedProduct) => {
       const matchesSearch = searchQuery === "" || 
         product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         product.setName.toLowerCase().includes(searchQuery.toLowerCase());
@@ -96,7 +58,7 @@ const SealedProducts = () => {
     });
 
     // Sort products
-    filtered.sort((a: RealSealedProduct, b: RealSealedProduct) => {
+    filtered.sort((a: FreeSealedProduct, b: FreeSealedProduct) => {
       switch (sortBy) {
         case "name":
           return a.name.localeCompare(b.name);
@@ -112,62 +74,7 @@ const SealedProducts = () => {
     });
 
     return filtered;
-  }, [realProducts, searchQuery, selectedType, sortBy]);
-
-  if (showApiKeyInput) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        
-        <main className="container py-8 flex-1">
-          <div className="max-w-md mx-auto">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Key className="h-5 w-5" />
-                  API Key Required
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Alert>
-                  <AlertDescription>
-                    To load real sealed product data with current prices and images, please provide your Perplexity API key.
-                  </AlertDescription>
-                </Alert>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Perplexity API Key</label>
-                  <Input
-                    type="password"
-                    placeholder="pplx-..."
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Get your API key from{" "}
-                    <a 
-                      href="https://www.perplexity.ai/settings/api" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      Perplexity AI
-                    </a>
-                  </p>
-                </div>
-                
-                <Button onClick={handleApiKeySubmit} className="w-full">
-                  Load Sealed Products
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </main>
-
-        <Footer />
-      </div>
-    );
-  }
+  }, [products, searchQuery, selectedType, sortBy]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -177,16 +84,11 @@ const SealedProducts = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Real Sealed Products</h1>
+              <h1 className="text-3xl font-bold mb-2">Free Sealed Products</h1>
               <p className="text-muted-foreground">
-                Live Pokemon TCG sealed products with current market prices and real images.
+                Pokemon TCG sealed products with estimated market prices using free APIs.
               </p>
             </div>
-            
-            <Button variant="outline" size="sm" onClick={handleClearApiKey}>
-              <Key className="h-4 w-4 mr-2" />
-              Change API Key
-            </Button>
           </div>
           
           {/* Search and Filter Controls */}
@@ -253,12 +155,9 @@ const SealedProducts = () => {
           <div className="text-center py-12">
             <Alert className="max-w-md mx-auto">
               <AlertDescription>
-                Failed to load sealed products. Please check your API key and try again.
+                Failed to load sealed products. Please try refreshing the page.
               </AlertDescription>
             </Alert>
-            <Button onClick={handleClearApiKey} className="mt-4" variant="outline">
-              Update API Key
-            </Button>
           </div>
         ) : filteredProducts.length === 0 ? (
           <div className="text-center py-12">
@@ -270,7 +169,7 @@ const SealedProducts = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map((product: RealSealedProduct) => (
+            {filteredProducts.map((product: FreeSealedProduct) => (
               <Card key={product.id} className="overflow-hidden h-full transition-all hover:shadow-lg hover:border-primary/50 group">
                 <CardHeader className="pb-3">
                   <div className="aspect-square bg-muted rounded-lg mb-3 overflow-hidden">
