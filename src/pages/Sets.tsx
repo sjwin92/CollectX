@@ -13,25 +13,44 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import FeaturedBadge from "@/components/marketplace/listing/FeaturedBadge";
 import { fixImageUrl } from "@/services/api/cardImageService";
 
-// Manual data for latest sets that might not be in the API yet
+// Manual data for latest sets with proper fallback images
 const newReleases = [
   {
-    id: "sv10",
-    name: "Glory of Team Rocket",
+    id: "sv8",
+    name: "Surging Sparks", 
     series: "Scarlet & Violet",
-    printedTotal: 178,
+    printedTotal: 191,
+    total: 252,
+    legalities: {
+      unlimited: "Legal",
+      standard: "Legal", 
+      expanded: "Legal"
+    },
+    ptcgoCode: "SSP",
+    releaseDate: "2024/11/08",
+    updatedAt: "2024/11/07 16:00:00",
+    images: {
+      symbol: "https://images.pokemontcg.io/sv8/symbol.png",
+      logo: "https://images.pokemontcg.io/sv8/logo.png"
+    }
+  },
+  {
+    id: "sv7",
+    name: "Stellar Crown",
+    series: "Scarlet & Violet", 
+    printedTotal: 175,
     total: 240,
     legalities: {
       unlimited: "Legal",
       standard: "Legal",
       expanded: "Legal"
     },
-    ptcgoCode: "GTR",
-    releaseDate: "2025/05/24",
-    updatedAt: "2025/05/23 16:00:00",
+    ptcgoCode: "SCR",
+    releaseDate: "2024/09/13",
+    updatedAt: "2024/09/12 16:00:00", 
     images: {
-      symbol: undefined,
-      logo: undefined
+      symbol: "https://images.pokemontcg.io/sv7/symbol.png",
+      logo: "https://images.pokemontcg.io/sv7/logo.png"
     }
   }
 ];

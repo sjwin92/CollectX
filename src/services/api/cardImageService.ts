@@ -49,7 +49,7 @@ export const getSetImageUrl = (setId: string, type: 'logo' | 'symbol'): string |
   
   console.log(`Getting ${type} image for set: ${setId}`);
   
-  // Don't generate URLs for sets that are known to not have images
+  // Most sets should have images available, only exclude truly problematic ones
   const setsWithoutImages = ['sv10', 'sv11', 'sv12']; 
   if (setsWithoutImages.includes(setId)) {
     console.log(`Set ${setId} is in the no-images list`);
