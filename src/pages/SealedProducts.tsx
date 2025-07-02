@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getProducts } from "@/services/api/pokemonProductsService";
-import { resolveProductImage } from "@/services/api/productImageService";
+import { fetchRealSealedProducts, RealSealedProduct } from "@/services/realSealedProductsService";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -9,32 +8,42 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Filter, Package, Star, Calendar, DollarSign } from "lucide-react";
+import { Search, Filter, Package, Star, Calendar, DollarSign, Key, ExternalLink, ShoppingCart } from "lucide-react";
 import { format } from "date-fns";
 
-// Sealed product types for filtering
+// Product types for filtering
 const productTypes = [
   { value: "all", label: "All Products" },
-  { value: "booster-box", label: "Booster Boxes" },
-  { value: "elite-trainer-box", label: "Elite Trainer Boxes" },
-  { value: "collection-box", label: "Collection Boxes" },
-  { value: "theme-deck", label: "Theme Decks" },
-  { value: "starter-deck", label: "Starter Decks" },
-  { value: "tin", label: "Tins" },
-  { value: "blister-pack", label: "Blister Packs" },
+  { value: "Booster Box", label: "Booster Boxes" },
+  { value: "Elite Trainer Box", label: "Elite Trainer Boxes" },
+  { value: "Collection Box", label: "Collection Boxes" },
+  { value: "Tin", label: "Tins" },
+  { value: "Blister Pack", label: "Blister Packs" },
 ];
 
 const SealedProducts = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("all");
   const [sortBy, setSortBy] = useState("name");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [apiKey, setApiKey] = useState("");
+  const [showApiKeyInput, setShowApiKeyInput] = useState(true);
   const { toast } = useToast();
   
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['sealedProducts', currentPage, selectedType],
-    queryFn: () => getProducts(currentPage, 20),
+  // Load API key from localStorage
+  useEffect(() => {
+    const savedApiKey = localStorage.getItem('perplexity_api_key');
+    if (savedApiKey) {
+      setApiKey(savedApiKey);
+      setShowApiKeyInput(false);
+    }
+  }, []);
+
+  const { data: realProducts, isLoading, isError, refetch } = useQuery({
+    queryKey: ['realSealedProducts', apiKey],
+    queryFn: () => fetchRealSealedProducts(apiKey),
+    enabled: !!apiKey,
     meta: {
       onError: (error: Error) => {
         toast({
@@ -46,47 +55,119 @@ const SealedProducts = () => {
     }
   });
 
-  // Filter and sort products based on search and filters
-  const filteredProducts = React.useMemo(() => {
-    if (!data) return [];
+  const handleApiKeySubmit = () => {
+    if (!apiKey.trim()) {
+      toast({
+        title: "API Key Required",
+        description: "Please enter your Perplexity API key",
+        variant: "destructive"
+      });
+      return;
+    }
     
-    let filtered = data.filter(product => {
+    // Save to localStorage
+    localStorage.setItem('perplexity_api_key', apiKey);
+    setShowApiKeyInput(false);
+    
+    toast({
+      title: "API Key Saved",
+      description: "Loading real sealed product data...",
+    });
+  };
+
+  const handleClearApiKey = () => {
+    localStorage.removeItem('perplexity_api_key');
+    setApiKey("");
+    setShowApiKeyInput(true);
+  };
+
+  // Filter and sort products
+  const filteredProducts = React.useMemo(() => {
+    if (!realProducts) return [];
+    
+    let filtered = realProducts.filter((product: RealSealedProduct) => {
       const matchesSearch = searchQuery === "" || 
         product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.set?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+        product.setName.toLowerCase().includes(searchQuery.toLowerCase());
       
-      const matchesType = selectedType === "all" || 
-        product.name.toLowerCase().includes(selectedType.replace("-", " "));
+      const matchesType = selectedType === "all" || product.type === selectedType;
       
       return matchesSearch && matchesType;
     });
 
     // Sort products
-    filtered.sort((a, b) => {
+    filtered.sort((a: RealSealedProduct, b: RealSealedProduct) => {
       switch (sortBy) {
         case "name":
           return a.name.localeCompare(b.name);
+        case "price-low":
+          return a.price.current - b.price.current;
+        case "price-high":
+          return b.price.current - a.price.current;
         case "release-date":
-          return new Date(b.releaseDate || 0).getTime() - new Date(a.releaseDate || 0).getTime();
-        case "price":
-          return (b.cardmarket?.prices?.averageSellPrice || 0) - (a.cardmarket?.prices?.averageSellPrice || 0);
+          return new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime();
         default:
           return 0;
       }
     });
 
     return filtered;
-  }, [data, searchQuery, selectedType, sortBy]);
+  }, [realProducts, searchQuery, selectedType, sortBy]);
 
-  const loadNextPage = () => {
-    setCurrentPage(prev => prev + 1);
-  };
+  if (showApiKeyInput) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        
+        <main className="container py-8 flex-1">
+          <div className="max-w-md mx-auto">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Key className="h-5 w-5" />
+                  API Key Required
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Alert>
+                  <AlertDescription>
+                    To load real sealed product data with current prices and images, please provide your Perplexity API key.
+                  </AlertDescription>
+                </Alert>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Perplexity API Key</label>
+                  <Input
+                    type="password"
+                    placeholder="pplx-..."
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Get your API key from{" "}
+                    <a 
+                      href="https://www.perplexity.ai/settings/api" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      Perplexity AI
+                    </a>
+                  </p>
+                </div>
+                
+                <Button onClick={handleApiKeySubmit} className="w-full">
+                  Load Sealed Products
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
 
-  const loadPreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(prev => prev - 1);
-    }
-  };
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -94,10 +175,19 @@ const SealedProducts = () => {
       
       <main className="container py-8 flex-1">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Sealed Products</h1>
-          <p className="text-muted-foreground mb-6">
-            Discover booster boxes, Elite Trainer Boxes, collection sets, and other sealed Pokémon products.
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Real Sealed Products</h1>
+              <p className="text-muted-foreground">
+                Live Pokemon TCG sealed products with current market prices and real images.
+              </p>
+            </div>
+            
+            <Button variant="outline" size="sm" onClick={handleClearApiKey}>
+              <Key className="h-4 w-4 mr-2" />
+              Change API Key
+            </Button>
+          </div>
           
           {/* Search and Filter Controls */}
           <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -131,31 +221,44 @@ const SealedProducts = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="name">Name A-Z</SelectItem>
+                <SelectItem value="price-low">Price Low-High</SelectItem>
+                <SelectItem value="price-high">Price High-Low</SelectItem>
                 <SelectItem value="release-date">Newest First</SelectItem>
-                <SelectItem value="price">Price High-Low</SelectItem>
               </SelectContent>
             </Select>
+            
+            <Button onClick={() => refetch()} variant="outline">
+              Refresh Data
+            </Button>
           </div>
           
           {/* Results count */}
           <div className="flex items-center justify-between mb-6">
             <p className="text-sm text-muted-foreground">
-              Showing {filteredProducts.length} sealed products
+              Showing {filteredProducts.length} real sealed products
             </p>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Package className="h-4 w-4" />
-              <span>Premium sealed products</span>
+              <span>Live market data</span>
             </div>
           </div>
         </div>
 
         {isLoading ? (
           <div className="text-center py-12">
-            <div className="animate-pulse text-xl">Loading sealed products...</div>
+            <div className="animate-pulse text-xl">Loading real sealed products...</div>
+            <p className="text-muted-foreground mt-2">Fetching current market data...</p>
           </div>
         ) : isError ? (
-          <div className="text-center py-12 text-destructive">
-            Failed to load products. Please try again.
+          <div className="text-center py-12">
+            <Alert className="max-w-md mx-auto">
+              <AlertDescription>
+                Failed to load sealed products. Please check your API key and try again.
+              </AlertDescription>
+            </Alert>
+            <Button onClick={handleClearApiKey} className="mt-4" variant="outline">
+              Update API Key
+            </Button>
           </div>
         ) : filteredProducts.length === 0 ? (
           <div className="text-center py-12">
@@ -166,91 +269,86 @@ const SealedProducts = () => {
             </p>
           </div>
         ) : (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredProducts.map(product => (
-                <Card key={product.id} className="overflow-hidden h-full transition-all hover:shadow-lg hover:border-primary/50 group">
-                  <CardHeader className="pb-3">
-                    <div className="aspect-square bg-muted rounded-lg mb-3 overflow-hidden">
-                      {product.images?.large ? (
-                        <img 
-                          src={product.images.large} 
-                          alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Package className="h-12 w-12 text-muted-foreground" />
-                        </div>
-                      )}
-                    </div>
-                    <CardTitle className="text-base leading-tight">{product.name}</CardTitle>
-                    {product.set?.name && (
-                      <p className="text-sm text-muted-foreground">{product.set.name}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredProducts.map((product: RealSealedProduct) => (
+              <Card key={product.id} className="overflow-hidden h-full transition-all hover:shadow-lg hover:border-primary/50 group">
+                <CardHeader className="pb-3">
+                  <div className="aspect-square bg-muted rounded-lg mb-3 overflow-hidden">
+                    {product.imageUrl ? (
+                      <img 
+                        src={product.imageUrl} 
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder.svg';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="h-12 w-12 text-muted-foreground" />
+                      </div>
                     )}
-                  </CardHeader>
+                  </div>
+                  <CardTitle className="text-base leading-tight">{product.name}</CardTitle>
+                  <p className="text-sm text-muted-foreground">{product.setName}</p>
+                </CardHeader>
+                
+                <CardContent className="pt-0">
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <Badge variant="secondary" className="text-xs">
+                      {product.type}
+                    </Badge>
+                    <Badge 
+                      variant={product.availability === 'in-stock' ? 'default' : 
+                               product.availability === 'pre-order' ? 'secondary' : 'destructive'} 
+                      className="text-xs"
+                    >
+                      {product.availability.replace('-', ' ')}
+                    </Badge>
+                  </div>
                   
-                  <CardContent className="pt-0">
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {product.supertype && (
-                        <Badge variant="secondary" className="text-xs">
-                          {product.supertype}
-                        </Badge>
-                      )}
-                      {product.legalities?.standard === 'Legal' && (
-                        <Badge variant="default" className="text-xs">
-                          Standard
-                        </Badge>
-                      )}
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Current Price:</span>
+                      <span className="font-bold text-lg text-green-600">
+                        ${product.price.current}
+                      </span>
                     </div>
                     
-                    <div className="space-y-2 text-sm text-muted-foreground">
-                      {product.releaseDate && (
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-3 w-3" />
-                          <span>{format(new Date(product.releaseDate), 'MMM d, yyyy')}</span>
-                        </div>
-                      )}
-                      
-                      {product.cardmarket?.prices?.averageSellPrice && (
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="h-3 w-3" />
-                          <span className="font-medium text-foreground">
-                            €{product.cardmarket.prices.averageSellPrice.toFixed(2)}
-                          </span>
-                        </div>
-                      )}
+                    {product.retailPrice && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">MSRP:</span>
+                        <span className="text-sm line-through text-muted-foreground">
+                          ${product.retailPrice}
+                        </span>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Calendar className="h-3 w-3" />
+                      <span>{format(new Date(product.releaseDate), 'MMM d, yyyy')}</span>
                     </div>
                     
-                    <Button className="w-full mt-4" variant="outline">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <ExternalLink className="h-3 w-3" />
+                      <span>Source: {product.price.source}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2 mt-4">
+                    <Button className="flex-1" variant="outline" size="sm">
                       <Star className="h-4 w-4 mr-2" />
-                      Add to Wishlist
+                      Wishlist
                     </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            <div className="flex justify-between items-center mt-8">
-              <Button
-                variant="outline"
-                onClick={loadPreviousPage}
-                disabled={currentPage <= 1}
-              >
-                Previous Page
-              </Button>
-              <span className="text-muted-foreground">
-                Page {currentPage} of {Math.ceil((data?.length || 0) / 20)}
-              </span>
-              <Button
-                variant="outline"
-                onClick={loadNextPage}
-                disabled={!data || currentPage >= Math.ceil(data.length / 20)}
-              >
-                Next Page
-              </Button>
-            </div>
-          </>
+                    <Button className="flex-1" size="sm">
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                      Buy
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         )}
       </main>
 
