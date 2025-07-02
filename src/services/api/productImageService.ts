@@ -89,17 +89,41 @@ export const getFirstValidImageUrl = async (urls: string[]): Promise<string | nu
   return null;
 };
 
-// Enhanced product image resolver
+// Enhanced product image resolver with caching
+const imageCache = new Map<string, string>();
+
 export const resolveProductImage = async (setId: string, productType: string, setName: string): Promise<string | undefined> => {
+  const cacheKey = `${setId}-${productType}`;
+  
+  // Check cache first
+  if (imageCache.has(cacheKey)) {
+    return imageCache.get(cacheKey);
+  }
+
   try {
     const imageUrls = await getProductImageUrls(setId, productType, setName);
     const allUrls = [imageUrls.primary, ...imageUrls.fallback];
     
     // Try to find the first working image
     const validUrl = await getFirstValidImageUrl(allUrls);
-    return validUrl || undefined;
+    
+    if (validUrl) {
+      imageCache.set(cacheKey, validUrl);
+      return validUrl;
+    }
+    
+    return undefined;
   } catch (error) {
     console.error(`Failed to resolve product image for ${setId}-${productType}:`, error);
     return undefined;
   }
+};
+
+// Preload images for better user experience
+export const preloadProductImages = async (setId: string, productTypes: string[]): Promise<void> => {
+  const promises = productTypes.map(type => 
+    resolveProductImage(setId, type, `Set ${setId}`)
+  );
+  
+  await Promise.allSettled(promises);
 };
