@@ -13,47 +13,6 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import FeaturedBadge from "@/components/marketplace/listing/FeaturedBadge";
 import { fixImageUrl } from "@/services/api/cardImageService";
 
-// Manual data for latest sets with confirmed working images
-const newReleases = [
-  {
-    id: "swsh12",
-    name: "Silver Tempest",
-    series: "Sword & Shield",
-    printedTotal: 195,
-    total: 245,
-    legalities: {
-      unlimited: "Legal",
-      standard: "Legal",
-      expanded: "Legal"
-    },
-    ptcgoCode: "SIT",
-    releaseDate: "2022/11/11",
-    updatedAt: "2022/11/10 16:00:00",
-    images: {
-      symbol: "https://images.pokemontcg.io/swsh12/symbol.png",
-      logo: "https://images.pokemontcg.io/swsh12/logo.png"
-    }
-  },
-  {
-    id: "swsh11",
-    name: "Lost Origin", 
-    series: "Sword & Shield",
-    printedTotal: 196,
-    total: 247,
-    legalities: {
-      unlimited: "Legal",
-      standard: "Legal",
-      expanded: "Legal"
-    },
-    ptcgoCode: "LOR",
-    releaseDate: "2022/09/09",
-    updatedAt: "2022/09/08 16:00:00",
-    images: {
-      symbol: "https://images.pokemontcg.io/swsh11/symbol.png", 
-      logo: "https://images.pokemontcg.io/swsh11/logo.png"
-    }
-  }
-];
 
 const Sets = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -73,18 +32,11 @@ const Sets = () => {
     }
   });
 
-  // Combine API data with manually added new releases (avoid duplicates)
+  // Use API data directly - it already includes the latest sets
   const combinedData = React.useMemo(() => {
     if (isLoading || isError || !data) return [];
-    
-    if (currentPage === 1) {
-      // Filter out any sets from API data that match our manually added sets
-      const apiData = data.data.filter(set => !newReleases.some(newSet => newSet.id === set.id));
-      return [...newReleases, ...apiData];
-    }
-    
     return data.data;
-  }, [data, isLoading, isError, currentPage]);
+  }, [data, isLoading, isError]);
 
   // Get featured sets (first 4 sets from the combined data)
   const featuredSets = combinedData.slice(0, 4) || [];
@@ -225,7 +177,7 @@ const Sets = () => {
                 Previous Page
               </Button>
               <span className="text-muted-foreground">
-                Page {currentPage} of {Math.ceil(((data?.totalCount || 0) + (currentPage === 1 ? newReleases.length : 0)) / 20)}
+                Page {currentPage} of {Math.ceil((data?.totalCount || 0) / 20)}
               </span>
               <Button
                 variant="outline"
