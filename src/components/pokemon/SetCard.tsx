@@ -18,7 +18,34 @@ const SetCard = ({ set }: SetCardProps) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [logoLoaded, setLogoLoaded] = useState(true);
   const [symbolLoaded, setSymbolLoaded] = useState(true);
+  const [logoUrlIndex, setLogoUrlIndex] = useState(0);
+  const [symbolUrlIndex, setSymbolUrlIndex] = useState(0);
   const navigate = useNavigate();
+
+  // Generate multiple fallback URLs for logos and symbols
+  const getMultipleUrls = (setId: string, type: 'logo' | 'symbol') => {
+    const urls = [
+      `https://images.pokemontcg.io/${setId}/${type}.png`,
+      `https://assets.tcgdex.net/en/${setId}/${type}.png`,
+      `https://limitlesstcg.s3.us-east-2.amazonaws.com/pokemon/gen9/${setId}/${type}.png`
+    ];
+    
+    // For Scarlet & Violet sets, try additional patterns
+    if (setId.startsWith('sv')) {
+      urls.push(
+        `https://images.pokemontcg.io/swsh${setId.slice(2)}/${type}.png`,
+        `https://assets.tcgdx.net/images/sets/${setId}/${type}.png`
+      );
+    }
+    
+    return urls;
+  };
+
+  const logoUrls = getMultipleUrls(set.id, 'logo');
+  const symbolUrls = getMultipleUrls(set.id, 'symbol');
+
+  const currentLogoUrl = fixImageUrl(set.images?.logo, set.id, 'logo') || logoUrls[logoUrlIndex];
+  const currentSymbolUrl = fixImageUrl(set.images?.symbol, set.id, 'symbol') || symbolUrls[symbolUrlIndex];
 
   const openAddModal = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -32,22 +59,34 @@ const SetCard = ({ set }: SetCardProps) => {
     navigate(`/products?setId=${encodeURIComponent(set.id)}`);
   };
 
-  // Fix image URLs
-  const logoUrl = fixImageUrl(set.images?.logo, set.id, 'logo');
-  const symbolUrl = fixImageUrl(set.images?.symbol, set.id, 'symbol');
+  const handleLogoError = () => {
+    if (logoUrlIndex < logoUrls.length - 1) {
+      setLogoUrlIndex(prev => prev + 1);
+    } else {
+      setLogoLoaded(false);
+    }
+  };
+
+  const handleSymbolError = () => {
+    if (symbolUrlIndex < symbolUrls.length - 1) {
+      setSymbolUrlIndex(prev => prev + 1);
+    } else {
+      setSymbolLoaded(false);
+    }
+  };
 
   return (
     <>
       <Link to={`/pokemon-sets/${set.id}`}>
         <Card className="overflow-hidden h-full transition-all hover:shadow-lg hover:border-primary/50 relative group">
           <CardHeader className="space-y-4 pb-4">
-            {logoUrl ? (
+            {currentLogoUrl ? (
               <div className="h-12 flex items-center justify-center">
                 <img 
-                  src={logoUrl} 
+                  src={currentLogoUrl} 
                   alt={`${set.name} logo`}
                   className="max-h-12 object-contain mx-auto"
-                  onError={() => setLogoLoaded(false)}
+                  onError={handleLogoError}
                   style={{ display: logoLoaded ? 'block' : 'none' }}
                 />
                 {!logoLoaded && (
@@ -68,13 +107,13 @@ const SetCard = ({ set }: SetCardProps) => {
             
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                {symbolUrl ? (
+                {currentSymbolUrl ? (
                   <div className="h-6 w-6 flex items-center justify-center">
                     <img 
-                      src={symbolUrl} 
+                      src={currentSymbolUrl} 
                       alt={`${set.name} symbol`}
                       className="max-h-6 max-w-6 object-contain"
-                      onError={() => setSymbolLoaded(false)}
+                      onError={handleSymbolError}
                       style={{ display: symbolLoaded ? 'block' : 'none' }}
                     />
                     {!symbolLoaded && <ImageOff className="h-3 w-3 text-muted-foreground" />}
@@ -137,7 +176,7 @@ const SetCard = ({ set }: SetCardProps) => {
           open={showAddModal}
           onClose={() => setShowAddModal(false)}
           cardName={`Card from ${set.name}`}
-          cardImage={symbolUrl || logoUrl}
+          cardImage={currentSymbolUrl || currentLogoUrl}
           cardRarity="Common"
           cardNumber={`${set.id}-1`}
         />
