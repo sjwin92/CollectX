@@ -17,6 +17,7 @@ import Marketplace from "./pages/Marketplace";
 import Sets from "./pages/Sets";
 import SetDetail from "./pages/SetDetail";
 import Products from "./pages/Products";
+import SealedProducts from "./pages/SealedProducts";
 
 function App() {
   return (
@@ -45,6 +46,7 @@ function App() {
           
           {/* Products Route */}
           <Route path="/products" element={<Products />} />
+          <Route path="/sealed-products" element={<SealedProducts />} />
           
           {/* Marketplace */}
           <Route path="/marketplace" element={<Marketplace />} />
