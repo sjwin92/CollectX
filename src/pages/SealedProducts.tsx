@@ -179,7 +179,14 @@ const SealedProducts = () => {
                         alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/placeholder.svg';
+                          const target = e.target as HTMLImageElement;
+                          // Try fallback to a generic Pokemon product image
+                          if (!target.src.includes('unsplash')) {
+                            target.src = 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=400&h=400&fit=crop&auto=format';
+                          } else {
+                            // Final fallback to placeholder
+                            target.src = '/placeholder.svg';
+                          }
                         }}
                       />
                     ) : (
@@ -210,7 +217,7 @@ const SealedProducts = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Current Price:</span>
                       <span className="font-bold text-lg text-green-600">
-                        ${product.price.current}
+                        £{product.price.current}
                       </span>
                     </div>
                     
@@ -218,7 +225,7 @@ const SealedProducts = () => {
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">MSRP:</span>
                         <span className="text-sm line-through text-muted-foreground">
-                          ${product.retailPrice}
+                          £{product.retailPrice}
                         </span>
                       </div>
                     )}

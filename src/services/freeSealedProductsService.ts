@@ -21,13 +21,13 @@ export interface FreeSealedProduct {
   retailPrice?: number;
 }
 
-// Sealed product types with typical pricing
+// Sealed product types with typical UK pricing
 const productTypes = [
-  { type: 'Booster Box', basePrice: 95, suffix: 'booster-box' },
-  { type: 'Elite Trainer Box', basePrice: 45, suffix: 'etb' },
-  { type: 'Collection Box', basePrice: 25, suffix: 'collection-box' },
-  { type: 'Tin', basePrice: 20, suffix: 'tin' },
-  { type: 'Blister Pack', basePrice: 5, suffix: 'blister' }
+  { type: 'Booster Box', basePrice: 75, suffix: 'booster-box' },
+  { type: 'Elite Trainer Box', basePrice: 35, suffix: 'etb' },
+  { type: 'Collection Box', basePrice: 20, suffix: 'collection-box' },
+  { type: 'Tin', basePrice: 15, suffix: 'tin' },
+  { type: 'Blister Pack', basePrice: 4, suffix: 'blister' }
 ];
 
 // Fetch Pokemon sets from free API
@@ -122,8 +122,8 @@ export const fetchFreeSealedProducts = async (): Promise<FreeSealedProduct[]> =>
           setId: set.id,
           price: {
             current: currentPrice,
-            currency: 'USD',
-            source: 'Market Average'
+            currency: 'GBP',
+            source: 'UK Market Average'
           },
           imageUrl: getEnhancedProductImage(set.id, productType.type, set.name),
           availability: Math.random() > 0.3 ? 'in-stock' : 
