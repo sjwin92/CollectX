@@ -282,7 +282,7 @@ const Collection = () => {
     setIsAddCardOpen(true);
   };
   const handleQuickBrowseCards = () => {
-    window.location.href = "/sets";
+    window.location.href = "/pokemon-sets";
   };
   const handleSearchQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
