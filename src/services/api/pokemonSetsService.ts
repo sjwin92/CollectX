@@ -23,10 +23,16 @@ export const getSets = async (page = 1, pageSize = 20): Promise<PokemonSetRespon
     const data = await response.json();
     console.log(`Successfully fetched ${data.data?.length || 0} sets`);
     
-    // Update cache with the fetched sets
-    if (data.data && data.data.length > 0) {
+    // Deduplicate the fetched data first
+    const deduplicatedData = data.data ? 
+      data.data.filter((set: PokemonSet, index: number, self: PokemonSet[]) => 
+        self.findIndex(s => s.id === set.id) === index
+      ) : [];
+    
+    // Update cache with the deduplicated sets
+    if (deduplicatedData.length > 0) {
       // Add only sets that aren't already in the cache
-      const newSets = data.data.filter(
+      const newSets = deduplicatedData.filter(
         (set: PokemonSet) => !setsCache.data.some(cachedSet => cachedSet.id === set.id)
       );
       
@@ -36,7 +42,10 @@ export const getSets = async (page = 1, pageSize = 20): Promise<PokemonSetRespon
       }
     }
     
-    return data;
+    return {
+      ...data,
+      data: deduplicatedData
+    };
   } catch (error) {
     console.error('Error fetching Pokemon sets:', error);
     return {
@@ -77,8 +86,14 @@ export const getAllSets = async (): Promise<PokemonSet[]> => {
     const data = await response.json();
     console.log(`Successfully fetched all ${data.data?.length || 0} sets`);
     
+    // Deduplicate the fetched data
+    const deduplicatedData = data.data ? 
+      data.data.filter((set: PokemonSet, index: number, self: PokemonSet[]) => 
+        self.findIndex(s => s.id === set.id) === index
+      ) : [];
+    
     // Update cache
-    setsCache.data = data.data || [];
+    setsCache.data = deduplicatedData;
     setsCache.timestamp = Date.now();
     
     return setsCache.data;
