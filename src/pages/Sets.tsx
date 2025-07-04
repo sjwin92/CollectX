@@ -41,6 +41,9 @@ const Sets = () => {
 
   // Get featured sets (first 4 sets with enhanced SV image loading)
   const featuredSets = combinedData.slice(0, 4) || [];
+  
+  // Get remaining sets for main grid (excluding featured ones)
+  const remainingSets = combinedData.slice(4) || [];
 
   // Handle image error with fallback logic
   const handleImageError = (setId: string, type: 'logo' | 'symbol', element: HTMLImageElement) => {
@@ -196,7 +199,7 @@ const Sets = () => {
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {combinedData.map(set => (
+              {remainingSets.map(set => (
                 <SetCard key={set.id} set={set} />
               ))}
             </div>
