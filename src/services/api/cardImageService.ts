@@ -47,14 +47,10 @@ export const getAllPossibleCardImageUrls = (cardId: string): string[] => {
 export const getSetImageUrl = (setId: string, type: 'logo' | 'symbol'): string | undefined => {
   if (!setId) return undefined;
   
-  // For Scarlet & Violet sets, use alternative sources since Pokemon TCG API doesn't have proper logos
+  // For Scarlet & Violet sets, try Pokemon TCG API first, then fallbacks
   if (setId.startsWith('sv')) {
-    const alternativeUrls = [
-      `https://assets.tcgdex.net/en/swsh/${setId}/${type}.png`,
-      `https://limitlesstcg.s3.us-east-2.amazonaws.com/pokemon/gen9/${setId}/${type}.png`,
-      `https://images.pokemontcg.io/swsh12/${type}.png`, // Fallback to a working set
-    ];
-    return alternativeUrls[0];
+    // Try Pokemon TCG API first
+    return `https://images.pokemontcg.io/${setId}/${type}.png`;
   }
   
   // Use Pokemon TCG API for other sets
@@ -84,6 +80,29 @@ export const fixImageUrl = (url: string | undefined, setId?: string, type?: 'log
   }
   
   return url;
+};
+
+// Get multiple fallback URLs for set images
+export const getSetImageFallbacks = (setId: string, type: 'logo' | 'symbol'): string[] => {
+  if (!setId) return [];
+  
+  const fallbacks = [
+    `https://images.pokemontcg.io/${setId}/${type}.png`,
+  ];
+  
+  // Add additional fallbacks for specific set series
+  if (setId.startsWith('sv')) {
+    fallbacks.push(
+      `https://assets.tcgdex.net/en/sv/${setId}/${type}.png`,
+      `https://limitlesstcg.s3.us-east-2.amazonaws.com/pokemon/gen9/${setId}/${type}.png`
+    );
+  } else if (setId.startsWith('swsh')) {
+    fallbacks.push(`https://assets.tcgdex.net/en/swsh/${setId}/${type}.png`);
+  } else if (setId.startsWith('xy')) {
+    fallbacks.push(`https://assets.tcgdex.net/en/xy/${setId}/${type}.png`);
+  }
+  
+  return fallbacks;
 };
 
 // Check if a URL is valid format

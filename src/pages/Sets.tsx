@@ -11,11 +11,12 @@ import { Plus, Star, ImageOff } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import FeaturedBadge from "@/components/marketplace/listing/FeaturedBadge";
-import { fixImageUrl } from "@/services/api/cardImageService";
+import { fixImageUrl, getSetImageFallbacks } from "@/services/api/cardImageService";
 
 
 const Sets = () => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [imageErrors, setImageErrors] = useState<Record<string, { logo: number; symbol: number }>>({});
   const { toast } = useToast();
   
   const { data, isLoading, isError } = useQuery({
@@ -40,6 +41,42 @@ const Sets = () => {
 
   // Get featured sets (first 4 sets with enhanced SV image loading)
   const featuredSets = combinedData.slice(0, 4) || [];
+
+  // Handle image error with fallback logic
+  const handleImageError = (setId: string, type: 'logo' | 'symbol', element: HTMLImageElement) => {
+    const currentErrors = imageErrors[setId] || { logo: 0, symbol: 0 };
+    const currentFallbackIndex = currentErrors[type];
+    const fallbacks = getSetImageFallbacks(setId, type);
+    
+    if (currentFallbackIndex + 1 < fallbacks.length) {
+      const nextFallbackIndex = currentFallbackIndex + 1;
+      element.src = fallbacks[nextFallbackIndex];
+      
+      setImageErrors(prev => ({
+        ...prev,
+        [setId]: {
+          ...prev[setId],
+          [type]: nextFallbackIndex
+        }
+      }));
+    } else {
+      // No more fallbacks available, hide the image
+      element.style.display = 'none';
+    }
+  };
+
+  // Get current image URL with fallback support
+  const getImageUrl = (setId: string, type: 'logo' | 'symbol', originalUrl?: string) => {
+    const currentErrors = imageErrors[setId] || { logo: 0, symbol: 0 };
+    const fallbackIndex = currentErrors[type];
+    
+    if (fallbackIndex > 0) {
+      const fallbacks = getSetImageFallbacks(setId, type);
+      return fallbacks[fallbackIndex] || originalUrl;
+    }
+    
+    return fixImageUrl(originalUrl, setId, type);
+  };
 
   const loadNextPage = () => {
     setCurrentPage(prev => prev + 1);
@@ -87,8 +124,8 @@ const Sets = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {featuredSets.map(set => {
-                const logoUrl = fixImageUrl(set.images?.logo, set.id, 'logo');
-                const symbolUrl = fixImageUrl(set.images?.symbol, set.id, 'symbol');
+                const logoUrl = getImageUrl(set.id, 'logo', set.images?.logo);
+                const symbolUrl = getImageUrl(set.id, 'symbol', set.images?.symbol);
                 
                 return (
                   <Link key={set.id} to={`/pokemon-sets/${set.id}`} className="block h-full">
@@ -103,9 +140,7 @@ const Sets = () => {
                               src={logoUrl} 
                               alt={`${set.name} logo`}
                               className="h-16 object-contain mx-auto"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
+                              onError={(e) => handleImageError(set.id, 'logo', e.currentTarget)}
                             />
                           </div>
                         ) : (
@@ -126,9 +161,7 @@ const Sets = () => {
                                 src={symbolUrl} 
                                 alt={`${set.name} symbol`}
                                 className="h-6 w-6 object-contain"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).style.display = 'none';
-                                }}
+                                onError={(e) => handleImageError(set.id, 'symbol', e.currentTarget)}
                               />
                             ) : (
                               <ImageOff className="h-4 w-4 text-muted-foreground" />
