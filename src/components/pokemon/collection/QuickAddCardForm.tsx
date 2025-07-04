@@ -26,6 +26,7 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
   const { toast } = useToast();
   const [isGraded, setIsGraded] = useState(false);
   const [forTrade, setForTrade] = useState(false);
+  const [forSale, setForSale] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<QuickAddFormValues>({
@@ -35,6 +36,7 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
       condition: "NM",
       isGraded: false,
       forTrade: false,
+      forSale: false,
       tradePreferences: "",
       productType: "card",
       isSealed: false,
@@ -63,6 +65,7 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
           name: card.set.name,
         },
         forTrade: data.forTrade,
+        forSale: data.forSale,
         graded: data.isGraded,
         quantity: data.quantity,
         productType: data.productType || "card",
@@ -124,6 +127,11 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
     }
   };
 
+  const handleSaleChange = (checked: boolean) => {
+    setForSale(checked);
+    form.setValue("forSale", checked);
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
@@ -149,15 +157,27 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
         
         {isGraded && watchedProductType === 'card' && <GradingFields form={form} />}
         
-        <CheckboxField 
-          id="forTrade"
-          label="Available for Trade"
-          checked={forTrade}
-          onChange={handleTradeChange}
-          form={form}
-          fieldName="forTrade"
-          description="Mark this item as available for trading with other collectors"
-        />
+        <div className="space-y-3">
+          <CheckboxField 
+            id="forTrade"
+            label="Available for Trade"
+            checked={forTrade}
+            onChange={handleTradeChange}
+            form={form}
+            fieldName="forTrade"
+            description="Mark this item as available for trading with other collectors"
+          />
+          
+          <CheckboxField 
+            id="forSale"
+            label="Available for Sale"
+            checked={forSale}
+            onChange={handleSaleChange}
+            form={form}
+            fieldName="forSale"
+            description="Mark this item as available for sale to other collectors"
+          />
+        </div>
         
         {forTrade && <TradeFields form={form} />}
         

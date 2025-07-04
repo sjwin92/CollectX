@@ -29,6 +29,7 @@ export const quickAddFormSchema = z.object({
   grade: z.coerce.number().min(1).max(10).optional(),
   tradePreferences: z.string().optional(),
   forTrade: z.boolean().default(false),
+  forSale: z.boolean().default(false),
   productType: z.enum(['card', 'booster-pack', 'blister-pack', 'etb', 'tin', 'box', 'deck', 'other']).default('card'),
   isSealed: z.boolean().default(false),
   packCount: z.coerce.number().min(1).optional(),
