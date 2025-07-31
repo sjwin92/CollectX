@@ -3,7 +3,7 @@ import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Upload, X, Camera, AlertCircle } from 'lucide-react';
-import { uploadCardImage, type CardImageUpload, UploadedCardImage } from '@/services/cardImageUploadService';
+import { uploadCardImage, deleteCardImage, type CardImageUpload, UploadedCardImage } from '@/services/cardImageUploadService';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
@@ -177,9 +177,22 @@ const CardImageUpload = ({
                     size="icon"
                     variant="destructive"
                     className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => {
+                    onClick={async (e) => {
                       e.stopPropagation();
-                      onImageRemoved(image.id);
+                      try {
+                        await deleteCardImage(image.id);
+                        onImageRemoved(image.id);
+                        toast({
+                          title: "Image deleted",
+                          description: "Card image has been removed from your collection"
+                        });
+                      } catch (error) {
+                        toast({
+                          variant: "destructive",
+                          title: "Delete failed",
+                          description: "Failed to delete image. Please try again."
+                        });
+                      }
                     }}
                   >
                     <X className="h-3 w-3" />

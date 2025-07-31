@@ -62,6 +62,48 @@ export type Database = {
         }
         Relationships: []
       }
+      card_images: {
+        Row: {
+          caption: string | null
+          card_id: string
+          created_at: string
+          file_size: number | null
+          id: string
+          image_path: string
+          image_url: string
+          is_primary: boolean | null
+          mime_type: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          caption?: string | null
+          card_id: string
+          created_at?: string
+          file_size?: number | null
+          id?: string
+          image_path: string
+          image_url: string
+          is_primary?: boolean | null
+          mime_type?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          caption?: string | null
+          card_id?: string
+          created_at?: string
+          file_size?: number | null
+          id?: string
+          image_path?: string
+          image_url?: string
+          is_primary?: boolean | null
+          mime_type?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           created_at: string
@@ -129,6 +171,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      escrow_transactions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          initiator_escrow_amount: number
+          initiator_paid: boolean | null
+          initiator_payment_id: string | null
+          initiator_user_id: string
+          metadata: Json | null
+          recipient_escrow_amount: number
+          recipient_paid: boolean | null
+          recipient_payment_id: string | null
+          recipient_user_id: string
+          release_code: string | null
+          status: string
+          trade_id: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          initiator_escrow_amount?: number
+          initiator_paid?: boolean | null
+          initiator_payment_id?: string | null
+          initiator_user_id: string
+          metadata?: Json | null
+          recipient_escrow_amount?: number
+          recipient_paid?: boolean | null
+          recipient_payment_id?: string | null
+          recipient_user_id: string
+          release_code?: string | null
+          status?: string
+          trade_id: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          initiator_escrow_amount?: number
+          initiator_paid?: boolean | null
+          initiator_payment_id?: string | null
+          initiator_user_id?: string
+          metadata?: Json | null
+          recipient_escrow_amount?: number
+          recipient_paid?: boolean | null
+          recipient_payment_id?: string | null
+          recipient_user_id?: string
+          release_code?: string | null
+          status?: string
+          trade_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       marketplace_favorites: {
         Row: {

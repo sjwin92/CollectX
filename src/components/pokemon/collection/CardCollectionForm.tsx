@@ -31,6 +31,8 @@ import { Label } from "@/components/ui/label";
 import CardImageUpload from "./CardImageUpload";
 import { UploadedCardImage } from "@/services/cardImageUploadService";
 import { ExtendedCardItemProps } from "@/types/cardTypes";
+import { useCardImages } from "@/hooks/useCardImages";
+import { useUser } from "@/hooks/useUser";
 
 interface CardCollectionFormProps {
   card: PokemonCard;
@@ -82,6 +84,9 @@ const FormFieldWrapper = ({
 );
 
 const CardCollectionForm = ({ card, onSubmit, onCancel, initialData }: CardCollectionFormProps) => {
+  const { user } = useUser();
+  const { images, handleImageUploaded, handleImageRemoved } = useCardImages(card.id);
+  
   const form = useForm<CardFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -94,16 +99,6 @@ const CardCollectionForm = ({ card, onSubmit, onCancel, initialData }: CardColle
       estimatedValue: initialData?.estimatedValue || "",
     },
   });
-  
-  const [uploadedImages, setUploadedImages] = useState<UploadedCardImage[]>([]);
-
-  const handleImageUploaded = (image: UploadedCardImage) => {
-    setUploadedImages(prev => [...prev, image]);
-  };
-
-  const handleImageRemoved = (imageId: string) => {
-    setUploadedImages(prev => prev.filter(img => img.id !== imageId));
-  };
 
   const onFormSubmit = (values: CardFormData) => {
     const cardData: ExtendedCardItemProps = {
@@ -120,7 +115,7 @@ const CardCollectionForm = ({ card, onSubmit, onCancel, initialData }: CardColle
       forTrade: values.forTrade,
       forSale: values.forSale,
       estimatedValue: values.estimatedValue,
-      conditionImages: uploadedImages,
+      conditionImages: images,
     };
     
     onSubmit(cardData);
@@ -289,8 +284,8 @@ const CardCollectionForm = ({ card, onSubmit, onCancel, initialData }: CardColle
           >
             <CardImageUpload
               cardId={card.id}
-              userId="current_user_id" // Would get from auth context
-              existingImages={uploadedImages}
+              userId={user?.id || ""}
+              existingImages={images}
               onImageUploaded={handleImageUploaded}
               onImageRemoved={handleImageRemoved}
               maxImages={3}

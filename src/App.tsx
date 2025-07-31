@@ -24,6 +24,7 @@ import Sets from "./pages/Sets";
 import SetDetail from "./pages/SetDetail";
 import Products from "./pages/Products";
 import SealedProducts from "./pages/SealedProducts";
+import TradeDemo from "./pages/TradeDemo";
 
 function App() {
   return (
@@ -47,6 +48,7 @@ function App() {
               {/* Protected routes */}
               <Route path="/trades" element={<ProtectedRoute><Trades /></ProtectedRoute>} />
               <Route path="/trades/:id" element={<ProtectedRoute><TradeDetail /></ProtectedRoute>} />
+              <Route path="/trade-demo" element={<ProtectedRoute><TradeDemo /></ProtectedRoute>} />
               <Route path="/collection" element={<ProtectedRoute><Collection /></ProtectedRoute>} />
               <Route path="/collection-boxes" element={<ProtectedRoute><CollectionBoxes /></ProtectedRoute>} />
               <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
