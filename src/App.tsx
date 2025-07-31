@@ -7,6 +7,7 @@ import Trades from "./pages/Trades";
 import Collection from "./pages/Collection";
 import CollectionBoxes from "./pages/CollectionBoxes";
 import Index from "./pages/Index";
+import Auth from "./pages/Auth";
 import TradeDetail from "./pages/TradeDetail";
 import PokemonCards from "./pages/PokemonCards";
 import CardDetail from "./pages/CardDetail";
@@ -25,6 +26,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<Auth />} />
           
           {/* Trading Routes */}
           <Route path="/trades" element={<Trades />} />

@@ -253,7 +253,7 @@ const Marketplace = () => {
     const newListing: ListingType = {
       id: `listing-${Date.now()}`,
       userId: user.id,
-      username: user.username,
+      username: user.email || 'Anonymous',
       cardOffered: {
         id: cardOffered.id,
         name: cardOffered.name,
