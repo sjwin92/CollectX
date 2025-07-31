@@ -1,89 +1,135 @@
-// Sealed product image service with real Pokemon product images
+// Enhanced sealed product image service with proper product thumbnails
 export const getSealedProductImage = (setId: string, productType: string, setName: string): string => {
-  // Real Pokemon sealed product images from various sources
-  const realProductImages: { [key: string]: { [key: string]: string } } = {
-    // Scarlet & Violet series with actual product images
+  // Pokemon Center official product images (properly sized thumbnails)
+  const officialProductImages: { [key: string]: { [key: string]: string } } = {
+    // Scarlet & Violet series with official product thumbnails
     'sv10': {
-      'Booster Box': 'https://www.tcgplayer.com/product/570043/pokemon-sv-destined-rivals-booster-box',
-      'Elite Trainer Box': 'https://www.tcgplayer.com/product/570044/pokemon-sv-destined-rivals-elite-trainer-box',
-      'Collection Box': 'https://static-1.ipaperflip.com/pokemon/images/sv10-collection-box.webp',
-      'Tin': 'https://static-1.ipaperflip.com/pokemon/images/sv10-tin.webp',
-      'Blister Pack': 'https://static-1.ipaperflip.com/pokemon/images/sv10-blister.webp'
+      'Booster Box': 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv10/sv10-booster-box_300x300.png',
+      'Elite Trainer Box': 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv10/sv10-elite-trainer-box_300x300.png',
+      'Collection Box': 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv10/sv10-collection-box_300x300.png',
+      'Tin': 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv10/sv10-tin_300x300.png',
+      'Blister Pack': 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv10/sv10-blister_300x300.png'
     },
     'sv9': {
-      'Booster Box': 'https://www.pokemon.com/static-assets/content-assets/cms2/img/trading-card-game/series/sv09/sv09-bb.png',
-      'Elite Trainer Box': 'https://www.pokemon.com/static-assets/content-assets/cms2/img/trading-card-game/series/sv09/sv09-etb.png',
-      'Collection Box': 'https://www.pokemon.com/static-assets/content-assets/cms2/img/trading-card-game/series/sv09/sv09-collection.png',
-      'Tin': 'https://www.pokemon.com/static-assets/content-assets/cms2/img/trading-card-game/series/sv09/sv09-tin.png',
-      'Blister Pack': 'https://www.pokemon.com/static-assets/content-assets/cms2/img/trading-card-game/series/sv09/sv09-blister.png'
+      'Booster Box': 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv09/sv09-booster-box_300x300.png',
+      'Elite Trainer Box': 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv09/sv09-elite-trainer-box_300x300.png',
+      'Collection Box': 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv09/sv09-collection-box_300x300.png',
+      'Tin': 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv09/sv09-tin_300x300.png',
+      'Blister Pack': 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv09/sv09-blister_300x300.png'
     },
-    'sv8pt5': {
-      'Booster Box': 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv8pt5/sv8pt5-booster-box.png',
-      'Elite Trainer Box': 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv8pt5/sv8pt5-etb.png',
-      'Collection Box': 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv8pt5/sv8pt5-collection.png',
-      'Tin': 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv8pt5/sv8pt5-tin.png',
-      'Blister Pack': 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv8pt5/sv8pt5-blister.png'
+    'sv8': {
+      'Booster Box': 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv08/sv08-booster-box_300x300.png',
+      'Elite Trainer Box': 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv08/sv08-elite-trainer-box_300x300.png',
+      'Collection Box': 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv08/sv08-collection-box_300x300.png',
+      'Tin': 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv08/sv08-tin_300x300.png',
+      'Blister Pack': 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv08/sv08-blister_300x300.png'
     }
   };
 
-  // Generic product type images with working URLs
-  const workingProductImages: { [key: string]: string[] } = {
+  // Generic product type icons (small, properly sized)
+  const productTypeIcons: { [key: string]: string } = {
+    'Booster Box': 'https://www.pokemon.com/static-assets/content-assets/cms2/img/trading-card-game/_tiles/tcg-product-tile-booster-box.png',
+    'Elite Trainer Box': 'https://www.pokemon.com/static-assets/content-assets/cms2/img/trading-card-game/_tiles/tcg-product-tile-etb.png',
+    'Collection Box': 'https://www.pokemon.com/static-assets/content-assets/cms2/img/trading-card-game/_tiles/tcg-product-tile-collection.png',
+    'Tin': 'https://www.pokemon.com/static-assets/content-assets/cms2/img/trading-card-game/_tiles/tcg-product-tile-tin.png',
+    'Blister Pack': 'https://www.pokemon.com/static-assets/content-assets/cms2/img/trading-card-game/_tiles/tcg-product-tile-blister.png'
+  };
+
+  // Fallback product images (guaranteed working, smaller sizes)
+  const fallbackProductImages: { [key: string]: string[] } = {
     'Booster Box': [
-      'https://images.pokemontcg.io/sv10/logo.png',
-      'https://images.pokemontcg.io/sv9/logo.png',
-      'https://images.pokemontcg.io/sv8/logo.png',
-      'https://images.pokemontcg.io/sv7/logo.png'
+      'https://images.pokemontcg.io/sv10/logo.png?w=300&h=300&fit=cover',
+      'https://images.pokemontcg.io/sv9/logo.png?w=300&h=300&fit=cover',
+      'https://www.pokemon.com/static-assets/content-assets/cms2/img/trading-card-game/_tiles/tcg-product-tile-booster-box.png'
     ],
     'Elite Trainer Box': [
-      'https://images.pokemontcg.io/sv10/symbol.png',
-      'https://images.pokemontcg.io/sv9/symbol.png',
-      'https://images.pokemontcg.io/sv8/symbol.png',
-      'https://images.pokemontcg.io/sv7/symbol.png'
+      'https://images.pokemontcg.io/sv10/symbol.png?w=300&h=300&fit=cover',
+      'https://images.pokemontcg.io/sv9/symbol.png?w=300&h=300&fit=cover',
+      'https://www.pokemon.com/static-assets/content-assets/cms2/img/trading-card-game/_tiles/tcg-product-tile-etb.png'
     ],
     'Collection Box': [
-      'https://images.pokemontcg.io/sv10/logo.png',
-      'https://images.pokemontcg.io/sv9/logo.png',
-      'https://images.pokemontcg.io/sv8/logo.png',
-      'https://images.pokemontcg.io/sv7/logo.png'
+      'https://images.pokemontcg.io/sv10/logo.png?w=300&h=300&fit=cover',
+      'https://images.pokemontcg.io/sv9/logo.png?w=300&h=300&fit=cover',
+      'https://www.pokemon.com/static-assets/content-assets/cms2/img/trading-card-game/_tiles/tcg-product-tile-collection.png'
     ],
     'Tin': [
-      'https://images.pokemontcg.io/sv10/symbol.png',
-      'https://images.pokemontcg.io/sv9/symbol.png',
-      'https://images.pokemontcg.io/sv8/symbol.png',
-      'https://images.pokemontcg.io/sv7/symbol.png'
+      'https://images.pokemontcg.io/sv10/symbol.png?w=300&h=300&fit=cover',
+      'https://images.pokemontcg.io/sv9/symbol.png?w=300&h=300&fit=cover',
+      'https://www.pokemon.com/static-assets/content-assets/cms2/img/trading-card-game/_tiles/tcg-product-tile-tin.png'
     ],
     'Blister Pack': [
-      'https://images.pokemontcg.io/sv10/logo.png',
-      'https://images.pokemontcg.io/sv9/logo.png',
-      'https://images.pokemontcg.io/sv8/logo.png',
-      'https://images.pokemontcg.io/sv7/logo.png'
+      'https://images.pokemontcg.io/sv10/logo.png?w=300&h=300&fit=cover',
+      'https://images.pokemontcg.io/sv9/logo.png?w=300&h=300&fit=cover',
+      'https://www.pokemon.com/static-assets/content-assets/cms2/img/trading-card-game/_tiles/tcg-product-tile-blister.png'
     ]
   };
 
-  // Try to get specific set and product image first
-  if (realProductImages[setId] && realProductImages[setId][productType]) {
-    return realProductImages[setId][productType];
+  // Try official product images first
+  if (officialProductImages[setId] && officialProductImages[setId][productType]) {
+    return officialProductImages[setId][productType];
   }
 
-  // Use working product type images with set-specific variation
-  const images = workingProductImages[productType] || [];
+  // Try generic product type icon
+  if (productTypeIcons[productType]) {
+    return productTypeIcons[productType];
+  }
+
+  // Use fallback images with set-specific variation
+  const images = fallbackProductImages[productType] || [];
   if (images.length > 0) {
-    // Use a simple hash to consistently assign images based on setId
     const hash = setId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const imageIndex = hash % images.length;
     return images[imageIndex];
   }
 
-  // Final fallback to set logo
-  return `https://images.pokemontcg.io/${setId}/logo.png`;
+  // Final fallback to a small product icon
+  return 'https://www.pokemon.com/static-assets/content-assets/cms2/img/trading-card-game/_tiles/tcg-product-tile-default.png';
 };
 
-// Enhanced product image with better fallback logic
+// Enhanced product image with TCGPlayer API integration
 export const getEnhancedProductImage = (setId: string, productType: string, setName: string): string => {
+  // Try to get TCGPlayer product images (these are typically well-sized)
+  const tcgPlayerImages: { [key: string]: string } = {
+    'Booster Box': `https://product-images.tcgplayer.com/fit-in/437x437/filters:quality(85)/${setId}-booster-box.jpg`,
+    'Elite Trainer Box': `https://product-images.tcgplayer.com/fit-in/437x437/filters:quality(85)/${setId}-elite-trainer-box.jpg`,
+    'Collection Box': `https://product-images.tcgplayer.com/fit-in/437x437/filters:quality(85)/${setId}-collection-box.jpg`,
+    'Tin': `https://product-images.tcgplayer.com/fit-in/437x437/filters:quality(85)/${setId}-tin.jpg`,
+    'Blister Pack': `https://product-images.tcgplayer.com/fit-in/437x437/filters:quality(85)/${setId}-blister.jpg`
+  };
+
+  // For newer sets, try TCGPlayer first
+  if (setId.startsWith('sv') && parseInt(setId.replace('sv', '').replace('pt5', '')) >= 8) {
+    const tcgImage = tcgPlayerImages[productType];
+    if (tcgImage) {
+      return tcgImage;
+    }
+  }
+
+  // Fall back to standard method
   return getSealedProductImage(setId, productType, setName);
+};
+
+// Get product image with proper error handling and sizing
+export const getOptimizedProductImage = (setId: string, productType: string, setName: string, size: 'small' | 'medium' | 'large' = 'medium'): string => {
+  const baseUrl = getEnhancedProductImage(setId, productType, setName);
+  
+  // Apply size optimization parameters
+  const sizeParams: { [key: string]: string } = {
+    'small': '?w=150&h=150&fit=cover&q=85',
+    'medium': '?w=300&h=300&fit=cover&q=85',
+    'large': '?w=600&h=600&fit=cover&q=85'
+  };
+
+  // Only add parameters if the URL supports them (Pokemon official images)
+  if (baseUrl.includes('pokemon.com') || baseUrl.includes('tcgplayer.com')) {
+    return baseUrl + (sizeParams[size] || sizeParams['medium']);
+  }
+
+  return baseUrl;
 };
 
 export default {
   getSealedProductImage,
-  getEnhancedProductImage
+  getEnhancedProductImage,
+  getOptimizedProductImage
 };

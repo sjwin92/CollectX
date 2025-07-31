@@ -177,7 +177,7 @@ const SealedProducts = () => {
                       <img 
                         src={product.imageUrl} 
                         alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           // If current image fails, try the set logo as fallback
