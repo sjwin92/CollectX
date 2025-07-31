@@ -127,8 +127,10 @@ const Navbar = () => {
             </Link>
             
             {!isMobile && (
-              <nav className="hidden md:flex items-center gap-1">
-                <NavLinks />
+              <nav className="hidden md:flex items-center">
+                <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide max-w-2xl">
+                  <NavLinks />
+                </div>
               </nav>
             )}
           </div>
