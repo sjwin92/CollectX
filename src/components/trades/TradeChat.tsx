@@ -135,7 +135,6 @@ const TradeChat = ({
               src={imagePreview} 
               alt="Preview" 
               className="max-h-32 rounded" 
-              useAI={false}
               lazy={false}
             />
           </div>

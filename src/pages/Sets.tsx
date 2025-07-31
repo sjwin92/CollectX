@@ -162,7 +162,6 @@ const Sets = () => {
                               src={logoUrl} 
                               alt={`${set.name} logo`}
                               className="h-16 object-contain mx-auto"
-                              useAI={true}
                               lazy={true}
                               fallbackSrc="/placeholder.svg"
                             />
@@ -185,7 +184,6 @@ const Sets = () => {
                                 src={symbolUrl} 
                                 alt={`${set.name} symbol`}
                                 className="h-6 w-6 object-contain"
-                                useAI={true}
                                 lazy={true}
                                 fallbackSrc="/placeholder.svg"
                               />

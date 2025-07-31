@@ -98,7 +98,6 @@ const SetCard = ({ set }: SetCardProps) => {
                   src={logoUrl} 
                   alt={`${set.name} logo`}
                   className="max-h-12 object-contain mx-auto"
-                  useAI={true}
                   lazy={true}
                   fallbackSrc="/placeholder.svg"
                 />
@@ -121,7 +120,6 @@ const SetCard = ({ set }: SetCardProps) => {
                       src={symbolUrl} 
                       alt={`${set.name} symbol`}
                       className="max-h-6 max-w-6 object-contain"
-                      useAI={true}
                       lazy={true}
                       fallbackSrc="/placeholder.svg"
                     />

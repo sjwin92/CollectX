@@ -7,8 +7,7 @@ import { cn } from "@/lib/utils";
 import { Info, AlertTriangle, Check, RefreshCw, BadgeCheck, Repeat, Star, BookHeart, CircleDollarSign } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { getAllPossibleCardImageUrls, getConsistentCardImageUrl } from "@/services/api/cardImageService";
-import { getFeaturedCardImageUrl } from "@/services/api/featuredCardsService";
+import { simpleImageService } from "@/services/simpleImageService";
 
 export interface CardItemProps {
   id: string;
@@ -56,39 +55,32 @@ const CardItem = ({
 }: CardItemProps) => {
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
   const [imageSrc, setImageSrc] = useState<string>("");
-  const [retryCount, setRetryCount] = useState(0);
-  const [alternativeImages, setAlternativeImages] = useState<string[]>([]);
   
   useEffect(() => {
-    setImageStatus("loading");
-    setRetryCount(0);
+    let isCancelled = false;
     
-    // First try the direct imageUrl if provided
-    let initialSource = imageUrl;
+    const loadImage = async () => {
+      setImageStatus("loading");
+      
+      try {
+        const validImageUrl = await simpleImageService.getCardImageUrl(id, imageUrl);
+        
+        if (!isCancelled) {
+          setImageSrc(validImageUrl);
+        }
+      } catch (error) {
+        console.warn(`Failed to get image for card ${id}:`, error);
+        if (!isCancelled) {
+          setImageStatus("error");
+        }
+      }
+    };
     
-    // If no direct URL, get a reliable URL based on card ID
-    if (!initialSource && id) {
-      initialSource = getConsistentCardImageUrl(id);
-    }
+    loadImage();
     
-    // If the initialSource looks like a placeholder, try to get the featured card URL instead
-    if ((!initialSource || initialSource.includes('placeholder') || initialSource.includes('card-back')) && id) {
-      initialSource = getFeaturedCardImageUrl(id);
-    }
-    
-    // Set this as our primary image source
-    setImageSrc(initialSource || "");
-    
-    // Get all possible alternative URLs as fallbacks
-    const allPossibleImages = getAllPossibleCardImageUrls(id);
-    
-    // Create a unique list of image sources (remove duplicates)
-    let uniqueSources = [initialSource, ...allPossibleImages].filter(Boolean);
-    uniqueSources = [...new Set(uniqueSources)] as string[];
-    
-    console.log(`CardItem ${id}: Found ${uniqueSources.length} potential image sources`);
-    setAlternativeImages(uniqueSources);
-    
+    return () => {
+      isCancelled = true;
+    };
   }, [id, imageUrl]);
   
   const handleImageLoad = () => {
@@ -97,28 +89,19 @@ const CardItem = ({
   };
 
   const handleImageError = () => {
-    console.log(`Image failed to load: ${imageSrc}, retry: ${retryCount}`);
-    
-    const nextIndex = retryCount + 1;
-    
-    if (nextIndex < alternativeImages.length) {
-      console.log(`Trying alternative image source ${nextIndex}: ${alternativeImages[nextIndex]}`);
-      // Switch to the next image source immediately
-      setImageStatus("loading");
-      setRetryCount(nextIndex);
-      setImageSrc(alternativeImages[nextIndex]);
-    } else {
-      setImageStatus("error");
-      console.log("All image sources failed for card:", id);
-    }
+    console.log(`Image failed to load: ${imageSrc}`);
+    setImageStatus("error");
   };
   
-  const retryImage = (e?: React.MouseEvent) => {
+  const retryImage = async (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     setImageStatus("loading");
-    setRetryCount(0);
-    if (alternativeImages.length > 0) {
-      setImageSrc(alternativeImages[0]);
+    
+    try {
+      const validImageUrl = await simpleImageService.getCardImageUrl(id, imageUrl);
+      setImageSrc(validImageUrl);
+    } catch (error) {
+      setImageStatus("error");
     }
   };
 
@@ -148,10 +131,7 @@ const CardItem = ({
                 src={imageSrc}
                 alt={`Pokémon card: ${name} - ${condition} condition, ${rarity} rarity`}
                 className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110`}
-                useAI={true}
                 lazy={true}
-                showOptimizationBadge={false}
-                fallbackSrc="https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
                 onLoad={handleImageLoad}
                 onError={handleImageError}
               />
@@ -351,17 +331,17 @@ const CardItem = ({
     
     if (imageStatus === "loading") {
       timeoutId = window.setTimeout(() => {
-        if (imageStatus === "loading" && retryCount < alternativeImages.length - 1) {
-          console.log("Image loading timed out, trying next source");
-          handleImageError();
+        if (imageStatus === "loading") {
+          console.log("Image loading timed out");
+          setImageStatus("error");
         }
-      }, 3000);
+      }, 5000);
     }
     
     return () => {
       if (timeoutId) window.clearTimeout(timeoutId);
     };
-  }, [imageStatus, retryCount, alternativeImages.length]);
+  }, [imageStatus]);
 };
 
 export default CardItem;

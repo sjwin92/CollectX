@@ -526,7 +526,6 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
                 src={isShowingLightbox} 
                 alt="Expanded view" 
                 className="max-h-[70vh] object-contain" 
-                useAI={false}
                 lazy={false}
               />
             </div>

@@ -1,31 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { imageOptimizer } from '@/services/ai/imageOptimization';
 import { createPlaceholderImage } from '@/utils/placeholderImage';
 import { cn } from '@/lib/utils';
 
 interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
   fallbackSrc?: string;
-  useAI?: boolean;
   lazy?: boolean;
-  showOptimizationBadge?: boolean;
+  retryCount?: number;
 }
 
 const OptimizedImage: React.FC<OptimizedImageProps> = ({
   src,
   fallbackSrc = createPlaceholderImage(),
-  useAI = false,
   lazy = true,
-  showOptimizationBadge = false,
+  retryCount = 0,
   className,
   alt,
   ...props
 }) => {
   const [currentSrc, setCurrentSrc] = useState<string>(src);
-  const [isOptimized, setIsOptimized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
   const [isInView, setIsInView] = useState(!lazy);
+  const [hasRetried, setHasRetried] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
@@ -51,37 +48,14 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
     return () => observerRef.current?.disconnect();
   }, [lazy, isInView]);
 
-  // Image optimization effect
+  // Simple image loading effect
   useEffect(() => {
     if (!isInView) return;
 
-    let isCancelled = false;
     setIsLoading(true);
     setIsError(false);
-
-    const optimizeAndLoad = async () => {
-      try {
-        const optimizedSrc = await imageOptimizer.optimizeImage(src, useAI);
-        
-        if (!isCancelled) {
-          setCurrentSrc(optimizedSrc);
-          setIsOptimized(useAI);
-        }
-      } catch (error) {
-        console.warn('Image optimization failed:', error);
-        if (!isCancelled) {
-          setCurrentSrc(src);
-          setIsOptimized(false);
-        }
-      }
-    };
-
-    optimizeAndLoad();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [src, useAI, isInView]);
+    setCurrentSrc(src);
+  }, [src, isInView]);
 
   const handleLoad = () => {
     setIsLoading(false);
@@ -91,10 +65,13 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
   const handleError = () => {
     console.warn(`Failed to load image: ${currentSrc}`);
     setIsLoading(false);
-    setIsError(true);
-    if (currentSrc !== fallbackSrc) {
+    
+    if (!hasRetried && currentSrc !== fallbackSrc) {
+      setHasRetried(true);
       setCurrentSrc(fallbackSrc);
-      setIsOptimized(false);
+      setIsLoading(true);
+    } else {
+      setIsError(true);
     }
   };
 
@@ -122,13 +99,6 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
         onError={handleError}
         {...props}
       />
-      
-      {/* Optimization badge */}
-      {showOptimizationBadge && isOptimized && !isLoading && (
-        <div className="absolute top-1 right-1 bg-green-500 text-white text-xs px-1 py-0.5 rounded">
-          AI ✨
-        </div>
-      )}
       
       {/* Error indicator */}
       {isError && (

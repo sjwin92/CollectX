@@ -144,7 +144,6 @@ const CardCollectionForm = ({ card, onSubmit, onCancel, initialData }: CardColle
             src={card.images.small} 
             alt={card.name} 
             className="rounded-md" 
-            useAI={true}
             lazy={true}
             fallbackSrc="/placeholder.svg"
           />
