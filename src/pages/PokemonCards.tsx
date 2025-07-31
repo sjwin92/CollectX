@@ -71,7 +71,9 @@ const PokemonCards = () => {
         if (response?.data?.length > 0) {
           console.log(`Got ${response.data.length} cards from page ${currentPage}`);
           const formattedCards: CardItemProps[] = response.data.map(card => {
-            const imgUrl = card.images?.small || card.images?.large || null;
+            const imgUrl = card.images?.small || card.images?.large || `https://images.pokemontcg.io/${card.id.replace('-', '/')}.png`;
+            console.log(`Card ${card.id}: Image URL = ${imgUrl}`);
+            
             const price = card.tcgplayer?.prices?.holofoil?.market 
               ? formatToGBP(card.tcgplayer.prices.holofoil.market) 
               : card.tcgplayer?.prices?.normal?.market 

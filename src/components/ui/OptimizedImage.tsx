@@ -85,7 +85,7 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
         )} />
       )}
       
-      {/* Optimized image */}
+      {/* Direct image without optimization */}
       <img
         ref={imgRef}
         src={isInView ? currentSrc : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InRyYW5zcGFyZW50Ii8+PC9zdmc+'}

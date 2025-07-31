@@ -7,8 +7,9 @@ import { cn } from "@/lib/utils";
 import { Info, AlertTriangle, Check, RefreshCw, BadgeCheck, Repeat, Star, BookHeart, CircleDollarSign } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { enhancedImageService } from "@/services/enhancedImageService";
-import { useImagePerformance } from "@/hooks/useImagePerformance";
+// Temporarily removing enhanced service to debug image issues
+// import { enhancedImageService } from "@/services/enhancedImageService";
+// import { useImagePerformance } from "@/hooks/useImagePerformance";
 
 export interface CardItemProps {
   id: string;
@@ -56,45 +57,19 @@ const CardItem = ({
 }: CardItemProps) => {
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
   const [imageSrc, setImageSrc] = useState<string>("");
-  const { trackImageLoad } = useImagePerformance();
-  
-  // Determine priority based on position (first 6 cards are high priority)
-  const priority = quantity > 1 || graded || forTrade ? 'high' : 'medium';
   
   useEffect(() => {
-    let isCancelled = false;
-    const startTime = performance.now();
+    // Direct, simple image loading without any service
+    setImageStatus("loading");
     
-    const loadImage = async () => {
-      setImageStatus("loading");
-      
-      try {
-        // Get image URL with minimal validation for faster loading
-        const validImageUrl = await enhancedImageService.getCardImageUrl(id, imageUrl, priority);
-        
-        if (!isCancelled) {
-          setImageSrc(validImageUrl);
-          const loadTime = performance.now() - startTime;
-          trackImageLoad(true, loadTime);
-        }
-      } catch (error) {
-        console.warn(`Failed to get image for card ${id}:`, error);
-        if (!isCancelled) {
-          // Fallback to direct image URL without service
-          const fallbackUrl = imageUrl || `https://images.pokemontcg.io/${id.replace('-', '/')}`;
-          setImageSrc(fallbackUrl);
-          const loadTime = performance.now() - startTime;
-          trackImageLoad(false, loadTime);
-        }
-      }
-    };
-    
-    loadImage();
-    
-    return () => {
-      isCancelled = true;
-    };
-  }, [id, imageUrl, priority, trackImageLoad]);
+    if (imageUrl) {
+      console.log(`Loading image for card ${id}: ${imageUrl}`);
+      setImageSrc(imageUrl);
+    } else {
+      console.log(`No image URL provided for card ${id}`);
+      setImageStatus("error");
+    }
+  }, [id, imageUrl]);
   
   const handleImageLoad = () => {
     console.log(`Image loaded successfully: ${imageSrc}`);
@@ -106,17 +81,14 @@ const CardItem = ({
     setImageStatus("error");
   };
   
-  const retryImage = async (e?: React.MouseEvent) => {
+  const retryImage = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     setImageStatus("loading");
     
-    try {
-      // Try direct image URL on retry
-      const directUrl = imageUrl || `https://images.pokemontcg.io/${id.replace('-', '/')}.png`;
-      setImageSrc(directUrl);
-    } catch (error) {
-      setImageStatus("error");
-    }
+    // Try the direct API URL as fallback
+    const directUrl = `https://images.pokemontcg.io/${id.replace('-', '/')}.png`;
+    console.log(`Retrying with direct URL: ${directUrl}`);
+    setImageSrc(directUrl);
   };
 
   const formatCurrency = (value: string): string => {
@@ -141,11 +113,11 @@ const CardItem = ({
         <div className="relative h-full">
           {imageSrc && (
             <>
-              <OptimizedImage
+              {/* Simple direct img tag for debugging */}
+              <img
                 src={imageSrc}
                 alt={`Pokémon card: ${name} - ${condition} condition, ${rarity} rarity`}
                 className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110`}
-                lazy={true}
                 onLoad={handleImageLoad}
                 onError={handleImageError}
               />
