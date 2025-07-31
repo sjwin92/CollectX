@@ -1,5 +1,6 @@
-// Simplified sealed products service with reliable images
+// Enhanced sealed products service with real Pokemon product images
 import { PokemonSet } from './api/pokemonTypes';
+import { resolveProductImage } from './api/productImageService';
 
 export interface FreeSealedProduct {
   id: string;
@@ -20,27 +21,33 @@ export interface FreeSealedProduct {
   retailPrice?: number;
 }
 
-// Sealed product types with typical pricing
+// Sealed product types with proper API mapping
 const productTypes = [
-  { type: 'Booster Box', basePrice: 75, icon: '📦' },
-  { type: 'Elite Trainer Box', basePrice: 35, icon: '🎁' },
-  { type: 'Collection Box', basePrice: 20, icon: '📋' },
-  { type: 'Tin', basePrice: 15, icon: '🥫' },
-  { type: 'Blister Pack', basePrice: 4, icon: '💳' }
+  { type: 'Booster Box', apiType: 'box', basePrice: 75, icon: '📦' },
+  { type: 'Elite Trainer Box', apiType: 'etb', basePrice: 35, icon: '🎁' },
+  { type: 'Collection Box', apiType: 'box', basePrice: 20, icon: '📋' },
+  { type: 'Tin', apiType: 'tin', basePrice: 15, icon: '🥫' },
+  { type: 'Blister Pack', apiType: 'blister-pack', basePrice: 4, icon: '💳' }
 ];
 
-// Get small, reliable product image
-const getProductImage = (setId: string, productType: string): string => {
-  // Use placeholder icons for different product types
-  const placeholderImages: { [key: string]: string } = {
-    'Booster Box': 'https://images.unsplash.com/photo-1600298881974-6be191ceeda1?w=300&h=300&fit=crop&crop=center',
-    'Elite Trainer Box': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=300&fit=crop&crop=center',
-    'Collection Box': 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=300&h=300&fit=crop&crop=center',
-    'Tin': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=300&fit=crop&crop=center',
-    'Blister Pack': 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=300&h=300&fit=crop&crop=center'
-  };
+// Get Pokemon product image with fallbacks
+const getProductImage = async (setId: string, productType: string, setName: string): Promise<string> => {
+  // Map display type to API type
+  const productMapping = productTypes.find(p => p.type === productType);
+  const apiType = productMapping?.apiType || 'box';
   
-  return placeholderImages[productType] || placeholderImages['Booster Box'];
+  try {
+    // Try to get actual Pokemon product image
+    const productImage = await resolveProductImage(setId, apiType, setName);
+    if (productImage) {
+      return productImage;
+    }
+  } catch (error) {
+    console.warn(`Failed to resolve product image for ${setId}-${apiType}:`, error);
+  }
+  
+  // Fallback to set logo
+  return `https://images.pokemontcg.io/${setId}/logo.png`;
 };
 
 // Fetch Pokemon sets from API
@@ -79,12 +86,14 @@ export const fetchFreeSealedProducts = async (): Promise<FreeSealedProduct[]> =>
     const sets = await fetchPokemonSets();
     const products: FreeSealedProduct[] = [];
     
-    sets.forEach((set) => {
-      productTypes.forEach((productType) => {
+    // Use Promise.all to resolve all product images concurrently
+    const productPromises = sets.flatMap((set) =>
+      productTypes.map(async (productType) => {
         const currentPrice = generatePrice(productType.basePrice, set.releaseDate);
         const retailPrice = productType.basePrice * 1.15;
+        const imageUrl = await getProductImage(set.id, productType.type, set.name);
         
-        products.push({
+        return {
           id: `${set.id}-${productType.type.toLowerCase().replace(/\s+/g, '-')}`,
           name: `${set.name} ${productType.type}`,
           type: productType.type,
@@ -95,18 +104,19 @@ export const fetchFreeSealedProducts = async (): Promise<FreeSealedProduct[]> =>
             currency: 'GBP',
             source: 'Market Average'
           },
-          imageUrl: getProductImage(set.id, productType.type),
-          availability: Math.random() > 0.3 ? 'in-stock' : 
-                       Math.random() > 0.5 ? 'pre-order' : 'out-of-stock',
+          imageUrl,
+          availability: Math.random() > 0.3 ? 'in-stock' as const : 
+                       Math.random() > 0.5 ? 'pre-order' as const : 'out-of-stock' as const,
           releaseDate: set.releaseDate,
           description: `Official ${set.name} ${productType.type} from the ${set.series} series.`,
           vendor: 'Various Retailers',
           retailPrice
-        });
-      });
-    });
+        };
+      })
+    );
     
-    return products;
+    const resolvedProducts = await Promise.all(productPromises);
+    return resolvedProducts;
   } catch (error) {
     console.error('Error creating sealed products:', error);
     return [];
