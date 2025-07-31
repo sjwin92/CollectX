@@ -6,6 +6,7 @@ import { queryClient } from "./lib/react-query";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import { LoadingProvider } from "./contexts/LoadingContext";
 import { Toaster } from "@/components/ui/toaster";
+import ProtectedRoute from "./components/common/ProtectedRoute";
 import Trades from "./pages/Trades";
 import Collection from "./pages/Collection";
 import CollectionBoxes from "./pages/CollectionBoxes";
@@ -33,30 +34,22 @@ function App() {
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               
-              {/* Trading Routes */}
-              <Route path="/trades" element={<Trades />} />
-              <Route path="/trades/:id" element={<TradeDetail />} />
-              
-              {/* Collection Routes */}
-              <Route path="/collection" element={<Collection />} />
-              <Route path="/collection-boxes" element={<CollectionBoxes />} />
-              <Route path="/profile" element={<Profile />} />
-              
-              {/* Card Routes */}
+              {/* Public routes */}
+              <Route path="/pokemon-sets" element={<Sets />} />
+              <Route path="/pokemon-sets/:id" element={<SetDetail />} />
               <Route path="/pokemon-cards" element={<PokemonCards />} />
               <Route path="/card/:id" element={<CardDetail />} />
               <Route path="/pokemons" element={<Pokemons />} />
-              
-              {/* Set Routes */}
-              <Route path="/pokemon-sets" element={<Sets />} />
-              <Route path="/pokemon-sets/:id" element={<SetDetail />} />
-              
-              {/* Products Route */}
               <Route path="/products" element={<Products />} />
               <Route path="/sealed-products" element={<SealedProducts />} />
               
-              {/* Marketplace */}
-              <Route path="/marketplace" element={<Marketplace />} />
+              {/* Protected routes */}
+              <Route path="/trades" element={<ProtectedRoute><Trades /></ProtectedRoute>} />
+              <Route path="/trades/:id" element={<ProtectedRoute><TradeDetail /></ProtectedRoute>} />
+              <Route path="/collection" element={<ProtectedRoute><Collection /></ProtectedRoute>} />
+              <Route path="/collection-boxes" element={<ProtectedRoute><CollectionBoxes /></ProtectedRoute>} />
+              <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               
               {/* 404 Page */}
               <Route path="*" element={<NotFound />} />

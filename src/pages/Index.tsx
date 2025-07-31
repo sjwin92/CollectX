@@ -37,7 +37,7 @@ const Index = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-up animation-delay-200">
               <Button size="lg" asChild>
-                <Link to="/collection">Start Trading</Link>
+                <Link to="/auth">Start Trading</Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
                 <Link to="/pokemons">Browse Cards</Link>
@@ -124,7 +124,7 @@ const Index = () => {
               It only takes a minute to set up your collection and start making trades.
             </p>
             <Button size="lg" asChild>
-              <Link to="/collection">Get Started Now</Link>
+              <Link to="/auth">Get Started Now</Link>
             </Button>
           </div>
         </div>

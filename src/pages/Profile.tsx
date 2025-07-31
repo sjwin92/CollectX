@@ -32,86 +32,47 @@ import {
   Search
 } from "lucide-react";
 
-// Placeholder user data
+// Empty user data for fresh spawn
 const userData = {
-  name: "Alex Johnson",
-  username: "alexj",
-  joined: "January 2023",
-  location: "Seattle, WA",
-  reputation: "trusted" as const,
-  bio: "Avid Pokémon card collector since 1999. Specializing in WoTC era cards and modern ultra rares. Looking for trades to complete my Base Set collection.",
+  name: "New User",
+  username: "newuser", 
+  joined: "Just now",
+  location: "",
+  reputation: "new" as const,
+  bio: "",
   stats: {
-    trades: 42,
-    collectionSize: 384,
-    reputationScore: 4.9,
-    reviewCount: 38
+    trades: 0,
+    collectionSize: 0,
+    reputationScore: 0,
+    reviewCount: 0
   },
-  badges: [
-    "Verified Trader",
-    "Fast Shipper",
-    "Top Collector"
-  ]
+  badges: []
 };
 
-// Placeholder collection data
-const userCollection: CardItemProps[] = [
-  {
-    id: "swsh4-25",
-    name: "Charizard VMAX",
-    imageUrl: "https://images.pokemontcg.io/swsh4/25.png",
-    rarity: "Rare Ultra",
-    condition: "Near Mint",
-    estimatedValue: "$125-150"
-  },
-  {
-    id: "base1-4",
-    name: "Charizard Base Set",
-    imageUrl: "https://images.pokemontcg.io/base1/4.png",
-    rarity: "Rare Holo",
-    condition: "Excellent",
-    estimatedValue: "$350-500"
-  },
-  {
-    id: "xy12-13",
-    name: "Pikachu EX",
-    imageUrl: "https://images.pokemontcg.io/xy12/13.png",
-    rarity: "Rare Ultra",
-    condition: "Mint",
-    estimatedValue: "$40-60"
-  },
-  {
-    id: "sm10-158",
-    name: "Reshiram & Charizard GX",
-    imageUrl: "https://images.pokemontcg.io/sm10/158.png",
-    rarity: "Rare Rainbow",
-    condition: "Near Mint",
-    estimatedValue: "$180-220"
-  },
-  {
-    id: "cel25c-12",
-    name: "Blastoise",
-    imageUrl: "https://images.pokemontcg.io/cel25c/12.png",
-    rarity: "Classic Collection",
-    condition: "Mint",
-    estimatedValue: "$30-45"
-  },
-  {
-    id: "dp7-130",
-    name: "Gengar Lv.X",
-    imageUrl: "https://images.pokemontcg.io/dp7/130.png",
-    rarity: "Rare Holo Lv.X",
-    condition: "Good",
-    estimatedValue: "$85-115"
-  },
-];
-
-// Rare cards that user might want to showcase
-const showcaseCards = userCollection.slice(0, 4);
+// Empty collection for fresh spawn
+const userCollection: CardItemProps[] = [];
 
 const Profile = () => {
-  const { user } = useUser();
+  const { user, profile } = useUser();
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredCards, setFilteredCards] = useState<CardItemProps[]>(userCollection);
+  
+  // Use actual user data when available
+  const displayData = {
+    name: profile?.display_name || user?.email?.split('@')[0] || "New User",
+    username: profile?.username || "newuser",
+    joined: profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : "Just now",
+    location: profile?.location || "",
+    reputation: "new" as const,
+    bio: profile?.bio || "",
+    stats: {
+      trades: profile?.total_trades || 0,
+      collectionSize: userCollection.length,
+      reputationScore: profile?.reputation_score || 0,
+      reviewCount: 0
+    },
+    badges: [] as string[]
+  };
   
   // Function to render reputation stars
   const renderReputationStars = (score: number) => {
@@ -175,30 +136,32 @@ const Profile = () => {
                   </Avatar>
                 </div>
                 
-                <h1 className="text-2xl font-bold mb-1">{userData.name}</h1>
+                <h1 className="text-2xl font-bold mb-1">{displayData.name}</h1>
                 <div className="flex items-center justify-center mb-3">
-                  <Badge variant="reputation" reputation={userData.reputation} size="md">
-                    {userData.reputation.charAt(0).toUpperCase() + userData.reputation.slice(1)} Trader
+                  <Badge variant="reputation" reputation={displayData.reputation} size="md">
+                    {displayData.reputation.charAt(0).toUpperCase() + displayData.reputation.slice(1)} Trader
                   </Badge>
                 </div>
                 
                 <div className="flex items-center justify-center mb-4">
                   <div className="flex">
-                    {renderReputationStars(userData.stats.reputationScore)}
+                    {renderReputationStars(displayData.stats.reputationScore)}
                   </div>
                   <span className="ml-2 text-sm font-medium">
-                    {userData.stats.reputationScore} ({userData.stats.reviewCount})
+                    {displayData.stats.reputationScore} ({displayData.stats.reviewCount})
                   </span>
                 </div>
                 
                 <div className="space-y-2 text-sm mb-4">
-                  <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                    <MapPin className="h-4 w-4" />
-                    <span>{userData.location}</span>
-                  </div>
+                  {displayData.location && (
+                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                      <MapPin className="h-4 w-4" />
+                      <span>{displayData.location}</span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-center gap-2 text-muted-foreground">
                     <Calendar className="h-4 w-4" />
-                    <span>Joined {userData.joined}</span>
+                    <span>Joined {displayData.joined}</span>
                   </div>
                 </div>
                 
@@ -215,15 +178,15 @@ const Profile = () => {
                 <div className="border-t border-border pt-4 mt-4">
                   <div className="grid grid-cols-3 gap-2 text-center">
                     <div>
-                      <div className="text-xl font-bold">{userData.stats.trades}</div>
+                      <div className="text-xl font-bold">{displayData.stats.trades}</div>
                       <div className="text-xs text-muted-foreground">Trades</div>
                     </div>
                     <div>
-                      <div className="text-xl font-bold">{userData.stats.collectionSize}</div>
+                      <div className="text-xl font-bold">{displayData.stats.collectionSize}</div>
                       <div className="text-xs text-muted-foreground">Cards</div>
                     </div>
                     <div>
-                      <div className="text-xl font-bold">{userData.stats.reviewCount}</div>
+                      <div className="text-xl font-bold">{displayData.stats.reviewCount}</div>
                       <div className="text-xs text-muted-foreground">Reviews</div>
                     </div>
                   </div>
@@ -232,16 +195,24 @@ const Profile = () => {
               
               <GlassCard className="p-6">
                 <h2 className="text-lg font-bold mb-4">About Me</h2>
-                <p className="text-sm text-muted-foreground mb-6">{userData.bio}</p>
+                {displayData.bio ? (
+                  <p className="text-sm text-muted-foreground mb-6">{displayData.bio}</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground mb-6 italic">No bio added yet.</p>
+                )}
                 
                 <h3 className="text-sm font-medium mb-2">Badges</h3>
                 <div className="flex flex-wrap gap-2">
-                  {userData.badges.map((badge, index) => (
-                    <div key={index} className="flex items-center gap-1.5 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
-                      <Award className="h-3 w-3" />
-                      <span>{badge}</span>
-                    </div>
-                  ))}
+                  {displayData.badges.length > 0 ? (
+                    displayData.badges.map((badge, index) => (
+                      <div key={index} className="flex items-center gap-1.5 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
+                        <Award className="h-3 w-3" />
+                        <span>{badge}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">No badges earned yet.</p>
+                  )}
                 </div>
               </GlassCard>
             </div>

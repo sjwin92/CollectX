@@ -45,34 +45,12 @@ const Collection = () => {
   const [gradeValue, setGradeValue] = useState("9");
   const [tradePreferences, setTradePreferences] = useState("");
   const [filteredCollection, setFilteredCollection] = useState<ExtendedCardItemProps[]>([]);
+  // Initialize with empty collections for fresh spawn experience
   useEffect(() => {
-    const savedCollection = localStorage.getItem('myCollection');
-    const savedWishlist = localStorage.getItem('wishlistCards');
-    const savedTradable = localStorage.getItem('tradableCards');
-    if (savedCollection) {
-      try {
-        const parsed = JSON.parse(savedCollection);
-        setMyCollection(parsed);
-      } catch (error) {
-        console.error('Error parsing myCollection from localStorage:', error);
-      }
-    }
-    if (savedWishlist) {
-      try {
-        const parsed = JSON.parse(savedWishlist);
-        setWishlistCards(parsed);
-      } catch (error) {
-        console.error('Error parsing wishlistCards from localStorage:', error);
-      }
-    }
-    if (savedTradable) {
-      try {
-        const parsed = JSON.parse(savedTradable);
-        setTradableCards(parsed);
-      } catch (error) {
-        console.error('Error parsing tradableCards from localStorage:', error);
-      }
-    }
+    // No pre-existing data - start fresh
+    setMyCollection([]);
+    setWishlistCards([]);
+    setTradableCards([]);
   }, []);
   useEffect(() => {
     // Update filtered cards whenever search query or filters change
