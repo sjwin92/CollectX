@@ -99,9 +99,9 @@ const PokemonCards = () => {
           .filter(Boolean)
           .slice(0, 10); // Preload first 10 cards
           
-        // Use simple image service for preloading
-        import('@/services/simpleImageService').then(({ simpleImageService }) => {
-          simpleImageService.preloadImages(cardIds).catch(console.warn);
+        // Use enhanced image service for preloading
+        import('@/services/enhancedImageService').then(({ enhancedImageService }) => {
+          enhancedImageService.preloadImages(cardIds, 'low').catch(console.warn);
         });
       }
     } catch (error) {

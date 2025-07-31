@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { simpleImageService } from '@/services/simpleImageService';
+import { enhancedImageService } from '@/services/enhancedImageService';
 
 const ImagePreloader: React.FC = () => {
   useEffect(() => {
@@ -9,8 +9,9 @@ const ImagePreloader: React.FC = () => {
       'https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg',
     ];
 
-    // Preload common images with the simple service
-    simpleImageService.preloadImages(['placeholder']).catch(console.warn);
+    // Start cache cleanup and preload common images
+    enhancedImageService.startCacheCleanup();
+    enhancedImageService.preloadImages(['placeholder'], 'low').catch(console.warn);
     
     // Cleanup cache on unmount
     return () => {

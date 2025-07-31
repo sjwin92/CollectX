@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils";
 import { Info, AlertTriangle, Check, RefreshCw, BadgeCheck, Repeat, Star, BookHeart, CircleDollarSign } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { simpleImageService } from "@/services/simpleImageService";
+import { enhancedImageService } from "@/services/enhancedImageService";
+import { useImagePerformance } from "@/hooks/useImagePerformance";
 
 export interface CardItemProps {
   id: string;
@@ -55,23 +56,32 @@ const CardItem = ({
 }: CardItemProps) => {
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
   const [imageSrc, setImageSrc] = useState<string>("");
+  const { trackImageLoad } = useImagePerformance();
+  
+  // Determine priority based on position (first 6 cards are high priority)
+  const priority = quantity > 1 || graded || forTrade ? 'high' : 'medium';
   
   useEffect(() => {
     let isCancelled = false;
+    const startTime = performance.now();
     
     const loadImage = async () => {
       setImageStatus("loading");
       
       try {
-        const validImageUrl = await simpleImageService.getCardImageUrl(id, imageUrl);
+        const validImageUrl = await enhancedImageService.getCardImageUrl(id, imageUrl, priority);
         
         if (!isCancelled) {
           setImageSrc(validImageUrl);
+          const loadTime = performance.now() - startTime;
+          trackImageLoad(true, loadTime);
         }
       } catch (error) {
         console.warn(`Failed to get image for card ${id}:`, error);
         if (!isCancelled) {
           setImageStatus("error");
+          const loadTime = performance.now() - startTime;
+          trackImageLoad(false, loadTime);
         }
       }
     };
@@ -81,7 +91,7 @@ const CardItem = ({
     return () => {
       isCancelled = true;
     };
-  }, [id, imageUrl]);
+  }, [id, imageUrl, priority, trackImageLoad]);
   
   const handleImageLoad = () => {
     console.log(`Image loaded successfully: ${imageSrc}`);
@@ -98,7 +108,7 @@ const CardItem = ({
     setImageStatus("loading");
     
     try {
-      const validImageUrl = await simpleImageService.getCardImageUrl(id, imageUrl);
+      const validImageUrl = await enhancedImageService.getCardImageUrl(id, imageUrl, 'high');
       setImageSrc(validImageUrl);
     } catch (error) {
       setImageStatus("error");
