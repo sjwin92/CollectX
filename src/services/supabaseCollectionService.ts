@@ -89,7 +89,7 @@ export const addCardToCollection = async (newCard: ExtendedCardItemProps): Promi
     grade_score: newCard.gradeScore ? parseFloat(newCard.gradeScore) : null,
     for_trade: newCard.forTrade || false,
     trade_value: newCard.estimatedValue ? parseFloat(newCard.estimatedValue) : null,
-    product_type: newCard.productType || 'single'
+    product_type: newCard.productType === 'card' ? 'single' : (newCard.productType || 'single')
   };
 
   // Check if card already exists with same attributes
@@ -101,7 +101,7 @@ export const addCardToCollection = async (newCard: ExtendedCardItemProps): Promi
     .eq('condition', newCard.condition || 'near_mint')
     .eq('is_graded', newCard.graded || false)
     .eq('grade_company', newCard.gradingCompany || null)
-    .eq('product_type', newCard.productType || 'single')
+    .eq('product_type', newCard.productType === 'card' ? 'single' : (newCard.productType || 'single'))
     .maybeSingle();
 
   if (existingCard) {

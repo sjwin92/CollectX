@@ -69,7 +69,7 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
         forSale: data.forSale,
         graded: data.isGraded,
         quantity: data.quantity,
-        productType: data.productType || "card",
+        productType: data.productType === 'card' ? 'single' : (data.productType || 'single') as any,
         isSealed: data.isSealed,
         packCount: data.packCount,
         setCode: data.setCode
