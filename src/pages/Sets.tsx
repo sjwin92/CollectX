@@ -19,23 +19,41 @@ const Sets = () => {
   const [imageErrors, setImageErrors] = useState<Record<string, { logo: number; symbol: number }>>({});
   const { toast } = useToast();
   
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['pokemonSets', currentPage],
     queryFn: () => getSets(currentPage, 20),
-    meta: {
-      onError: (error: Error) => {
-        toast({
-          title: "Error loading sets",
-          description: error.message,
-          variant: "destructive"
-        });
-      }
-    }
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    retry: 3
   });
+
+  // Handle errors with toast
+  React.useEffect(() => {
+    if (isError && error) {
+      console.error("Query error:", error);
+      toast({
+        title: "Error loading sets",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  }, [isError, error, toast]);
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log("Sets page state:", { 
+      isLoading, 
+      isError, 
+      dataLength: data?.data?.length,
+      currentPage,
+      error: error?.message 
+    });
+  }, [isLoading, isError, data, currentPage, error]);
 
   // Use API data directly
   const combinedData = React.useMemo(() => {
-    if (isLoading || isError || !data) return [];
+    console.log("Computing combinedData:", { isLoading, isError, hasData: !!data, dataLength: data?.data?.length });
+    if (isLoading || isError || !data?.data) return [];
     return data.data;
   }, [data, isLoading, isError]);
 
