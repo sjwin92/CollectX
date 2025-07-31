@@ -69,6 +69,7 @@ const CardItem = ({
       setImageStatus("loading");
       
       try {
+        // Get image URL with minimal validation for faster loading
         const validImageUrl = await enhancedImageService.getCardImageUrl(id, imageUrl, priority);
         
         if (!isCancelled) {
@@ -79,7 +80,9 @@ const CardItem = ({
       } catch (error) {
         console.warn(`Failed to get image for card ${id}:`, error);
         if (!isCancelled) {
-          setImageStatus("error");
+          // Fallback to direct image URL without service
+          const fallbackUrl = imageUrl || `https://images.pokemontcg.io/${id.replace('-', '/')}`;
+          setImageSrc(fallbackUrl);
           const loadTime = performance.now() - startTime;
           trackImageLoad(false, loadTime);
         }
@@ -108,8 +111,9 @@ const CardItem = ({
     setImageStatus("loading");
     
     try {
-      const validImageUrl = await enhancedImageService.getCardImageUrl(id, imageUrl, 'high');
-      setImageSrc(validImageUrl);
+      // Try direct image URL on retry
+      const directUrl = imageUrl || `https://images.pokemontcg.io/${id.replace('-', '/')}.png`;
+      setImageSrc(directUrl);
     } catch (error) {
       setImageStatus("error");
     }

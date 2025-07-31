@@ -109,48 +109,40 @@ class EnhancedImageService {
     }
   }
 
-  // Intelligent image URL resolution with priority
+  // Simplified image URL resolution - let browser handle validation
   async getValidImageUrl(urls: string[], priority: 'high' | 'medium' | 'low' = 'medium'): Promise<string> {
-    for (const url of urls) {
+    // For high priority requests, try the first few URLs quickly
+    if (priority === 'high' && urls.length > 0) {
+      return urls[0]; // Return first URL immediately for fast loading
+    }
+
+    for (const url of urls.slice(0, 3)) { // Only check first 3 URLs to avoid delays
       const cacheKey = this.getCacheKey(url);
       const cached = this.cache.get(cacheKey);
       
-      // Use cached result if recent
-      if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-        if (cached.isValid) {
-          // Update timestamp for LRU
-          cached.timestamp = Date.now();
-          cached.priority = priority;
-          return url;
-        }
-        continue;
+      // Use cached result if recent and valid
+      if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION && cached.isValid) {
+        cached.timestamp = Date.now(); // Update for LRU
+        cached.priority = priority;
+        return url;
       }
 
-      // Skip if already being validated
-      if (this.validationQueue.has(url)) continue;
-
-      // Respect concurrent load limits for non-high priority
-      if (priority !== 'high' && this.currentLoads >= this.MAX_CONCURRENT_LOADS) {
-        continue;
-      }
-
-      this.validationQueue.add(url);
-      this.currentLoads++;
-      
-      try {
-        const isValid = await this.validateImageUrl(url, priority);
-        if (isValid) {
-          return url;
-        }
-      } catch (error) {
-        console.warn(`Image validation failed for ${url}:`, error);
-      } finally {
-        this.validationQueue.delete(url);
-        this.currentLoads--;
+      // Skip validation for common reliable domains
+      if (url.includes('images.pokemontcg.io') || url.includes('archives.bulbagarden.net')) {
+        // Cache as valid without validation for known reliable sources
+        this.cache.set(cacheKey, {
+          url,
+          timestamp: Date.now(),
+          isValid: true,
+          priority,
+          loadTime: 0
+        });
+        return url;
       }
     }
 
-    return createPlaceholderImage();
+    // Return first URL if no validation was done
+    return urls.length > 0 ? urls[0] : createPlaceholderImage();
   }
 
   // Smart card image URL generation with network awareness

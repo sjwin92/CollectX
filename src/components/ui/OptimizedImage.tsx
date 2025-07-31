@@ -48,7 +48,7 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
     return () => observerRef.current?.disconnect();
   }, [lazy, isInView]);
 
-  // Simple image loading effect
+  // Direct image loading - let browser handle validation
   useEffect(() => {
     if (!isInView) return;
 
