@@ -43,45 +43,8 @@ const CollectionBoxSelector = ({
   selectedBoxId, 
   disabled = false 
 }: CollectionBoxSelectorProps) => {
-  // Mock collection boxes with cards
-  const collectionBoxes: CollectionBox[] = [
-    {
-      id: "tradeable",
-      name: "Cards to Trade",
-      description: "Available for trading",
-      icon: "ArrowRightLeft",
-      color: "blue",
-      cardCount: 47,
-      totalValue: 1250.00
-    },
-    {
-      id: "untouchables", 
-      name: "Untouchables",
-      description: "Never trading these",
-      icon: "Shield",
-      color: "red",
-      cardCount: 12,
-      totalValue: 3200.00
-    },
-    {
-      id: "high-value",
-      name: "High Value", 
-      description: "Premium cards $100+",
-      icon: "TrendingUp",
-      color: "green",
-      cardCount: 23,
-      totalValue: 5600.00
-    },
-    {
-      id: "rare",
-      name: "Rare Collection",
-      description: "Hard to find cards", 
-      icon: "Star",
-      color: "purple",
-      cardCount: 18,
-      totalValue: 890.00
-    }
-  ];
+  // User's collection boxes (empty for fresh spawn)
+  const collectionBoxes: CollectionBox[] = [];
 
   const getIconComponent = (iconName: string) => {
     const icons: { [key: string]: React.ComponentType<any> } = {
@@ -143,7 +106,13 @@ const CollectionBoxSelector = ({
         
         <ScrollArea className="h-[300px]">
           <div className="space-y-1 p-1">
-            {collectionBoxes.map((box) => (
+            {collectionBoxes.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Box className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No collection boxes yet</p>
+                <p className="text-xs mt-1">Start organizing your cards by creating boxes</p>
+              </div>
+            ) : collectionBoxes.map((box) => (
               <DropdownMenuItem
                 key={box.id}
                 className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 rounded-md"

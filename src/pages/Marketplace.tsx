@@ -58,125 +58,9 @@ interface ListingType {
   featured?: boolean;
 }
 
-const FEATURED_LISTINGS: ListingType[] = [
-  {
-    id: "featured-1",
-    userId: "user-premium-1",
-    username: "RarityHunter",
-    cardOffered: {
-      id: "base1-4",
-      name: "Charizard Base Set",
-      imageUrl: "https://images.pokemontcg.io/base1/4.png",
-      rarity: "Holo Rare",
-      condition: "Near Mint",
-      estimatedValue: "$500"
-    },
-    cardsWanted: ["Blastoise Base Set", "Venusaur Base Set", "Shadowless Raichu"],
-    description: "Original 1999 Base Set Charizard in Near Mint condition. Looking for other Base Set holos or shadowless cards.",
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    featured: true
-  },
-  {
-    id: "featured-2",
-    userId: "user-premium-2",
-    username: "VintageCollector",
-    cardOffered: {
-      id: "sm12-190",
-      name: "Mewtwo & Mew GX (Rainbow)",
-      imageUrl: "https://images.pokemontcg.io/sm12/190.png",
-      rarity: "Ultra Rare",
-      condition: "Mint",
-      estimatedValue: "$120"
-    },
-    cardsWanted: ["Charizard & Reshiram GX", "Pikachu VMAX", "Rayquaza VMAX"],
-    description: "Perfect condition Rainbow rare Mewtwo & Mew GX. Straight from pack to sleeve. Looking for other recent high-value cards.",
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    featured: true
-  }
-];
+const FEATURED_LISTINGS: ListingType[] = [];
 
-const INITIAL_LISTINGS: ListingType[] = [
-  {
-    id: "listing-1",
-    userId: "user-1",
-    username: "PokeMaster99",
-    cardOffered: {
-      id: "sm9-60",
-      name: "Charizard GX",
-      imageUrl: "https://images.pokemontcg.io/sm9/60.png",
-      rarity: "Ultra Rare",
-      condition: "Near Mint",
-      estimatedValue: "$120"
-    },
-    cardsWanted: ["Blastoise", "Venusaur GX", "Mew"],
-    description: "Looking to trade my Charizard GX for any of the cards listed. Prefer Near Mint condition only.",
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
-  },
-  {
-    id: "listing-2",
-    userId: "user-2",
-    username: "PikachuFan22",
-    cardOffered: {
-      id: "swsh4-25",
-      name: "Pikachu V",
-      imageUrl: "https://images.pokemontcg.io/swsh4/25.png",
-      rarity: "Rare",
-      condition: "Excellent",
-      estimatedValue: "$15"
-    },
-    cardsWanted: ["Raichu", "Alolan Raichu", "Pikachu GX"],
-    description: "Trading my Pikachu V for other Pikachu evolution line cards.",
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
-  },
-  {
-    id: "listing-3",
-    userId: "user-3",
-    username: "CardCollector44",
-    cardOffered: {
-      id: "swsh12-179",
-      name: "Mewtwo V",
-      imageUrl: "https://images.pokemontcg.io/swsh12/179.png",
-      rarity: "Ultra Rare",
-      condition: "Mint",
-      estimatedValue: "$35"
-    },
-    cardsWanted: ["Any Legendary Pokémon cards", "Rayquaza V", "Lugia V"],
-    description: "Looking to trade my mint condition Mewtwo V for other Legendary Pokémon cards.",
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
-  },
-  {
-    id: "listing-4",
-    userId: "user-4",
-    username: "VintageVibes",
-    cardOffered: {
-      id: "base2-4",
-      name: "Blastoise",
-      imageUrl: "https://images.pokemontcg.io/base2/4.png",
-      rarity: "Holo Rare",
-      condition: "Played",
-      estimatedValue: "$75"
-    },
-    cardsWanted: ["Fossil Zapdos", "Jungle Jolteon", "Base Raichu"],
-    description: "Original Base Set 2 Blastoise with some edge wear. Looking for similar era electrics.",
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-  },
-  {
-    id: "listing-5",
-    userId: "user-5",
-    username: "ModernCollector",
-    cardOffered: {
-      id: "swsh8-188",
-      name: "Umbreon VMAX (Alternate Art)",
-      imageUrl: "https://images.pokemontcg.io/swsh8/188.png",
-      rarity: "Secret Rare",
-      condition: "Mint",
-      estimatedValue: "$280"
-    },
-    cardsWanted: ["Charizard VMAX (Rainbow)", "Rayquaza VMAX (Alt Art)", "Gengar VMAX (Alt Art)"],
-    description: "PSA 9 worthy Umbreon VMAX Alt Art. Looking for other high-end modern cards in similar condition.",
-    createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000)
-  }
-];
+const INITIAL_LISTINGS: ListingType[] = [];
 
 const Marketplace = () => {
   const [isCreateListingOpen, setCreateListingOpen] = useState(false);
@@ -458,13 +342,18 @@ const Marketplace = () => {
         ) : (
           <GlassCard className="p-8 text-center">
             <PackageOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-xl font-medium mb-2">No trade listings match your criteria</h3>
+            <h3 className="text-xl font-medium mb-2">
+              {listings.length === 0 ? "No trade listings yet" : "No trade listings match your criteria"}
+            </h3>
             <p className="text-muted-foreground mb-4">
-              Try adjusting your filters or create your own listing to start trading!
+              {listings.length === 0 
+                ? "Be the first to create a listing and start the trading community!"
+                : "Try adjusting your filters or create your own listing to start trading!"
+              }
             </p>
             <Button onClick={() => setCreateListingOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Create Listing
+              Create First Listing
             </Button>
           </GlassCard>
         )}

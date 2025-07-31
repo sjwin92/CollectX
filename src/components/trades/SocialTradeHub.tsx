@@ -54,7 +54,7 @@ interface Conversation {
 
 const SocialTradeHub = ({ isOpen, onClose }: SocialTradeHubProps) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedChat, setSelectedChat] = useState<string | null>('1');
+  const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState('');
   const [showTradeProposal, setShowTradeProposal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -71,36 +71,8 @@ const SocialTradeHub = ({ isOpen, onClose }: SocialTradeHubProps) => {
       }
     }
     
-    // Return initial conversations if no saved data
-    return [
-      {
-        id: '1',
-        user: { name: 'Alex Morgan', avatar: '/placeholder.svg' },
-        lastMessage: 'Sounds good! When can you ship?',
-        timestamp: 'now',
-        unread: 2,
-        tradeStatus: 'negotiating',
-        messages: [
-          { id: '1', sender: 'them', text: 'Hey! Interested in your Charizard Base Set', time: '2:30 PM', type: 'text' },
-          { id: '2', sender: 'me', text: "Sure! It's Near Mint condition. What do you have to offer?", time: '2:32 PM', type: 'text' },
-          { id: '3', sender: 'them', text: 'I have a Blastoise Base Set in excellent condition plus $50', time: '2:35 PM', type: 'text' },
-          { id: '4', sender: 'me', text: 'That works for me! Can I see photos first?', time: '2:36 PM', type: 'text' },
-          { id: '5', sender: 'them', text: 'Sounds good! When can you ship?', time: '2:40 PM', type: 'text' }
-        ]
-      },
-      {
-        id: '2', 
-        user: { name: 'Jordan Lee', avatar: '/placeholder.svg' },
-        lastMessage: 'Package shipped! Tracking: 1Z999AA1234567890',
-        timestamp: '1h',
-        unread: 0,
-        tradeStatus: 'shipped',
-        messages: [
-          { id: '1', sender: 'them', text: 'Package shipped! Tracking: 1Z999AA1234567890', time: '1:00 PM', type: 'text' },
-          { id: '2', sender: 'me', text: 'Awesome! Thanks for the quick shipping', time: '1:15 PM', type: 'text' }
-        ]
-      }
-    ];
+    // Return empty conversations for fresh spawn
+    return [];
   });
 
   // Save conversations to localStorage whenever they change
@@ -250,7 +222,13 @@ const SocialTradeHub = ({ isOpen, onClose }: SocialTradeHubProps) => {
             </div>
             <ScrollArea className="w-full">
               <div className="flex gap-2 p-4 min-w-max overflow-x-auto scrollbar-hide">
-                {conversations.map((conversation) => (
+                {conversations.length === 0 ? (
+                  <div className="w-full text-center py-8 text-muted-foreground">
+                    <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">No conversations yet</p>
+                    <p className="text-xs mt-1">Start trading to begin messaging</p>
+                  </div>
+                ) : conversations.map((conversation) => (
                   <div
                     key={conversation.id}
                     className={`flex-shrink-0 w-72 p-3 rounded-lg cursor-pointer transition-all duration-200 border ${
@@ -318,7 +296,16 @@ const SocialTradeHub = ({ isOpen, onClose }: SocialTradeHubProps) => {
             {/* Conversations List */}
             <ScrollArea className="flex-1">
               <div className="p-2">
-                {conversations.map((conversation) => (
+                {conversations.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                    <h3 className="text-lg font-medium mb-2">No conversations yet</h3>
+                    <p className="text-sm mb-4">Start trading to begin conversations</p>
+                    <Button variant="outline" size="sm" onClick={onClose}>
+                      Browse Cards
+                    </Button>
+                  </div>
+                ) : conversations.map((conversation) => (
                   <div
                     key={conversation.id}
                     className={`p-3 rounded-lg cursor-pointer transition-all duration-200 mb-1 ${
@@ -508,8 +495,20 @@ const SocialTradeHub = ({ isOpen, onClose }: SocialTradeHubProps) => {
               <div className="flex-1 flex items-center justify-center text-muted-foreground p-4">
                 <div className="text-center">
                   <MessageSquare className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 opacity-30" />
-                  <h3 className="text-base md:text-lg font-medium mb-2">No conversation selected</h3>
-                  <p className="text-xs md:text-sm">Choose a conversation to start messaging</p>
+                  <h3 className="text-base md:text-lg font-medium mb-2">
+                    {conversations.length === 0 ? "No conversations yet" : "No conversation selected"}
+                  </h3>
+                  <p className="text-xs md:text-sm">
+                    {conversations.length === 0 
+                      ? "Start trading cards to begin conversations with other users" 
+                      : "Choose a conversation to start messaging"
+                    }
+                  </p>
+                  {conversations.length === 0 && (
+                    <Button variant="outline" size="sm" className="mt-4" onClick={onClose}>
+                      Browse Cards
+                    </Button>
+                  )}
                 </div>
               </div>
             )}

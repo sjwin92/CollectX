@@ -32,27 +32,8 @@ const TradeProposalForm = ({
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [selectedBoxId, setSelectedBoxId] = useState<string>("");
   
-  // Mock user collection - in real app this would come from user's actual collection
-  const mockUserCollection: PokemonCard[] = [
-    {
-      id: "base1-6",
-      name: "Charizard",
-      images: { small: "https://images.pokemontcg.io/base1/6.png" },
-      set: { name: "Base Set", releaseDate: "1999-01-09" }
-    },
-    {
-      id: "base1-2", 
-      name: "Blastoise",
-      images: { small: "https://images.pokemontcg.io/base1/2.png" },
-      set: { name: "Base Set", releaseDate: "1999-01-09" }
-    },
-    {
-      id: "sm12-190",
-      name: "Mewtwo & Mew GX",
-      images: { small: "https://images.pokemontcg.io/sm12/190.png" },
-      set: { name: "Cosmic Eclipse", releaseDate: "2019-11-01" }
-    }
-  ] as PokemonCard[];
+  // User's collection from actual data (empty for fresh spawn)
+  const userCollection: PokemonCard[] = [];
 
   // Convert cards to TradeCard format for value calculation
   const convertToTradeCards = (cards: PokemonCard[]): TradeCard[] => {
@@ -155,7 +136,8 @@ const TradeProposalForm = ({
                 alt={targetCard.name}
                 className="w-full rounded-md"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = "/placeholder.svg";
+                  console.log("Target card image failed to load");
+                  (e.target as HTMLImageElement).style.display = "none";
                 }}
               />
             </div>
@@ -184,7 +166,12 @@ const TradeProposalForm = ({
                   <div className="mb-4 p-4 border rounded-lg bg-muted/30">
                     <h4 className="text-sm font-medium mb-3">Cards in this box:</h4>
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto">
-                      {mockUserCollection.map((card, index) => (
+                      {userCollection.length === 0 ? (
+                        <div className="col-span-full text-center py-8 text-muted-foreground">
+                          <p className="text-sm">No cards in your collection yet</p>
+                          <p className="text-xs mt-1">Add cards to start trading</p>
+                        </div>
+                      ) : userCollection.map((card, index) => (
                         <div
                           key={`${card.id}-${index}`}
                           className="cursor-pointer p-2 rounded border hover:border-primary/50 transition-colors"
@@ -194,9 +181,10 @@ const TradeProposalForm = ({
                             src={card.images.small}
                             alt={card.name}
                             className="w-full aspect-[3/4] object-cover rounded"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "/placeholder.svg";
-                            }}
+                          onError={(e) => {
+                            console.log("Selected card image failed to load");
+                            (e.target as HTMLImageElement).style.display = "none";
+                          }}
                           />
                           <p className="text-xs mt-1 truncate">{card.name}</p>
                         </div>
@@ -213,9 +201,10 @@ const TradeProposalForm = ({
                           src={card.images.small} 
                           alt={card.name}
                           className="w-full rounded-md"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/placeholder.svg";
-                          }}
+                            onError={(e) => {
+                              console.log("Collection card image failed to load");
+                              (e.target as HTMLImageElement).style.display = "none";
+                            }}
                         />
                         <Button 
                           size="icon" 
@@ -260,7 +249,7 @@ const TradeProposalForm = ({
           {/* Smart Trade Suggestions */}
           <TradeCardSuggestions 
             targetCard={targetCard}
-            userCollection={mockUserCollection}
+            userCollection={userCollection}
             onSelectCard={handleCardSelect}
           />
 
