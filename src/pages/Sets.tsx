@@ -214,8 +214,11 @@ const Sets = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {featuredSets.map(set => {
+                // Get stored images for this set
                 const logoUrl = getImageUrl(set.id, 'logo', set.images?.logo);
                 const symbolUrl = getImageUrl(set.id, 'symbol', set.images?.symbol);
+                
+                console.log(`Featured set ${set.id}: logo=${logoUrl}, symbol=${symbolUrl}`);
                 
                 return (
                   <Link key={set.id} to={`/pokemon-sets/${set.id}`} className="block h-full">
@@ -232,6 +235,7 @@ const Sets = () => {
                               className="h-16 object-contain mx-auto"
                               lazy={true}
                               fallbackSrc="/placeholder.svg"
+                              onError={() => console.log(`Failed to load logo for ${set.id}: ${logoUrl}`)}
                             />
                           </div>
                         ) : (

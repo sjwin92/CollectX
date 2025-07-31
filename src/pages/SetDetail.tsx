@@ -3,6 +3,7 @@ import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getSetById } from "@/services/api/pokemonSetsService";
+import { supabasePokemonService } from "@/services/supabasePokemonService";
 import { getProducts } from "@/services/api/pokemonProductsService";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -23,9 +24,17 @@ const SetDetail = () => {
   const [logoLoaded, setLogoLoaded] = React.useState(true);
   const [symbolLoaded, setSymbolLoaded] = React.useState(true);
 
-  const { data: set, isLoading, isError } = useQuery({
+  // Try to get set from local database first, fallback to API
+  const { data: localSet } = useQuery({
+    queryKey: ['localPokemonSet', id],
+    queryFn: () => id ? supabasePokemonService.getSetById(id) : null,
+    enabled: !!id,
+  });
+
+  const { data: apiSet, isLoading, isError } = useQuery({
     queryKey: ['pokemonSet', id],
     queryFn: () => id ? getSetById(id) : null,
+    enabled: !!id && !localSet, // Only fetch from API if no local data
     meta: {
       onError: (error: Error) => {
         toast({
@@ -36,6 +45,21 @@ const SetDetail = () => {
       }
     }
   });
+
+  // Use local set if available, otherwise use API set
+  const set = React.useMemo(() => {
+    if (localSet) {
+      // Convert database format to API format
+      return {
+        ...localSet,
+        images: localSet.images || { logo: localSet.logo_url, symbol: localSet.symbol_url },
+        printedTotal: localSet.printed_total || (localSet as any).printedTotal,
+        releaseDate: localSet.release_date || (localSet as any).releaseDate,
+        legalities: localSet.legalities || {}
+      };
+    }
+    return apiSet;
+  }, [localSet, apiSet]);
 
   // Fetch products and filter by the current set
   const { data: allProducts = [] } = useQuery({
@@ -64,11 +88,25 @@ const SetDetail = () => {
     }
   };
 
-  // Process URLs if set is available
-  const logoUrl = set ? fixImageUrl(set.images?.logo, set.id, 'logo') : undefined;
-  const symbolUrl = set ? fixImageUrl(set.images?.symbol, set.id, 'symbol') : undefined;
+  // Get stored images from database for better URLs
+  const { data: storedImages } = useQuery({
+    queryKey: ['setImages', id],
+    queryFn: () => id ? supabasePokemonService.getSetImages(id) : null,
+    enabled: !!id,
+  });
 
-  if (isLoading) {
+  // Process URLs with priority to stored images
+  const logoUrl = React.useMemo(() => {
+    if (storedImages?.logo) return storedImages.logo;
+    return set ? fixImageUrl(set.images?.logo, set.id, 'logo') : undefined;
+  }, [set, storedImages]);
+
+  const symbolUrl = React.useMemo(() => {
+    if (storedImages?.symbol) return storedImages.symbol;
+    return set ? fixImageUrl(set.images?.symbol, set.id, 'symbol') : undefined;
+  }, [set, storedImages]);
+
+  if (isLoading && !localSet) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
