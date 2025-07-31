@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { imageOptimizer } from '@/services/ai/imageOptimization';
+import { createPlaceholderImage } from '@/utils/placeholderImage';
 import { cn } from '@/lib/utils';
 
 interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
@@ -12,7 +13,7 @@ interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> 
 
 const OptimizedImage: React.FC<OptimizedImageProps> = ({
   src,
-  fallbackSrc = 'https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg',
+  fallbackSrc = createPlaceholderImage(),
   useAI = false,
   lazy = true,
   showOptimizationBadge = false,
@@ -88,10 +89,13 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
   };
 
   const handleError = () => {
+    console.warn(`Failed to load image: ${currentSrc}`);
     setIsLoading(false);
     setIsError(true);
-    setCurrentSrc(fallbackSrc);
-    setIsOptimized(false);
+    if (currentSrc !== fallbackSrc) {
+      setCurrentSrc(fallbackSrc);
+      setIsOptimized(false);
+    }
   };
 
   return (

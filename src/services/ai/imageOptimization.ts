@@ -166,6 +166,18 @@ class ImageOptimizationService {
       return url; // Return original while processing
     }
     
+    // Quick check if image exists before processing
+    try {
+      const response = await fetch(url, { method: 'HEAD' });
+      if (!response.ok) {
+        console.warn(`Image not found: ${url}`);
+        return url; // Return original URL, let component handle fallback
+      }
+    } catch (error) {
+      console.warn(`Image check failed: ${url}`, error);
+      return url; // Return original URL, let component handle fallback
+    }
+    
     this.processingQueue.add(url);
     
     try {
