@@ -1,5 +1,4 @@
-// Free sealed products service using Pokemon TCG API and enhanced images
-import { getEnhancedProductImage } from './sealedProductImageService';
+// Simplified sealed products service with reliable images
 import { PokemonSet } from './api/pokemonTypes';
 
 export interface FreeSealedProduct {
@@ -21,19 +20,33 @@ export interface FreeSealedProduct {
   retailPrice?: number;
 }
 
-// Sealed product types with typical UK pricing
+// Sealed product types with typical pricing
 const productTypes = [
-  { type: 'Booster Box', basePrice: 75, suffix: 'booster-box' },
-  { type: 'Elite Trainer Box', basePrice: 35, suffix: 'etb' },
-  { type: 'Collection Box', basePrice: 20, suffix: 'collection-box' },
-  { type: 'Tin', basePrice: 15, suffix: 'tin' },
-  { type: 'Blister Pack', basePrice: 4, suffix: 'blister' }
+  { type: 'Booster Box', basePrice: 75, icon: '📦' },
+  { type: 'Elite Trainer Box', basePrice: 35, icon: '🎁' },
+  { type: 'Collection Box', basePrice: 20, icon: '📋' },
+  { type: 'Tin', basePrice: 15, icon: '🥫' },
+  { type: 'Blister Pack', basePrice: 4, icon: '💳' }
 ];
 
-// Fetch Pokemon sets from free API
+// Get small, reliable product image
+const getProductImage = (setId: string, productType: string): string => {
+  // Use placeholder icons for different product types
+  const placeholderImages: { [key: string]: string } = {
+    'Booster Box': 'https://images.unsplash.com/photo-1600298881974-6be191ceeda1?w=300&h=300&fit=crop&crop=center',
+    'Elite Trainer Box': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=300&fit=crop&crop=center',
+    'Collection Box': 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=300&h=300&fit=crop&crop=center',
+    'Tin': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=300&fit=crop&crop=center',
+    'Blister Pack': 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=300&h=300&fit=crop&crop=center'
+  };
+  
+  return placeholderImages[productType] || placeholderImages['Booster Box'];
+};
+
+// Fetch Pokemon sets from API
 const fetchPokemonSets = async (): Promise<PokemonSet[]> => {
   try {
-    const response = await fetch('https://api.pokemontcg.io/v2/sets?pageSize=50&orderBy=-releaseDate');
+    const response = await fetch('https://api.pokemontcg.io/v2/sets?pageSize=20&orderBy=-releaseDate');
     const data = await response.json();
     return data.data || [];
   } catch (error) {
@@ -42,55 +55,12 @@ const fetchPokemonSets = async (): Promise<PokemonSet[]> => {
   }
 };
 
-// Get product image from multiple free sources
-const getProductImage = (setId: string, productType: string): string => {
-  const typeMapping: { [key: string]: string[] } = {
-    'Booster Box': [
-      `https://images.pokemontcg.io/${setId}/booster-box.png`,
-      `https://assets.tcgdx.net/en/sets/${setId}/booster-box.png`,
-      `https://images.pokemontcg.io/products/${setId}/booster-box.png`,
-      `https://tcgplayer-cdn.tcgplayer.com/product/${setId}_booster_box.jpg`
-    ],
-    'Elite Trainer Box': [
-      `https://images.pokemontcg.io/${setId}/etb.png`,
-      `https://assets.tcgdx.net/en/sets/${setId}/etb.png`,
-      `https://images.pokemontcg.io/products/${setId}/etb.png`,
-      `https://tcgplayer-cdn.tcgplayer.com/product/${setId}_etb.jpg`
-    ],
-    'Collection Box': [
-      `https://images.pokemontcg.io/${setId}/collection-box.png`,
-      `https://assets.tcgdx.net/en/sets/${setId}/collection-box.png`,
-      `https://images.pokemontcg.io/products/${setId}/collection.png`,
-      `https://tcgplayer-cdn.tcgplayer.com/product/${setId}_collection.jpg`
-    ],
-    'Tin': [
-      `https://images.pokemontcg.io/${setId}/tin.png`,
-      `https://assets.tcgdx.net/en/sets/${setId}/tin.png`,
-      `https://images.pokemontcg.io/products/${setId}/tin.png`,
-      `https://tcgplayer-cdn.tcgplayer.com/product/${setId}_tin.jpg`
-    ],
-    'Blister Pack': [
-      `https://images.pokemontcg.io/${setId}/blister.png`,
-      `https://assets.tcgdx.net/en/sets/${setId}/blister.png`,
-      `https://images.pokemontcg.io/products/${setId}/blister.png`,
-      `https://tcgplayer-cdn.tcgplayer.com/product/${setId}_blister.jpg`
-    ]
-  };
-  
-  const urls = typeMapping[productType] || [
-    `https://images.pokemontcg.io/${setId}/logo.png`
-  ];
-  
-  return urls[0];
-};
-
 // Generate realistic price variation
 const generatePrice = (basePrice: number, setDate: string): number => {
   const releaseDate = new Date(setDate);
   const now = new Date();
   const monthsSinceRelease = (now.getTime() - releaseDate.getTime()) / (1000 * 60 * 60 * 24 * 30);
   
-  // Newer sets are more expensive, older sets vary more
   let multiplier = 1;
   if (monthsSinceRelease < 3) {
     multiplier = 1.2 + Math.random() * 0.3; // Premium for new releases
@@ -109,13 +79,13 @@ export const fetchFreeSealedProducts = async (): Promise<FreeSealedProduct[]> =>
     const sets = await fetchPokemonSets();
     const products: FreeSealedProduct[] = [];
     
-    sets.slice(0, 20).forEach((set) => {
+    sets.forEach((set) => {
       productTypes.forEach((productType) => {
         const currentPrice = generatePrice(productType.basePrice, set.releaseDate);
-        const retailPrice = productType.basePrice * 1.15; // MSRP is typically higher
+        const retailPrice = productType.basePrice * 1.15;
         
         products.push({
-          id: `${set.id}-${productType.suffix}`,
+          id: `${set.id}-${productType.type.toLowerCase().replace(/\s+/g, '-')}`,
           name: `${set.name} ${productType.type}`,
           type: productType.type,
           setName: set.name,
@@ -123,9 +93,9 @@ export const fetchFreeSealedProducts = async (): Promise<FreeSealedProduct[]> =>
           price: {
             current: currentPrice,
             currency: 'GBP',
-            source: 'UK Market Average'
+            source: 'Market Average'
           },
-          imageUrl: getEnhancedProductImage(set.id, productType.type, set.name),
+          imageUrl: getProductImage(set.id, productType.type),
           availability: Math.random() > 0.3 ? 'in-stock' : 
                        Math.random() > 0.5 ? 'pre-order' : 'out-of-stock',
           releaseDate: set.releaseDate,

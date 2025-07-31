@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchPokemonSealedProducts, PokemonSealedProduct, getProductImageUrl } from "@/services/pokemonProductApiService";
+import { fetchFreeSealedProducts, FreeSealedProduct } from "@/services/freeSealedProductsService";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -29,20 +29,19 @@ const SealedProducts = () => {
   const [sortBy, setSortBy] = useState("name");
   const { toast } = useToast();
 
-  const { data: productsResponse, isLoading, isError, refetch } = useQuery({
-    queryKey: ['pokemonSealedProducts'],
-    queryFn: () => fetchPokemonSealedProducts(1, 50),
+  const { data: products, isLoading, isError, refetch } = useQuery({
+    queryKey: ['freeSealedProducts'],
+    queryFn: fetchFreeSealedProducts,
     staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000
+    gcTime: 10 * 60 * 1000,
+    retry: 3
   });
-
-  const products = productsResponse?.data || [];
 
   // Filter and sort products
   const filteredProducts = React.useMemo(() => {
     if (!products) return [];
     
-    let filtered = products.filter((product: PokemonSealedProduct) => {
+    let filtered = products.filter((product: FreeSealedProduct) => {
       const matchesSearch = searchQuery === "" || 
         product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         product.setName.toLowerCase().includes(searchQuery.toLowerCase());
@@ -53,14 +52,14 @@ const SealedProducts = () => {
     });
 
     // Sort products
-    filtered.sort((a: PokemonSealedProduct, b: PokemonSealedProduct) => {
+    filtered.sort((a: FreeSealedProduct, b: FreeSealedProduct) => {
       switch (sortBy) {
         case "name":
           return a.name.localeCompare(b.name);
         case "price-low":
-          return (a.tcgplayer?.prices?.market || 0) - (b.tcgplayer?.prices?.market || 0);
+          return a.price.current - b.price.current;
         case "price-high":
-          return (b.tcgplayer?.prices?.market || 0) - (a.tcgplayer?.prices?.market || 0);
+          return b.price.current - a.price.current;
         case "release-date":
           return new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime();
         default:
@@ -164,23 +163,17 @@ const SealedProducts = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map((product: PokemonSealedProduct) => (
+            {filteredProducts.map((product: FreeSealedProduct) => (
               <Card key={product.id} className="overflow-hidden h-full transition-all hover:shadow-lg hover:border-primary/50 group">
                 <CardHeader className="pb-3">
                   <div className="aspect-square bg-muted rounded-lg mb-3 overflow-hidden">
                     <img 
-                      src={getProductImageUrl(product, 'small')} 
+                      src={product.imageUrl} 
                       alt={product.name}
-                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        // Fallback to large image if small fails
-                        if (!target.src.includes('large')) {
-                          target.src = getProductImageUrl(product, 'large');
-                        } else {
-                          // Final fallback to placeholder
-                          target.src = '/placeholder.svg';
-                        }
+                        target.src = '/placeholder.svg';
                       }}
                     />
                   </div>
@@ -193,24 +186,28 @@ const SealedProducts = () => {
                     <Badge variant="secondary" className="text-xs">
                       {product.type}
                     </Badge>
-                    <Badge variant="default" className="text-xs">
-                      In Stock
+                    <Badge 
+                      variant={product.availability === 'in-stock' ? 'default' : 
+                               product.availability === 'pre-order' ? 'secondary' : 'destructive'} 
+                      className="text-xs"
+                    >
+                      {product.availability.replace('-', ' ')}
                     </Badge>
                   </div>
                   
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">TCGPlayer Price:</span>
+                      <span className="text-muted-foreground">Current Price:</span>
                       <span className="font-bold text-lg text-green-600">
-                        £{product.tcgplayer?.prices?.market || 'N/A'}
+                        £{product.price.current}
                       </span>
                     </div>
                     
-                    {product.tcgplayer?.prices?.low && (
+                    {product.retailPrice && (
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Low Price:</span>
-                        <span className="text-sm text-muted-foreground">
-                          £{product.tcgplayer.prices.low}
+                        <span className="text-muted-foreground">MSRP:</span>
+                        <span className="text-sm line-through text-muted-foreground">
+                          £{product.retailPrice}
                         </span>
                       </div>
                     )}
@@ -222,7 +219,7 @@ const SealedProducts = () => {
                     
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <ExternalLink className="h-3 w-3" />
-                      <span>Source: TCGPlayer</span>
+                      <span>Source: {product.price.source}</span>
                     </div>
                   </div>
                   
