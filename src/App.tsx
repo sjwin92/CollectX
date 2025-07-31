@@ -6,6 +6,7 @@ import { queryClient } from "./lib/react-query";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import { LoadingProvider } from "./contexts/LoadingContext";
 import { Toaster } from "@/components/ui/toaster";
+import ImagePreloader from "@/components/ui/ImagePreloader";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import Trades from "./pages/Trades";
 import Collection from "./pages/Collection";
@@ -31,6 +32,7 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <LoadingProvider>
+          <ImagePreloader />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />

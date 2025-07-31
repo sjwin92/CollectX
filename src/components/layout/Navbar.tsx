@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import ImagePreloader from "@/components/ui/ImagePreloader";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
@@ -115,7 +114,6 @@ const Navbar = () => {
 
   return (
     <>
-      <ImagePreloader />
       <header 
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled ? "bg-background/80 backdrop-blur-md shadow-sm" : "bg-transparent"
