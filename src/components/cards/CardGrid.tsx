@@ -207,6 +207,13 @@ const CardGrid: React.FC<CardGridProps> = ({
             showCondition={showCondition}
             number={card.number}
             set={card.set}
+            dbId={(card as any).dbId}
+            quantity={(card as any).quantity}
+            graded={(card as any).graded}
+            gradingCompany={(card as any).gradingCompany}
+            gradeScore={(card as any).gradeScore}
+            forTrade={(card as any).forTrade}
+            tradePreferences={(card as any).tradePreferences}
           />
         ))}
       </div>

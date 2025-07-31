@@ -74,6 +74,7 @@ export type Database = {
           is_primary: boolean | null
           mime_type: string | null
           updated_at: string
+          user_card_id: string | null
           user_id: string
         }
         Insert: {
@@ -87,6 +88,7 @@ export type Database = {
           is_primary?: boolean | null
           mime_type?: string | null
           updated_at?: string
+          user_card_id?: string | null
           user_id: string
         }
         Update: {
@@ -100,9 +102,18 @@ export type Database = {
           is_primary?: boolean | null
           mime_type?: string | null
           updated_at?: string
+          user_card_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "card_images_user_card_id_fkey"
+            columns: ["user_card_id"]
+            isOneToOne: false
+            referencedRelation: "user_cards"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       chat_conversations: {
         Row: {

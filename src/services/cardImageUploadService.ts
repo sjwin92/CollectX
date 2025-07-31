@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -47,6 +46,7 @@ export const uploadCardImage = async (upload: CardImageUpload): Promise<Uploaded
     .insert({
       user_id: userId,
       card_id: cardId,
+      user_card_id: null, // Will be set when card is added to collection
       image_url: publicUrl,
       image_path: fileName,
       file_size: file.size,
@@ -71,6 +71,66 @@ export const uploadCardImage = async (upload: CardImageUpload): Promise<Uploaded
     caption: dbData.caption,
     isPrimary: dbData.is_primary
   };
+};
+
+// Upload image linked to a specific user card
+export const uploadUserCardImage = async (
+  file: File, 
+  userCardId: string,
+  caption?: string
+): Promise<string> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('User not authenticated');
+
+  // Create unique filename
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${user.id}/${userCardId}/${uuidv4()}.${fileExt}`;
+
+  // Upload file to storage
+  const { data: uploadData, error: uploadError } = await supabase.storage
+    .from('card-images')
+    .upload(fileName, file, {
+      cacheControl: '3600',
+      upsert: false
+    });
+
+  if (uploadError) throw uploadError;
+
+  // Get public URL
+  const { data: { publicUrl } } = supabase.storage
+    .from('card-images')
+    .getPublicUrl(uploadData.path);
+
+  // Save image metadata to database
+  const { error: dbError } = await supabase
+    .from('card_images')
+    .insert({
+      user_id: user.id,
+      user_card_id: userCardId,
+      card_id: '', // We'll get this from the user_card if needed
+      image_url: publicUrl,
+      image_path: uploadData.path,
+      caption: caption || '',
+      is_primary: false,
+      file_size: file.size,
+      mime_type: file.type
+    });
+
+  if (dbError) throw dbError;
+
+  return publicUrl;
+};
+
+// Get card images for a specific user card
+export const getUserCardImages = async (userCardId: string) => {
+  const { data, error } = await supabase
+    .from('card_images')
+    .select('*')
+    .eq('user_card_id', userCardId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
 };
 
 // Get card images for a specific card
@@ -130,4 +190,26 @@ export const deleteCardImage = async (imageId: string): Promise<boolean> => {
   }
   
   return true;
+};
+
+// Set primary image for a user card
+export const setPrimaryImage = async (imageId: string, userCardId: string) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('User not authenticated');
+
+  // First, unset all primary images for this card
+  await supabase
+    .from('card_images')
+    .update({ is_primary: false })
+    .eq('user_card_id', userCardId)
+    .eq('user_id', user.id);
+
+  // Then set the selected image as primary
+  const { error } = await supabase
+    .from('card_images')
+    .update({ is_primary: true })
+    .eq('id', imageId)
+    .eq('user_id', user.id);
+
+  if (error) throw error;
 };

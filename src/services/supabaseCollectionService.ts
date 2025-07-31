@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ExtendedCardItemProps } from '@/types/cardTypes';
+import { UploadedCardImage } from '@/services/cardImageUploadService';
 import { PokemonCard } from '@/services/pokemonTcgApi';
 
 export interface SupabaseUserCard {
@@ -34,6 +35,7 @@ export interface ExtendedCardItemWithDB extends ExtendedCardItemProps {
   dbId?: string;
   createdAt?: string;
   updatedAt?: string;
+  conditionImages?: UploadedCardImage[];
 }
 
 // Convert Supabase user card to ExtendedCardItemProps
@@ -67,7 +69,7 @@ export const convertSupabaseCardToExtended = (supabaseCard: SupabaseUserCard): E
 };
 
 // Add card to collection
-export const addCardToCollection = async (newCard: ExtendedCardItemProps): Promise<void> => {
+export const addCardToCollection = async (newCard: ExtendedCardItemProps): Promise<string> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
 
@@ -104,6 +106,8 @@ export const addCardToCollection = async (newCard: ExtendedCardItemProps): Promi
     .eq('product_type', newCard.productType === 'card' ? 'single' : (newCard.productType || 'single'))
     .maybeSingle();
 
+  let userCardId: string;
+
   if (existingCard) {
     // Update quantity if card exists
     const { error } = await supabase
@@ -115,14 +119,30 @@ export const addCardToCollection = async (newCard: ExtendedCardItemProps): Promi
       .eq('id', existingCard.id);
 
     if (error) throw error;
+    userCardId = existingCard.id;
   } else {
     // Insert new card
-    const { error } = await supabase
+    const { data: insertedCard, error } = await supabase
       .from('user_cards')
-      .insert([supabaseCard]);
+      .insert([supabaseCard])
+      .select('id')
+      .single();
 
     if (error) throw error;
+    userCardId = insertedCard.id;
   }
+
+  // Link any existing uploaded images to this user card
+  if (newCard.conditionImages && newCard.conditionImages.length > 0) {
+    const imageIds = newCard.conditionImages.map(img => img.id);
+    await supabase
+      .from('card_images')
+      .update({ user_card_id: userCardId })
+      .in('id', imageIds)
+      .eq('user_id', user.id);
+  }
+
+  return userCardId;
 };
 
 // Get user's collection

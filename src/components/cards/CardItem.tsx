@@ -4,8 +4,9 @@ import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import { cn } from "@/lib/utils";
-import { Info, AlertTriangle, Check, RefreshCw, BadgeCheck, Repeat, Star, BookHeart, CircleDollarSign } from "lucide-react";
+import { Info, AlertTriangle, Check, RefreshCw, BadgeCheck, Repeat, Star, BookHeart, CircleDollarSign, Camera } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import CardImageGallery from "@/components/pokemon/collection/CardImageGallery";
 import { Button } from "@/components/ui/button";
 // Temporarily removing enhanced service to debug image issues
 // import { enhancedImageService } from "@/services/enhancedImageService";
@@ -33,6 +34,7 @@ export interface CardItemProps {
   };
   number?: string;
   quantity?: number;
+  dbId?: string; // For collection cards with user-uploaded images
 }
 
 const CardItem = ({
@@ -53,7 +55,8 @@ const CardItem = ({
   tradePreferences,
   set,
   number,
-  quantity = 1
+  quantity = 1,
+  dbId // For showing user-uploaded images
 }: CardItemProps) => {
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
   const [imageSrc, setImageSrc] = useState<string>("");
@@ -246,6 +249,17 @@ const CardItem = ({
         {forTrade && tradePreferences && (
           <div className="text-xs text-muted-foreground line-clamp-1 leading-tight">
             <span className="font-medium">Want:</span> {tradePreferences}
+          </div>
+        )}
+        
+        {/* User uploaded condition photos */}
+        {dbId && (
+          <div className="mt-2">
+            <CardImageGallery 
+              userCardId={dbId} 
+              cardName={name}
+              className="max-w-full"
+            />
           </div>
         )}
       </div>

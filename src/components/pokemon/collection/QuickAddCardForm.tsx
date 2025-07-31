@@ -17,6 +17,8 @@ import SealedProductFields from "./SealedProductFields";
 import { ExtendedCardItemProps } from "@/types/cardTypes";
 import { addCardToCollection } from "@/services/supabaseCollectionService";
 import { useUser } from "@/hooks/useUser";
+import CardImageUpload from "./CardImageUpload";
+import { UploadedCardImage } from "@/services/cardImageUploadService";
 
 interface QuickAddCardFormProps {
   card: PokemonCard;
@@ -25,10 +27,12 @@ interface QuickAddCardFormProps {
 
 const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
   const { toast } = useToast();
+  const { user } = useUser();
   const [isGraded, setIsGraded] = useState(false);
   const [forTrade, setForTrade] = useState(false);
   const [forSale, setForSale] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState<UploadedCardImage[]>([]);
   
   const form = useForm<QuickAddFormValues>({
     resolver: zodResolver(quickAddFormSchema),
@@ -72,7 +76,8 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
         productType: data.productType === 'card' ? 'single' : (data.productType || 'single') as any,
         isSealed: data.isSealed,
         packCount: data.packCount,
-        setCode: data.setCode
+        setCode: data.setCode,
+        conditionImages: uploadedImages
       };
       
       // Add grading info if card is graded
@@ -89,7 +94,7 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
       console.log("Adding to collection:", newCard);
       
       // Add card to collection with all details
-      await addCardToCollection(newCard);
+      const userCardId = await addCardToCollection(newCard);
       
       const productTypeLabel = watchedProductType === 'card' ? 'card' : `${watchedProductType.replace('-', ' ')}`;
       
@@ -181,6 +186,19 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
         </div>
         
         {forTrade && <TradeFields form={form} />}
+        
+        {/* Card Image Upload */}
+        <div className="space-y-4">
+          <h4 className="text-sm font-medium">Card Condition Photos</h4>
+          <CardImageUpload
+            cardId={card.id}
+            userId={user?.id || ''}
+            existingImages={uploadedImages}
+            onImageUploaded={(image) => setUploadedImages(prev => [...prev, image])}
+            onImageRemoved={(imageId) => setUploadedImages(prev => prev.filter(img => img.id !== imageId))}
+            maxImages={3}
+          />
+        </div>
         
         <div className="pt-4 flex justify-end space-x-2">
           <FormActionButtons 
