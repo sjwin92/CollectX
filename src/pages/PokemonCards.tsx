@@ -12,6 +12,8 @@ import { getSetById } from "@/services/api/pokemonSetsService";
 import { searchCards } from "@/services/api/pokemonCardsService";
 import { CardItemProps } from "@/components/cards/CardItem";
 import { normalizeSetId } from "@/services/setIdMappingService";
+import { supabasePokemonService } from "@/services/supabasePokemonService";
+import { pokemonDataImporter } from "@/services/pokemonDataImporter";
 
 const PokemonCards = () => {
   const [searchParams] = useSearchParams();
@@ -48,13 +50,115 @@ const PokemonCards = () => {
         const normalizedSetId = normalizeSetId(setId);
         searchParams.setId = normalizedSetId;
         console.log(`Loading cards for setId: ${setId} (normalized to: ${normalizedSetId})`);
+        
+        // First, try to get cards from our database
+        const localCards = await supabasePokemonService.getCardsBySetId(normalizedSetId);
+        
+        if (localCards.length > 0) {
+          console.log(`Found ${localCards.length} cards in local database for set ${normalizedSetId}`);
+          
+          // Convert database cards to CardItemProps format
+          const formattedCards: CardItemProps[] = localCards.map(card => {
+            const price = card.tcgplayer_prices?.holofoil?.market 
+              ? formatToGBP(card.tcgplayer_prices.holofoil.market) 
+              : card.tcgplayer_prices?.normal?.market 
+                ? formatToGBP(card.tcgplayer_prices.normal.market) 
+                : "N/A";
+                
+            return {
+              id: card.id,
+              name: card.name || "Unknown Card",
+              imageUrl: card.small_image_url || card.large_image_url,
+              rarity: card.rarity || "Unknown",
+              condition: "Near Mint",
+              estimatedValue: price,
+              number: card.number,
+              set: {
+                id: card.set_id,
+                name: card.set_name
+              }
+            };
+          });
+          
+          setAllCards(formattedCards);
+          setIsLoading(false);
+          return; // Exit early, we have local data
+        }
+        
+        // If no local data, check if we should import it
+        console.log(`No local data found for set ${normalizedSetId}, attempting to import...`);
+        const importSuccess = await pokemonDataImporter.importSetCards(normalizedSetId);
+        
+        if (importSuccess) {
+          // Retry loading from database after import
+          const newLocalCards = await supabasePokemonService.getCardsBySetId(normalizedSetId);
+          if (newLocalCards.length > 0) {
+            const formattedCards: CardItemProps[] = newLocalCards.map(card => {
+              const price = card.tcgplayer_prices?.holofoil?.market 
+                ? formatToGBP(card.tcgplayer_prices.holofoil.market) 
+                : card.tcgplayer_prices?.normal?.market 
+                  ? formatToGBP(card.tcgplayer_prices.normal.market) 
+                  : "N/A";
+                  
+              return {
+                id: card.id,
+                name: card.name || "Unknown Card",
+                imageUrl: card.small_image_url || card.large_image_url,
+                rarity: card.rarity || "Unknown",
+                condition: "Near Mint",
+                estimatedValue: price,
+                number: card.number,
+                set: {
+                  id: card.set_id,
+                  name: card.set_name
+                }
+              };
+            });
+            
+            setAllCards(formattedCards);
+            setIsLoading(false);
+            return;
+          }
+        }
       }
       
       if (nameQuery) {
         searchParams.name = nameQuery.trim();
         console.log(`Loading cards for name query: ${nameQuery}`);
+        
+        // Try searching in local database first
+        const localResults = await supabasePokemonService.searchCards(nameQuery);
+        if (localResults.length > 0) {
+          const formattedCards: CardItemProps[] = localResults.map(card => {
+            const price = card.tcgplayer_prices?.holofoil?.market 
+              ? formatToGBP(card.tcgplayer_prices.holofoil.market) 
+              : card.tcgplayer_prices?.normal?.market 
+                ? formatToGBP(card.tcgplayer_prices.normal.market) 
+                : "N/A";
+                
+            return {
+              id: card.id,
+              name: card.name || "Unknown Card",
+              imageUrl: card.small_image_url || card.large_image_url,
+              rarity: card.rarity || "Unknown",
+              condition: "Near Mint",
+              estimatedValue: price,
+              number: card.number,
+              set: {
+                id: card.set_id,
+                name: card.set_name
+              }
+            };
+          });
+          
+          setAllCards(formattedCards);
+          setIsLoading(false);
+          return;
+        }
       }
       
+      // Fallback to external API if no local data
+      console.log('Falling back to external API...');
       console.log('Search params:', searchParams);
       
       // Load multiple pages to get all cards for better filtering and preload images

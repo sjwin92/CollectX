@@ -461,6 +461,164 @@ export type Database = {
         }
         Relationships: []
       }
+      pokemon_cards: {
+        Row: {
+          abilities: Json | null
+          artist: string | null
+          attacks: Json | null
+          cardmarket_prices: Json | null
+          converted_retreat_cost: number | null
+          created_at: string | null
+          evolves_from: string | null
+          evolves_to: string[] | null
+          flavor_text: string | null
+          hp: string | null
+          id: string
+          images: Json | null
+          large_image_url: string | null
+          legalities: Json | null
+          name: string
+          national_pokedex_numbers: number[] | null
+          number: string | null
+          rarity: string | null
+          regulation_mark: string | null
+          resistances: Json | null
+          retreat_cost: string[] | null
+          rules: string[] | null
+          set_id: string | null
+          set_name: string | null
+          small_image_url: string | null
+          subtypes: string[] | null
+          supertype: string | null
+          tcgplayer_prices: Json | null
+          types: string[] | null
+          updated_at: string | null
+          weaknesses: Json | null
+        }
+        Insert: {
+          abilities?: Json | null
+          artist?: string | null
+          attacks?: Json | null
+          cardmarket_prices?: Json | null
+          converted_retreat_cost?: number | null
+          created_at?: string | null
+          evolves_from?: string | null
+          evolves_to?: string[] | null
+          flavor_text?: string | null
+          hp?: string | null
+          id: string
+          images?: Json | null
+          large_image_url?: string | null
+          legalities?: Json | null
+          name: string
+          national_pokedex_numbers?: number[] | null
+          number?: string | null
+          rarity?: string | null
+          regulation_mark?: string | null
+          resistances?: Json | null
+          retreat_cost?: string[] | null
+          rules?: string[] | null
+          set_id?: string | null
+          set_name?: string | null
+          small_image_url?: string | null
+          subtypes?: string[] | null
+          supertype?: string | null
+          tcgplayer_prices?: Json | null
+          types?: string[] | null
+          updated_at?: string | null
+          weaknesses?: Json | null
+        }
+        Update: {
+          abilities?: Json | null
+          artist?: string | null
+          attacks?: Json | null
+          cardmarket_prices?: Json | null
+          converted_retreat_cost?: number | null
+          created_at?: string | null
+          evolves_from?: string | null
+          evolves_to?: string[] | null
+          flavor_text?: string | null
+          hp?: string | null
+          id?: string
+          images?: Json | null
+          large_image_url?: string | null
+          legalities?: Json | null
+          name?: string
+          national_pokedex_numbers?: number[] | null
+          number?: string | null
+          rarity?: string | null
+          regulation_mark?: string | null
+          resistances?: Json | null
+          retreat_cost?: string[] | null
+          rules?: string[] | null
+          set_id?: string | null
+          set_name?: string | null
+          small_image_url?: string | null
+          subtypes?: string[] | null
+          supertype?: string | null
+          tcgplayer_prices?: Json | null
+          types?: string[] | null
+          updated_at?: string | null
+          weaknesses?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pokemon_cards_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "pokemon_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pokemon_sets: {
+        Row: {
+          created_at: string | null
+          id: string
+          images: Json | null
+          legalities: Json | null
+          logo_url: string | null
+          name: string
+          printed_total: number | null
+          ptcgo_code: string | null
+          release_date: string | null
+          series: string | null
+          symbol_url: string | null
+          total: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id: string
+          images?: Json | null
+          legalities?: Json | null
+          logo_url?: string | null
+          name: string
+          printed_total?: number | null
+          ptcgo_code?: string | null
+          release_date?: string | null
+          series?: string | null
+          symbol_url?: string | null
+          total?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          images?: Json | null
+          legalities?: Json | null
+          logo_url?: string | null
+          name?: string
+          printed_total?: number | null
+          ptcgo_code?: string | null
+          release_date?: string | null
+          series?: string | null
+          symbol_url?: string | null
+          total?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -541,6 +699,47 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      set_images: {
+        Row: {
+          created_at: string | null
+          id: string
+          image_type: string
+          image_url: string
+          is_working: boolean | null
+          last_checked: string | null
+          set_id: string | null
+          source: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          image_type: string
+          image_url: string
+          is_working?: boolean | null
+          last_checked?: string | null
+          set_id?: string | null
+          source: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          image_type?: string
+          image_url?: string
+          is_working?: boolean | null
+          last_checked?: string | null
+          set_id?: string | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "set_images_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "pokemon_sets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shipping_methods: {
         Row: {
