@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import OptimizedImage from "@/components/ui/OptimizedImage";
 import { Trophy, Calendar, Plus, ImageOff, Package } from "lucide-react";
 import { format } from "date-fns";
 import { PokemonSet } from "@/services/api/pokemonTypes";
+import { supabasePokemonService } from "@/services/supabasePokemonService";
 import AddToCollectionModal from "./AddToCollectionModal";
 import { fixImageUrl } from "@/services/api/cardImageService";
 
@@ -21,6 +23,13 @@ const SetCard = ({ set }: SetCardProps) => {
   const [logoFallbackIndex, setLogoFallbackIndex] = useState(0);
   const [symbolFallbackIndex, setSymbolFallbackIndex] = useState(0);
   const navigate = useNavigate();
+
+  // Get stored images from our database
+  const { data: storedImages } = useQuery({
+    queryKey: ['setImages', set.id],
+    queryFn: () => supabasePokemonService.getSetImages(set.id),
+    staleTime: 30 * 60 * 1000, // Cache for 30 minutes
+  });
 
   // Generate multiple fallback URLs specifically for Scarlet & Violet sets
   const getSVFallbackUrls = (setId: string, type: 'logo' | 'symbol') => {
@@ -67,8 +76,14 @@ const SetCard = ({ set }: SetCardProps) => {
     setSymbolError(true);
   };
 
-  // Get current image URLs
+  // Get current image URLs - prioritize stored images
   const getLogoUrl = () => {
+    // First try stored images from our database
+    if (storedImages?.logo) {
+      return storedImages.logo;
+    }
+    
+    // Fall back to original logic
     if (set.id.startsWith('sv')) {
       const fallbackUrls = getSVFallbackUrls(set.id, 'logo');
       return fallbackUrls[logoFallbackIndex];
@@ -77,6 +92,12 @@ const SetCard = ({ set }: SetCardProps) => {
   };
 
   const getSymbolUrl = () => {
+    // First try stored images from our database
+    if (storedImages?.symbol) {
+      return storedImages.symbol;
+    }
+    
+    // Fall back to original logic
     if (set.id.startsWith('sv')) {
       const fallbackUrls = getSVFallbackUrls(set.id, 'symbol');
       return fallbackUrls[symbolFallbackIndex];

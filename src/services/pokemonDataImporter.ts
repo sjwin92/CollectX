@@ -6,7 +6,128 @@ import { getSets } from './api/pokemonSetsService';
 class PokemonDataImporter {
   private isImporting = false;
 
-  // Import popular sets and their cards
+  // Import all Pokemon sets and their data
+  async importAllSets(): Promise<void> {
+    if (this.isImporting) {
+      console.log('Import already in progress');
+      return;
+    }
+
+    this.isImporting = true;
+    console.log('Starting complete Pokemon data import...');
+
+    try {
+      // Import all sets (not just popular ones)
+      let allSets: any[] = [];
+      let page = 1;
+      let hasMore = true;
+
+      console.log('Fetching all Pokemon sets...');
+      while (hasMore && page <= 50) { // Limit to prevent infinite loops
+        try {
+          const setsResponse = await getSets(page, 50);
+          if (setsResponse?.data?.length > 0) {
+            allSets = [...allSets, ...setsResponse.data];
+            hasMore = setsResponse.data.length >= 50;
+            page++;
+            console.log(`Fetched page ${page - 1}, total sets: ${allSets.length}`);
+            
+            // Add delay to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 200));
+          } else {
+            hasMore = false;
+          }
+        } catch (error) {
+          console.error(`Error fetching sets page ${page}:`, error);
+          hasMore = false;
+        }
+      }
+
+      console.log(`Found ${allSets.length} total sets. Starting import...`);
+
+      // Import sets in batches
+      const batchSize = 10;
+      for (let i = 0; i < allSets.length; i += batchSize) {
+        const batch = allSets.slice(i, i + batchSize);
+        
+        for (const set of batch) {
+          try {
+            await supabasePokemonService.importSet(set);
+            
+            // Try to store working image URLs if they exist
+            if (set.images?.logo) {
+              await this.testAndStoreSetImage(set.id, set.images.logo, 'logo');
+            }
+            if (set.images?.symbol) {
+              await this.testAndStoreSetImage(set.id, set.images.symbol, 'symbol');
+            }
+            
+          } catch (error) {
+            console.error(`Error importing set ${set.id}:`, error);
+          }
+        }
+        
+        console.log(`Imported batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(allSets.length/batchSize)}`);
+        // Add delay between batches
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      console.log(`Imported ${allSets.length} sets with images`);
+
+    } catch (error) {
+      console.error('Error during complete data import:', error);
+    } finally {
+      this.isImporting = false;
+    }
+  }
+
+  // Test image URL and store if working
+  private async testAndStoreSetImage(setId: string, imageUrl: string, type: 'logo' | 'symbol'): Promise<void> {
+    try {
+      // Test multiple fallback URLs for better coverage
+      const fallbackUrls = this.generateFallbackUrls(setId, imageUrl, type);
+      
+      for (const url of fallbackUrls) {
+        try {
+          const response = await fetch(url, { method: 'HEAD' });
+          if (response.ok) {
+            await supabasePokemonService.storeSetImage(setId, url, type);
+            console.log(`✓ Stored working ${type} for ${setId}: ${url}`);
+            return; // Exit on first working URL
+          }
+        } catch {
+          // Continue to next URL
+        }
+      }
+      
+      console.log(`✗ No working ${type} found for ${setId}`);
+    } catch (error) {
+      console.error(`Error testing ${type} for ${setId}:`, error);
+    }
+  }
+
+  // Generate fallback URLs for better image coverage
+  private generateFallbackUrls(setId: string, originalUrl: string, type: 'logo' | 'symbol'): string[] {
+    const urls = [originalUrl];
+    
+    // Add TCGDex fallbacks
+    urls.push(`https://assets.tcgdex.net/en/${setId}/${type}.png`);
+    
+    // Add LimitlessTCG fallbacks for different generations
+    if (setId.startsWith('sv')) {
+      urls.push(`https://limitlesstcg.s3.us-east-2.amazonaws.com/pokemon/gen9/${setId}/${type}.png`);
+    } else if (setId.startsWith('swsh')) {
+      urls.push(`https://limitlesstcg.s3.us-east-2.amazonaws.com/pokemon/gen8/${setId}/${type}.png`);
+    }
+    
+    // Add more fallback patterns
+    urls.push(`https://images.pokemontcg.io/${setId}/${type}.png`);
+    urls.push(`https://assets.tcgdex.net/en/sets/${setId}/${type}.png`);
+    
+    return urls.filter(url => url && url !== 'undefined');
+  }
+
+  // Import popular sets and their cards (legacy method)
   async importPopularSets(): Promise<void> {
     if (this.isImporting) {
       console.log('Import already in progress');

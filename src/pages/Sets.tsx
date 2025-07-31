@@ -2,13 +2,15 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getSets } from "@/services/pokemonSetsApi";
+import { supabasePokemonService } from "@/services/supabasePokemonService";
+import { pokemonDataImporter } from "@/services/pokemonDataImporter";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import SetCard from "@/components/pokemon/SetCard";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Star, ImageOff } from "lucide-react";
+import { Plus, Star, ImageOff, Download } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import FeaturedBadge from "@/components/marketplace/listing/FeaturedBadge";
@@ -20,13 +22,25 @@ const Sets = () => {
   const [imageErrors, setImageErrors] = useState<Record<string, { logo: number; symbol: number }>>({});
   const { toast } = useToast();
   
-  const { data, isLoading, isError, error } = useQuery({
+  // First try to get sets from our database
+  const { data: localSets, isLoading: localLoading } = useQuery({
+    queryKey: ['localPokemonSets'],
+    queryFn: () => supabasePokemonService.getAllSets(),
+    staleTime: 10 * 60 * 1000, // Consider local data fresh for 10 minutes
+  });
+
+  // Fallback to external API with pagination
+  const { data: apiData, isLoading: apiLoading, isError, error } = useQuery({
     queryKey: ['pokemonSets', currentPage],
     queryFn: () => getSets(currentPage, 20),
-    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    enabled: !localSets || localSets.length === 0, // Only fetch if no local data
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     retry: 3
   });
+
+  const isLoading = localLoading || apiLoading;
+  const data = localSets && localSets.length > 0 ? { data: localSets, totalCount: localSets.length } : apiData;
 
   // Handle errors with toast
   React.useEffect(() => {
@@ -110,6 +124,33 @@ const Sets = () => {
     }
   };
 
+  const handleImportAllSets = async () => {
+    try {
+      toast({
+        title: "Starting import",
+        description: "Importing all Pokemon sets and images to database...",
+      });
+      
+      await pokemonDataImporter.importAllSets();
+      
+      toast({
+        title: "Import completed",
+        description: "All Pokemon sets have been imported successfully!",
+        variant: "default"
+      });
+      
+      // Refresh the page data
+      window.location.reload();
+    } catch (error) {
+      console.error('Import error:', error);
+      toast({
+        title: "Import failed",
+        description: "Failed to import Pokemon sets. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -121,10 +162,21 @@ const Sets = () => {
             Browse all Pokémon Trading Card Game sets, from the latest expansions to the classic Base Set.
           </p>
           <div className="bg-muted/50 p-4 rounded-lg border border-border mb-6">
-            <div className="flex items-center gap-2 text-sm">
-              <Plus className="h-4 w-4 text-primary" />
-              <span className="font-medium">Tip:</span>
-              <span>Hover over any set and click the + button to quickly add cards to your collection.</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm">
+                <Plus className="h-4 w-4 text-primary" />
+                <span className="font-medium">Tip:</span>
+                <span>Hover over any set and click the + button to quickly add cards to your collection.</span>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleImportAllSets}
+                disabled={pokemonDataImporter.isImportInProgress}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {pokemonDataImporter.isImportInProgress ? 'Importing...' : 'Import All Sets'}
+              </Button>
             </div>
           </div>
         </div>

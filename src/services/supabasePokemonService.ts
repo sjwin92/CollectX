@@ -181,6 +181,54 @@ class SupabasePokemonService {
     }
   }
 
+  // Store working image URLs for sets
+  async storeSetImage(setId: string, imageUrl: string, imageType: 'logo' | 'symbol'): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('set_images')
+        .upsert({
+          set_id: setId,
+          image_url: imageUrl,
+          image_type: imageType,
+          source: 'pokemon_tcg_api',
+          is_working: true,
+          last_checked: new Date().toISOString()
+        });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error storing set image URL:', error);
+    }
+  }
+
+  // Get working image URLs for a set
+  async getSetImages(setId: string): Promise<{ logo?: string; symbol?: string }> {
+    try {
+      const { data, error } = await supabase
+        .from('set_images')
+        .select('image_url, image_type')
+        .eq('set_id', setId)
+        .eq('is_working', true)
+        .order('last_checked', { ascending: false });
+
+      if (error) throw error;
+      
+      const result: { logo?: string; symbol?: string } = {};
+      data?.forEach(item => {
+        if (item.image_type === 'logo' && !result.logo) {
+          result.logo = item.image_url;
+        } else if (item.image_type === 'symbol' && !result.symbol) {
+          result.symbol = item.image_url;
+        }
+      });
+      
+      return result;
+    } catch (error) {
+      console.error('Error fetching set images:', error);
+      return {};
+    }
+  }
+
   // Store working image URLs in the existing card_images table structure
   async storeWorkingImageUrl(cardId: string, imageUrl: string, imageType: 'small' | 'large', userId: string): Promise<void> {
     try {
