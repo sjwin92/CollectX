@@ -50,15 +50,88 @@ const getProductImage = async (setId: string, productType: string, setName: stri
   return `https://images.pokemontcg.io/${setId}/logo.png`;
 };
 
-// Fetch Pokemon sets from API
+// Fallback sets data for when API fails
+const fallbackSets: PokemonSet[] = [
+  {
+    id: "sv8",
+    name: "Surging Sparks",
+    series: "Scarlet & Violet",
+    printedTotal: 191,
+    total: 252,
+    releaseDate: "2024/11/08",
+    images: {
+      symbol: "https://images.pokemontcg.io/sv8/symbol.png",
+      logo: "https://images.pokemontcg.io/sv8/logo.png"
+    },
+    legalities: { standard: "Legal", expanded: "Legal", unlimited: "Legal" }
+  },
+  {
+    id: "sv7",
+    name: "Stellar Crown",
+    series: "Scarlet & Violet", 
+    printedTotal: 142,
+    total: 175,
+    releaseDate: "2024/09/13",
+    images: {
+      symbol: "https://images.pokemontcg.io/sv7/symbol.png",
+      logo: "https://images.pokemontcg.io/sv7/logo.png"
+    },
+    legalities: { standard: "Legal", expanded: "Legal", unlimited: "Legal" }
+  },
+  {
+    id: "sv6",
+    name: "Twilight Masquerade",
+    series: "Scarlet & Violet",
+    printedTotal: 167,
+    total: 226,
+    releaseDate: "2024/05/24",
+    images: {
+      symbol: "https://images.pokemontcg.io/sv6/symbol.png",
+      logo: "https://images.pokemontcg.io/sv6/logo.png"
+    },
+    legalities: { standard: "Legal", expanded: "Legal", unlimited: "Legal" }
+  },
+  {
+    id: "sv5",
+    name: "Temporal Forces",
+    series: "Scarlet & Violet",
+    printedTotal: 162,
+    total: 218,
+    releaseDate: "2024/03/22",
+    images: {
+      symbol: "https://images.pokemontcg.io/sv5/symbol.png",
+      logo: "https://images.pokemontcg.io/sv5/logo.png"
+    },
+    legalities: { standard: "Legal", expanded: "Legal", unlimited: "Legal" }
+  }
+];
+
+// Fetch Pokemon sets from API with fallback
 const fetchPokemonSets = async (): Promise<PokemonSet[]> => {
   try {
-    const response = await fetch('https://api.pokemontcg.io/v2/sets?pageSize=20&orderBy=-releaseDate');
+    console.log('Attempting to fetch Pokemon sets from API...');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    
+    const response = await fetch('https://api.pokemontcg.io/v2/sets?pageSize=20&orderBy=-releaseDate', {
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json',
+      }
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`API returned ${response.status}: ${response.statusText}`);
+    }
+    
     const data = await response.json();
-    return data.data || [];
+    console.log('Successfully fetched sets from API:', data.data?.length || 0, 'sets');
+    return data.data || fallbackSets;
   } catch (error) {
-    console.error('Error fetching sets:', error);
-    return [];
+    console.warn('API fetch failed, using fallback data:', error);
+    return fallbackSets;
   }
 };
 
