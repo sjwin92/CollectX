@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchFreeSealedProducts, FreeSealedProduct } from "@/services/freeSealedProductsService";
+import { fetchPokemonSealedProducts, PokemonSealedProduct, getProductImageUrl } from "@/services/pokemonProductApiService";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -29,25 +29,20 @@ const SealedProducts = () => {
   const [sortBy, setSortBy] = useState("name");
   const { toast } = useToast();
 
-  const { data: products, isLoading, isError, refetch } = useQuery({
-    queryKey: ['freeSealedProducts'],
-    queryFn: fetchFreeSealedProducts,
-    meta: {
-      onError: (error: Error) => {
-        toast({
-          title: "Error loading products",
-          description: error.message,
-          variant: "destructive"
-        });
-      }
-    }
+  const { data: productsResponse, isLoading, isError, refetch } = useQuery({
+    queryKey: ['pokemonSealedProducts'],
+    queryFn: () => fetchPokemonSealedProducts(1, 50),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000
   });
+
+  const products = productsResponse?.data || [];
 
   // Filter and sort products
   const filteredProducts = React.useMemo(() => {
     if (!products) return [];
     
-    let filtered = products.filter((product: FreeSealedProduct) => {
+    let filtered = products.filter((product: PokemonSealedProduct) => {
       const matchesSearch = searchQuery === "" || 
         product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         product.setName.toLowerCase().includes(searchQuery.toLowerCase());
@@ -58,14 +53,14 @@ const SealedProducts = () => {
     });
 
     // Sort products
-    filtered.sort((a: FreeSealedProduct, b: FreeSealedProduct) => {
+    filtered.sort((a: PokemonSealedProduct, b: PokemonSealedProduct) => {
       switch (sortBy) {
         case "name":
           return a.name.localeCompare(b.name);
         case "price-low":
-          return a.price.current - b.price.current;
+          return (a.tcgplayer?.prices?.market || 0) - (b.tcgplayer?.prices?.market || 0);
         case "price-high":
-          return b.price.current - a.price.current;
+          return (b.tcgplayer?.prices?.market || 0) - (a.tcgplayer?.prices?.market || 0);
         case "release-date":
           return new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime();
         default:
@@ -169,31 +164,25 @@ const SealedProducts = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map((product: FreeSealedProduct) => (
+            {filteredProducts.map((product: PokemonSealedProduct) => (
               <Card key={product.id} className="overflow-hidden h-full transition-all hover:shadow-lg hover:border-primary/50 group">
                 <CardHeader className="pb-3">
                   <div className="aspect-square bg-muted rounded-lg mb-3 overflow-hidden">
-                    {product.imageUrl ? (
-                      <img 
-                        src={product.imageUrl} 
-                        alt={product.name}
-                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          // If current image fails, try the set logo as fallback
-                          if (!target.src.includes('logo.png') && !target.src.includes('symbol.png')) {
-                            target.src = `https://images.pokemontcg.io/${product.setId}/logo.png`;
-                          } else {
-                            // Final fallback to placeholder
-                            target.src = '/placeholder.svg';
-                          }
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Package className="h-12 w-12 text-muted-foreground" />
-                      </div>
-                    )}
+                    <img 
+                      src={getProductImageUrl(product, 'small')} 
+                      alt={product.name}
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        // Fallback to large image if small fails
+                        if (!target.src.includes('large')) {
+                          target.src = getProductImageUrl(product, 'large');
+                        } else {
+                          // Final fallback to placeholder
+                          target.src = '/placeholder.svg';
+                        }
+                      }}
+                    />
                   </div>
                   <CardTitle className="text-base leading-tight">{product.name}</CardTitle>
                   <p className="text-sm text-muted-foreground">{product.setName}</p>
@@ -204,28 +193,24 @@ const SealedProducts = () => {
                     <Badge variant="secondary" className="text-xs">
                       {product.type}
                     </Badge>
-                    <Badge 
-                      variant={product.availability === 'in-stock' ? 'default' : 
-                               product.availability === 'pre-order' ? 'secondary' : 'destructive'} 
-                      className="text-xs"
-                    >
-                      {product.availability.replace('-', ' ')}
+                    <Badge variant="default" className="text-xs">
+                      In Stock
                     </Badge>
                   </div>
                   
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Current Price:</span>
+                      <span className="text-muted-foreground">TCGPlayer Price:</span>
                       <span className="font-bold text-lg text-green-600">
-                        £{product.price.current}
+                        £{product.tcgplayer?.prices?.market || 'N/A'}
                       </span>
                     </div>
                     
-                    {product.retailPrice && (
+                    {product.tcgplayer?.prices?.low && (
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">MSRP:</span>
-                        <span className="text-sm line-through text-muted-foreground">
-                          £{product.retailPrice}
+                        <span className="text-muted-foreground">Low Price:</span>
+                        <span className="text-sm text-muted-foreground">
+                          £{product.tcgplayer.prices.low}
                         </span>
                       </div>
                     )}
@@ -237,7 +222,7 @@ const SealedProducts = () => {
                     
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <ExternalLink className="h-3 w-3" />
-                      <span>Source: {product.price.source}</span>
+                      <span>Source: TCGPlayer</span>
                     </div>
                   </div>
                   
