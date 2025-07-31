@@ -161,7 +161,7 @@ const SetCard = ({ set }: SetCardProps) => {
             <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
               <div className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
-                {format(new Date(set.releaseDate), 'MMM d, yyyy')}
+                {set.releaseDate ? format(new Date(set.releaseDate), 'MMM d, yyyy') : 'Release date unknown'}
               </div>
               <div className="flex gap-2">
                 {set.legalities?.standard === 'Legal' && (
