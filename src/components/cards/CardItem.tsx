@@ -4,7 +4,7 @@ import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import { cn } from "@/lib/utils";
-import { Info, AlertTriangle, Check, RefreshCw, BadgeCheck, Repeat, Star, BookHeart, CircleDollarSign, Camera } from "lucide-react";
+import { Info, AlertTriangle, Check, RefreshCw, BadgeCheck, Repeat, Star, BookHeart, CircleDollarSign, Camera, Edit3 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import CardImageGallery from "@/components/pokemon/collection/CardImageGallery";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,7 @@ export interface CardItemProps {
   number?: string;
   quantity?: number;
   dbId?: string; // For collection cards with user-uploaded images
+  onEdit?: () => void; // For editing collection cards
 }
 
 const CardItem = ({
@@ -56,7 +57,8 @@ const CardItem = ({
   set,
   number,
   quantity = 1,
-  dbId // For showing user-uploaded images
+  dbId, // For showing user-uploaded images
+  onEdit // For editing collection cards
 }: CardItemProps) => {
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
   const [imageSrc, setImageSrc] = useState<string>("");
@@ -124,6 +126,21 @@ const CardItem = ({
                 onLoad={handleImageLoad}
                 onError={handleImageError}
               />
+              
+              {/* Edit button for collection cards */}
+              {dbId && onEdit && (
+                <Button
+                  size="icon"
+                  variant="secondary"
+                  className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit();
+                  }}
+                >
+                  <Edit3 className="h-4 w-4" />
+                </Button>
+              )}
               {imageStatus === "loading" && (
                 <div className="absolute inset-0 flex items-center justify-center bg-muted">
                   <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>

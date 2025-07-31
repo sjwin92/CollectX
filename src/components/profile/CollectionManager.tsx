@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { ExtendedCardItemProps } from "@/types/cardTypes";
@@ -12,6 +12,8 @@ import NoSearchResults from "./NoSearchResults";
 import CollectionStats from "./CollectionStats";
 import { useCollection } from "@/hooks/useCollection";
 import { debugCollections } from "@/services/collectionService";
+import EditCollectionCardModal from "@/components/pokemon/collection/EditCollectionCardModal";
+import { ExtendedCardItemWithDB } from "@/services/supabaseCollectionService";
 
 interface CollectionManagerProps {
   collection?: ExtendedCardItemProps[];
@@ -20,6 +22,8 @@ interface CollectionManagerProps {
 const CollectionManager = ({ collection: propCollection }: CollectionManagerProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [editingCard, setEditingCard] = useState<ExtendedCardItemWithDB | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   
   const {
     searchQuery,
@@ -53,8 +57,20 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
     });
   };
 
+  const handleEditCard = (card: ExtendedCardItemWithDB) => {
+    setEditingCard(card);
+    setEditModalOpen(true);
+  };
+
+  const handleCardUpdated = () => {
+    loadCollectionFromStorage();
+    setEditModalOpen(false);
+    setEditingCard(null);
+  };
+
   return (
-    <GlassCard className="p-6 mb-6">
+    <>
+      <GlassCard className="p-6 mb-6">
       <CollectionHeader 
         onAddCard={handleAddCard} 
         onRefresh={refreshCollection} 
@@ -69,7 +85,10 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
       
       {filteredCards.length > 0 ? (
         <CardGrid 
-          cards={filteredCards} 
+          cards={filteredCards.map(card => ({
+            ...card,
+            onEdit: () => handleEditCard(card)
+          }))} 
           columns={{ sm: 1, md: 2, lg: 3 }} 
           animated
         />
@@ -90,6 +109,14 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
         </div>
       )}
     </GlassCard>
+
+    <EditCollectionCardModal
+      card={editingCard}
+      isOpen={editModalOpen}
+      onClose={() => setEditModalOpen(false)}
+      onUpdated={handleCardUpdated}
+    />
+  </>
   );
 };
 
