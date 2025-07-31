@@ -36,7 +36,7 @@ const getProductImage = async (setId: string, productType: string, setName: stri
   const productMapping = productTypes.find(p => p.type === productType);
   const apiType = productMapping?.apiType || 'box';
   
-  // Try multiple image sources in order of preference
+  // Try multiple Pokemon-specific image sources
   const imageUrls = [
     // TCGDX assets (most reliable for product images)
     `https://assets.tcgdx.net/en/sets/${setId}/${apiType}.png`,
@@ -46,8 +46,8 @@ const getProductImage = async (setId: string, productType: string, setName: stri
     `https://images.pokemontcg.io/products/${setId}/${apiType}.png`,
     // Set symbols (smaller, better fallback than logos)
     `https://images.pokemontcg.io/${setId}/symbol.png`,
-    // Generic product placeholder (300x300 to match expected size)
-    `https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=300&h=300&fit=crop&crop=center&auto=format`
+    // Set logo as final Pokemon-related fallback
+    `https://images.pokemontcg.io/${setId}/logo.png`
   ];
   
   // Test each URL until we find one that works
@@ -63,8 +63,8 @@ const getProductImage = async (setId: string, productType: string, setName: stri
     }
   }
   
-  // Final fallback - return the last URL even if we can't verify it
-  return imageUrls[imageUrls.length - 1];
+  // Final fallback - return set logo even if we can't verify it
+  return `https://images.pokemontcg.io/${setId}/logo.png`;
 };
 
 // Fallback sets data for when API fails
