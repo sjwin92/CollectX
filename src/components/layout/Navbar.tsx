@@ -117,7 +117,7 @@ const Navbar = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&h=256&q=80" alt="Pokémon Trainer" />
+                    <AvatarImage src="/placeholder.svg" alt="Pokémon Trainer" />
                     <AvatarFallback className="bg-primary text-primary-foreground">PT</AvatarFallback>
                   </Avatar>
                 </Button>
@@ -125,7 +125,7 @@ const Navbar = () => {
               <DropdownMenuContent align="end" className="w-56 animate-fade-in">
                 <DropdownMenuLabel className="flex items-center gap-2">
                   <Avatar className="h-6 w-6">
-                    <AvatarImage src="https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&h=256&q=80" alt="Pokémon Trainer" />
+                    <AvatarImage src="/placeholder.svg" alt="Pokémon Trainer" />
                     <AvatarFallback className="bg-primary text-primary-foreground text-xs">PT</AvatarFallback>
                   </Avatar>
                   <div>

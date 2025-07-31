@@ -47,11 +47,11 @@ const activeTrades = [
     },
     giving: {
       count: 2,
-      preview: "https://images.unsplash.com/photo-1605979257913-1704eb7b6246?q=80&w=1470&auto=format&fit=crop"
+      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
     },
     receiving: {
       count: 3,
-      preview: "https://images.unsplash.com/photo-1607736703050-d0666c1d1278?q=80&w=1470&auto=format&fit=crop"
+      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
     }
   },
   {
@@ -65,11 +65,11 @@ const activeTrades = [
     },
     giving: {
       count: 1,
-      preview: "https://images.unsplash.com/photo-1638075528746-8b5f9c2b6c9c?q=80&w=1480&auto=format&fit=crop"
+      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
     },
     receiving: {
       count: 1,
-      preview: "https://images.unsplash.com/photo-1613771404721-1f92d799e49f?q=80&w=1469&auto=format&fit=crop"
+      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
     }
   },
   {
@@ -83,11 +83,11 @@ const activeTrades = [
     },
     giving: {
       count: 1,
-      preview: "https://images.unsplash.com/photo-1607736703050-d0666c1d1278?q=80&w=1470&auto=format&fit=crop"
+      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
     },
     receiving: {
       count: 2,
-      preview: "https://images.unsplash.com/photo-1605979257913-1704eb7b6246?q=80&w=1470&auto=format&fit=crop"
+      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
     }
   }
 ];
@@ -104,11 +104,11 @@ const completedTrades = [
     },
     giving: {
       count: 4,
-      preview: "https://images.unsplash.com/photo-1613771404721-1f92d799e49f?q=80&w=1469&auto=format&fit=crop"
+      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
     },
     receiving: {
       count: 2,
-      preview: "https://images.unsplash.com/photo-1638075528746-8b5f9c2b6c9c?q=80&w=1480&auto=format&fit=crop"
+      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
     }
   },
   {
@@ -122,11 +122,11 @@ const completedTrades = [
     },
     giving: {
       count: 1,
-      preview: "https://images.unsplash.com/photo-1606041011872-596597976b25?q=80&w=1374&auto=format&fit=crop"
+      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
     },
     receiving: {
       count: 1,
-      preview: "https://images.unsplash.com/photo-1553481187-be93c21490a9?q=80&w=1470&auto=format&fit=crop"
+      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
     }
   }
 ];
@@ -143,11 +143,11 @@ const declinedTrades = [
     },
     giving: {
       count: 1,
-      preview: "https://images.unsplash.com/photo-1553481187-be93c21490a9?q=80&w=1470&auto=format&fit=crop"
+      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
     },
     receiving: {
       count: 1,
-      preview: "https://images.unsplash.com/photo-1606041011872-596597976b25?q=80&w=1374&auto=format&fit=crop"
+      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
     }
   }
 ];
@@ -197,11 +197,11 @@ const Trades = () => {
       },
       giving: {
         count: 2,
-        preview: "https://images.unsplash.com/photo-1605979257913-1704eb7b6246?q=80&w=1470&auto=format&fit=crop"
+        preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
       },
       receiving: {
         count: 3,
-        preview: "https://images.unsplash.com/photo-1607736703050-d0666c1d1278?q=80&w=1470&auto=format&fit=crop"
+        preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
       }
     }
   ]);
@@ -239,11 +239,11 @@ const Trades = () => {
       },
       giving: {
         count: offeredCards.length,
-        preview: offeredCards[0]?.images?.small || "https://images.unsplash.com/photo-1605979257913-1704eb7b6246?q=80&w=1470&auto=format&fit=crop"
+        preview: offeredCards[0]?.images?.small || "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
       },
       receiving: {
         count: 1,
-        preview: selectedTargetCard?.imageUrl || "https://images.unsplash.com/photo-1607736703050-d0666c1d1278?q=80&w=1470&auto=format&fit=crop"
+        preview: selectedTargetCard?.imageUrl || "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
       },
       message,
       offeredCards,

@@ -75,7 +75,7 @@ const SocialTradeHub = ({ isOpen, onClose }: SocialTradeHubProps) => {
     return [
       {
         id: '1',
-        user: { name: 'Alex Morgan', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' },
+        user: { name: 'Alex Morgan', avatar: '/placeholder.svg' },
         lastMessage: 'Sounds good! When can you ship?',
         timestamp: 'now',
         unread: 2,
@@ -90,7 +90,7 @@ const SocialTradeHub = ({ isOpen, onClose }: SocialTradeHubProps) => {
       },
       {
         id: '2', 
-        user: { name: 'Jordan Lee', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' },
+        user: { name: 'Jordan Lee', avatar: '/placeholder.svg' },
         lastMessage: 'Package shipped! Tracking: 1Z999AA1234567890',
         timestamp: '1h',
         unread: 0,
