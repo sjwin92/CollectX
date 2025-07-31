@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Badge from "@/components/ui/custom/Badge";
 import GlassCard from "@/components/ui/custom/GlassCard";
+import OptimizedImage from "@/components/ui/OptimizedImage";
 import {
   ArrowLeftRight,
   Calendar as CalendarIcon,
@@ -521,7 +522,13 @@ const TradeDetail: React.FC<TradeDetailProps> = () => {
               </Button>
             </div>
             <div className="p-4 flex justify-center">
-              <img src={isShowingLightbox} alt="Expanded view" className="max-h-[70vh] object-contain" />
+              <OptimizedImage 
+                src={isShowingLightbox} 
+                alt="Expanded view" 
+                className="max-h-[70vh] object-contain" 
+                useAI={false}
+                lazy={false}
+              />
             </div>
           </div>
         </div>

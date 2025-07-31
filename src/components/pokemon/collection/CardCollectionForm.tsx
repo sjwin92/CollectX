@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import OptimizedImage from "@/components/ui/OptimizedImage";
 import * as z from "zod";
 
 import {
@@ -139,7 +140,14 @@ const CardCollectionForm = ({ card, onSubmit, onCancel, initialData }: CardColle
               </p>
             </div>
           </div>
-          <img src={card.images.small} alt={card.name} className="rounded-md" />
+          <OptimizedImage 
+            src={card.images.small} 
+            alt={card.name} 
+            className="rounded-md" 
+            useAI={true}
+            lazy={true}
+            fallbackSrc="/placeholder.svg"
+          />
         </CardContent>
       </Card>
       

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import OptimizedImage from "@/components/ui/OptimizedImage";
 import { Trophy, Calendar, Plus, ImageOff, Package } from "lucide-react";
 import { format } from "date-fns";
 import { PokemonSet } from "@/services/api/pokemonTypes";
@@ -93,11 +94,13 @@ const SetCard = ({ set }: SetCardProps) => {
           <CardHeader className="space-y-4 pb-4">
             <div className="h-12 flex items-center justify-center">
               {logoUrl && !logoError ? (
-                <img 
+                <OptimizedImage 
                   src={logoUrl} 
                   alt={`${set.name} logo`}
                   className="max-h-12 object-contain mx-auto"
-                  onError={handleLogoError}
+                  useAI={true}
+                  lazy={true}
+                  fallbackSrc="/placeholder.svg"
                 />
               ) : (
                 <div className="flex flex-col items-center">
@@ -114,11 +117,13 @@ const SetCard = ({ set }: SetCardProps) => {
               <div className="flex items-center gap-1.5">
                 <div className="h-6 w-6 flex items-center justify-center">
                   {symbolUrl && !symbolError ? (
-                    <img 
+                    <OptimizedImage 
                       src={symbolUrl} 
                       alt={`${set.name} symbol`}
                       className="max-h-6 max-w-6 object-contain"
-                      onError={handleSymbolError}
+                      useAI={true}
+                      lazy={true}
+                      fallbackSrc="/placeholder.svg"
                     />
                   ) : (
                     <ImageOff className="h-4 w-4 text-muted-foreground" />

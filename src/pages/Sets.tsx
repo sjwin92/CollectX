@@ -5,6 +5,7 @@ import { getSets } from "@/services/pokemonSetsApi";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import SetCard from "@/components/pokemon/SetCard";
+import OptimizedImage from "@/components/ui/OptimizedImage";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Star, ImageOff } from "lucide-react";
@@ -157,11 +158,13 @@ const Sets = () => {
                       <CardHeader className="pt-10">
                         {logoUrl ? (
                           <div className="flex justify-center mb-2">
-                            <img 
+                            <OptimizedImage 
                               src={logoUrl} 
                               alt={`${set.name} logo`}
                               className="h-16 object-contain mx-auto"
-                              onError={(e) => handleImageError(set.id, 'logo', e.currentTarget)}
+                              useAI={true}
+                              lazy={true}
+                              fallbackSrc="/placeholder.svg"
                             />
                           </div>
                         ) : (
@@ -178,11 +181,13 @@ const Sets = () => {
                         <div className="flex justify-between items-center mt-2">
                           <div className="flex items-center gap-2">
                             {symbolUrl ? (
-                              <img 
+                              <OptimizedImage 
                                 src={symbolUrl} 
                                 alt={`${set.name} symbol`}
                                 className="h-6 w-6 object-contain"
-                                onError={(e) => handleImageError(set.id, 'symbol', e.currentTarget)}
+                                useAI={true}
+                                lazy={true}
+                                fallbackSrc="/placeholder.svg"
                               />
                             ) : (
                               <ImageOff className="h-4 w-4 text-muted-foreground" />

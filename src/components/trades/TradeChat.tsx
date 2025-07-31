@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import OptimizedImage from '@/components/ui/OptimizedImage';
 import { TradeMessage } from '@/models/escrow';
 import { SendHorizontal, Paperclip, X, Image as ImageIcon } from 'lucide-react';
 import { format } from 'date-fns';
@@ -130,7 +131,13 @@ const TradeChat = ({
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <img src={imagePreview} alt="Preview" className="max-h-32 rounded" />
+            <OptimizedImage 
+              src={imagePreview} 
+              alt="Preview" 
+              className="max-h-32 rounded" 
+              useAI={false}
+              lazy={false}
+            />
           </div>
         )}
 

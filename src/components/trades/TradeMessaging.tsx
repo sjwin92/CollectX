@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import OptimizedImage from '@/components/ui/OptimizedImage';
 import { SendHorizontal, Paperclip, X, Image as ImageIcon, Shield } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -371,7 +372,13 @@ const TradeMessaging = ({ trade }: TradeMessagingProps) => {
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-              <img src={imagePreview} alt="Preview" className="max-h-32 rounded" />
+              <OptimizedImage 
+                src={imagePreview} 
+                alt="Preview" 
+                className="max-h-32 rounded" 
+                useAI={false}
+                lazy={false}
+              />
             </div>
           )}
 
