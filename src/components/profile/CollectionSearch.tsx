@@ -25,7 +25,13 @@ const CollectionSearch = ({
           placeholder="Search your collection..." 
           className="pl-9"
           value={searchQuery}
-          onChange={onSearchChange}
+          onChange={(e) => {
+            console.log("Input change detected:", e.target.value);
+            onSearchChange(e);
+          }}
+          onFocus={() => console.log("Input focused")}
+          onBlur={() => console.log("Input blurred")}
+          style={{ pointerEvents: 'auto', zIndex: 1 }}
         />
       </div>
       
