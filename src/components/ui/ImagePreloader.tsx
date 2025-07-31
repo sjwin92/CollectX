@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { imageOptimizer } from '@/services/ai/imageOptimization';
+import { simpleImageService } from '@/services/simpleImageService';
 
 const ImagePreloader: React.FC = () => {
   useEffect(() => {
@@ -9,8 +9,8 @@ const ImagePreloader: React.FC = () => {
       'https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg',
     ];
 
-    // Initialize AI model and preload common images
-    imageOptimizer.preloadImages(commonImages, false).catch(console.warn);
+    // Preload common images with the simple service
+    simpleImageService.preloadImages(['placeholder']).catch(console.warn);
     
     // Cleanup cache on unmount
     return () => {

@@ -92,16 +92,16 @@ const PokemonCards = () => {
       
       setAllCards(allResults);
       
-      // Preload images with AI optimization for better performance
+      // Preload images for better performance
       if (allResults.length > 0) {
-        const imageUrls = allResults
-          .map(card => card.imageUrl)
+        const cardIds = allResults
+          .map(card => card.id)
           .filter(Boolean)
-          .slice(0, 20); // Preload first 20 images
+          .slice(0, 10); // Preload first 10 cards
           
-        // Import imageOptimizer dynamically to avoid loading issues
-        import('@/services/ai/imageOptimization').then(({ imageOptimizer }) => {
-          imageOptimizer.preloadImages(imageUrls, true).catch(console.warn);
+        // Use simple image service for preloading
+        import('@/services/simpleImageService').then(({ simpleImageService }) => {
+          simpleImageService.preloadImages(cardIds).catch(console.warn);
         });
       }
     } catch (error) {
