@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import SocialTradeHub from "@/components/trades/SocialTradeHub";
+import NotificationCenter from "@/components/notifications/NotificationCenter";
 
 const Navbar = () => {
   const location = useLocation();
@@ -112,6 +113,8 @@ const Navbar = () => {
                 3
               </span>
             </Button>
+
+            <NotificationCenter />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
