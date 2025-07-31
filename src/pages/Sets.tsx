@@ -73,19 +73,26 @@ const Sets = () => {
     });
   }, [isLoading, isError, data, currentPage, error]);
 
-  // Use combined data with proper structure handling
+  // Use combined data with proper structure handling and sort by release date
   const combinedData = React.useMemo(() => {
     console.log("Computing combinedData:", { isLoading, isError, hasData: !!data, dataLength: data?.data?.length });
     if (isLoading || isError || !data?.data) return [];
     
     // Convert database format to API format if needed
-    return data.data.map(set => ({
+    const processedSets = data.data.map(set => ({
       ...set,
       // Ensure the set has the expected API structure
       images: set.images || { logo: set.logo_url, symbol: set.symbol_url },
       printedTotal: set.printed_total || set.printedTotal,
       releaseDate: set.release_date || set.releaseDate
     }));
+
+    // Sort by release date (oldest to newest)
+    return processedSets.sort((a, b) => {
+      const dateA = new Date(a.releaseDate || '1900-01-01');
+      const dateB = new Date(b.releaseDate || '1900-01-01');
+      return dateA.getTime() - dateB.getTime();
+    });
   }, [data, isLoading, isError]);
 
   // Get featured sets (first 4 sets with enhanced SV image loading)
