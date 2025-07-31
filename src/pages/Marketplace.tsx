@@ -479,8 +479,14 @@ const Marketplace = () => {
           <CreateListingModal 
             isOpen={isCreateListingOpen}
             onClose={() => setCreateListingOpen(false)}
-            selectedCard={selectedCard}
-            onCreateListing={createNewListing}
+            selectedCard={null}
+            onListingCreated={() => {
+              // Refresh marketplace data when listing is created
+              toast({
+                title: "Listing created",
+                description: "Your listing has been added to the marketplace"
+              });
+            }}
           />
         )}
 

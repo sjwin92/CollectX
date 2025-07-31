@@ -1,213 +1,281 @@
-
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { PokemonCard, getReliableImageUrl } from "@/services/pokemonTcgApi";
-import PokemonCardSearch from "@/components/pokemon/PokemonCardSearch";
-import { X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/hooks/useUser";
+import { createMarketplaceListing } from "@/services/supabaseMarketplaceService";
+import { ExtendedCardItemWithDB, getTradableCards } from "@/services/supabaseCollectionService";
+import { useQuery } from "@tanstack/react-query";
 
 interface CreateListingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  selectedCard: PokemonCard | null;
-  onCreateListing: (cardOffered: PokemonCard, cardsWanted: string[], description: string) => void;
+  selectedCard: ExtendedCardItemWithDB | null;
+  onListingCreated?: () => void;
 }
 
 const CreateListingModal = ({ 
   isOpen, 
   onClose, 
-  selectedCard, 
-  onCreateListing 
+  selectedCard,
+  onListingCreated
 }: CreateListingModalProps) => {
-  const [card, setCard] = useState<PokemonCard | null>(selectedCard);
-  const [cardsWanted, setCardsWanted] = useState<string>("");
+  const [internalSelectedCard, setInternalSelectedCard] = useState<ExtendedCardItemWithDB | null>(selectedCard);
+  const [listingType, setListingType] = useState<'trade' | 'sale' | 'both'>('trade');
+  const [askingPrice, setAskingPrice] = useState<string>("");
+  const [tradePreferences, setTradePreferences] = useState<string>("");
   const [description, setDescription] = useState<string>("");
-  const [step, setStep] = useState<"select-card" | "details">(selectedCard ? "details" : "select-card");
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
+  const [expiresAt, setExpiresAt] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useUser();
 
-  const handleSubmit = () => {
-    if (!card) {
+  // Get user's collection for card selection
+  const { data: userCards = [], isLoading: isLoadingCards } = useQuery({
+    queryKey: ['user-tradable-cards'],
+    queryFn: getTradableCards,
+    enabled: !!user && !selectedCard
+  });
+
+  const currentCard = internalSelectedCard || selectedCard;
+
+  const handleSubmit = async () => {
+    if (!user) {
       toast({
-        title: "Error",
-        description: "Please select a card to offer",
+        title: "Authentication required",
+        description: "Please sign in to create listings",
         variant: "destructive"
       });
       return;
     }
-    
-    // Split the cards wanted by commas and trim whitespace
-    const cardsWantedArray = cardsWanted
-      .split(",")
-      .map(c => c.trim())
-      .filter(c => c.length > 0);
 
-    if (cardsWantedArray.length === 0) {
+    if (!currentCard) {
       toast({
         title: "Error",
-        description: "Please specify at least one card you want in exchange",
+        description: "No card selected",
         variant: "destructive"
       });
       return;
     }
+
+    if (listingType === 'sale' && !askingPrice) {
+      toast({
+        title: "Error",
+        description: "Please enter an asking price for sale listings",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (listingType === 'trade' && !tradePreferences) {
+      toast({
+        title: "Error",
+        description: "Please specify what you're looking for in trade",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
     
-    toast({
-      title: "Creating listing",
-      description: "Your trade listing is being created...",
-    });
-    
-    onCreateListing(card, cardsWantedArray, description);
+    try {
+      await createMarketplaceListing(currentCard, {
+        listing_type: listingType,
+        asking_price: askingPrice ? parseFloat(askingPrice) : undefined,
+        trade_preferences: tradePreferences,
+        description,
+        expires_at: expiresAt || undefined
+      });
+
+      toast({
+        title: "Listing created",
+        description: "Your card has been listed in the marketplace",
+      });
+
+      // Reset form
+      setListingType('trade');
+      setAskingPrice("");
+      setTradePreferences("");
+      setDescription("");
+      setExpiresAt("");
+      
+      onListingCreated?.();
+      onClose();
+    } catch (error) {
+      console.error('Error creating listing:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create listing. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleCardSelect = (selectedCard: PokemonCard) => {
-    console.log("Card selected:", selectedCard);
-    setCard(selectedCard);
-    setStep("details");
-    setImageLoaded(false);
-    setImageError(false);
-    toast({
-      title: "Card Selected",
-      description: `${selectedCard.name} has been selected for your trade listing.`,
-    });
-  };
-
-  const handleReset = () => {
-    setCard(null);
-    setStep("select-card");
-    setImageLoaded(false);
-    setImageError(false);
-  };
-
-  const getCardImageUrl = (card: PokemonCard) => {
-    // First try the small image from the card
-    if (card.images?.small) {
-      return card.images.small;
+  const handleClose = () => {
+    if (!isLoading) {
+      onClose();
     }
-    
-    // Then try the reliable URL
-    return getReliableImageUrl(card.id);
-  };
-
-  const getFallbackImage = () => {
-    return "/placeholder.svg";
-  };
-
-  const getCardPrice = (card: PokemonCard) => {
-    if (!card.tcgplayer?.prices) {
-      return "Not available";
-    }
-    
-    // Check different price types in order of preference
-    if (card.tcgplayer.prices.holofoil?.market) {
-      return `$${card.tcgplayer.prices.holofoil.market.toFixed(2)}`;
-    }
-    
-    if (card.tcgplayer.prices.normal?.market) {
-      return `$${card.tcgplayer.prices.normal.market.toFixed(2)}`;
-    }
-    
-    if (card.tcgplayer.prices.reverseHolofoil?.market) {
-      return `$${card.tcgplayer.prices.reverseHolofoil.market.toFixed(2)}`;
-    }
-    
-    // If no market price is available, return "Not available"
-    return "Not available";
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create Trade Listing</DialogTitle>
+          <DialogTitle>Create Marketplace Listing</DialogTitle>
           <DialogDescription>
-            Select a card from your collection to offer for trade and specify what you're looking for.
+            List your card for trade or sale in the marketplace
           </DialogDescription>
         </DialogHeader>
 
-        {step === "select-card" ? (
+        {!currentCard ? (
           <div className="space-y-4 py-4">
-            <h3 className="text-lg font-medium">Select a card to trade</h3>
-            <PokemonCardSearch onSelect={handleCardSelect} />
+            <h3 className="text-lg font-medium">Select a card from your collection</h3>
+            {isLoadingCards ? (
+              <div className="flex justify-center py-8">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+              </div>
+            ) : userCards.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No cards available for listing.</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Add cards to your collection and mark them as "for trade" to list them.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+                {userCards.map((card) => (
+                  <div
+                    key={card.dbId}
+                    className="cursor-pointer p-2 border rounded-lg hover:border-primary transition-colors"
+                    onClick={() => setInternalSelectedCard(card)}
+                  >
+                    <div className="aspect-[2/3] relative mb-2">
+                      <img 
+                        src={card.imageUrl}
+                        alt={card.name}
+                        className="w-full h-full object-cover rounded"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = "/placeholder.svg";
+                        }}
+                      />
+                    </div>
+                    <h4 className="text-sm font-medium truncate">{card.name}</h4>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {card.set?.name}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-6 py-4">
-            {card && (
-              <div className="flex gap-4 items-start">
-                <div className="w-1/3 relative">
-                  {!imageLoaded && !imageError && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-md">
-                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-                    </div>
-                  )}
-                  <img 
-                    src={getCardImageUrl(card)}
-                    alt={card.name}
-                    className={`w-full rounded-md ${!imageLoaded && 'opacity-0'} ${imageError && 'hidden'}`}
-                    onLoad={() => setImageLoaded(true)}
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      console.log("Image loading error for:", card.id);
-                      
-                      // If primary image failed, try fallback
-                      if (!imageError) {
-                        setImageError(true);
-                        target.src = getFallbackImage();
-                        target.className = "w-full rounded-md";
-                        setImageLoaded(true);
-                      }
-                    }}
-                  />
-                  {imageError && (
-                    <div className="w-full aspect-[2/3] bg-muted rounded-md flex items-center justify-center">
-                      <p className="text-sm text-muted-foreground px-2 text-center">
-                        {card.name}
-                        <br />
-                        (Image unavailable)
-                      </p>
-                    </div>
-                  )}
-                </div>
-                <div className="w-2/3 space-y-2">
-                  <div className="flex justify-between items-start">
-                    <h3 className="text-lg font-semibold">{card.name}</h3>
-                    <Button size="icon" variant="ghost" onClick={handleReset} className="h-8 w-8">
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {card.set.name} • {card.rarity || "Unknown rarity"}
-                  </p>
-                  <p className="text-sm">
-                    Estimated Value: {getCardPrice(card)}
-                  </p>
-                </div>
+            {/* Card Preview */}
+            <div className="flex gap-4 items-start p-4 bg-muted rounded-lg">
+              <div className="w-20 h-28 relative">
+                <img 
+                  src={currentCard.imageUrl}
+                  alt={currentCard.name}
+                  className="w-full h-full object-cover rounded-md"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = "/placeholder.svg";
+                  }}
+                />
               </div>
-            )}
+              <div className="flex-1 space-y-1">
+                <div className="flex justify-between items-start">
+                  <h3 className="font-semibold">{currentCard.name}</h3>
+                  {!selectedCard && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setInternalSelectedCard(null)}
+                    >
+                      Change
+                    </Button>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {currentCard.set?.name} • {currentCard.rarity}
+                </p>
+                <p className="text-sm">
+                  Condition: {currentCard.condition} • Qty: {currentCard.quantity}
+                </p>
+                {currentCard.graded && (
+                  <p className="text-sm">
+                    {currentCard.gradingCompany} {currentCard.gradeScore}
+                  </p>
+                )}
+              </div>
+            </div>
 
+            {/* Listing Details Form */}
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="cardsWanted">Cards You Want (comma separated)</Label>
-                <Input
-                  id="cardsWanted"
-                  placeholder="Charizard, Pikachu V, Mewtwo GX"
-                  value={cardsWanted}
-                  onChange={(e) => setCardsWanted(e.target.value)}
+                <Label htmlFor="listingType">Listing Type</Label>
+                <Select value={listingType} onValueChange={(value: 'trade' | 'sale' | 'both') => setListingType(value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select listing type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="trade">Trade Only</SelectItem>
+                    <SelectItem value="sale">Sale Only</SelectItem>
+                    <SelectItem value="both">Trade or Sale</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {(listingType === 'sale' || listingType === 'both') && (
+                <div className="space-y-2">
+                  <Label htmlFor="askingPrice">Asking Price ($)</Label>
+                  <Input
+                    id="askingPrice"
+                    type="number"
+                    step="0.01"
+                    placeholder="Enter asking price"
+                    value={askingPrice}
+                    onChange={(e) => setAskingPrice(e.target.value)}
+                  />
+                </div>
+              )}
+
+              {(listingType === 'trade' || listingType === 'both') && (
+                <div className="space-y-2">
+                  <Label htmlFor="tradePreferences">Trade Preferences</Label>
+                  <Textarea
+                    id="tradePreferences"
+                    placeholder="What cards are you looking for? (e.g., Charizard cards, specific sets, etc.)"
+                    value={tradePreferences}
+                    onChange={(e) => setTradePreferences(e.target.value)}
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Additional Description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Any additional details about the card or trade preferences"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description (condition, preferences, etc.)</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Describe your card's condition and what you're looking for in a trade"
-                  className="min-h-24"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                <Label htmlFor="expiresAt">Expires At (optional)</Label>
+                <Input
+                  id="expiresAt"
+                  type="datetime-local"
+                  value={expiresAt}
+                  onChange={(e) => setExpiresAt(e.target.value)}
                 />
               </div>
             </div>
@@ -215,12 +283,12 @@ const CreateListingModal = ({
         )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          {step === "details" && (
-            <Button onClick={handleSubmit} disabled={!card || cardsWanted.trim().length === 0}>
-              Create Listing
-            </Button>
-          )}
+          <Button variant="outline" onClick={handleClose} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={!currentCard || isLoading}>
+            {isLoading ? "Creating..." : "Create Listing"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
