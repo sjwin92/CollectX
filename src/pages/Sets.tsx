@@ -40,7 +40,15 @@ const Sets = () => {
   });
 
   const isLoading = localLoading || apiLoading;
-  const data = localSets && localSets.length > 0 ? { data: localSets, totalCount: localSets.length } : apiData;
+  
+  // Properly handle the different data structures
+  const data = React.useMemo(() => {
+    if (localSets && localSets.length > 0) {
+      // Local data is an array, wrap it in the expected structure
+      return { data: localSets, totalCount: localSets.length };
+    }
+    return apiData; // API data already has the correct structure
+  }, [localSets, apiData]);
 
   // Handle errors with toast
   React.useEffect(() => {
@@ -65,11 +73,19 @@ const Sets = () => {
     });
   }, [isLoading, isError, data, currentPage, error]);
 
-  // Use API data directly
+  // Use combined data with proper structure handling
   const combinedData = React.useMemo(() => {
     console.log("Computing combinedData:", { isLoading, isError, hasData: !!data, dataLength: data?.data?.length });
     if (isLoading || isError || !data?.data) return [];
-    return data.data;
+    
+    // Convert database format to API format if needed
+    return data.data.map(set => ({
+      ...set,
+      // Ensure the set has the expected API structure
+      images: set.images || { logo: set.logo_url, symbol: set.symbol_url },
+      printedTotal: set.printed_total || set.printedTotal,
+      releaseDate: set.release_date || set.releaseDate
+    }));
   }, [data, isLoading, isError]);
 
   // Get featured sets (first 4 sets with enhanced SV image loading)
