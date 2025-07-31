@@ -1,6 +1,6 @@
 import { TradeProposal, TradeStatus, TradeMessage } from "@/models/escrow";
 import { v4 as uuidv4 } from 'uuid';
-import { getCardById, mapToTradeCard } from './tcgdexApi';
+import { getCardById, mapToTradeCard } from './unifiedCardService';
 
 const CARD_IDS = {
   CHARIZARD_GX_RR: 'sm12-150',
@@ -22,7 +22,7 @@ const mockImages = [
 
 const initializeMockTrades = async () => {
   try {
-    console.log("Initializing mock trades with TCGDex API");
+    console.log("Initializing mock trades with unified card service");
     const charizardGX = await getCardById(CARD_IDS.CHARIZARD_GX_RR);
     const venusaurV = await getCardById(CARD_IDS.VENUSAUR_V);
     const pikachuVMAX = await getCardById(CARD_IDS.PIKACHU_VMAX);
@@ -207,10 +207,10 @@ const initializeMockTrades = async () => {
       }
     };
 
-    console.log("Mock trades initialized with TCGDex API data:", Object.keys(mockTrades).length);
+    console.log("Mock trades initialized with unified card service:", Object.keys(mockTrades).length);
     return mockTrades;
   } catch (error) {
-    console.error("Failed to initialize mock trades with TCGDex API:", error);
+    console.error("Failed to initialize mock trades with unified card service:", error);
     return createFallbackTrades();
   }
 };

@@ -11,7 +11,7 @@ import GlassCard from "@/components/ui/custom/GlassCard";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { fetchCardsByName } from "@/services/tcgdexApi";
+import { searchCardsByName } from "@/services/unifiedCardService";
 import GradedFilter from "@/components/profile/GradedFilter";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ExtendedCardItemProps } from "@/types/cardTypes";
@@ -185,8 +185,16 @@ const Collection = () => {
     }
     setSearchLoading(true);
     try {
-      const cards = await fetchCardsByName(searchCardQuery);
-      setSearchResults(cards.slice(0, 10));
+      const cards = await searchCardsByName(searchCardQuery);
+      // Map unified cards to the format expected by the UI
+      const mappedCards = cards.slice(0, 10).map(card => ({
+        id: card.id,
+        name: card.name,
+        image: card.images?.small || card.images?.large || 'https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg',
+        set: card.set,
+        rarity: card.rarity
+      }));
+      setSearchResults(mappedCards);
       if (cards.length === 0) {
         toast({
           title: "No Cards Found",
