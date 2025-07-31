@@ -542,6 +542,145 @@ export type Database = {
         }
         Relationships: []
       }
+      shipping_methods: {
+        Row: {
+          base_price: number
+          carrier: string
+          created_at: string
+          description: string | null
+          domestic_only: boolean | null
+          estimated_delivery_days: number | null
+          id: string
+          insurance_included: boolean | null
+          is_active: boolean | null
+          max_dimensions_cm: string | null
+          max_weight_kg: number | null
+          name: string
+          price_per_kg: number | null
+          service_type: string
+          tracking_included: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          base_price: number
+          carrier: string
+          created_at?: string
+          description?: string | null
+          domestic_only?: boolean | null
+          estimated_delivery_days?: number | null
+          id?: string
+          insurance_included?: boolean | null
+          is_active?: boolean | null
+          max_dimensions_cm?: string | null
+          max_weight_kg?: number | null
+          name: string
+          price_per_kg?: number | null
+          service_type: string
+          tracking_included?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          base_price?: number
+          carrier?: string
+          created_at?: string
+          description?: string | null
+          domestic_only?: boolean | null
+          estimated_delivery_days?: number | null
+          id?: string
+          insurance_included?: boolean | null
+          is_active?: boolean | null
+          max_dimensions_cm?: string | null
+          max_weight_kg?: number | null
+          name?: string
+          price_per_kg?: number | null
+          service_type?: string
+          tracking_included?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      shipping_rates: {
+        Row: {
+          country_code: string
+          created_at: string
+          id: string
+          price: number
+          shipping_method_id: string
+          weight_from_kg: number | null
+          weight_to_kg: number | null
+          zone: string | null
+        }
+        Insert: {
+          country_code: string
+          created_at?: string
+          id?: string
+          price: number
+          shipping_method_id: string
+          weight_from_kg?: number | null
+          weight_to_kg?: number | null
+          zone?: string | null
+        }
+        Update: {
+          country_code?: string
+          created_at?: string
+          id?: string
+          price?: number
+          shipping_method_id?: string
+          weight_from_kg?: number | null
+          weight_to_kg?: number | null
+          zone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipping_rates_shipping_method_id_fkey"
+            columns: ["shipping_method_id"]
+            isOneToOne: false
+            referencedRelation: "shipping_methods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracking_events: {
+        Row: {
+          carrier_event_id: string | null
+          created_at: string
+          event_description: string
+          event_type: string
+          id: string
+          location: string | null
+          shipment_id: string
+          timestamp: string
+        }
+        Insert: {
+          carrier_event_id?: string | null
+          created_at?: string
+          event_description: string
+          event_type: string
+          id?: string
+          location?: string | null
+          shipment_id: string
+          timestamp: string
+        }
+        Update: {
+          carrier_event_id?: string | null
+          created_at?: string
+          event_description?: string
+          event_type?: string
+          id?: string
+          location?: string | null
+          shipment_id?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracking_events_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "trade_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trade_messages: {
         Row: {
           created_at: string
@@ -611,6 +750,80 @@ export type Database = {
             columns: ["trade_id"]
             isOneToOne: false
             referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_shipments: {
+        Row: {
+          created_at: string
+          delivered_at: string | null
+          dimensions_cm: string | null
+          id: string
+          insurance_value: number | null
+          metadata: Json | null
+          recipient_address: Json
+          recipient_user_id: string
+          sender_address: Json
+          sender_user_id: string
+          shipped_at: string | null
+          shipping_cost: number
+          shipping_label_url: string | null
+          shipping_method_id: string
+          status: string
+          tracking_number: string | null
+          trade_id: string
+          updated_at: string
+          weight_kg: number | null
+        }
+        Insert: {
+          created_at?: string
+          delivered_at?: string | null
+          dimensions_cm?: string | null
+          id?: string
+          insurance_value?: number | null
+          metadata?: Json | null
+          recipient_address: Json
+          recipient_user_id: string
+          sender_address: Json
+          sender_user_id: string
+          shipped_at?: string | null
+          shipping_cost: number
+          shipping_label_url?: string | null
+          shipping_method_id: string
+          status?: string
+          tracking_number?: string | null
+          trade_id: string
+          updated_at?: string
+          weight_kg?: number | null
+        }
+        Update: {
+          created_at?: string
+          delivered_at?: string | null
+          dimensions_cm?: string | null
+          id?: string
+          insurance_value?: number | null
+          metadata?: Json | null
+          recipient_address?: Json
+          recipient_user_id?: string
+          sender_address?: Json
+          sender_user_id?: string
+          shipped_at?: string | null
+          shipping_cost?: number
+          shipping_label_url?: string | null
+          shipping_method_id?: string
+          status?: string
+          tracking_number?: string | null
+          trade_id?: string
+          updated_at?: string
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_shipments_shipping_method_id_fkey"
+            columns: ["shipping_method_id"]
+            isOneToOne: false
+            referencedRelation: "shipping_methods"
             referencedColumns: ["id"]
           },
         ]
