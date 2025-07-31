@@ -129,9 +129,9 @@ const Profile = () => {
               <GlassCard className="p-6 text-center">
                 <div className="mx-auto mb-4">
                   <Avatar className="h-24 w-24 mx-auto">
-                    <AvatarImage src="/placeholder.svg" alt={userData.name} />
+                    <AvatarImage src={profile?.avatar_url} alt={displayData.name} />
                     <AvatarFallback className="text-2xl">
-                      {userData.name.substring(0, 2).toUpperCase()}
+                      {displayData.name.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </div>
@@ -170,7 +170,7 @@ const Profile = () => {
                     <Mail className="h-4 w-4 mr-2" />
                     Message
                   </Button>
-                  <Button variant="outline">
+                  <Button variant="outline" onClick={() => window.location.href = '/account-settings'}>
                     <Settings className="h-4 w-4" />
                   </Button>
                 </div>
@@ -228,100 +228,15 @@ const Profile = () => {
                 </TabsList>
                 
                 <TabsContent value="activity">
-                  <GlassCard className="p-6 mb-6">
-                    <h2 className="text-lg font-bold mb-4">Recent Activity</h2>
-                    
-                    <div className="space-y-6">
-                      {[
-                        {
-                          icon: <ArrowLeftRight className="h-5 w-5 text-blue-500" />,
-                          title: "Completed trade with Jamie Rivera",
-                          description: "2 days ago",
-                          action: "View Trade"
-                        },
-                        {
-                          icon: <Package className="h-5 w-5 text-green-500" />,
-                          title: "Added 12 new cards to collection",
-                          description: "1 week ago",
-                          action: "View Cards"
-                        },
-                        {
-                          icon: <ShieldCheck className="h-5 w-5 text-purple-500" />,
-                          title: "Achieved Trusted Trader status",
-                          description: "2 weeks ago",
-                          action: null
-                        },
-                        {
-                          icon: <ArrowLeftRight className="h-5 w-5 text-blue-500" />,
-                          title: "Started trade with Alex Morgan",
-                          description: "3 weeks ago",
-                          action: "View Trade"
-                        }
-                      ].map((item, index) => (
-                        <div key={index} className="flex">
-                          <div className="mr-4 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                            {item.icon}
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="text-base font-medium">{item.title}</h3>
-                            <p className="text-sm text-muted-foreground">{item.description}</p>
-                          </div>
-                          {item.action && (
-                            <Button variant="ghost" size="sm">
-                              {item.action}
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </GlassCard>
-                  
                   <GlassCard className="p-6">
-                    <h2 className="text-lg font-bold mb-4">Trading Statistics</h2>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                      <div className="bg-muted/50 rounded-lg p-4">
-                        <h3 className="text-sm font-medium mb-2">Completed Trades</h3>
-                        <div className="text-3xl font-bold">42</div>
-                        <div className="text-xs text-muted-foreground">+3 this month</div>
-                      </div>
-                      <div className="bg-muted/50 rounded-lg p-4">
-                        <h3 className="text-sm font-medium mb-2">Avg. Response Time</h3>
-                        <div className="text-3xl font-bold">2.5h</div>
-                        <div className="text-xs text-muted-foreground">Faster than 85% of users</div>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Successful Trades</span>
-                          <span className="font-medium">98%</span>
-                        </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                          <div className="h-full bg-green-500 rounded-full" style={{ width: "98%" }} />
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Shipping On-Time</span>
-                          <span className="font-medium">95%</span>
-                        </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                          <div className="h-full bg-green-500 rounded-full" style={{ width: "95%" }} />
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Card Condition Accuracy</span>
-                          <span className="font-medium">100%</span>
-                        </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                          <div className="h-full bg-green-500 rounded-full" style={{ width: "100%" }} />
-                        </div>
-                      </div>
+                    <h2 className="text-lg font-bold mb-4">Recent Activity</h2>
+                    <div className="text-center py-8">
+                      <h3 className="text-xl font-medium mb-2">No recent activity</h3>
+                      <p className="text-muted-foreground mb-4">Start trading to see your activity here</p>
+                      <Button onClick={() => window.location.href = '/marketplace'}>
+                        <ArrowLeftRight className="h-4 w-4 mr-2" />
+                        Browse Marketplace
+                      </Button>
                     </div>
                   </GlassCard>
                 </TabsContent>
@@ -381,61 +296,24 @@ const Profile = () => {
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Tradable Cards</span>
-                          <span className="font-medium">12</span>
+                          <span className="font-medium">0</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Rare Cards</span>
-                          <span className="font-medium">28</span>
+                          <span className="font-medium">0</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Est. Collection Value</span>
-                          <span className="font-medium">$1,250-1,800</span>
+                          <span className="font-medium">$0</span>
                         </div>
                       </div>
                     </GlassCard>
                     
                     <GlassCard className="p-6">
                       <h3 className="text-lg font-medium mb-4">Set Completion</h3>
-                      <div className="space-y-3">
-                        <div>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span>Base Set</span>
-                            <span className="font-medium">85%</span>
-                          </div>
-                          <div className="h-2 bg-muted rounded-full overflow-hidden">
-                            <div className="h-full bg-primary rounded-full" style={{ width: "85%" }} />
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span>Jungle</span>
-                            <span className="font-medium">100%</span>
-                          </div>
-                          <div className="h-2 bg-muted rounded-full overflow-hidden">
-                            <div className="h-full bg-primary rounded-full" style={{ width: "100%" }} />
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span>Team Rocket</span>
-                            <span className="font-medium">62%</span>
-                          </div>
-                          <div className="h-2 bg-muted rounded-full overflow-hidden">
-                            <div className="h-full bg-primary rounded-full" style={{ width: "62%" }} />
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span>Sword & Shield</span>
-                            <span className="font-medium">34%</span>
-                          </div>
-                          <div className="h-2 bg-muted rounded-full overflow-hidden">
-                            <div className="h-full bg-primary rounded-full" style={{ width: "34%" }} />
-                          </div>
-                        </div>
+                      <div className="text-center py-4">
+                        <p className="text-muted-foreground text-sm">No sets in collection yet</p>
+                        <p className="text-muted-foreground text-xs mt-1">Add cards to see set completion progress</p>
                       </div>
                     </GlassCard>
                   </div>
@@ -447,47 +325,14 @@ const Profile = () => {
                 
                 <TabsContent value="reviews">
                   <GlassCard className="p-6">
-                    <h2 className="text-lg font-bold mb-4">Trader Reviews</h2>
-                    
-                    <div className="space-y-6">
-                      {[
-                        {
-                          name: "Jamie Rivera",
-                          rating: 5,
-                          date: "2 weeks ago",
-                          comment: "Great trader! Cards arrived quickly and in perfect condition. Communication was excellent throughout the trade process."
-                        },
-                        {
-                          name: "Casey Zhang",
-                          rating: 5,
-                          date: "1 month ago",
-                          comment: "Alex is a trusted trader. Cards were exactly as described and shipping was fast. Would definitely trade again!"
-                        },
-                        {
-                          name: "Jordan Lee",
-                          rating: 4,
-                          date: "2 months ago",
-                          comment: "Good experience trading with Alex. Cards were in the condition described. Shipping took a bit longer than expected but overall satisfied."
-                        }
-                      ].map((review, index) => (
-                        <div key={index} className="pb-6 border-b border-border last:border-0 last:pb-0">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <h3 className="font-medium">{review.name}</h3>
-                              <div className="flex mt-1">
-                                {Array(5).fill(0).map((_, i) => (
-                                  <Star 
-                                    key={i} 
-                                    className={`h-4 w-4 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-muted'}`} 
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                            <span className="text-xs text-muted-foreground">{review.date}</span>
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-2">{review.comment}</p>
-                        </div>
-                      ))}
+                    <h2 className="text-lg font-bold mb-4">Trading Reviews</h2>
+                    <div className="text-center py-8">
+                      <h3 className="text-xl font-medium mb-2">No reviews yet</h3>
+                      <p className="text-muted-foreground mb-4">Complete trades to receive reviews from other traders</p>
+                      <Button onClick={() => window.location.href = '/marketplace'}>
+                        <ArrowLeftRight className="h-4 w-4 mr-2" />
+                        Start Trading
+                      </Button>
                     </div>
                   </GlassCard>
                 </TabsContent>

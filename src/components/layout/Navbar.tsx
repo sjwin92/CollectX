@@ -150,7 +150,7 @@ const Navbar = () => {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={profile?.avatar_url || "/placeholder.svg"} alt={profile?.display_name || "User"} />
+                        <AvatarImage src={profile?.avatar_url} alt={profile?.display_name || "User"} />
                         <AvatarFallback className="bg-primary text-primary-foreground">
                           {profile?.display_name ? profile.display_name.substring(0, 2).toUpperCase() : user?.email?.substring(0, 2).toUpperCase() || "U"}
                         </AvatarFallback>
@@ -160,7 +160,7 @@ const Navbar = () => {
                   <DropdownMenuContent align="end" className="w-56 animate-fade-in">
                     <DropdownMenuLabel className="flex items-center gap-2">
                       <Avatar className="h-6 w-6">
-                        <AvatarImage src={profile?.avatar_url || "/placeholder.svg"} alt={profile?.display_name || "User"} />
+                        <AvatarImage src={profile?.avatar_url} alt={profile?.display_name || "User"} />
                         <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                           {profile?.display_name ? profile.display_name.substring(0, 2).toUpperCase() : user?.email?.substring(0, 2).toUpperCase() || "U"}
                         </AvatarFallback>
@@ -172,7 +172,7 @@ const Navbar = () => {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link to="/profile">
+                      <Link to="/account-settings">
                         <Settings className="mr-2 h-4 w-4" />
                         <span>Account Settings</span>
                       </Link>

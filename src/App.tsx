@@ -16,6 +16,7 @@ import TradeDetail from "./pages/TradeDetail";
 import PokemonCards from "./pages/PokemonCards";
 import CardDetail from "./pages/CardDetail";
 import Profile from "./pages/Profile";
+import AccountSettings from "./pages/AccountSettings";
 import NotFound from "./pages/NotFound";
 import Pokemons from "./pages/Pokemons";
 import Marketplace from "./pages/Marketplace";
@@ -50,6 +51,7 @@ function App() {
               <Route path="/collection-boxes" element={<ProtectedRoute><CollectionBoxes /></ProtectedRoute>} />
               <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
               
               {/* 404 Page */}
               <Route path="*" element={<NotFound />} />
