@@ -6,10 +6,12 @@ import Footer from "@/components/layout/Footer";
 import PokemonCardSearch from "@/components/pokemon/PokemonCardSearch";
 import CardGrid from "@/components/cards/CardGrid";
 import CardFilters, { FilterOptions } from "@/components/pokemon/CardFilters";
+import { NoResultsDisplay } from "@/components/common/NoResultsDisplay";
 import { useToast } from "@/hooks/use-toast";
 import { getSetById } from "@/services/api/pokemonSetsService";
 import { searchCards } from "@/services/api/pokemonCardsService";
 import { CardItemProps } from "@/components/cards/CardItem";
+import { normalizeSetId } from "@/services/setIdMappingService";
 
 const PokemonCards = () => {
   const [searchParams] = useSearchParams();
@@ -43,12 +45,17 @@ const PokemonCards = () => {
       const searchParams: Record<string, string> = {};
       
       if (setId) {
-        searchParams.setId = setId;
+        const normalizedSetId = normalizeSetId(setId);
+        searchParams.setId = normalizedSetId;
+        console.log(`Loading cards for setId: ${setId} (normalized to: ${normalizedSetId})`);
       }
       
       if (nameQuery) {
         searchParams.name = nameQuery.trim();
+        console.log(`Loading cards for name query: ${nameQuery}`);
       }
+      
+      console.log('Search params:', searchParams);
       
       // Load multiple pages to get all cards for better filtering and preload images
       let allResults: CardItemProps[] = [];
@@ -56,9 +63,13 @@ const PokemonCards = () => {
       let hasMore = true;
       
       while (hasMore && currentPage <= 5) { // Reduced to 5 pages for faster loading
+        console.log(`Fetching page ${currentPage} with params:`, searchParams);
         const response = await searchCards(searchParams, currentPage, 50);
         
+        console.log(`Page ${currentPage} response:`, response);
+        
         if (response?.data?.length > 0) {
+          console.log(`Got ${response.data.length} cards from page ${currentPage}`);
           const formattedCards: CardItemProps[] = response.data.map(card => {
             const imgUrl = card.images?.small || card.images?.large || null;
             const price = card.tcgplayer?.prices?.holofoil?.market 
@@ -86,10 +97,12 @@ const PokemonCards = () => {
           hasMore = formattedCards.length >= 50;
           currentPage++;
         } else {
+          console.log(`No cards found on page ${currentPage}`);
           hasMore = false;
         }
       }
       
+      console.log(`Total cards loaded: ${allResults.length}`);
       setAllCards(allResults);
       
       // Preload images for better performance
@@ -305,8 +318,17 @@ const PokemonCards = () => {
               </div>
             ))}
           </div>
-        ) : (
+        ) : filteredCards.length > 0 ? (
           <CardGrid cards={filteredCards} showCondition={false} />
+        ) : (
+          <NoResultsDisplay 
+            setId={setId}
+            nameQuery={nameQuery}
+            onRetry={loadAllCards}
+            onClearFilters={() => {
+              window.location.href = '/pokemon-cards';
+            }}
+          />
         )}
       </main>
       
