@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
+import OptimizedImage from "@/components/ui/OptimizedImage";
 import { cn } from "@/lib/utils";
 import { Info, AlertTriangle, Check, RefreshCw, BadgeCheck, Repeat, Star, BookHeart, CircleDollarSign } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -143,12 +144,14 @@ const CardItem = ({
         <div className="relative h-full">
           {imageSrc && (
             <>
-              <img
+              <OptimizedImage
                 src={imageSrc}
                 alt={`Pokémon card: ${name} - ${condition} condition, ${rarity} rarity`}
-                className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 ${
-                  imageStatus === "loading" ? "opacity-0" : "opacity-100"
-                }`}
+                className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110`}
+                useAI={true}
+                lazy={true}
+                showOptimizationBadge={false}
+                fallbackSrc="https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
                 onLoad={handleImageLoad}
                 onError={handleImageError}
               />

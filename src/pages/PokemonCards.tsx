@@ -50,12 +50,12 @@ const PokemonCards = () => {
         searchParams.name = nameQuery.trim();
       }
       
-      // Load multiple pages to get all cards for better filtering
+      // Load multiple pages to get all cards for better filtering and preload images
       let allResults: CardItemProps[] = [];
       let currentPage = 1;
       let hasMore = true;
       
-      while (hasMore && currentPage <= 10) { // Limit to 10 pages max
+      while (hasMore && currentPage <= 5) { // Reduced to 5 pages for faster loading
         const response = await searchCards(searchParams, currentPage, 50);
         
         if (response?.data?.length > 0) {
@@ -91,6 +91,19 @@ const PokemonCards = () => {
       }
       
       setAllCards(allResults);
+      
+      // Preload images with AI optimization for better performance
+      if (allResults.length > 0) {
+        const imageUrls = allResults
+          .map(card => card.imageUrl)
+          .filter(Boolean)
+          .slice(0, 20); // Preload first 20 images
+          
+        // Import imageOptimizer dynamically to avoid loading issues
+        import('@/services/ai/imageOptimization').then(({ imageOptimizer }) => {
+          imageOptimizer.preloadImages(imageUrls, true).catch(console.warn);
+        });
+      }
     } catch (error) {
       console.error("Error loading cards:", error);
       toast({
