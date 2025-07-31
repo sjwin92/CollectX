@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRightLeft, Eye, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/hooks/useUser";
 
 interface TradeListingFooterProps {
   cardId: string;
@@ -14,8 +15,18 @@ interface TradeListingFooterProps {
 
 const TradeListingFooter = ({ cardId, onProposeTrade, featured = false }: TradeListingFooterProps) => {
   const { toast } = useToast();
+  const { user } = useUser();
 
   const handleProposeTrade = () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to propose trades",
+        variant: "destructive"
+      });
+      return;
+    }
+
     toast({
       title: "Preparing trade proposal",
       description: "Opening trade proposal form..."

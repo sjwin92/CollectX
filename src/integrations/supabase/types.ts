@@ -59,6 +59,145 @@ export type Database = {
         }
         Relationships: []
       }
+      trade_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          message_type: string | null
+          trade_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          message_type?: string | null
+          trade_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          message_type?: string | null
+          trade_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_messages_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_ratings: {
+        Row: {
+          created_at: string
+          id: string
+          rated_user_id: string
+          rater_user_id: string
+          rating: number
+          review: string | null
+          trade_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          rated_user_id: string
+          rater_user_id: string
+          rating: number
+          review?: string | null
+          trade_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          rated_user_id?: string
+          rater_user_id?: string
+          rating?: number
+          review?: string | null
+          trade_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_ratings_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trades: {
+        Row: {
+          cancelled_at: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          escrow_amount: number | null
+          escrow_paid: boolean | null
+          escrow_required: boolean | null
+          id: string
+          initiator_cards: Json
+          initiator_user_id: string
+          initiator_value: number | null
+          recipient_cards: Json
+          recipient_user_id: string
+          recipient_value: number | null
+          shipping_address: string | null
+          status: string
+          title: string | null
+          tracking_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          escrow_amount?: number | null
+          escrow_paid?: boolean | null
+          escrow_required?: boolean | null
+          id?: string
+          initiator_cards?: Json
+          initiator_user_id: string
+          initiator_value?: number | null
+          recipient_cards?: Json
+          recipient_user_id: string
+          recipient_value?: number | null
+          shipping_address?: string | null
+          status?: string
+          title?: string | null
+          tracking_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          escrow_amount?: number | null
+          escrow_paid?: boolean | null
+          escrow_required?: boolean | null
+          id?: string
+          initiator_cards?: Json
+          initiator_user_id?: string
+          initiator_value?: number | null
+          recipient_cards?: Json
+          recipient_user_id?: string
+          recipient_value?: number | null
+          shipping_address?: string | null
+          status?: string
+          title?: string | null
+          tracking_number?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_cards: {
         Row: {
           card_id: string
