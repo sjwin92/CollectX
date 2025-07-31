@@ -6,6 +6,7 @@ import { getAllSets } from "@/services/api/pokemonSetsService";
 import { Search, HelpCircle } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { trackSearch } from "@/services/supabaseAnalyticsService";
 
 interface PokemonCardSearchProps {
   initialSetId?: string | null;
@@ -62,7 +63,7 @@ const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = nu
     }
   }, [initialSetId, searchParams]);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Build the new URL with search parameters
@@ -74,6 +75,18 @@ const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = nu
     
     if (selectedSet && selectedSet !== 'all') {
       params.append('setId', selectedSet);
+    }
+    
+    // Track the search activity
+    try {
+      await trackSearch(
+        nameQuery.trim() || 'all cards',
+        'cards',
+        0, // Results count will be updated on the results page
+        { set_id: selectedSet }
+      );
+    } catch (error) {
+      console.error('Error tracking search:', error);
     }
     
     // Navigate to the same page but with new query parameters

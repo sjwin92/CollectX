@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics_summary: {
+        Row: {
+          active_users: number | null
+          completed_trades: number | null
+          created_at: string
+          id: string
+          metrics: Json | null
+          new_users: number | null
+          summary_date: string
+          summary_type: string
+          total_cards_added: number | null
+          total_listings: number | null
+          total_searches: number | null
+          total_trades: number | null
+          total_users: number | null
+        }
+        Insert: {
+          active_users?: number | null
+          completed_trades?: number | null
+          created_at?: string
+          id?: string
+          metrics?: Json | null
+          new_users?: number | null
+          summary_date: string
+          summary_type: string
+          total_cards_added?: number | null
+          total_listings?: number | null
+          total_searches?: number | null
+          total_trades?: number | null
+          total_users?: number | null
+        }
+        Update: {
+          active_users?: number | null
+          completed_trades?: number | null
+          created_at?: string
+          id?: string
+          metrics?: Json | null
+          new_users?: number | null
+          summary_date?: string
+          summary_type?: string
+          total_cards_added?: number | null
+          total_listings?: number | null
+          total_searches?: number | null
+          total_trades?: number | null
+          total_users?: number | null
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           created_at: string
@@ -359,6 +407,42 @@ export type Database = {
         }
         Relationships: []
       }
+      search_history: {
+        Row: {
+          clicked_result_id: string | null
+          created_at: string
+          filters_applied: Json | null
+          id: string
+          results_count: number | null
+          search_query: string
+          search_type: string
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          clicked_result_id?: string | null
+          created_at?: string
+          filters_applied?: Json | null
+          id?: string
+          results_count?: number | null
+          search_query: string
+          search_type?: string
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          clicked_result_id?: string | null
+          created_at?: string
+          filters_applied?: Json | null
+          id?: string
+          results_count?: number | null
+          search_query?: string
+          search_type?: string
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       trade_messages: {
         Row: {
           created_at: string
@@ -498,6 +582,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity: {
+        Row: {
+          activity_data: Json | null
+          activity_type: string
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_data?: Json | null
+          activity_type: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_data?: Json | null
+          activity_type?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_cards: {
         Row: {
           card_id: string
@@ -579,6 +693,96 @@ export type Database = {
         }
         Relationships: []
       }
+      user_preferences: {
+        Row: {
+          auto_accept_trades: boolean | null
+          collection_privacy: string | null
+          created_at: string
+          email_frequency: string | null
+          favorite_sets: string[] | null
+          favorite_types: string[] | null
+          id: string
+          language_preference: string | null
+          preferred_condition: string | null
+          theme_preference: string | null
+          timezone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_accept_trades?: boolean | null
+          collection_privacy?: string | null
+          created_at?: string
+          email_frequency?: string | null
+          favorite_sets?: string[] | null
+          favorite_types?: string[] | null
+          id?: string
+          language_preference?: string | null
+          preferred_condition?: string | null
+          theme_preference?: string | null
+          timezone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_accept_trades?: boolean | null
+          collection_privacy?: string | null
+          created_at?: string
+          email_frequency?: string | null
+          favorite_sets?: string[] | null
+          favorite_types?: string[] | null
+          id?: string
+          language_preference?: string | null
+          preferred_condition?: string | null
+          theme_preference?: string | null
+          timezone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_reports: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          description: string | null
+          id: string
+          report_reason: string
+          reported_content_id: string | null
+          reported_content_type: string | null
+          reported_user_id: string | null
+          reporter_user_id: string
+          resolved_at: string | null
+          status: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          report_reason: string
+          reported_content_id?: string | null
+          reported_content_type?: string | null
+          reported_user_id?: string | null
+          reporter_user_id: string
+          resolved_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          report_reason?: string
+          reported_content_id?: string | null
+          reported_content_type?: string | null
+          reported_user_id?: string | null
+          reporter_user_id?: string
+          resolved_at?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       user_wishlist: {
         Row: {
           card_id: string
@@ -639,9 +843,38 @@ export type Database = {
         Args: { other_user_id: string }
         Returns: string
       }
+      get_trending_cards: {
+        Args: { days_back?: number }
+        Returns: {
+          card_name: string
+          search_count: number
+          view_count: number
+        }[]
+      }
+      get_user_stats: {
+        Args: { target_user_id: string }
+        Returns: {
+          total_cards: number
+          total_trades: number
+          completed_trades: number
+          total_listings: number
+          reputation_score: number
+          join_date: string
+        }[]
+      }
       increment_listing_views: {
         Args: { listing_id: string }
         Returns: undefined
+      }
+      log_user_activity: {
+        Args: {
+          p_user_id: string
+          p_activity_type: string
+          p_activity_data?: Json
+          p_ip_address?: unknown
+          p_user_agent?: string
+        }
+        Returns: string
       }
       mark_notifications_read: {
         Args: { notification_ids: string[] }

@@ -16,6 +16,7 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { useUser } from "@/hooks/useUser";
+import UserDashboard from "@/components/analytics/UserDashboard";
 import { 
   Star, 
   Mail, 
@@ -251,6 +252,7 @@ const Profile = () => {
                 <TabsList className="mb-6">
                   <TabsTrigger value="activity">Activity</TabsTrigger>
                   <TabsTrigger value="collection">Collection</TabsTrigger>
+                  <TabsTrigger value="analytics">Analytics</TabsTrigger>
                   <TabsTrigger value="reviews">Reviews</TabsTrigger>
                 </TabsList>
                 
@@ -466,6 +468,10 @@ const Profile = () => {
                       </div>
                     </GlassCard>
                   </div>
+                </TabsContent>
+                
+                <TabsContent value="analytics">
+                  <UserDashboard />
                 </TabsContent>
                 
                 <TabsContent value="reviews">
