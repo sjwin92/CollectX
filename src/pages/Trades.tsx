@@ -8,6 +8,8 @@ import TradeActions from "@/components/trades/TradeActions";
 import TradeTabs from "@/components/trades/TradeTabs";
 import TradeProposalForm from "@/components/marketplace/TradeProposalForm";
 import { CardItemProps } from "@/components/cards/CardItem";
+import { supabase } from "@/integrations/supabase/client";
+import { useUser } from "@/hooks/useUser";
 
 type TradeStatus = "pending" | "accepted" | "shipped" | "completed" | "declined";
 type ReputationType = "trusted" | "established" | "new";
@@ -179,32 +181,69 @@ const MARKETPLACE_LISTINGS = [
 ];
 
 const Trades = () => {
+  const { user } = useUser();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isTradeProposalOpen, setIsTradeProposalOpen] = useState(false);
   const [selectedTargetCard, setSelectedTargetCard] = useState<CardItemProps | null>(null);
   const [searchParams] = useSearchParams();
+  const [loading, setLoading] = useState(true);
   
-  // Dynamic trades state
-  const [userTrades, setUserTrades] = useState<Trade[]>([
-    {
-      id: "t1",
-      status: "pending",
-      date: "2 hours ago",
-      user: {
-        id: "u1",
-        name: "Alex Morgan",
-        reputation: "trusted"
-      },
-      giving: {
-        count: 2,
-        preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
-      },
-      receiving: {
-        count: 3,
-        preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
-      }
+  // Real trades state from database
+  const [userTrades, setUserTrades] = useState<any[]>([]);
+  const [tradeStats, setTradeStats] = useState({
+    total: 0,
+    pending: 0,
+    inProgress: 0,
+    completed: 0,
+    declined: 0
+  });
+
+  // Load real trades from database
+  useEffect(() => {
+    if (user) {
+      loadUserTrades();
     }
-  ]);
+  }, [user]);
+
+  const loadUserTrades = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const { data: trades, error } = await supabase
+        .from('trades')
+        .select(`
+          *,
+          initiator_profile:profiles!trades_initiator_user_id_fkey(display_name, username, avatar_url),
+          recipient_profile:profiles!trades_recipient_user_id_fkey(display_name, username, avatar_url)
+        `)
+        .or(`initiator_user_id.eq.${user.id},recipient_user_id.eq.${user.id}`)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading trades:', error);
+        return;
+      }
+
+      setUserTrades(trades || []);
+      
+      // Calculate stats
+      const stats = {
+        total: trades?.length || 0,
+        pending: trades?.filter(t => t.status === 'proposed').length || 0,
+        inProgress: trades?.filter(t => ['accepted', 'processing', 'shipped'].includes(t.status)).length || 0,
+        completed: trades?.filter(t => t.status === 'completed').length || 0,
+        declined: trades?.filter(t => t.status === 'declined').length || 0
+      };
+      
+      setTradeStats(stats);
+    } catch (error) {
+      console.error('Error loading trades:', error);
+      toast.error('Failed to load trades');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const shouldPropose = searchParams.get('propose') === 'true';
@@ -266,12 +305,23 @@ const Trades = () => {
     window.history.replaceState({}, '', '/trades');
   };
 
-  // Calculate stats from actual trades
-  const totalTrades = userTrades.length;
-  const pendingCount = userTrades.filter(t => t.status === 'pending').length;
-  const inProgressCount = userTrades.filter(t => t.status === 'accepted' || t.status === 'shipped').length;
-  const completedCount = userTrades.filter(t => t.status === 'completed').length;
-  const declinedCount = userTrades.filter(t => t.status === 'declined').length;
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-1 pt-24 pb-16">
+          <div className="container">
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-4 text-muted-foreground">Loading your trades...</p>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -287,23 +337,26 @@ const Trades = () => {
           </div>
           
           <TradeStats 
-            totalTrades={totalTrades}
-            pendingCount={pendingCount}
-            inProgressCount={inProgressCount}
-            completedCount={completedCount}
+            totalTrades={tradeStats.total}
+            pendingCount={tradeStats.pending}
+            inProgressCount={tradeStats.inProgress}
+            completedCount={tradeStats.completed}
           />
           
           <TradeActions 
             isRefreshing={isRefreshing}
             setIsRefreshing={setIsRefreshing}
+            onRefresh={loadUserTrades}
           />
           
           <TradeTabs 
-            pendingCount={pendingCount}
-            inProgressCount={inProgressCount}
-            completedCount={completedCount}
-            declinedCount={declinedCount}
+            pendingCount={tradeStats.pending}
+            inProgressCount={tradeStats.inProgress}
+            completedCount={tradeStats.completed}
+            declinedCount={tradeStats.declined}
             onCreateTrade={handleCreateTrade}
+            trades={userTrades}
+            currentUserId={user?.id}
           />
         </div>
       </main>

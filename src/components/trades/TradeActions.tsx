@@ -8,18 +8,24 @@ import { useNavigate } from "react-router-dom";
 interface TradeActionsProps {
   isRefreshing: boolean;
   setIsRefreshing: (value: boolean) => void;
+  onRefresh?: () => void;
 }
 
-const TradeActions = ({ isRefreshing, setIsRefreshing }: TradeActionsProps) => {
+const TradeActions = ({ isRefreshing, setIsRefreshing, onRefresh }: TradeActionsProps) => {
   const navigate = useNavigate();
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    // Simulate refresh with timeout
-    setTimeout(() => {
-      setIsRefreshing(false);
+    try {
+      if (onRefresh) {
+        await onRefresh();
+      }
       toast.success("Trades refreshed successfully!");
-    }, 1500);
+    } catch (error) {
+      toast.error("Failed to refresh trades");
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
   };
 
   const handleCreateTrade = () => {

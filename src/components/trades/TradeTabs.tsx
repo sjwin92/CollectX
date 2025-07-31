@@ -15,6 +15,8 @@ interface TradeTabsProps {
   completedCount: number;
   declinedCount: number;
   onCreateTrade: () => void;
+  trades?: any[];
+  currentUserId?: string;
 }
 
 const TradeTabs = ({ 
@@ -22,7 +24,9 @@ const TradeTabs = ({
   inProgressCount, 
   completedCount, 
   declinedCount,
-  onCreateTrade
+  onCreateTrade,
+  trades = [],
+  currentUserId
 }: TradeTabsProps) => {
   return (
     <Tabs defaultValue="active">
@@ -47,9 +51,22 @@ const TradeTabs = ({
         </TabsTrigger>
       </TabsList>
       
-      <TradeTabContent value="active" onCreateTrade={onCreateTrade} />
-      <TradeTabContent value="completed" />
-      <TradeTabContent value="declined" />
+      <TradeTabContent 
+        value="active" 
+        onCreateTrade={onCreateTrade} 
+        trades={trades?.filter(t => ['proposed', 'accepted', 'processing', 'shipped'].includes(t.status))} 
+        currentUserId={currentUserId}
+      />
+      <TradeTabContent 
+        value="completed" 
+        trades={trades?.filter(t => t.status === 'completed')} 
+        currentUserId={currentUserId}
+      />
+      <TradeTabContent 
+        value="declined" 
+        trades={trades?.filter(t => t.status === 'declined')} 
+        currentUserId={currentUserId}
+      />
     </Tabs>
   );
 };
