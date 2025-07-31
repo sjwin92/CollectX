@@ -14,6 +14,157 @@ export type Database = {
   }
   public: {
     Tables: {
+      marketplace_favorites: {
+        Row: {
+          created_at: string
+          id: string
+          listing_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          listing_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          listing_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_favorites_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_interests: {
+        Row: {
+          created_at: string
+          id: string
+          interest_type: string
+          listing_id: string
+          message: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          interest_type?: string
+          listing_id: string
+          message?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          interest_type?: string
+          listing_id?: string
+          message?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_interests_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_listings: {
+        Row: {
+          asking_price: number | null
+          card_id: string
+          card_name: string
+          card_number: string | null
+          condition: string
+          created_at: string
+          description: string | null
+          expires_at: string | null
+          featured: boolean | null
+          grade_company: string | null
+          grade_score: number | null
+          id: string
+          image_url: string | null
+          image_url_small: string | null
+          interested_count: number | null
+          is_graded: boolean | null
+          listing_type: string
+          quantity: number
+          rarity: string | null
+          set_id: string
+          set_name: string
+          status: string
+          trade_preferences: string | null
+          updated_at: string
+          user_id: string
+          views_count: number | null
+        }
+        Insert: {
+          asking_price?: number | null
+          card_id: string
+          card_name: string
+          card_number?: string | null
+          condition?: string
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          featured?: boolean | null
+          grade_company?: string | null
+          grade_score?: number | null
+          id?: string
+          image_url?: string | null
+          image_url_small?: string | null
+          interested_count?: number | null
+          is_graded?: boolean | null
+          listing_type?: string
+          quantity?: number
+          rarity?: string | null
+          set_id: string
+          set_name: string
+          status?: string
+          trade_preferences?: string | null
+          updated_at?: string
+          user_id: string
+          views_count?: number | null
+        }
+        Update: {
+          asking_price?: number | null
+          card_id?: string
+          card_name?: string
+          card_number?: string | null
+          condition?: string
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          featured?: boolean | null
+          grade_company?: string | null
+          grade_score?: number | null
+          id?: string
+          image_url?: string | null
+          image_url_small?: string | null
+          interested_count?: number | null
+          is_graded?: boolean | null
+          listing_type?: string
+          quantity?: number
+          rarity?: string | null
+          set_id?: string
+          set_name?: string
+          status?: string
+          trade_preferences?: string | null
+          updated_at?: string
+          user_id?: string
+          views_count?: number | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -323,7 +474,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_listing_views: {
+        Args: { listing_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
