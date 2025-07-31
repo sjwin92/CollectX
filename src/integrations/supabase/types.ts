@@ -59,6 +59,126 @@ export type Database = {
         }
         Relationships: []
       }
+      user_cards: {
+        Row: {
+          card_id: string
+          card_name: string
+          card_number: string | null
+          condition: string | null
+          created_at: string
+          for_trade: boolean | null
+          grade_company: string | null
+          grade_population: number | null
+          grade_score: number | null
+          id: string
+          image_url: string | null
+          image_url_small: string | null
+          is_graded: boolean | null
+          product_type: string | null
+          quantity: number
+          rarity: string | null
+          release_date: string | null
+          sealed_product_type: string | null
+          set_id: string
+          set_name: string
+          tcg_player_url: string | null
+          trade_value: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          card_name: string
+          card_number?: string | null
+          condition?: string | null
+          created_at?: string
+          for_trade?: boolean | null
+          grade_company?: string | null
+          grade_population?: number | null
+          grade_score?: number | null
+          id?: string
+          image_url?: string | null
+          image_url_small?: string | null
+          is_graded?: boolean | null
+          product_type?: string | null
+          quantity?: number
+          rarity?: string | null
+          release_date?: string | null
+          sealed_product_type?: string | null
+          set_id: string
+          set_name: string
+          tcg_player_url?: string | null
+          trade_value?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          card_name?: string
+          card_number?: string | null
+          condition?: string | null
+          created_at?: string
+          for_trade?: boolean | null
+          grade_company?: string | null
+          grade_population?: number | null
+          grade_score?: number | null
+          id?: string
+          image_url?: string | null
+          image_url_small?: string | null
+          is_graded?: boolean | null
+          product_type?: string | null
+          quantity?: number
+          rarity?: string | null
+          release_date?: string | null
+          sealed_product_type?: string | null
+          set_id?: string
+          set_name?: string
+          tcg_player_url?: string | null
+          trade_value?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_wishlist: {
+        Row: {
+          card_id: string
+          card_name: string
+          created_at: string
+          id: string
+          image_url: string | null
+          max_price: number | null
+          priority: number | null
+          set_id: string
+          set_name: string
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          card_name: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          max_price?: number | null
+          priority?: number | null
+          set_id: string
+          set_name: string
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          card_name?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          max_price?: number | null
+          priority?: number | null
+          set_id?: string
+          set_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

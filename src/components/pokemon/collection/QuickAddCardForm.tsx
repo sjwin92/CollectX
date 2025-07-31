@@ -15,7 +15,8 @@ import TradeFields from "./TradeFields";
 import ProductTypeSelector from "./ProductTypeSelector";
 import SealedProductFields from "./SealedProductFields";
 import { ExtendedCardItemProps } from "@/types/cardTypes";
-import { addCardToCollection } from "@/services/collectionService";
+import { addCardToCollection } from "@/services/supabaseCollectionService";
+import { useUser } from "@/hooks/useUser";
 
 interface QuickAddCardFormProps {
   card: PokemonCard;
@@ -47,7 +48,7 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
   
   const watchedProductType = form.watch("productType");
   
-  const onSubmit = (data: QuickAddFormValues) => {
+  const onSubmit = async (data: QuickAddFormValues) => {
     setIsSubmitting(true);
     
     try {
@@ -88,7 +89,7 @@ const QuickAddCardForm = ({ card, onClose }: QuickAddCardFormProps) => {
       console.log("Adding to collection:", newCard);
       
       // Add card to collection with all details
-      addCardToCollection(newCard);
+      await addCardToCollection(newCard);
       
       const productTypeLabel = watchedProductType === 'card' ? 'card' : `${watchedProductType.replace('-', ' ')}`;
       

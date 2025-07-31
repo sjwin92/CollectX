@@ -12,8 +12,9 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import QuickAddCardForm from "./collection/QuickAddCardForm";
-import { getCollection } from "@/services/collectionService";
+import { isCardInCollection } from "@/services/supabaseCollectionService";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/hooks/useUser";
 
 interface QuickAddToCollectionProps {
   card: PokemonCard;
@@ -23,24 +24,27 @@ const QuickAddToCollection = ({ card }: QuickAddToCollectionProps) => {
   const [open, setOpen] = useState(false);
   const [isInCollection, setIsInCollection] = useState(false);
   const { toast } = useToast();
+  const { user } = useUser();
   
   // Check if card is already in collection
   useEffect(() => {
-    const checkCollection = () => {
-      const collection = getCollection();
-      const exists = collection.some(item => item.id === card.id);
-      setIsInCollection(exists);
+    const checkCollection = async () => {
+      if (!user) {
+        setIsInCollection(false);
+        return;
+      }
+      
+      try {
+        const exists = await isCardInCollection(card.id);
+        setIsInCollection(exists);
+      } catch (error) {
+        console.error('Error checking collection:', error);
+        setIsInCollection(false);
+      }
     };
     
     checkCollection();
-    
-    // Set up event listener to check when collection changes
-    window.addEventListener('storage', checkCollection);
-    
-    return () => {
-      window.removeEventListener('storage', checkCollection);
-    };
-  }, [card.id]);
+  }, [card.id, user]);
 
   const handleOpenChange = (newOpen: boolean) => {
     // If trying to open and card is already in collection, show toast instead
