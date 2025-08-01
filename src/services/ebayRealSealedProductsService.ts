@@ -63,56 +63,76 @@ export const fetchEbayRealSealedProducts = async (): Promise<EbayRealSealedProdu
   try {
     const allProducts: EbayRealSealedProduct[] = [];
     
-    // Search for different types of sealed products
-    for (const productType of SEALED_PRODUCT_TYPES.slice(0, 5)) { // Limit to avoid too many API calls
-      for (const setName of POKEMON_SETS.slice(0, 3)) { // Limit sets
+    // Search for different types of sealed products with more specific queries
+    for (const productType of SEALED_PRODUCT_TYPES.slice(0, 4)) {
+      for (const setName of POKEMON_SETS.slice(0, 4)) {
         try {
-          const { data, error } = await supabase.functions.invoke('ebay-integration', {
-            body: {
-              action: 'search',
-              query: `pokemon tcg ${setName} ${productType} sealed`,
-              itemType: 'sealed_product',
-              limit: 5 // Limit per search to avoid overwhelming results
+          // Create more specific search queries for better results
+          const searchQueries = [
+            `pokemon tcg ${setName} ${productType}`,
+            `pokemon ${setName} ${productType} new sealed`,
+            `pokemon tcg ${setName.split(' ')[0]} ${productType}`
+          ];
+
+          for (const searchQuery of searchQueries.slice(0, 1)) {
+            try {
+              const { data, error } = await supabase.functions.invoke('ebay-integration', {
+                body: {
+                  action: 'search',
+                  query: searchQuery,
+                  itemType: 'sealed_product',
+                  limit: 8
+                }
+              });
+
+              if (error) {
+                console.error(`Error fetching ${productType} for ${setName}:`, error);
+                continue;
+              }
+
+              if (data?.listings && data.listings.length > 0) {
+                const products = data.listings
+                  .filter((listing: any) => listing.imageUrl && listing.imageUrl.length > 10)
+                  .map((listing: any, index: number) => ({
+                    id: `${productType.replace(' ', '-')}-${setName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}-${index}-${Date.now()}`,
+                    name: listing.title || `${setName} ${productType}`,
+                    price: {
+                      current: parseFloat(listing.price?.replace(/[£$,]/g, '') || '0'),
+                      currency: 'GBP',
+                      source: 'eBay'
+                    },
+                    imageUrl: listing.imageUrl,
+                    condition: listing.condition || 'New',
+                    availability: listing.buyItNow ? 'buy-it-now' : listing.auction ? 'auction' : 'available',
+                    type: productType,
+                    setName: extractSetName(listing.title, setName),
+                    seller: {
+                      name: listing.seller || 'eBay Seller',
+                      feedback: 99,
+                      location: listing.location || 'UK'
+                    },
+                    shipping: {
+                      cost: listing.shipping || 'Free',
+                      location: listing.location || 'UK'
+                    },
+                    url: listing.url || '#',
+                    endTime: listing.endTime,
+                    buyItNow: listing.buyItNow || false,
+                    auction: listing.auction || false,
+                    watchers: listing.watchers,
+                    bids: listing.bids
+                  }));
+
+                allProducts.push(...products);
+                console.log(`Added ${products.length} products for ${setName} ${productType}`);
+                
+                // Break after successful search to avoid too many calls
+                break;
+              }
+            } catch (searchError) {
+              console.error(`Error with search query "${searchQuery}":`, searchError);
+              continue;
             }
-          });
-
-          if (error) {
-            console.error(`Error fetching ${productType} for ${setName}:`, error);
-            continue;
-          }
-
-          if (data?.listings) {
-            const products = data.listings.map((listing: any, index: number) => ({
-              id: `${productType.replace(' ', '-')}-${setName.replace(' ', '-').toLowerCase()}-${index}`,
-              name: listing.title || `${setName} ${productType}`,
-              price: {
-                current: parseFloat(listing.price?.replace(/[£$,]/g, '') || '0'),
-                currency: 'GBP',
-                source: 'eBay'
-              },
-              imageUrl: listing.imageUrl || getProductPlaceholderImage(productType),
-              condition: listing.condition || 'New',
-              availability: listing.buyItNow ? 'buy-it-now' : listing.auction ? 'auction' : 'available',
-              type: productType,
-              setName: setName,
-              seller: {
-                name: listing.seller || 'Unknown Seller',
-                feedback: 99, // Default high feedback
-                location: listing.location || 'UK'
-              },
-              shipping: {
-                cost: listing.shipping || 'Free',
-                location: listing.location || 'UK'
-              },
-              url: listing.url || '#',
-              endTime: listing.endTime,
-              buyItNow: listing.buyItNow || false,
-              auction: listing.auction || false,
-              watchers: listing.watchers,
-              bids: listing.bids
-            }));
-
-            allProducts.push(...products);
           }
         } catch (error) {
           console.error(`Error processing ${productType} for ${setName}:`, error);
@@ -136,12 +156,10 @@ export const fetchEbayRealSealedProducts = async (): Promise<EbayRealSealedProdu
       .sort((a, b) => a.price.current - b.price.current);
 
     console.log(`Successfully fetched ${uniqueProducts.length} sealed products from eBay`);
-    return uniqueProducts.slice(0, 50); // Limit to 50 products max
+    return uniqueProducts.slice(0, 50);
 
   } catch (error) {
     console.error('Error fetching real sealed products:', error);
-    
-    // Return fallback products if API fails
     return generateFallbackProducts(24);
   }
 };
@@ -158,7 +176,7 @@ const generateFallbackProducts = async (count: number): Promise<EbayRealSealedPr
       id: `fallback-${i}`,
       name: `${setName} ${productType}`,
       price: {
-        current: basePrice + (Math.random() * 20 - 10), // Add some price variation
+        current: basePrice + (Math.random() * 20 - 10),
         currency: 'GBP',
         source: 'Estimated'
       },
@@ -203,16 +221,45 @@ const getBasePrice = (productType: string): number => {
 
 const getProductPlaceholderImage = (productType: string): string => {
   const productImages: Record<string, string> = {
-    'booster box': 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=400&fit=crop', // Pokemon cards/packages
-    'elite trainer box': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop', // Gift box
-    'collection box': 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=400&fit=crop', // Collector box
-    'tin': 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop', // Metal tin
-    'blister pack': 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=400&fit=crop', // Package
-    'theme deck': 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=400&fit=crop', // Cards
-    'starter deck': 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=400&fit=crop', // Cards
-    'battle deck': 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=400&fit=crop', // Cards
-    'premium collection': 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=400&fit=crop' // Premium box
+    'booster box': 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=400&fit=crop',
+    'elite trainer box': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop',
+    'collection box': 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=400&fit=crop',
+    'tin': 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop',
+    'blister pack': 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=400&fit=crop',
+    'theme deck': 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=400&fit=crop',
+    'starter deck': 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=400&fit=crop',
+    'battle deck': 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=400&fit=crop',
+    'premium collection': 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=400&fit=crop'
   };
   
   return productImages[productType] || 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=400&fit=crop';
+};
+
+// Helper function to extract set name from listing title
+const extractSetName = (title: string, fallbackSet: string): string => {
+  const titleLower = title.toLowerCase();
+  
+  // Try to find actual set names in the title
+  const setMappings = [
+    { keywords: ['prismatic', 'evolution'], name: 'Prismatic Evolutions' },
+    { keywords: ['journey', 'together'], name: 'Journey Together' },
+    { keywords: ['surging', 'spark'], name: 'Surging Sparks' },
+    { keywords: ['stellar', 'crown'], name: 'Stellar Crown' },
+    { keywords: ['twilight', 'masquerade'], name: 'Twilight Masquerade' },
+    { keywords: ['temporal', 'forces'], name: 'Temporal Forces' },
+    { keywords: ['paldean', 'fates'], name: 'Paldean Fates' },
+    { keywords: ['paradox', 'rift'], name: 'Paradox Rift' },
+    { keywords: ['obsidian', 'flames'], name: 'Obsidian Flames' },
+    { keywords: ['lost', 'origin'], name: 'Lost Origin' },
+    { keywords: ['silver', 'tempest'], name: 'Silver Tempest' },
+    { keywords: ['astral', 'radiance'], name: 'Astral Radiance' }
+  ];
+  
+  for (const mapping of setMappings) {
+    if (mapping.keywords.every(keyword => titleLower.includes(keyword))) {
+      return mapping.name;
+    }
+  }
+  
+  return fallbackSet;
 };
