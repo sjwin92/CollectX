@@ -90,7 +90,7 @@ export const fetchEbayRealSealedProducts = async (): Promise<EbayRealSealedProdu
                 currency: 'GBP',
                 source: 'eBay'
               },
-              imageUrl: listing.imageUrl || '/placeholder.svg',
+              imageUrl: listing.imageUrl || getProductPlaceholderImage(productType),
               condition: listing.condition || 'New',
               availability: listing.buyItNow ? 'buy-it-now' : listing.auction ? 'auction' : 'available',
               type: productType,
@@ -162,7 +162,7 @@ const generateFallbackProducts = async (count: number): Promise<EbayRealSealedPr
         currency: 'GBP',
         source: 'Estimated'
       },
-      imageUrl: `/placeholder.svg`,
+      imageUrl: getProductPlaceholderImage(productType),
       condition: 'New',
       availability: 'in-stock',
       type: productType,
@@ -199,4 +199,20 @@ const getBasePrice = (productType: string): number => {
   };
   
   return basePrices[productType] || 25;
+};
+
+const getProductPlaceholderImage = (productType: string): string => {
+  const productImages: Record<string, string> = {
+    'booster box': 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=400&fit=crop', // Pokemon cards/packages
+    'elite trainer box': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop', // Gift box
+    'collection box': 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=400&fit=crop', // Collector box
+    'tin': 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop', // Metal tin
+    'blister pack': 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=400&fit=crop', // Package
+    'theme deck': 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=400&fit=crop', // Cards
+    'starter deck': 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=400&fit=crop', // Cards
+    'battle deck': 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=400&fit=crop', // Cards
+    'premium collection': 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=400&fit=crop' // Premium box
+  };
+  
+  return productImages[productType] || 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=400&fit=crop';
 };

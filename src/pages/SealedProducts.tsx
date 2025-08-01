@@ -183,8 +183,9 @@ const SealedProducts = () => {
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          target.src = '/placeholder.svg';
+                          target.src = 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=400&fit=crop';
                         }}
+                        loading="lazy"
                       />
                     </div>
                     <CardTitle className="text-base leading-tight">{product.name}</CardTitle>
