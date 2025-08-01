@@ -10,8 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Filter, Package, Star, Calendar, DollarSign, Key, ExternalLink, ShoppingCart } from "lucide-react";
+import { Search, Filter, Package, Star, Calendar, DollarSign, Key, ExternalLink, ShoppingCart, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
+import EbaySealedProductsIntegration from "@/components/ebay/EbaySealedProductsIntegration";
 
 // Product types for filtering
 const productTypes = [
@@ -27,6 +28,7 @@ const SealedProducts = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("all");
   const [sortBy, setSortBy] = useState("name");
+  const [selectedProduct, setSelectedProduct] = useState<FreeSealedProduct | null>(null);
   const { toast } = useToast();
 
   const { data: products, isLoading, isError, refetch } = useQuery({
@@ -162,80 +164,92 @@ const SealedProducts = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map((product: FreeSealedProduct) => (
-              <Card key={product.id} className="overflow-hidden h-full transition-all hover:shadow-lg hover:border-primary/50 group">
-                <CardHeader className="pb-3">
-                  <div className="aspect-square bg-muted rounded-lg mb-3 overflow-hidden">
-                    <img 
-                      src={product.imageUrl} 
-                      alt={product.name}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = '/placeholder.svg';
-                      }}
-                    />
-                  </div>
-                  <CardTitle className="text-base leading-tight">{product.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">{product.setName}</p>
-                </CardHeader>
-                
-                <CardContent className="pt-0">
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    <Badge variant="secondary" className="text-xs">
-                      {product.type}
-                    </Badge>
-                    <Badge 
-                      variant={product.availability === 'in-stock' ? 'default' : 
-                               product.availability === 'pre-order' ? 'secondary' : 'destructive'} 
-                      className="text-xs"
-                    >
-                      {product.availability.replace('-', ' ')}
-                    </Badge>
-                  </div>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredProducts.map((product: FreeSealedProduct) => (
+                <Card key={product.id} className="overflow-hidden h-full transition-all hover:shadow-lg hover:border-primary/50 group">
+                  <CardHeader className="pb-3">
+                    <div className="aspect-square bg-muted rounded-lg mb-3 overflow-hidden">
+                      <img 
+                        src={product.imageUrl} 
+                        alt={product.name}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = '/placeholder.svg';
+                        }}
+                      />
+                    </div>
+                    <CardTitle className="text-base leading-tight">{product.name}</CardTitle>
+                    <p className="text-sm text-muted-foreground">{product.setName}</p>
+                  </CardHeader>
                   
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Current Price:</span>
-                      <span className="font-bold text-lg text-green-600">
-                        £{product.price.current}
-                      </span>
+                  <CardContent className="pt-0">
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      <Badge variant="secondary" className="text-xs">
+                        {product.type}
+                      </Badge>
+                      <Badge 
+                        variant={product.availability === 'in-stock' ? 'default' : 
+                                 product.availability === 'pre-order' ? 'secondary' : 'destructive'} 
+                        className="text-xs"
+                      >
+                        {product.availability.replace('-', ' ')}
+                      </Badge>
                     </div>
                     
-                    {product.retailPrice && (
+                    <div className="space-y-2 text-sm">
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">MSRP:</span>
-                        <span className="text-sm line-through text-muted-foreground">
-                          £{product.retailPrice}
+                        <span className="text-muted-foreground">Current Price:</span>
+                        <span className="font-bold text-lg text-green-600">
+                          £{product.price.current}
                         </span>
                       </div>
-                    )}
-                    
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Calendar className="h-3 w-3" />
-                      <span>{format(new Date(product.releaseDate), 'MMM d, yyyy')}</span>
+                      
+                      {product.retailPrice && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">MSRP:</span>
+                          <span className="text-sm line-through text-muted-foreground">
+                            £{product.retailPrice}
+                          </span>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        <span>{format(new Date(product.releaseDate), 'MMM d, yyyy')}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <ExternalLink className="h-3 w-3" />
+                        <span>Source: {product.price.source}</span>
+                      </div>
                     </div>
                     
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <ExternalLink className="h-3 w-3" />
-                      <span>Source: {product.price.source}</span>
+                    <div className="flex gap-2 mt-4">
+                      <Button className="flex-1" variant="outline" size="sm">
+                        <Star className="h-4 w-4 mr-2" />
+                        Wishlist
+                      </Button>
+                      <Button 
+                        className="flex-1" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setSelectedProduct(selectedProduct?.id === product.id ? null : product)}
+                      >
+                        <TrendingUp className="h-4 w-4 mr-2" />
+                        eBay Prices
+                      </Button>
                     </div>
-                  </div>
-                  
-                  <div className="flex gap-2 mt-4">
-                    <Button className="flex-1" variant="outline" size="sm">
-                      <Star className="h-4 w-4 mr-2" />
-                      Wishlist
-                    </Button>
-                    <Button className="flex-1" size="sm">
-                      <ShoppingCart className="h-4 w-4 mr-2" />
-                      Buy
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* eBay Integration for Selected Product */}
+            {selectedProduct && (
+              <EbaySealedProductsIntegration product={selectedProduct} />
+            )}
           </div>
         )}
       </main>

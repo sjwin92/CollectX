@@ -70,7 +70,6 @@ const Navbar = () => {
     { name: "Home", path: "/", icon: <Home className="mr-2 h-4 w-4" /> },
     { name: "My Collection", path: "/collection", icon: <Archive className="mr-2 h-4 w-4" /> },
     { name: "Trades", path: "/trades", icon: <ArrowLeftRight className="mr-2 h-4 w-4" /> },
-    { name: "Trade Demo", path: "/trade-demo", icon: <Settings className="mr-2 h-4 w-4" /> },
     { name: "Sets", path: "/pokemon-sets", icon: <Layers className="mr-2 h-4 w-4" /> },
     { name: "Sealed Products", path: "/sealed-products", icon: <Box className="mr-2 h-4 w-4" /> },
     { name: "Marketplace", path: "/marketplace", icon: <ShoppingCart className="mr-2 h-4 w-4" /> },
