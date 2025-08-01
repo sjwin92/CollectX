@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchFreeSealedProducts, FreeSealedProduct } from "@/services/freeSealedProductsService";
+import { fetchEbayRealSealedProducts, EbayRealSealedProduct } from "@/services/ebayRealSealedProductsService";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -28,33 +28,36 @@ const SealedProducts = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("all");
   const [sortBy, setSortBy] = useState("name");
-  const [selectedProduct, setSelectedProduct] = useState<FreeSealedProduct | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<EbayRealSealedProduct | null>(null);
   const { toast } = useToast();
 
   const { data: products, isLoading, isError, refetch } = useQuery({
-    queryKey: ['freeSealedProducts'],
-    queryFn: fetchFreeSealedProducts,
+    queryKey: ['ebayRealSealedProducts'],
+    queryFn: fetchEbayRealSealedProducts,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
-    retry: 3
+    retry: 2
   });
 
   // Filter and sort products
   const filteredProducts = React.useMemo(() => {
     if (!products) return [];
     
-    let filtered = products.filter((product: FreeSealedProduct) => {
+    let filtered = products.filter((product: EbayRealSealedProduct) => {
       const matchesSearch = searchQuery === "" || 
         product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.setName.toLowerCase().includes(searchQuery.toLowerCase());
+        product.setName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.type.toLowerCase().includes(searchQuery.toLowerCase());
       
-      const matchesType = selectedType === "all" || product.type === selectedType;
+      const matchesType = selectedType === "all" || 
+        product.type.toLowerCase().includes(selectedType.toLowerCase()) ||
+        selectedType.toLowerCase().includes(product.type.toLowerCase());
       
       return matchesSearch && matchesType;
     });
 
     // Sort products
-    filtered.sort((a: FreeSealedProduct, b: FreeSealedProduct) => {
+    filtered.sort((a: EbayRealSealedProduct, b: EbayRealSealedProduct) => {
       switch (sortBy) {
         case "name":
           return a.name.localeCompare(b.name);
@@ -63,7 +66,11 @@ const SealedProducts = () => {
         case "price-high":
           return b.price.current - a.price.current;
         case "release-date":
-          return new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime();
+          // For eBay products, sort by auction end time or just by name
+          if (a.endTime && b.endTime) {
+            return new Date(b.endTime).getTime() - new Date(a.endTime).getTime();
+          }
+          return a.name.localeCompare(b.name);
         default:
           return 0;
       }
@@ -82,7 +89,7 @@ const SealedProducts = () => {
             <div>
               <h1 className="text-3xl font-bold mb-2">Sealed Products</h1>
               <p className="text-muted-foreground">
-                Pokemon TCG sealed products with estimated pricing and product details.
+                Real Pokemon TCG sealed products from eBay with live pricing and availability.
               </p>
             </div>
           </div>
@@ -144,14 +151,14 @@ const SealedProducts = () => {
 
         {isLoading ? (
           <div className="text-center py-12">
-            <div className="animate-pulse text-xl">Loading sealed products...</div>
-            <p className="text-muted-foreground mt-2">Fetching product data...</p>
+            <div className="animate-pulse text-xl">Loading sealed products from eBay...</div>
+            <p className="text-muted-foreground mt-2">Fetching real product data and prices...</p>
           </div>
         ) : isError ? (
           <div className="text-center py-12">
             <Alert className="max-w-md mx-auto">
               <AlertDescription>
-                Failed to load sealed products. Please try refreshing the page.
+                Failed to load sealed products from eBay. Please try refreshing the page.
               </AlertDescription>
             </Alert>
           </div>
@@ -166,7 +173,7 @@ const SealedProducts = () => {
         ) : (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredProducts.map((product: FreeSealedProduct) => (
+              {filteredProducts.map((product: EbayRealSealedProduct) => (
                 <Card key={product.id} className="overflow-hidden h-full transition-all hover:shadow-lg hover:border-primary/50 group">
                   <CardHeader className="pb-3">
                     <div className="aspect-square bg-muted rounded-lg mb-3 overflow-hidden">
@@ -190,46 +197,67 @@ const SealedProducts = () => {
                         {product.type}
                       </Badge>
                       <Badge 
-                        variant={product.availability === 'in-stock' ? 'default' : 
-                                 product.availability === 'pre-order' ? 'secondary' : 'destructive'} 
+                        variant={product.availability === 'buy-it-now' ? 'default' : 
+                                 product.availability === 'auction' ? 'secondary' : 'outline'} 
                         className="text-xs"
                       >
                         {product.availability.replace('-', ' ')}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {product.condition}
                       </Badge>
                     </div>
                     
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Current Price:</span>
+                        <span className="text-muted-foreground">Price:</span>
                         <span className="font-bold text-lg text-green-600">
-                          £{product.price.current}
+                          £{product.price.current.toFixed(2)}
                         </span>
                       </div>
                       
-                      {product.retailPrice && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">MSRP:</span>
-                          <span className="text-sm line-through text-muted-foreground">
-                            £{product.retailPrice}
-                          </span>
-                        </div>
-                      )}
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Seller:</span>
+                        <span className="text-sm truncate">
+                          {product.seller.name}
+                        </span>
+                      </div>
                       
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        <span>{format(new Date(product.releaseDate), 'MMM d, yyyy')}</span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Shipping:</span>
+                        <span className="text-sm">
+                          {product.shipping.cost}
+                        </span>
                       </div>
                       
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <ExternalLink className="h-3 w-3" />
                         <span>Source: {product.price.source}</span>
                       </div>
+
+                      {product.bids && product.bids > 0 && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>{product.bids} bids</span>
+                        </div>
+                      )}
                     </div>
                     
                     <div className="flex gap-2 mt-4">
-                      <Button className="flex-1" variant="outline" size="sm">
-                        <Star className="h-4 w-4 mr-2" />
-                        Wishlist
+                      <Button 
+                        className="flex-1" 
+                        variant="outline" 
+                        size="sm"
+                        asChild
+                      >
+                        <a 
+                          href={product.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          View on eBay
+                        </a>
                       </Button>
                       <Button 
                         className="flex-1" 
@@ -238,7 +266,7 @@ const SealedProducts = () => {
                         onClick={() => setSelectedProduct(selectedProduct?.id === product.id ? null : product)}
                       >
                         <TrendingUp className="h-4 w-4 mr-2" />
-                        eBay Prices
+                        Compare
                       </Button>
                     </div>
                   </CardContent>
@@ -248,7 +276,31 @@ const SealedProducts = () => {
 
             {/* eBay Integration for Selected Product */}
             {selectedProduct && (
-              <EbaySealedProductsIntegration product={selectedProduct} />
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle className="text-lg">More listings for "{selectedProduct.name}"</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center text-muted-foreground">
+                    <p>Additional listings and price comparisons for this product would appear here.</p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-4"
+                      asChild
+                    >
+                      <a 
+                        href={`https://www.ebay.co.uk/sch/i.html?_nkw=${encodeURIComponent(selectedProduct.name)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        Search eBay for more listings
+                      </a>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </div>
         )}
