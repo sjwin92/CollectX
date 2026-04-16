@@ -137,7 +137,7 @@ const TradeMessaging = ({ trade }: TradeMessagingProps) => {
         .from('trade_messages')
         .insert({
           trade_id: trade.id,
-          user_id: user.id,
+          sender_user_id: user.id,
           message: newMessage,
           message_type: 'text'
         });
@@ -200,7 +200,7 @@ const TradeMessaging = ({ trade }: TradeMessagingProps) => {
         .from('trade_messages')
         .insert({
           trade_id: trade.id,
-          user_id: user.id,
+          sender_user_id: user.id,
           message: 'Escrow protection has been initiated for this trade.',
           message_type: 'system'
         });
@@ -233,7 +233,7 @@ const TradeMessaging = ({ trade }: TradeMessagingProps) => {
         .from('trade_messages')
         .insert({
           trade_id: trade.id,
-          user_id: user.id,
+          sender_user_id: user.id,
           message: 'Escrow payment completed.',
           message_type: 'system'
         });
@@ -312,7 +312,7 @@ const TradeMessaging = ({ trade }: TradeMessagingProps) => {
           <ScrollArea className="h-[400px] mb-4 pr-4">
             <div className="space-y-4">
               {messages.map((message) => {
-                const isOwnMessage = message.user_id === user.id;
+                const isOwnMessage = message.sender_user_id === user.id;
                 const isSystemMessage = message.message_type === 'system';
                 
                 if (isSystemMessage) {
