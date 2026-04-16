@@ -215,8 +215,7 @@ serve(async (req) => {
         return new Response(JSON.stringify({ 
           listings: mockListings,
           averagePrice: mockListings.length > 0 ? mockListings.reduce((sum, item) => sum + parseFloat(item.price.replace('£', '')), 0) / mockListings.length : null,
-          source: 'mock_fallback',
-          error: error.message
+          source: 'mock_fallback'
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
@@ -231,7 +230,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in eBay integration function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: 'An internal error occurred. Please try again.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
