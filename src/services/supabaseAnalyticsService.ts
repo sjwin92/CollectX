@@ -82,3 +82,34 @@ export const getTrendingCards = async (_limit: number = 10): Promise<any[]> => [
 export const getUserActivity = async (_limit: number = 50): Promise<UserActivity[]> => [];
 
 export const getSearchHistory = async (_limit: number = 20): Promise<SearchHistory[]> => [];
+
+// Additional stub exports referenced by UI components
+export interface UserStats {
+  total_cards: number;
+  total_trades: number;
+  completed_trades: number;
+  total_listings: number;
+  reputation_score: number;
+  join_date: string;
+}
+
+export interface TrendingCard {
+  card_name: string;
+  search_count: number;
+  view_count: number;
+}
+
+export const trackSearch = async (
+  _query: string,
+  _type: SearchHistory['search_type'] = 'cards',
+  _resultsCount: number = 0,
+  _filters: any = {}
+): Promise<void> => {
+  // no-op
+};
+
+export const getPopularSearches = async (
+  _type: SearchHistory['search_type'] = 'cards',
+  _limit: number = 10,
+  _days: number = 7
+): Promise<Array<{ search_query: string; count: number }>> => [];
