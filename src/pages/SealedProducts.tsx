@@ -176,11 +176,11 @@ const SealedProducts = () => {
               {filteredProducts.map((product: EbayRealSealedProduct) => (
                 <Card key={product.id} className="overflow-hidden h-full transition-all hover:shadow-lg hover:border-primary/50 group">
                   <CardHeader className="pb-3">
-                    <div className="aspect-square bg-muted rounded-lg mb-3 overflow-hidden">
-                      <img 
-                        src={product.imageUrl} 
+                    <div className="aspect-square bg-muted rounded-lg mb-3 overflow-hidden flex items-center justify-center">
+                      <img
+                        src={product.imageUrl}
                         alt={product.name}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           target.src = 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=400&fit=crop';
