@@ -23,7 +23,7 @@ import {
 interface TradeMessage {
   id: string;
   trade_id: string;
-  user_id: string;
+  sender_user_id: string;
   message: string;
   message_type: string;
   created_at: string;
@@ -80,20 +80,20 @@ const TradeMessaging = ({ trade }: TradeMessagingProps) => {
 
     // Get sender profiles separately
     if (data && data.length > 0) {
-      const userIds = [...new Set(data.map(msg => msg.user_id))];
+      const userIds = [...new Set(data.map((msg: any) => msg.sender_user_id))];
       const { data: profiles } = await supabase
         .from('profiles')
         .select('user_id, display_name, username, avatar_url')
         .in('user_id', userIds);
 
-      const messagesWithSenders = data.map(msg => ({
+      const messagesWithSenders = data.map((msg: any) => ({
         ...msg,
-        sender: profiles?.find(p => p.user_id === msg.user_id) || {}
-      }));
+        sender: profiles?.find((p: any) => p.user_id === msg.sender_user_id) || {}
+      })) as TradeMessage[];
 
       setMessages(messagesWithSenders);
     } else {
-      setMessages(data || []);
+      setMessages((data || []) as TradeMessage[]);
     }
   };
 
