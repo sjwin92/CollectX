@@ -1,7 +1,5 @@
-// Analytics service stub — the underlying tables (user_activity, search_history,
-// user_preferences, analytics_summary) and RPC functions are not provisioned in
-// this Cloud database. All methods are no-ops so the rest of the app compiles.
-// Reintroduce real implementations once the analytics tables/migrations exist.
+// Analytics service stub — underlying tables are not yet provisioned.
+// All methods are no-ops so the app compiles and runs without errors.
 
 export interface UserActivity {
   id: string;
@@ -52,12 +50,25 @@ export interface AnalyticsSummary {
   created_at: string;
 }
 
+export interface UserStats {
+  total_cards: number;
+  total_trades: number;
+  completed_trades: number;
+  total_listings: number;
+  reputation_score: number;
+  join_date: string;
+}
+
+export interface TrendingCard {
+  card_name: string;
+  search_count: number;
+  view_count: number;
+}
+
 export const logUserActivity = async (
   _activityType: UserActivity['activity_type'],
   _activityData: any = {}
-): Promise<void> => {
-  // no-op
-};
+): Promise<void> => {};
 
 export const recordSearch = async (
   _query: string,
@@ -65,9 +76,14 @@ export const recordSearch = async (
   _resultsCount: number,
   _filters: any = {},
   _clickedResultId?: string
-): Promise<void> => {
-  // no-op
-};
+): Promise<void> => {};
+
+export const trackSearch = async (
+  _query: string,
+  _type: SearchHistory['search_type'] = 'cards',
+  _resultsCount: number = 0,
+  _filters: any = {}
+): Promise<void> => {};
 
 export const getUserPreferences = async (): Promise<UserPreferences | null> => null;
 
@@ -75,25 +91,13 @@ export const updateUserPreferences = async (
   _updates: Partial<UserPreferences>
 ): Promise<UserPreferences | null> => null;
 
-export interface UserStats {
-  totalCards: number;
-  totalTrades: number;
-  totalValue: number;
-  recentActivity: number;
-}
-
-export interface TrendingCard {
-  id: string;
-  name: string;
-  searchCount: number;
-  imageUrl?: string;
-}
-
 export const getUserStats = async (): Promise<UserStats> => ({
-  totalCards: 0,
-  totalTrades: 0,
-  totalValue: 0,
-  recentActivity: 0,
+  total_cards: 0,
+  total_trades: 0,
+  completed_trades: 0,
+  total_listings: 0,
+  reputation_score: 0,
+  join_date: new Date().toISOString(),
 });
 
 export const getTrendingCards = async (_limit: number = 10): Promise<TrendingCard[]> => [];
@@ -103,7 +107,7 @@ export const getUserActivity = async (_limit: number = 50): Promise<UserActivity
 export const getSearchHistory = async (_limit: number = 20): Promise<SearchHistory[]> => [];
 
 export const getPopularSearches = async (
-  _type?: string,
+  _type: SearchHistory['search_type'] = 'cards',
   _limit: number = 10,
   _days: number = 7
-): Promise<SearchHistory[]> => [];
+): Promise<Array<{ search_query: string; count: number }>> => [];
