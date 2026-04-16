@@ -37,18 +37,22 @@ const RARITY_GRADING_MULTIPLIERS: Record<string, number> = {
   "Uncommon": 0.9,
 };
 
-// Mock pricing data - in a real app, this would come from a pricing API
+// Fallback GBP prices used only when the Pokemon TCG API returns no price data.
+// These are rough market averages — the API's TCGPlayer prices take precedence.
 const CARD_PRICING: Record<string, number> = {
-  "charizard": 250.00,
-  "pikachu": 45.00,
-  "mewtwo": 180.00,
-  "blastoise": 120.00,
-  "venusaur": 95.00,
-  "mew": 75.00,
-  "lugia": 140.00,
-  "ho-oh": 130.00,
-  "rayquaza": 160.00,
-  "dialga": 85.00,
+  "charizard": 200.00,
+  "pikachu": 35.00,
+  "mewtwo": 145.00,
+  "blastoise": 95.00,
+  "venusaur": 75.00,
+  "mew": 60.00,
+  "lugia": 110.00,
+  "ho-oh": 105.00,
+  "rayquaza": 125.00,
+  "dialga": 65.00,
+  "umbreon": 80.00,
+  "gengar": 55.00,
+  "eevee": 30.00,
 };
 
 const PRODUCT_PRICING: Record<string, number> = {
@@ -60,11 +64,14 @@ const PRODUCT_PRICING: Record<string, number> = {
   "single-pack": 4.99,
 };
 
-// Estimate card value based on name, rarity, condition, and grading
+// Estimate card value based on name, rarity, condition, and grading.
+// If the card already has a real price from the Pokemon TCG API, use that directly.
 export const estimateCardValue = (card: TradeCard): number => {
+  if (card.estimatedValue > 0) return card.estimatedValue;
+
   let basePrice = 0;
-  
-  // Try to find a base price from our mock data
+
+  // Fallback: look up by name keyword
   const cardName = card.name.toLowerCase();
   for (const [key, price] of Object.entries(CARD_PRICING)) {
     if (cardName.includes(key)) {
@@ -73,15 +80,12 @@ export const estimateCardValue = (card: TradeCard): number => {
     }
   }
   
-  // If no match found, use a default based on assumed rarity
+  // If no name match, estimate by card mechanic in name
   if (basePrice === 0) {
-    if (cardName.includes("vmax") || cardName.includes("gx")) {
-      basePrice = 25.00;
-    } else if (cardName.includes("v") || cardName.includes("ex")) {
-      basePrice = 15.00;
-    } else {
-      basePrice = 2.00; // Common card
-    }
+    if (cardName.includes("vstar") || cardName.includes("vmax")) basePrice = 20.00;
+    else if (cardName.includes(" ex") || cardName.includes("-ex") || cardName.includes("gx")) basePrice = 12.00;
+    else if (cardName.includes(" v ") || cardName.endsWith(" v")) basePrice = 8.00;
+    else basePrice = 1.50;
   }
   
   // Check if card is graded

@@ -122,7 +122,7 @@ const Navbar = () => {
           <div className="flex items-center gap-6">
             <Link to="/" className="flex items-center gap-2">
               <Package className="h-6 w-6 text-primary" />
-              <span className="font-bold text-xl">CollectX</span>
+              <span className="font-bold text-xl">PokéTrade Hub</span>
             </Link>
             
             {!isMobile && (

@@ -1,6 +1,6 @@
 
 // Service for fetching Pokémon TCG products including ETBs, booster boxes, etc.
-import { BASE_URL, createApiUrl } from './pokemonApiConfig';
+import { BASE_URL, createApiUrl, fetchFromApi } from './pokemonApiConfig';
 import { resolveProductImage } from './productImageService';
 
 export interface ProductSet {
@@ -123,7 +123,7 @@ export const getProducts = async (page = 1, pageSize = 20): Promise<any[]> => {
     const url = createApiUrl('sets', params);
     console.log('Fetching sets to generate products:', url.toString());
     
-    const response = await fetch(url.toString());
+    const response = await fetchFromApi(url.toString());
     
     if (!response.ok) {
       throw new Error(`Failed to fetch sets: ${response.statusText}`);
@@ -158,7 +158,7 @@ export const getFeaturedProducts = async (): Promise<any[]> => {
     };
     
     const url = createApiUrl('sets', params);
-    const response = await fetch(url.toString());
+    const response = await fetchFromApi(url.toString());
     
     if (!response.ok) {
       throw new Error(`Failed to fetch sets for featured products: ${response.statusText}`);

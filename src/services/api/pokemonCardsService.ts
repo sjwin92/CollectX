@@ -1,7 +1,7 @@
 
 // Service for fetching and managing Pokemon cards
 import { PokemonCard, PokemonCardResponse, CARD_BACK_URL } from './pokemonTypes';
-import { BASE_URL, createApiUrl } from './pokemonApiConfig';
+import { BASE_URL, createApiUrl, fetchFromApi } from './pokemonApiConfig';
 import { 
   getAllPossibleImageUrlsFromCardObject, 
   getConsistentCardImageUrl
@@ -27,8 +27,8 @@ export const getCards = async (
     const url = createApiUrl('cards', queryParams);
     
     console.log('Fetching cards with URL:', url.toString());
-    const response = await fetch(url.toString());
-    
+    const response = await fetchFromApi(url.toString());
+
     if (!response.ok) {
       console.error(`Failed to fetch cards: ${response.statusText}`);
       throw new Error(`Failed to fetch cards: ${response.statusText}`);
@@ -61,7 +61,7 @@ export const getCardById = async (id: string): Promise<PokemonCard> => {
   
   try {
     console.log(`Fetching card with ID: ${id}`);
-    const response = await fetch(`${BASE_URL}/cards/${id}`);
+    const response = await fetchFromApi(`${BASE_URL}/cards/${id}`);
     
     if (!response.ok) {
       console.error(`Failed to fetch card: ${response.statusText}`);
@@ -134,8 +134,8 @@ export const searchCards = async (
     const url = createApiUrl('cards', params);
     
     console.log('Fetching cards with URL:', url.toString());
-    const response = await fetch(url.toString());
-    
+    const response = await fetchFromApi(url.toString());
+
     if (!response.ok) {
       const errorMessage = `Failed to fetch cards: ${response.statusText}`;
       console.error(errorMessage);
@@ -196,10 +196,15 @@ export const getReliableImageUrl = (cardId: string, size: 'small' | 'large' = 's
  * Map Pokemon TCG card to TradeCard model
  */
 export const mapToTradeCard = (card: PokemonCard, isFeatured: boolean = false): any => {
-  const price = card.tcgplayer?.prices?.holofoil?.market 
-    || card.tcgplayer?.prices?.normal?.market 
-    || card.tcgplayer?.prices?.reverseHolofoil?.market
-    || 0;
+  // Try every TCGPlayer price variant — prefer market price, fall back to mid
+  const p = card.tcgplayer?.prices;
+  const price =
+    p?.holofoil?.market ?? p?.holofoil?.mid ??
+    p?.normal?.market ?? p?.normal?.mid ??
+    p?.reverseHolofoil?.market ?? p?.reverseHolofoil?.mid ??
+    p?.['1stEditionHolofoil']?.market ??
+    p?.unlimitedHolofoil?.market ??
+    0;
   
   let bestImageUrl;
   

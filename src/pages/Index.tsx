@@ -32,7 +32,7 @@ const Index = () => {
               <span className="text-primary">Safely and Securely</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground mb-8 animate-slide-down animation-delay-100">
-              CollectX is a community-focused platform that helps collectors find, 
+              PokéTrade Hub is a community-focused platform that helps collectors find,
               trade, and manage their Pokémon card collections with confidence.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-up animation-delay-200">

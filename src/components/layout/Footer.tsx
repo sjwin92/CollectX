@@ -11,7 +11,7 @@ const Footer = () => {
           <div className="flex flex-col gap-2">
             <Link to="/" className="flex items-center gap-2">
               <Package className="h-5 w-5 text-primary" />
-              <span className="font-bold text-lg">CollectX</span>
+              <span className="font-bold text-lg">PokéTrade Hub</span>
             </Link>
             <p className="text-sm text-muted-foreground">
               The safe trading platform for Pokémon card collectors
@@ -71,7 +71,7 @@ const Footer = () => {
         
         <div className="mt-8 pt-6 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} CollectX. All rights reserved.
+            © {new Date().getFullYear()} PokéTrade Hub. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <Link to="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">

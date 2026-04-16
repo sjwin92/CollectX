@@ -2,8 +2,10 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://kitejduabjzmhraiyzre.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtpdGVqZHVhYmp6bWhyYWl5enJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NjczNjcsImV4cCI6MjA2OTU0MzM2N30.CYRsGXRWi3EKXaK8bG6WpeWKM8M8R__l0TcrrBwaCWc";
+// Lovable Cloud injects these as VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY.
+// The hardcoded values are fallbacks for local dev without a .env file.
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? "https://kitejduabjzmhraiyzre.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtpdGVqZHVhYmp6bWhyYWl5enJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NjczNjcsImV4cCI6MjA2OTU0MzM2N30.CYRsGXRWi3EKXaK8bG6WpeWKM8M8R__l0TcrrBwaCWc";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
