@@ -1,11 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Get an OAuth token via client credentials grant
 async function getEbayToken(appId: string, certId: string): Promise<string> {
   const credentials = btoa(`${appId}:${certId}`);
   const body = new URLSearchParams({
@@ -37,14 +37,34 @@ serve(async (req) => {
   }
 
   try {
+    // --- Authentication ---
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+    );
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
+    if (userError || !userData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const ebayAppId = Deno.env.get('EBAY_APP_ID');
     const ebayCertId = Deno.env.get('EBAY_CERT_ID');
 
     const body = await req.json();
     const { action } = body;
 
-    // Listing creation still requires the Trading API (OAuth user token) —
-    // return a clear message rather than silently mocking it
     if (action === 'create_listing') {
       return new Response(JSON.stringify({
         success: false,
@@ -64,7 +84,6 @@ serve(async (req) => {
         });
       }
 
-      // Fall back to mock data when credentials are not configured
       if (!ebayAppId || !ebayCertId) {
         console.warn('EBAY_APP_ID / EBAY_CERT_ID not set — returning mock data');
         return new Response(JSON.stringify({
@@ -79,7 +98,6 @@ serve(async (req) => {
       try {
         const token = await getEbayToken(ebayAppId, ebayCertId);
 
-        // Exclude custom/proxy/fake items when searching sealed products
         const searchQuery = itemType === 'sealed_product'
           ? `${query} -custom -proxy -fake -homemade`
           : query;
@@ -109,7 +127,6 @@ serve(async (req) => {
 
         const data = await res.json();
         const items: any[] = data.itemSummaries || [];
-        console.log(`eBay returned ${items.length} items`);
 
         const listings = items.map((item: any) => ({
           title: item.title || '',
@@ -159,8 +176,8 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error in ebay-integration:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('Error in eBay integration function:', error);
+    return new Response(JSON.stringify({ error: 'An internal error occurred. Please try again.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
