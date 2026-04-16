@@ -1,7 +1,7 @@
 // App Configuration
 export const APP_CONFIG = {
   // App Info
-  name: 'PokéTrade Hub',
+  name: 'CollectX',
   description: 'The ultimate platform for Pokemon card trading, collection management, and marketplace interactions.',
   version: '1.0.0',
   
@@ -82,10 +82,10 @@ export const APP_CONFIG = {
   
   // SEO
   seo: {
-    siteName: 'PokéTrade Hub',
+    siteName: 'CollectX',
     siteDescription: 'Trade Pokemon cards, manage your collection, and connect with fellow collectors.',
     keywords: ['pokemon', 'cards', 'trading', 'collection', 'marketplace', 'tcg'],
-    author: 'PokéTrade Hub Team',
+    author: 'CollectX Team',
     twitterSite: '@poketradehub',
     ogImage: '/og-image.png',
     favicon: '/favicon.ico'

@@ -92,7 +92,7 @@ export const useSEO = (seoProps: SEOProps) => {
 // Page-specific SEO configurations
 export const SEO_CONFIGS = {
   home: {
-    title: 'PokéTrade Hub - Trade Pokemon Cards & Manage Collections',
+    title: 'CollectX - Trade Pokemon Cards & Manage Collections',
     description: 'The ultimate platform for Pokemon card trading. Build your collection, trade with other collectors, and discover rare cards.',
     keywords: ['pokemon cards', 'trading', 'collection', 'TCG', 'marketplace']
   },
