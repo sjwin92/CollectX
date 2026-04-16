@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,6 +14,28 @@ serve(async (req) => {
   }
 
   try {
+    // --- Authentication ---
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+    );
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
+    if (userError || !userData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const ebayApiKey = Deno.env.get('EBAY_API_KEY');
     if (!ebayApiKey) {
       console.error('EBAY_API_KEY not found in environment variables');
@@ -192,8 +215,7 @@ serve(async (req) => {
         return new Response(JSON.stringify({ 
           listings: mockListings,
           averagePrice: mockListings.length > 0 ? mockListings.reduce((sum, item) => sum + parseFloat(item.price.replace('£', '')), 0) / mockListings.length : null,
-          source: 'mock_fallback',
-          error: error.message
+          source: 'mock_fallback'
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
@@ -208,7 +230,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in eBay integration function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: 'An internal error occurred. Please try again.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
