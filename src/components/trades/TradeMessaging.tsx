@@ -23,7 +23,7 @@ import {
 interface TradeMessage {
   id: string;
   trade_id: string;
-  user_id: string;
+  sender_user_id: string;
   message: string;
   message_type: string;
   created_at: string;
@@ -80,20 +80,20 @@ const TradeMessaging = ({ trade }: TradeMessagingProps) => {
 
     // Get sender profiles separately
     if (data && data.length > 0) {
-      const userIds = [...new Set(data.map(msg => msg.user_id))];
+      const userIds = [...new Set(data.map((msg: any) => msg.sender_user_id))];
       const { data: profiles } = await supabase
         .from('profiles')
         .select('user_id, display_name, username, avatar_url')
         .in('user_id', userIds);
 
-      const messagesWithSenders = data.map(msg => ({
+      const messagesWithSenders = data.map((msg: any) => ({
         ...msg,
-        sender: profiles?.find(p => p.user_id === msg.user_id) || {}
-      }));
+        sender: profiles?.find((p: any) => p.user_id === msg.sender_user_id) || {}
+      })) as TradeMessage[];
 
       setMessages(messagesWithSenders);
     } else {
-      setMessages(data || []);
+      setMessages((data || []) as TradeMessage[]);
     }
   };
 
@@ -137,7 +137,7 @@ const TradeMessaging = ({ trade }: TradeMessagingProps) => {
         .from('trade_messages')
         .insert({
           trade_id: trade.id,
-          user_id: user.id,
+          sender_user_id: user.id,
           message: newMessage,
           message_type: 'text'
         });
@@ -200,7 +200,7 @@ const TradeMessaging = ({ trade }: TradeMessagingProps) => {
         .from('trade_messages')
         .insert({
           trade_id: trade.id,
-          user_id: user.id,
+          sender_user_id: user.id,
           message: 'Escrow protection has been initiated for this trade.',
           message_type: 'system'
         });
@@ -233,7 +233,7 @@ const TradeMessaging = ({ trade }: TradeMessagingProps) => {
         .from('trade_messages')
         .insert({
           trade_id: trade.id,
-          user_id: user.id,
+          sender_user_id: user.id,
           message: 'Escrow payment completed.',
           message_type: 'system'
         });
@@ -312,7 +312,7 @@ const TradeMessaging = ({ trade }: TradeMessagingProps) => {
           <ScrollArea className="h-[400px] mb-4 pr-4">
             <div className="space-y-4">
               {messages.map((message) => {
-                const isOwnMessage = message.user_id === user.id;
+                const isOwnMessage = message.sender_user_id === user.id;
                 const isSystemMessage = message.message_type === 'system';
                 
                 if (isSystemMessage) {
