@@ -75,10 +75,35 @@ export const updateUserPreferences = async (
   _updates: Partial<UserPreferences>
 ): Promise<UserPreferences | null> => null;
 
-export const getUserStats = async (): Promise<any> => ({});
+export interface UserStats {
+  totalCards: number;
+  totalTrades: number;
+  totalValue: number;
+  recentActivity: number;
+}
 
-export const getTrendingCards = async (_limit: number = 10): Promise<any[]> => [];
+export interface TrendingCard {
+  id: string;
+  name: string;
+  searchCount: number;
+  imageUrl?: string;
+}
+
+export const getUserStats = async (): Promise<UserStats> => ({
+  totalCards: 0,
+  totalTrades: 0,
+  totalValue: 0,
+  recentActivity: 0,
+});
+
+export const getTrendingCards = async (_limit: number = 10): Promise<TrendingCard[]> => [];
 
 export const getUserActivity = async (_limit: number = 50): Promise<UserActivity[]> => [];
 
 export const getSearchHistory = async (_limit: number = 20): Promise<SearchHistory[]> => [];
+
+export const getPopularSearches = async (
+  _type?: string,
+  _limit: number = 10,
+  _days: number = 7
+): Promise<SearchHistory[]> => [];

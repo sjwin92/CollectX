@@ -6,7 +6,7 @@ import { getAllSets } from "@/services/api/pokemonSetsService";
 import { Search, HelpCircle, Sparkles } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { trackSearch } from "@/services/supabaseAnalyticsService";
+import { recordSearch as trackSearch } from "@/services/supabaseAnalyticsService";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
