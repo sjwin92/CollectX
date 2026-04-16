@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { lovable } from '@/integrations/lovable';
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -85,17 +86,17 @@ const Auth = () => {
     }
   };
 
-  const handleSocialAuth = async (provider: 'google' | 'twitter') => {
+  const handleSocialAuth = async (provider: 'google') => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/`,
-        },
+      const result = await lovable.auth.signInWithOAuth(provider, {
+        redirect_uri: window.location.origin,
       });
 
-      if (error) throw error;
+      if (result.error) throw result.error;
+      if (result.redirected) return;
+
+      navigate('/');
     } catch (error: any) {
       toast({
         title: "Error",
