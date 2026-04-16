@@ -27,7 +27,7 @@ class ErrorBoundary extends Component<Props, State> {
     console.error("Error Boundary caught an error:", error, errorInfo);
     
     // In production, you might want to send this to an error reporting service
-    if (process.env.NODE_ENV === 'production') {
+    if (!import.meta.env.DEV) {
       // Example: Send to error reporting service
       // errorReportingService.captureException(error, { extra: errorInfo });
     }
@@ -56,7 +56,7 @@ class ErrorBoundary extends Component<Props, State> {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {import.meta.env.DEV && this.state.error && (
                 <div className="p-4 bg-muted rounded-lg">
                   <p className="text-sm font-mono text-destructive">
                     {this.state.error.message}
