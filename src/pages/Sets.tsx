@@ -95,11 +95,15 @@ const Sets = () => {
     });
   }, [data, isLoading, isError]);
 
-  // Get featured sets (first 4 sets with enhanced SV image loading)
-  const featuredSets = combinedData.slice(0, 4) || [];
-  
-  // Get remaining sets for main grid (excluding featured ones)
-  const remainingSets = combinedData.slice(4) || [];
+  // Featured = the 4 most recently released sets (newest first)
+  const featuredSets = React.useMemo(
+    () => [...combinedData].reverse().slice(0, 4),
+    [combinedData]
+  );
+
+  // Remaining sets for main grid (oldest → newest), excluding the featured ones
+  const featuredIds = new Set(featuredSets.map(s => s.id));
+  const remainingSets = combinedData.filter(s => !featuredIds.has(s.id));
 
   // Handle image error with fallback logic
   const handleImageError = (setId: string, type: 'logo' | 'symbol', element: HTMLImageElement) => {
