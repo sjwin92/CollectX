@@ -1,11 +1,6 @@
-import { supabase } from '@/integrations/supabase/client';
-import type { Database } from '@/integrations/supabase/types';
+import { supabase as supabaseTyped } from '@/integrations/supabase/client';
 import { ExtendedCardItemWithDB } from './supabaseCollectionService';
-
-type DbMarketplaceListing = Database['public']['Tables']['marketplace_listings']['Row'];
-type DbMarketplaceListingInsert = Database['public']['Tables']['marketplace_listings']['Insert'];
-type DbMarketplaceInterest = Database['public']['Tables']['marketplace_interests']['Row'];
-type DbMarketplaceFavorite = Database['public']['Tables']['marketplace_favorites']['Row'];
+const supabase = supabaseTyped as any;
 
 export interface MarketplaceListing {
   id: string;

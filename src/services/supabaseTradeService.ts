@@ -1,11 +1,6 @@
-import { supabase } from '@/integrations/supabase/client';
-import type { Database } from '@/integrations/supabase/types';
+import { supabase as supabaseTyped } from '@/integrations/supabase/client';
 import { ExtendedCardItemWithDB } from './supabaseCollectionService';
-
-type DbTrade = Database['public']['Tables']['trades']['Row'];
-type DbTradeInsert = Database['public']['Tables']['trades']['Insert'];
-type DbTradeMessage = Database['public']['Tables']['trade_messages']['Row'];
-type DbTradeRating = Database['public']['Tables']['trade_ratings']['Row'];
+const supabase = supabaseTyped as any;
 
 export interface TradeOffer {
   id: string;

@@ -1,10 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
-import type { Database } from '@/integrations/supabase/types';
-
-type DbNotification = Database['public']['Tables']['notifications']['Row'];
-type DbNotificationPreferences = Database['public']['Tables']['notification_preferences']['Row'];
-type DbChatConversation = Database['public']['Tables']['chat_conversations']['Row'];
-type DbChatMessage = Database['public']['Tables']['chat_messages']['Row'];
+import { supabase as supabaseTyped } from '@/integrations/supabase/client';
+const supabase = supabaseTyped as any;
 
 export interface Notification {
   id: string;
