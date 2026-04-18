@@ -10,6 +10,7 @@ import GlassCard from "@/components/ui/custom/GlassCard";
 import { Link } from "react-router-dom";
 import { CardItemProps } from "@/components/cards/CardItem";
 import { useToast } from "@/hooks/use-toast";
+import { usdToGbp } from "@/services/currencyService";
 
 const Pokemons = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -29,11 +30,12 @@ const Pokemons = () => {
       imageUrl: card.images.small,
       rarity: card.rarity || "Unknown",
       condition: "Near Mint",
-      estimatedValue: card.tcgplayer?.prices?.holofoil?.market
-        ? `$${card.tcgplayer.prices.holofoil.market.toFixed(2)}`
-        : card.tcgplayer?.prices?.normal?.market
-        ? `$${card.tcgplayer.prices.normal.market.toFixed(2)}`
-        : "N/A"
+      estimatedValue: (() => {
+        const p = card.tcgplayer?.prices;
+        const usd = p?.holofoil?.market ?? p?.holofoil?.mid ?? p?.normal?.market ?? p?.normal?.mid
+          ?? p?.reverseHolofoil?.market ?? p?.['1stEditionHolofoil']?.market ?? 0;
+        return usd > 0 ? `£${usdToGbp(usd).toFixed(2)}` : 'N/A';
+      })()
     }));
   };
 

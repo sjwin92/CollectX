@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { getCards, PokemonCard } from "@/services/pokemonTcgApi";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { CardItemProps } from "@/components/cards/CardItem";
 import { useUser } from "@/hooks/useUser";
+import { PokemonCard } from "@/services/pokemonTcgApi";
 import CreateListingModal from "@/components/marketplace/CreateListingModal";
 import { 
   DropdownMenu,
@@ -58,16 +59,43 @@ interface ListingType {
   featured?: boolean;
 }
 
-const FEATURED_LISTINGS: ListingType[] = [];
-
-const INITIAL_LISTINGS: ListingType[] = [];
-
 const Marketplace = () => {
   const [isCreateListingOpen, setCreateListingOpen] = useState(false);
   const [isTradeModalOpen, setTradeModalOpen] = useState(false);
-  const [selectedCard, setSelectedCard] = useState<PokemonCard | null>(null);
   const [selectedListing, setSelectedListing] = useState<string | null>(null);
-  const [listings, setListings] = useState<ListingType[]>([...FEATURED_LISTINGS, ...INITIAL_LISTINGS]);
+  const queryClient = useQueryClient();
+
+  const { data: dbListings = [], isLoading } = useQuery({
+    queryKey: ['marketplace_listings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('marketplace_listings')
+        .select('*, profiles:user_id(display_name, username)')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const listings: ListingType[] = dbListings.map((row: any) => ({
+    id: row.id,
+    userId: row.user_id,
+    username: row.profiles?.display_name || row.profiles?.username || 'Anonymous',
+    cardOffered: {
+      id: row.card_id,
+      name: row.card_name,
+      imageUrl: row.image_url || '',
+      rarity: row.rarity || 'Unknown',
+      condition: row.condition,
+      estimatedValue: row.asking_price ? `£${Number(row.asking_price).toFixed(2)}` : 'N/A',
+    },
+    cardsWanted: row.trade_preferences ? [row.trade_preferences] : [],
+    description: row.description || '',
+    createdAt: new Date(row.created_at),
+    featured: row.featured,
+  }));
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<'featured' | 'recent' | 'trending'>('featured');
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
@@ -133,41 +161,6 @@ const Marketplace = () => {
       });
   }, [listings, searchQuery, activeCategory, selectedConditions, priceRange, sortOrder]);
 
-  const createNewListing = (cardOffered: PokemonCard, cardsWanted: string[], description: string) => {
-    const newListing: ListingType = {
-      id: `listing-${Date.now()}`,
-      userId: user.id,
-      username: user.email || 'Anonymous',
-      cardOffered: {
-        id: cardOffered.id,
-        name: cardOffered.name,
-        imageUrl: cardOffered.images.small,
-        rarity: cardOffered.rarity || "Unknown",
-        condition: "Near Mint",
-        estimatedValue: cardOffered.tcgplayer?.prices?.holofoil?.market
-          ? `$${cardOffered.tcgplayer.prices.holofoil.market.toFixed(2)}`
-          : cardOffered.tcgplayer?.prices?.normal?.market
-          ? `$${cardOffered.tcgplayer.prices.normal.market.toFixed(2)}`
-          : "N/A"
-      },
-      cardsWanted,
-      description,
-      createdAt: new Date()
-    };
-
-    setListings(prev => [newListing, ...prev]);
-    setCreateListingOpen(false);
-    
-    toast({
-      title: "Listing created!",
-      description: "Your card is now listed for trade.",
-    });
-  };
-
-  const handleCardSelect = (card: PokemonCard) => {
-    setSelectedCard(card);
-    setCreateListingOpen(true);
-  };
 
   const toggleConditionFilter = (condition: string) => {
     setSelectedConditions(prev => 
@@ -260,10 +253,10 @@ const Marketplace = () => {
                 <DropdownMenuGroup>
                   {[
                     {id: "all", label: "All Prices"},
-                    {id: "under-10", label: "Under $10"},
-                    {id: "10-50", label: "$10 - $50"},
-                    {id: "50-100", label: "$50 - $100"},
-                    {id: "over-100", label: "Over $100"}
+                    {id: "under-10", label: "Under £10"},
+                    {id: "10-50", label: "£10 - £50"},
+                    {id: "50-100", label: "£50 - £100"},
+                    {id: "over-100", label: "Over £100"}
                   ].map((range) => (
                     <DropdownMenuItem 
                       key={range.id} 
@@ -365,16 +358,13 @@ const Marketplace = () => {
         </div>
 
         {isCreateListingOpen && (
-          <CreateListingModal 
+          <CreateListingModal
             isOpen={isCreateListingOpen}
             onClose={() => setCreateListingOpen(false)}
             selectedCard={null}
             onListingCreated={() => {
-              // Refresh marketplace data when listing is created
-              toast({
-                title: "Listing created",
-                description: "Your listing has been added to the marketplace"
-              });
+              queryClient.invalidateQueries({ queryKey: ['marketplace_listings'] });
+              toast({ title: "Listing created", description: "Your listing has been added to the marketplace" });
             }}
           />
         )}

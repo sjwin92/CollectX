@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -16,6 +16,7 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { useUser } from "@/hooks/useUser";
+import { supabase } from "@/integrations/supabase/client";
 import UserDashboard from "@/components/analytics/UserDashboard";
 import { 
   Star, 
@@ -49,13 +50,41 @@ const userData = {
   badges: []
 };
 
-// Empty collection for fresh spawn
-const userCollection: CardItemProps[] = [];
-
 const Profile = () => {
   const { user, profile } = useUser();
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredCards, setFilteredCards] = useState<CardItemProps[]>(userCollection);
+  const [userCollection, setUserCollection] = useState<CardItemProps[]>([]);
+  const [filteredCards, setFilteredCards] = useState<CardItemProps[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('user_cards')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('product_type', 'card')
+      .then(({ data }) => {
+        if (!data) return;
+        const cards: CardItemProps[] = data.map(c => ({
+          id: c.card_id,
+          name: c.card_name || 'Unknown Card',
+          imageUrl: c.card_image || '',
+          rarity: c.rarity || 'Unknown',
+          condition: c.condition || 'Near Mint',
+          estimatedValue: c.trade_value ? `£${Number(c.trade_value).toFixed(2)}` : 'N/A',
+          forTrade: c.for_trade,
+          quantity: c.quantity,
+          graded: c.is_graded,
+          gradingCompany: c.grading_company || undefined,
+          gradeScore: c.grade_score || undefined,
+          set: c.set_id ? { id: c.set_id, name: c.set_name || '' } : undefined,
+          number: c.card_number || undefined,
+          dbId: c.id,
+        }));
+        setUserCollection(cards);
+        setFilteredCards(cards);
+      });
+  }, [user]);
   
   // Use actual user data when available
   const displayData = {
