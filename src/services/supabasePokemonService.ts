@@ -1,5 +1,6 @@
 // Supabase Pokemon data service for reliable local data storage
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as supabaseTyped } from '@/integrations/supabase/client';
+const supabase = supabaseTyped as any;
 
 interface PokemonSet {
   id: string;
