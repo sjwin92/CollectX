@@ -14,6 +14,7 @@ import { CardItemProps } from "@/components/cards/CardItem";
 import { normalizeSetId } from "@/services/setIdMappingService";
 import { supabasePokemonService } from "@/services/supabasePokemonService";
 import { pokemonDataImporter } from "@/services/pokemonDataImporter";
+import { usdToGbp } from "@/services/currencyService";
 
 const PokemonCards = () => {
   const [searchParams] = useSearchParams();
@@ -34,10 +35,15 @@ const PokemonCards = () => {
 
   console.log(`PokemonCards page loaded with setId: ${setId}, nameQuery: ${nameQuery}`);
 
-  // Format currency values to GBP
-  const formatToGBP = (value: number | null | undefined): string => {
-    if (value === null || value === undefined) return "N/A";
-    return `£${value.toFixed(2)}`;
+  const extractGbpPrice = (tcgplayer_prices: any): string => {
+    const p = tcgplayer_prices;
+    const usd =
+      p?.holofoil?.market ?? p?.holofoil?.mid ??
+      p?.normal?.market ?? p?.normal?.mid ??
+      p?.reverseHolofoil?.market ?? p?.reverseHolofoil?.mid ??
+      p?.['1stEditionHolofoil']?.market ??
+      p?.unlimitedHolofoil?.market ?? 0;
+    return usd > 0 ? `£${usdToGbp(usd).toFixed(2)}` : "N/A";
   };
 
   // Load all cards when setId or nameQuery changes
@@ -59,11 +65,7 @@ const PokemonCards = () => {
           
           // Convert database cards to CardItemProps format
           const formattedCards: CardItemProps[] = localCards.map(card => {
-            const price = card.tcgplayer_prices?.holofoil?.market 
-              ? formatToGBP(card.tcgplayer_prices.holofoil.market) 
-              : card.tcgplayer_prices?.normal?.market 
-                ? formatToGBP(card.tcgplayer_prices.normal.market) 
-                : "N/A";
+            const price = extractGbpPrice(card.tcgplayer_prices);
                 
             return {
               id: card.id,
@@ -130,11 +132,7 @@ const PokemonCards = () => {
         const localResults = await supabasePokemonService.searchCards(nameQuery);
         if (localResults.length > 0) {
           const formattedCards: CardItemProps[] = localResults.map(card => {
-            const price = card.tcgplayer_prices?.holofoil?.market 
-              ? formatToGBP(card.tcgplayer_prices.holofoil.market) 
-              : card.tcgplayer_prices?.normal?.market 
-                ? formatToGBP(card.tcgplayer_prices.normal.market) 
-                : "N/A";
+            const price = extractGbpPrice(card.tcgplayer_prices);
                 
             return {
               id: card.id,
