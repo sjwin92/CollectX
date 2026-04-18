@@ -126,38 +126,6 @@ const SocialTradeHub = ({ isOpen, onClose }: SocialTradeHubProps) => {
         title: "Message sent",
         description: "Your message has been delivered",
       });
-
-      // Simulate a response after 2 seconds
-      setTimeout(() => {
-        const responses = [
-          "That sounds great! Let me check.",
-          "I'll get back to you shortly.",
-          "Perfect! I'm interested.",
-          "Can you send more details?",
-          "Let's make this happen!"
-        ];
-        
-        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-        const responseMessage = {
-          id: (Date.now() + 1).toString(),
-          sender: 'them' as const,
-          text: randomResponse,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          type: 'text' as const
-        };
-
-        setConversations(prev => prev.map(conv => {
-          if (conv.id === selectedChat) {
-            return {
-              ...conv,
-              messages: [...conv.messages, responseMessage],
-              lastMessage: randomResponse,
-              timestamp: 'now'
-            };
-          }
-          return conv;
-        }));
-      }, 2000);
     }
   };
 

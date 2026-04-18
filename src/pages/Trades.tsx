@@ -36,149 +36,6 @@ interface Trade {
   targetCard?: CardItemProps;
 }
 
-// Placeholder trade data (keeping for reference, but not using directly)
-const activeTrades = [
-  {
-    id: "t1",
-    status: "pending" as const,
-    date: "2 hours ago",
-    user: {
-      id: "u1",
-      name: "Alex Morgan",
-      reputation: "trusted" as const
-    },
-    giving: {
-      count: 2,
-      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
-    },
-    receiving: {
-      count: 3,
-      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
-    }
-  },
-  {
-    id: "t2",
-    status: "accepted" as const,
-    date: "1 day ago",
-    user: {
-      id: "u2",
-      name: "Jordan Lee",
-      reputation: "established" as const
-    },
-    giving: {
-      count: 1,
-      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
-    },
-    receiving: {
-      count: 1,
-      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
-    }
-  },
-  {
-    id: "t3",
-    status: "shipped" as const,
-    date: "3 days ago",
-    user: {
-      id: "u3",
-      name: "Taylor Kim",
-      reputation: "new" as const
-    },
-    giving: {
-      count: 1,
-      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
-    },
-    receiving: {
-      count: 2,
-      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
-    }
-  }
-];
-
-const completedTrades = [
-  {
-    id: "t4",
-    status: "completed" as const,
-    date: "1 week ago",
-    user: {
-      id: "u4",
-      name: "Jamie Rivera",
-      reputation: "trusted" as const
-    },
-    giving: {
-      count: 4,
-      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
-    },
-    receiving: {
-      count: 2,
-      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
-    }
-  },
-  {
-    id: "t5",
-    status: "completed" as const,
-    date: "2 weeks ago",
-    user: {
-      id: "u5",
-      name: "Casey Zhang",
-      reputation: "established" as const
-    },
-    giving: {
-      count: 1,
-      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
-    },
-    receiving: {
-      count: 1,
-      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
-    }
-  }
-];
-
-const declinedTrades = [
-  {
-    id: "t6",
-    status: "declined" as const,
-    date: "3 days ago",
-    user: {
-      id: "u6",
-      name: "Riley Johnson",
-      reputation: "new" as const
-    },
-    giving: {
-      count: 1,
-      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
-    },
-    receiving: {
-      count: 1,
-      preview: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
-    }
-  }
-];
-
-// Mock marketplace listings - in a real app this would come from your database
-const MARKETPLACE_LISTINGS = [
-  {
-    id: "featured-1",
-    cardOffered: {
-      id: "base1-4",
-      name: "Charizard Base Set",
-      imageUrl: "https://images.pokemontcg.io/base1/4.png",
-      rarity: "Holo Rare",
-      condition: "Near Mint",
-      estimatedValue: "$500"
-    }
-  },
-  {
-    id: "featured-2", 
-    cardOffered: {
-      id: "sm12-190",
-      name: "Mewtwo & Mew GX (Rainbow)",
-      imageUrl: "https://images.pokemontcg.io/sm12/190.png",
-      rarity: "Ultra Rare", 
-      condition: "Mint",
-      estimatedValue: "$120"
-    }
-  }
-];
 
 const Trades = () => {
   const { user } = useUser();
@@ -248,13 +105,26 @@ const Trades = () => {
   useEffect(() => {
     const shouldPropose = searchParams.get('propose') === 'true';
     const listingId = searchParams.get('listingId');
-    
+
     if (shouldPropose && listingId) {
-      const listing = MARKETPLACE_LISTINGS.find(l => l.id === listingId);
-      if (listing) {
-        setSelectedTargetCard(listing.cardOffered);
-        setIsTradeProposalOpen(true);
-      }
+      supabase
+        .from('marketplace_listings')
+        .select('*')
+        .eq('id', listingId)
+        .single()
+        .then(({ data }) => {
+          if (data) {
+            setSelectedTargetCard({
+              id: data.card_id,
+              name: data.card_name,
+              imageUrl: data.card_image_url,
+              rarity: data.rarity || '',
+              condition: data.condition || '',
+              estimatedValue: data.asking_price ? `£${data.asking_price}` : '0',
+            });
+            setIsTradeProposalOpen(true);
+          }
+        });
     }
   }, [searchParams]);
 

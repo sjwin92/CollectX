@@ -1,285 +1,10 @@
 import { TradeProposal, TradeStatus, TradeMessage } from "@/models/escrow";
 import { v4 as uuidv4 } from 'uuid';
-import { getCardById, mapToTradeCard } from './unifiedCardService';
 
-const CARD_IDS = {
-  CHARIZARD_GX_RR: 'sm12-150',
-  VENUSAUR_V: 'sv1-1',
-  PIKACHU_VMAX: 'swsh4-44',
-  MEWTWO_EX: 'xy8-52',
-  BLASTOISE_VMAX: 'swsh35-22',
-  BLASTOISE_HOLO: 'base2-2',
-};
-
-// Mock image storage
-const mockImages = [
-  "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg",
-  "https://i.imgur.com/ZZD8nya.jpeg",
-  "https://i.imgur.com/2vkGOXi.jpeg",
-  "https://i.imgur.com/EBgfOTU.jpeg",
-  "https://i.imgur.com/yEJSVSx.jpeg"
-];
-
-const initializeMockTrades = async () => {
-  try {
-    console.log("Initializing mock trades with unified card service");
-    const charizardGX = await getCardById(CARD_IDS.CHARIZARD_GX_RR);
-    const venusaurV = await getCardById(CARD_IDS.VENUSAUR_V);
-    const pikachuVMAX = await getCardById(CARD_IDS.PIKACHU_VMAX);
-    const mewtwoEX = await getCardById(CARD_IDS.MEWTWO_EX);
-    const blastoiseVMAX = await getCardById(CARD_IDS.BLASTOISE_VMAX);
-    const blastoiseHolo = await getCardById(CARD_IDS.BLASTOISE_HOLO);
-
-    // Create mock trades
-    const mockTrades: Record<string, TradeProposal> = {
-      "t1": {
-        id: "t1",
-        status: "completed",
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-        initiator: {
-          userId: "u1",
-          username: "Alex Morgan",
-          reputation: "trusted",
-          tradeCount: 15,
-          successRate: 98,
-          offeringCards: [
-            mapToTradeCard(charizardGX),
-            mapToTradeCard(venusaurV)
-          ],
-          escrowAmount: {
-            baseAmount: 520,
-            reputationDiscount: 260,
-            finalAmount: 260,
-            currency: "USD"
-          }
-        },
-        recipient: {
-          userId: "u2",
-          username: "Jordan Lee",
-          reputation: "established",
-          tradeCount: 8,
-          successRate: 95,
-          offeringCards: [
-            mapToTradeCard(pikachuVMAX),
-            mapToTradeCard(mewtwoEX),
-            mapToTradeCard(blastoiseVMAX)
-          ],
-          escrowAmount: {
-            baseAmount: 460,
-            reputationDiscount: 115,
-            finalAmount: 345,
-            currency: "USD"
-          }
-        },
-        escrow: {
-          id: "e1",
-          tradeId: "t1",
-          status: "completed",
-          initiatorId: "u1",
-          recipientId: "u2",
-          initiatorEscrowAmount: {
-            baseAmount: 520,
-            reputationDiscount: 260,
-            finalAmount: 260,
-            currency: "USD"
-          },
-          recipientEscrowAmount: {
-            baseAmount: 460,
-            reputationDiscount: 115,
-            finalAmount: 345,
-            currency: "USD"
-          },
-          initiatorPaid: true,
-          recipientPaid: true,
-          createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          completedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          shippingInfo: {
-            carrier: "USPS",
-            trackingNumber: "9400123456789012345678",
-            estimatedDelivery: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString()
-          }
-        },
-        messages: [
-          {
-            id: "m1",
-            tradeId: "t1",
-            userId: "u1",
-            username: "Alex Morgan",
-            message: `I'm interested in your Pikachu VMAX. Would you trade it for my Charizard GX?`,
-            createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-            systemMessage: false,
-            imageUrl: null
-          },
-          {
-            id: "m2",
-            tradeId: "t1",
-            userId: "u2",
-            username: "Jordan Lee",
-            message: `I'd prefer to include my Mewtwo EX and Blastoise VMAX in the deal. Could you add your Venusaur V?`,
-            createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 30 * 60 * 1000).toISOString(),
-            systemMessage: false,
-            imageUrl: null
-          },
-          {
-            id: "m3",
-            tradeId: "t1",
-            userId: "u1",
-            username: "Alex Morgan",
-            message: "That sounds fair to me. Let's do it!",
-            createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(),
-            systemMessage: false,
-            imageUrl: null
-          },
-          {
-            id: "m4",
-            tradeId: "t1",
-            userId: "u2",
-            username: "Jordan Lee",
-            message: "Here's a close-up of the Pikachu card so you can see the condition",
-            createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000).toISOString(),
-            systemMessage: false,
-            imageUrl: mockImages[1]
-          }
-        ]
-      },
-      "t2": {
-        id: "t2",
-        status: "proposed",
-        createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-        initiator: {
-          userId: "u2",
-          username: "Jordan Lee",
-          reputation: "established",
-          tradeCount: 8,
-          successRate: 95,
-          offeringCards: [
-            mapToTradeCard(blastoiseHolo)
-          ],
-          escrowAmount: {
-            baseAmount: 100,
-            reputationDiscount: 25,
-            finalAmount: 75,
-            currency: "USD"
-          }
-        },
-        recipient: {
-          userId: "u3",
-          username: "Taylor Kim",
-          reputation: "new",
-          tradeCount: 0,
-          successRate: 0,
-          offeringCards: [
-            mapToTradeCard(mewtwoEX)
-          ],
-          escrowAmount: {
-            baseAmount: 225,
-            reputationDiscount: 0,
-            finalAmount: 225,
-            currency: "USD"
-          }
-        },
-        escrow: null,
-        messages: [
-          {
-            id: "m4",
-            tradeId: "t2",
-            userId: "u2",
-            username: "Jordan Lee",
-            message: `Hi, would you be interested in trading your Mewtwo EX for my Blastoise Holo?`,
-            createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-            systemMessage: false,
-            imageUrl: null
-          },
-          {
-            id: "m5",
-            tradeId: "t2",
-            userId: "u2",
-            username: "Jordan Lee",
-            message: "Here's the Blastoise card's condition",
-            createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-            systemMessage: false,
-            imageUrl: mockImages[2]
-          }
-        ]
-      }
-    };
-
-    console.log("Mock trades initialized with unified card service:", Object.keys(mockTrades).length);
-    return mockTrades;
-  } catch (error) {
-    console.error("Failed to initialize mock trades with unified card service:", error);
-    return createFallbackTrades();
-  }
-};
-
-const createFallbackTrades = () => {
-  const fallbackCard = {
-    id: "fallback-1",
-    name: "Placeholder Card",
-    imageUrl: "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg",
-    condition: "Near Mint",
-    estimatedValue: 0,
-    currency: "USD"
-  };
-  
-  return {
-    "t1": {
-      id: "t1",
-      status: "proposed",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      initiator: {
-        userId: "u1",
-        username: "Alex Morgan",
-        reputation: "trusted",
-        tradeCount: 15,
-        successRate: 98,
-        offeringCards: [fallbackCard],
-        escrowAmount: {
-          baseAmount: 100,
-          reputationDiscount: 50,
-          finalAmount: 50,
-          currency: "USD"
-        }
-      },
-      recipient: {
-        userId: "u2",
-        username: "Jordan Lee",
-        reputation: "established",
-        tradeCount: 8,
-        successRate: 95,
-        offeringCards: [fallbackCard],
-        escrowAmount: {
-          baseAmount: 100,
-          reputationDiscount: 25,
-          finalAmount: 75,
-          currency: "USD"
-        }
-      },
-      escrow: null,
-      messages: [
-        {
-          id: "m1",
-          tradeId: "t1",
-          userId: "u1",
-          username: "Alex Morgan",
-          message: "API is currently unavailable. This is a placeholder trade.",
-          createdAt: new Date().toISOString(),
-          systemMessage: true,
-          imageUrl: null
-        }
-      ]
-    }
-  };
-};
-
-let mockTradesPromise = initializeMockTrades();
+const sessionTrades: Record<string, TradeProposal> = {};
 
 export const getTradeProposal = async (id: string): Promise<TradeProposal> => {
-  const trades = await mockTradesPromise;
+  const trades = sessionTrades;
   const trade = trades[id];
   if (!trade) {
     throw new Error(`Trade proposal with ID ${id} not found`);
@@ -288,7 +13,7 @@ export const getTradeProposal = async (id: string): Promise<TradeProposal> => {
 };
 
 export const addTradeMessage = async (tradeId: string, message: string, imageUrl: string | null = null): Promise<void> => {
-  const trades = await mockTradesPromise;
+  const trades = sessionTrades;
   const trade = trades[tradeId];
   if (!trade) {
     throw new Error(`Trade proposal with ID ${tradeId} not found`);
@@ -311,7 +36,7 @@ export const addTradeMessage = async (tradeId: string, message: string, imageUrl
 };
 
 export const acceptTradeProposal = async (tradeId: string): Promise<void> => {
-  const trades = await mockTradesPromise;
+  const trades = sessionTrades;
   const trade = trades[tradeId];
   if (!trade) {
     throw new Error(`Trade proposal with ID ${tradeId} not found`);
@@ -328,7 +53,7 @@ export const acceptTradeProposal = async (tradeId: string): Promise<void> => {
 };
 
 export const declineTradeProposal = async (tradeId: string): Promise<void> => {
-  const trades = await mockTradesPromise;
+  const trades = sessionTrades;
   const trade = trades[tradeId];
   if (!trade) {
     throw new Error(`Trade proposal with ID ${tradeId} not found`);
@@ -345,7 +70,7 @@ export const declineTradeProposal = async (tradeId: string): Promise<void> => {
 };
 
 export const payInitiatorEscrow = async (tradeId: string): Promise<boolean> => {
-  const trades = await mockTradesPromise;
+  const trades = sessionTrades;
   const trade = trades[tradeId];
   if (!trade) {
     throw new Error(`Trade proposal with ID ${tradeId} not found`);
@@ -384,7 +109,7 @@ export const payInitiatorEscrow = async (tradeId: string): Promise<boolean> => {
 };
 
 export const payRecipientEscrow = async (tradeId: string): Promise<boolean> => {
-  const trades = await mockTradesPromise;
+  const trades = sessionTrades;
   const trade = trades[tradeId];
   if (!trade) {
     throw new Error(`Trade proposal with ID ${tradeId} not found`);
@@ -423,7 +148,7 @@ export const payRecipientEscrow = async (tradeId: string): Promise<boolean> => {
 };
 
 export const confirmTradeReceipt = async (tradeId: string): Promise<boolean> => {
-  const trades = await mockTradesPromise;
+  const trades = sessionTrades;
   const trade = trades[tradeId];
   if (!trade) {
     throw new Error(`Trade proposal with ID ${tradeId} not found`);
@@ -457,7 +182,7 @@ export const confirmTradeReceipt = async (tradeId: string): Promise<boolean> => 
 };
 
 export const validateReleaseEscrow = async (tradeId: string, releaseCode: string): Promise<boolean> => {
-  const trades = await mockTradesPromise;
+  const trades = sessionTrades;
   const trade = trades[tradeId];
   if (!trade) {
     throw new Error(`Trade proposal with ID ${tradeId} not found`);
@@ -471,7 +196,7 @@ export const validateReleaseEscrow = async (tradeId: string, releaseCode: string
 };
 
 export const releaseTradeEscrow = async (tradeId: string, releaseCode: string): Promise<boolean> => {
-  const trades = await mockTradesPromise;
+  const trades = sessionTrades;
   const trade = trades[tradeId];
   if (!trade) {
     throw new Error(`Trade proposal with ID ${tradeId} not found`);
@@ -514,7 +239,7 @@ export const updateShippingInfo = async (
   trackingNumber: string,
   estimatedDelivery?: Date
 ): Promise<void> => {
-  const trades = await mockTradesPromise;
+  const trades = sessionTrades;
   const trade = trades[tradeId];
   if (!trade) {
     throw new Error(`Trade proposal with ID ${tradeId} not found`);
@@ -537,10 +262,5 @@ export const updateShippingInfo = async (
 };
 
 export const uploadTradeImage = async (file: File): Promise<string> => {
-  // In a real app, this would upload to a storage service and return the URL
-  console.log("Simulating image upload:", file.name);
-  
-  // For demonstration, return a random mock image URL
-  const randomIndex = Math.floor(Math.random() * mockImages.length);
-  return Promise.resolve(mockImages[randomIndex]);
+  throw new Error("Image upload not yet implemented. Please configure Supabase Storage.");
 };
