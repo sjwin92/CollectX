@@ -20,6 +20,16 @@ export interface EscrowTransaction {
   metadata?: any;
 }
 
+const escrowTable = () => (supabase as any).from('escrow_transactions');
+
+const mapEscrowTransaction = (data: any): EscrowTransaction => ({
+  ...data,
+  initiator_escrow_amount: Number(data?.initiator_escrow_amount ?? 0),
+  recipient_escrow_amount: Number(data?.recipient_escrow_amount ?? 0),
+  initiator_paid: Boolean(data?.initiator_paid),
+  recipient_paid: Boolean(data?.recipient_paid),
+});
+
 // Create escrow transaction for a trade
 export const createEscrowTransaction = async (
   tradeId: string,
@@ -30,12 +40,10 @@ export const createEscrowTransaction = async (
   initiatorReputation: string = 'new',
   recipientReputation: string = 'new'
 ): Promise<EscrowTransaction> => {
-  
   const initiatorEscrow = calculateEscrowAmount(initiatorCardsValue, initiatorReputation);
   const recipientEscrow = calculateEscrowAmount(recipientCardsValue, recipientReputation);
-  
-  const { data, error } = await supabase
-    .from('escrow_transactions')
+
+  const { data, error } = await escrowTable()
     .insert({
       trade_id: tradeId,
       initiator_user_id: initiatorUserId,
@@ -43,34 +51,30 @@ export const createEscrowTransaction = async (
       initiator_escrow_amount: initiatorEscrow.finalAmount,
       recipient_escrow_amount: recipientEscrow.finalAmount,
       release_code: generateReleaseCode(),
-      status: 'pending'
+      status: 'pending',
     })
     .select()
     .single();
-    
+
   if (error) {
     throw new Error(`Failed to create escrow: ${error.message}`);
   }
-  
-  return data;
+
+  return mapEscrowTransaction(data);
 };
 
 // Get escrow transaction by trade ID
 export const getEscrowByTradeId = async (tradeId: string): Promise<EscrowTransaction | null> => {
-  const { data, error } = await supabase
-    .from('escrow_transactions')
+  const { data, error } = await escrowTable()
     .select('*')
     .eq('trade_id', tradeId)
-    .single();
-    
+    .maybeSingle();
+
   if (error) {
-    if (error.code === 'PGRST116') {
-      return null; // No escrow found
-    }
     throw new Error(`Failed to fetch escrow: ${error.message}`);
   }
-  
-  return data;
+
+  return data ? mapEscrowTransaction(data) : null;
 };
 
 // Update escrow payment status
@@ -78,22 +82,20 @@ export const updateEscrowPayment = async (
   escrowId: string,
   userId: string,
   paymentId: string,
-  paymentAmount: number
+  _paymentAmount: number
 ): Promise<EscrowTransaction> => {
-  
-  // First get the escrow to determine which user is paying
-  const { data: escrowData, error: fetchError } = await supabase
-    .from('escrow_transactions')
+  const { data: rawEscrowData, error: fetchError } = await escrowTable()
     .select('*')
     .eq('id', escrowId)
     .single();
-    
+
   if (fetchError) {
     throw new Error(`Failed to fetch escrow: ${fetchError.message}`);
   }
-  
-  // Determine update fields based on user
-  const updateFields: any = {};
+
+  const escrowData = mapEscrowTransaction(rawEscrowData);
+  const updateFields: Record<string, unknown> = {};
+
   if (userId === escrowData.initiator_user_id) {
     updateFields.initiator_paid = true;
     updateFields.initiator_payment_id = paymentId;
@@ -103,27 +105,26 @@ export const updateEscrowPayment = async (
   } else {
     throw new Error('User not authorized for this escrow transaction');
   }
-  
-  // Check if both parties have now paid
-  const bothPaid = (userId === escrowData.initiator_user_id ? true : escrowData.initiator_paid) &&
-                   (userId === escrowData.recipient_user_id ? true : escrowData.recipient_paid);
-  
+
+  const bothPaid =
+    (userId === escrowData.initiator_user_id ? true : escrowData.initiator_paid) &&
+    (userId === escrowData.recipient_user_id ? true : escrowData.recipient_paid);
+
   if (bothPaid) {
     updateFields.status = 'escrowed';
   }
-  
-  const { data, error } = await supabase
-    .from('escrow_transactions')
+
+  const { data, error } = await escrowTable()
     .update(updateFields)
     .eq('id', escrowId)
     .select()
     .single();
-    
+
   if (error) {
     throw new Error(`Failed to update escrow: ${error.message}`);
   }
-  
-  return data;
+
+  return mapEscrowTransaction(data);
 };
 
 // Release escrow funds
@@ -131,54 +132,51 @@ export const releaseEscrowFunds = async (
   escrowId: string,
   releaseCode: string
 ): Promise<EscrowTransaction> => {
-  
-  // Verify release code
-  const { data: escrowData, error: fetchError } = await supabase
-    .from('escrow_transactions')
+  const { data: rawEscrowData, error: fetchError } = await escrowTable()
     .select('*')
     .eq('id', escrowId)
     .single();
-    
+
   if (fetchError) {
     throw new Error(`Failed to fetch escrow: ${fetchError.message}`);
   }
-  
+
+  const escrowData = mapEscrowTransaction(rawEscrowData);
+
   if (escrowData.release_code !== releaseCode) {
     throw new Error('Invalid release code');
   }
-  
+
   if (escrowData.status !== 'escrowed') {
     throw new Error('Escrow is not in the correct status for release');
   }
-  
-  const { data, error } = await supabase
-    .from('escrow_transactions')
+
+  const { data, error } = await escrowTable()
     .update({
       status: 'completed',
-      completed_at: new Date().toISOString()
+      completed_at: new Date().toISOString(),
     })
     .eq('id', escrowId)
     .select()
     .single();
-    
+
   if (error) {
     throw new Error(`Failed to release escrow: ${error.message}`);
   }
-  
-  return data;
+
+  return mapEscrowTransaction(data);
 };
 
 // Get all escrow transactions for a user
 export const getUserEscrowTransactions = async (userId: string): Promise<EscrowTransaction[]> => {
-  const { data, error } = await supabase
-    .from('escrow_transactions')
+  const { data, error } = await escrowTable()
     .select('*')
     .or(`initiator_user_id.eq.${userId},recipient_user_id.eq.${userId}`)
     .order('created_at', { ascending: false });
-    
+
   if (error) {
     throw new Error(`Failed to fetch user escrows: ${error.message}`);
   }
-  
-  return data;
+
+  return (data || []).map(mapEscrowTransaction);
 };

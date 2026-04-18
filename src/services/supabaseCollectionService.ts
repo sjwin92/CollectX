@@ -1,34 +1,11 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { ExtendedCardItemProps } from '@/types/cardTypes';
 import { UploadedCardImage } from '@/services/cardImageUploadService';
-import { PokemonCard } from '@/services/pokemonTcgApi';
 
-export interface SupabaseUserCard {
-  id: string;
-  user_id: string;
-  card_id: string;
-  card_name: string;
-  set_id: string;
-  set_name: string;
-  card_number?: string;
-  rarity?: string;
-  image_url?: string;
-  image_url_small?: string;
-  tcg_player_url?: string;
-  quantity: number;
-  condition: string;
-  is_graded: boolean;
-  grade_company?: string;
-  grade_score?: number;
-  grade_population?: number;
-  for_trade: boolean;
-  trade_value?: number;
-  product_type: string;
-  sealed_product_type?: string;
-  release_date?: string;
-  created_at: string;
-  updated_at: string;
-}
+export type SupabaseUserCard = Tables<'user_cards'>;
+type SupabaseUserCardInsert = TablesInsert<'user_cards'>;
+type SupabaseUserCardUpdate = TablesUpdate<'user_cards'>;
 
 // Extended type to include database fields
 export interface ExtendedCardItemWithDB extends ExtendedCardItemProps {
@@ -38,90 +15,115 @@ export interface ExtendedCardItemWithDB extends ExtendedCardItemProps {
   conditionImages?: UploadedCardImage[];
 }
 
+const toDatabaseProductType = (
+  productType?: ExtendedCardItemProps['productType']
+): SupabaseUserCardInsert['product_type'] => {
+  if (!productType || productType === 'card') return 'single';
+  return 'sealed';
+};
+
+const toUiProductType = (
+  productType: SupabaseUserCard['product_type']
+): ExtendedCardItemWithDB['productType'] => {
+  return productType === 'sealed' ? 'other' : 'card';
+};
+
+const parseOptionalNumber = (value?: string): number | null => {
+  if (!value) return null;
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
 // Convert Supabase user card to ExtendedCardItemProps
-export const convertSupabaseCardToExtended = (supabaseCard: SupabaseUserCard): ExtendedCardItemWithDB => {
+export const convertSupabaseCardToExtended = (
+  supabaseCard: SupabaseUserCard
+): ExtendedCardItemWithDB => {
   return {
     id: supabaseCard.card_id,
-    name: supabaseCard.card_name,
-    imageUrl: supabaseCard.image_url_small || '',
+    name: supabaseCard.card_name || '',
+    imageUrl: supabaseCard.card_image || '',
     rarity: supabaseCard.rarity || '',
-    condition: supabaseCard.condition,
+    condition: supabaseCard.condition || 'near_mint',
     estimatedValue: supabaseCard.trade_value?.toString() || '0',
     graded: supabaseCard.is_graded,
-    gradingCompany: supabaseCard.grade_company as any,
-    gradeScore: supabaseCard.grade_score?.toString(),
+    gradingCompany: supabaseCard.grading_company || undefined,
+    gradeScore: supabaseCard.grade_score || undefined,
     forTrade: supabaseCard.for_trade,
-    forSale: false,
+    forSale: supabaseCard.for_sale,
     set: {
-      id: supabaseCard.set_id,
-      name: supabaseCard.set_name
+      id: supabaseCard.set_id || '',
+      name: supabaseCard.set_name || '',
     },
     number: supabaseCard.card_number || '',
-    productType: supabaseCard.product_type as any,
+    productType: toUiProductType(supabaseCard.product_type),
     quantity: supabaseCard.quantity,
     isSealed: supabaseCard.product_type === 'sealed',
-    
-    // Database fields for tracking
+
     dbId: supabaseCard.id,
     createdAt: supabaseCard.created_at,
-    updatedAt: supabaseCard.updated_at
+    updatedAt: supabaseCard.updated_at,
   };
 };
 
 // Add card to collection
 export const addCardToCollection = async (newCard: ExtendedCardItemProps): Promise<string> => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
 
-  const supabaseCard = {
+  const productType = toDatabaseProductType(newCard.productType);
+
+  const supabaseCard: SupabaseUserCardInsert = {
     user_id: user.id,
     card_id: newCard.id,
     card_name: newCard.name,
-    set_id: newCard.set?.id || '',
-    set_name: newCard.set?.name || '',
-    card_number: newCard.number,
-    rarity: newCard.rarity,
-    image_url: newCard.imageUrl,
-    image_url_small: newCard.imageUrl,
-    
+    set_id: newCard.set?.id || null,
+    set_name: newCard.set?.name || null,
+    card_number: newCard.number || null,
+    rarity: newCard.rarity || null,
+    card_image: newCard.imageUrl || null,
     quantity: newCard.quantity || 1,
     condition: newCard.condition || 'near_mint',
     is_graded: newCard.graded || false,
-    grade_company: newCard.gradingCompany,
-    grade_score: newCard.gradeScore ? parseFloat(newCard.gradeScore) : null,
+    grading_company: newCard.gradingCompany || null,
+    grade_score: newCard.gradeScore || null,
     for_trade: newCard.forTrade || false,
-    trade_value: newCard.estimatedValue ? parseFloat(newCard.estimatedValue) : null,
-    product_type: newCard.productType === 'card' ? 'single' : (newCard.productType || 'single')
+    for_sale: newCard.forSale || false,
+    trade_value: parseOptionalNumber(newCard.estimatedValue),
+    product_type: productType,
   };
 
-  // Check if card already exists with same attributes
-  const { data: existingCard } = await supabase
+  const { data: existingCard, error: existingCardError } = await supabase
     .from('user_cards')
     .select('*')
     .eq('user_id', user.id)
     .eq('card_id', newCard.id)
     .eq('condition', newCard.condition || 'near_mint')
     .eq('is_graded', newCard.graded || false)
-    .eq('grade_company', newCard.gradingCompany || null)
-    .eq('product_type', newCard.productType === 'card' ? 'single' : (newCard.productType || 'single'))
+    .eq('grading_company', newCard.gradingCompany || null)
+    .eq('product_type', productType)
     .maybeSingle();
+
+  if (existingCardError) throw existingCardError;
 
   let userCardId: string;
 
   if (existingCard) {
-    // Update quantity if card exists
+    const updates: SupabaseUserCardUpdate = {
+      quantity: existingCard.quantity + (newCard.quantity || 1),
+      for_trade: newCard.forTrade || existingCard.for_trade,
+      for_sale: newCard.forSale || existingCard.for_sale,
+    };
+
     const { error } = await supabase
       .from('user_cards')
-      .update({ 
-        quantity: existingCard.quantity + (newCard.quantity || 1),
-        for_trade: newCard.forTrade || existingCard.for_trade
-      })
+      .update(updates)
       .eq('id', existingCard.id);
 
     if (error) throw error;
     userCardId = existingCard.id;
   } else {
-    // Insert new card
     const { data: insertedCard, error } = await supabase
       .from('user_cards')
       .insert([supabaseCard])
@@ -132,9 +134,8 @@ export const addCardToCollection = async (newCard: ExtendedCardItemProps): Promi
     userCardId = insertedCard.id;
   }
 
-  // Link any existing uploaded images to this user card
   if (newCard.conditionImages && newCard.conditionImages.length > 0) {
-    const imageIds = newCard.conditionImages.map(img => img.id);
+    const imageIds = newCard.conditionImages.map((img) => img.id);
     await supabase
       .from('card_images')
       .update({ user_card_id: userCardId })
@@ -147,7 +148,9 @@ export const addCardToCollection = async (newCard: ExtendedCardItemProps): Promi
 
 // Get user's collection
 export const getCollection = async (): Promise<ExtendedCardItemWithDB[]> => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
 
   const { data, error } = await supabase
@@ -158,12 +161,14 @@ export const getCollection = async (): Promise<ExtendedCardItemWithDB[]> => {
 
   if (error) throw error;
 
-  return (data || []).map(convertSupabaseCardToExtended);
+  return (data || []).map((card) => convertSupabaseCardToExtended(card));
 };
 
 // Get tradable cards
 export const getTradableCards = async (): Promise<ExtendedCardItemWithDB[]> => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
 
   const { data, error } = await supabase
@@ -175,12 +180,14 @@ export const getTradableCards = async (): Promise<ExtendedCardItemWithDB[]> => {
 
   if (error) throw error;
 
-  return (data || []).map(convertSupabaseCardToExtended);
+  return (data || []).map((card) => convertSupabaseCardToExtended(card));
 };
 
 // Check if card is in collection
 export const isCardInCollection = async (cardId: string): Promise<boolean> => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return false;
 
   const { data, error } = await supabase
@@ -196,7 +203,9 @@ export const isCardInCollection = async (cardId: string): Promise<boolean> => {
 
 // Remove card from collection
 export const removeCardFromCollection = async (dbId: string): Promise<void> => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
 
   const { error } = await supabase
@@ -210,20 +219,24 @@ export const removeCardFromCollection = async (dbId: string): Promise<void> => {
 
 // Update card in collection
 export const updateCardInCollection = async (
-  dbId: string, 
+  dbId: string,
   updates: Partial<ExtendedCardItemProps>
 ): Promise<void> => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
 
-  const supabaseUpdates: any = {};
-  
+  const supabaseUpdates: SupabaseUserCardUpdate = {};
+
   if (updates.quantity !== undefined) supabaseUpdates.quantity = updates.quantity;
   if (updates.condition !== undefined) supabaseUpdates.condition = updates.condition;
   if (updates.graded !== undefined) supabaseUpdates.is_graded = updates.graded;
-  if (updates.gradingCompany !== undefined) supabaseUpdates.grade_company = updates.gradingCompany;
-  if (updates.gradeScore !== undefined) supabaseUpdates.grade_score = updates.gradeScore ? parseFloat(updates.gradeScore) : null;
+  if (updates.gradingCompany !== undefined) supabaseUpdates.grading_company = updates.gradingCompany || null;
+  if (updates.gradeScore !== undefined) supabaseUpdates.grade_score = updates.gradeScore || null;
   if (updates.forTrade !== undefined) supabaseUpdates.for_trade = updates.forTrade;
+  if (updates.forSale !== undefined) supabaseUpdates.for_sale = updates.forSale;
+  if (updates.estimatedValue !== undefined) supabaseUpdates.trade_value = parseOptionalNumber(updates.estimatedValue);
 
   const { error } = await supabase
     .from('user_cards')
@@ -236,7 +249,9 @@ export const updateCardInCollection = async (
 
 // Clear all collections (for debugging)
 export const clearCollections = async (): Promise<void> => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
 
   const { error } = await supabase
@@ -250,14 +265,12 @@ export const clearCollections = async (): Promise<void> => {
 // Migrate data from localStorage to Supabase
 export const migrateLocalStorageToSupabase = async (): Promise<void> => {
   try {
-    // Get existing localStorage data
     const localCollection = localStorage.getItem('myCollection');
     if (!localCollection) return;
 
     const cards = JSON.parse(localCollection) as ExtendedCardItemProps[];
     if (cards.length === 0) return;
 
-    // Add each card to Supabase
     for (const card of cards) {
       try {
         await addCardToCollection(card);
@@ -266,10 +279,9 @@ export const migrateLocalStorageToSupabase = async (): Promise<void> => {
       }
     }
 
-    // Clear localStorage after successful migration
     localStorage.removeItem('myCollection');
     localStorage.removeItem('tradableCards');
-    
+
     console.log('Successfully migrated', cards.length, 'cards to Supabase');
   } catch (error) {
     console.error('Error migrating localStorage to Supabase:', error);
