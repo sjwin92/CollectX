@@ -114,15 +114,14 @@ const CardItem = ({
       className={cn("overflow-hidden group h-full", className)}
       animation={animation}
     >
-      <div className="relative aspect-[2/3] overflow-hidden rounded-t-lg -mx-3 -mt-3 mb-3">
+      <div className="relative aspect-[2/3] overflow-hidden rounded-lg mb-3 bg-gradient-to-b from-secondary to-background transition-all duration-500 group-hover:-translate-y-1 group-hover:shadow-[0_8px_30px_rgba(0,218,243,0.2)]">
         <div className="relative h-full">
           {imageSrc && (
             <>
-              {/* Simple direct img tag for debugging */}
               <img
                 src={imageSrc}
                 alt={`Pokémon card: ${name} - ${condition} condition, ${rarity} rarity`}
-                className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110`}
+                className={`w-full h-full object-contain transition-opacity duration-300`}
                 onLoad={handleImageLoad}
                 onError={handleImageError}
               />

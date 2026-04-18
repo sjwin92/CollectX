@@ -47,7 +47,7 @@ const GlassCard = ({
       className={cn(
         "rounded-xl p-4",
         getVariantClass(),
-        hover && "transition-all duration-300 hover:shadow-md hover:translate-y-[-2px]",
+        hover && "transition-all duration-300 hover:shadow-lg",
         getAnimationClass(),
         className
       )}
