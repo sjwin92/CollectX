@@ -2,11 +2,12 @@
 // Service for fetching and managing Pokemon cards
 import { PokemonCard, PokemonCardResponse, CARD_BACK_URL } from './pokemonTypes';
 import { BASE_URL, createApiUrl, fetchFromApi } from './pokemonApiConfig';
-import { 
-  getAllPossibleImageUrlsFromCardObject, 
+import {
+  getAllPossibleImageUrlsFromCardObject,
   getConsistentCardImageUrl
 } from './cardImageService';
 import { getFeaturedCardImageUrl } from './featuredCardsService';
+import { usdToGbp } from '../currencyService';
 
 /**
  * Get cards with optional filtering
@@ -221,8 +222,8 @@ export const mapToTradeCard = (card: PokemonCard, isFeatured: boolean = false): 
     id: card.id,
     name: card.name,
     imageUrl: bestImageUrl,
-    condition: "Near Mint", // Default condition, would be user-specified in real app
-    estimatedValue: price,
-    currency: "USD"
+    condition: "Near Mint",
+    estimatedValue: price > 0 ? usdToGbp(price) : 0,
+    currency: "GBP"
   };
 };

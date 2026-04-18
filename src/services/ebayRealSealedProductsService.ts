@@ -170,13 +170,12 @@ const generateFallbackProducts = (count: number): EbayRealSealedProduct[] => {
   
   for (let i = 0; i < count; i++) {
     const template = productTemplates[i % productTemplates.length];
-    const priceVariation = (Math.random() - 0.5) * 20;
-    
+
     fallbackProducts.push({
       id: `fallback-${i}`,
       name: `${template.setName} ${template.type}`,
       price: {
-        current: template.price + priceVariation,
+        current: template.price,
         currency: 'GBP',
         source: 'Estimated'
       },
@@ -186,16 +185,16 @@ const generateFallbackProducts = (count: number): EbayRealSealedProduct[] => {
       type: template.type,
       setName: template.setName,
       seller: {
-        name: 'Pokemon Store',
-        feedback: 100,
+        name: '',
+        feedback: 0,
         location: 'UK'
       },
       shipping: {
-        cost: 'Free',
+        cost: '',
         location: 'UK'
       },
-      url: '#',
-      buyItNow: true,
+      url: '',
+      buyItNow: false,
       auction: false
     });
   }

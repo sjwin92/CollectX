@@ -1,6 +1,9 @@
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./App.css";
+import { refreshUsdToGbpRate } from "./services/currencyService";
+
+refreshUsdToGbpRate();
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/react-query";
 import ErrorBoundary from "./components/common/ErrorBoundary";
