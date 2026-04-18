@@ -64,6 +64,368 @@ export type Database = {
           },
         ]
       }
+      chat_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string
+          updated_at: string
+          user1_id: string
+          user2_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          updated_at?: string
+          user1_id: string
+          user2_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          updated_at?: string
+          user1_id?: string
+          user2_id?: string
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          message: string
+          message_type: string
+          metadata: Json | null
+          read: boolean
+          sender_user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          message: string
+          message_type?: string
+          metadata?: Json | null
+          read?: boolean
+          sender_user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          message_type?: string
+          metadata?: Json | null
+          read?: boolean
+          sender_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      escrow_transactions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          initiator_escrow_amount: number
+          initiator_paid: boolean
+          initiator_payment_id: string | null
+          initiator_user_id: string
+          metadata: Json | null
+          recipient_escrow_amount: number
+          recipient_paid: boolean
+          recipient_payment_id: string | null
+          recipient_user_id: string
+          release_code: string | null
+          status: string
+          trade_id: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          initiator_escrow_amount?: number
+          initiator_paid?: boolean
+          initiator_payment_id?: string | null
+          initiator_user_id: string
+          metadata?: Json | null
+          recipient_escrow_amount?: number
+          recipient_paid?: boolean
+          recipient_payment_id?: string | null
+          recipient_user_id: string
+          release_code?: string | null
+          status?: string
+          trade_id: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          initiator_escrow_amount?: number
+          initiator_paid?: boolean
+          initiator_payment_id?: string | null
+          initiator_user_id?: string
+          metadata?: Json | null
+          recipient_escrow_amount?: number
+          recipient_paid?: boolean
+          recipient_payment_id?: string | null
+          recipient_user_id?: string
+          release_code?: string | null
+          status?: string
+          trade_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escrow_transactions_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_favorites: {
+        Row: {
+          created_at: string
+          id: string
+          listing_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          listing_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          listing_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_favorites_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_interests: {
+        Row: {
+          created_at: string
+          id: string
+          interest_type: string
+          listing_id: string
+          message: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          interest_type?: string
+          listing_id: string
+          message?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          interest_type?: string
+          listing_id?: string
+          message?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_interests_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_listings: {
+        Row: {
+          asking_price: number | null
+          card_id: string
+          card_name: string
+          card_number: string | null
+          condition: string
+          created_at: string
+          description: string | null
+          expires_at: string | null
+          featured: boolean
+          grade_company: string | null
+          grade_score: number | null
+          id: string
+          image_url: string | null
+          image_url_small: string | null
+          interested_count: number
+          is_graded: boolean
+          listing_type: string
+          quantity: number
+          rarity: string | null
+          set_id: string | null
+          set_name: string | null
+          status: string
+          trade_preferences: string | null
+          updated_at: string
+          user_id: string
+          views_count: number
+        }
+        Insert: {
+          asking_price?: number | null
+          card_id: string
+          card_name: string
+          card_number?: string | null
+          condition?: string
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          featured?: boolean
+          grade_company?: string | null
+          grade_score?: number | null
+          id?: string
+          image_url?: string | null
+          image_url_small?: string | null
+          interested_count?: number
+          is_graded?: boolean
+          listing_type?: string
+          quantity?: number
+          rarity?: string | null
+          set_id?: string | null
+          set_name?: string | null
+          status?: string
+          trade_preferences?: string | null
+          updated_at?: string
+          user_id: string
+          views_count?: number
+        }
+        Update: {
+          asking_price?: number | null
+          card_id?: string
+          card_name?: string
+          card_number?: string | null
+          condition?: string
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          featured?: boolean
+          grade_company?: string | null
+          grade_score?: number | null
+          id?: string
+          image_url?: string | null
+          image_url_small?: string | null
+          interested_count?: number
+          is_graded?: boolean
+          listing_type?: string
+          quantity?: number
+          rarity?: string | null
+          set_id?: string | null
+          set_name?: string | null
+          status?: string
+          trade_preferences?: string | null
+          updated_at?: string
+          user_id?: string
+          views_count?: number
+        }
+        Relationships: []
+      }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          email_notifications: boolean
+          id: string
+          marketplace_interest: boolean
+          messages: boolean
+          push_notifications: boolean
+          trade_proposals: boolean
+          trade_updates: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_notifications?: boolean
+          id?: string
+          marketplace_interest?: boolean
+          messages?: boolean
+          push_notifications?: boolean
+          trade_proposals?: boolean
+          trade_updates?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_notifications?: boolean
+          id?: string
+          marketplace_interest?: boolean
+          messages?: boolean
+          push_notifications?: boolean
+          trade_proposals?: boolean
+          trade_updates?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          action_url: string | null
+          created_at: string
+          data: Json | null
+          expires_at: string | null
+          id: string
+          message: string
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          action_url?: string | null
+          created_at?: string
+          data?: Json | null
+          expires_at?: string | null
+          id?: string
+          message: string
+          read?: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          action_url?: string | null
+          created_at?: string
+          data?: Json | null
+          expires_at?: string | null
+          id?: string
+          message?: string
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -276,6 +638,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "trade_messages_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_ratings: {
+        Row: {
+          created_at: string
+          id: string
+          rated_user_id: string
+          rater_user_id: string
+          rating: number
+          review: string | null
+          trade_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          rated_user_id: string
+          rater_user_id: string
+          rating: number
+          review?: string | null
+          trade_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          rated_user_id?: string
+          rater_user_id?: string
+          rating?: number
+          review?: string | null
+          trade_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_ratings_trade_id_fkey"
             columns: ["trade_id"]
             isOneToOne: false
             referencedRelation: "trades"
@@ -498,7 +898,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_listing_views: {
+        Args: { listing_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
