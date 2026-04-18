@@ -6,6 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const isSandbox = (appId: string) => appId.includes('-SBX-');
+const ebayBaseUrl = (appId: string) =>
+  isSandbox(appId) ? 'https://api.sandbox.ebay.com' : 'https://api.ebay.com';
+
 async function getEbayToken(appId: string, certId: string): Promise<string> {
   const credentials = btoa(`${appId}:${certId}`);
   const body = new URLSearchParams({
@@ -13,7 +17,7 @@ async function getEbayToken(appId: string, certId: string): Promise<string> {
     scope: 'https://api.ebay.com/oauth/api_scope/buy.item.summary',
   });
 
-  const res = await fetch('https://api.ebay.com/identity/v1/oauth2/token', {
+  const res = await fetch(`${ebayBaseUrl(appId)}/identity/v1/oauth2/token`, {
     method: 'POST',
     headers: {
       Authorization: `Basic ${credentials}`,
@@ -109,7 +113,7 @@ serve(async (req) => {
           filter: 'buyingOptions:{FIXED_PRICE},conditions:{NEW},itemLocationCountry:GB,currency:GBP',
         });
 
-        const searchUrl = `https://api.ebay.com/buy/browse/v1/item_summary/search?${params}`;
+        const searchUrl = `${ebayBaseUrl(ebayAppId)}/buy/browse/v1/item_summary/search?${params}`;
         console.log('eBay Browse API search:', searchUrl);
 
         const res = await fetch(searchUrl, {
