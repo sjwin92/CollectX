@@ -117,7 +117,7 @@ const Trades = () => {
             setSelectedTargetCard({
               id: data.card_id,
               name: data.card_name,
-              imageUrl: data.card_image_url,
+              imageUrl: data.image_url,
               rarity: data.rarity || '',
               condition: data.condition || '',
               estimatedValue: data.asking_price ? `£${data.asking_price}` : '0',
