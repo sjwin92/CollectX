@@ -1,38 +1,40 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 220 20% 10%;
+    --background: 0 0% 7%;
     --foreground: 210 40% 98%;
 
-    --card: 220 20% 12%;
+    --card: 0 0% 10%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 220 20% 12%;
+    --popover: 0 0% 10%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 224 76% 48%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 188 100% 48%;
+    --primary-foreground: 0 0% 5%;
 
-    --secondary: 220 20% 16%;
+    --secondary: 0 0% 13%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 220 20% 16%;
-    --muted-foreground: 220 15% 70%;
+    --muted: 0 0% 13%;
+    --muted-foreground: 220 10% 60%;
 
-    --accent: 220 20% 16%;
+    --accent: 0 0% 16%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 220 20% 20%;
-    --input: 220 20% 20%;
-    --ring: 224 76% 48%;
+    --border: 0 0% 18%;
+    --input: 0 0% 16%;
+    --ring: 188 100% 48%;
+
+    --gold: 43 78% 61%;
     
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -55,6 +57,15 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Manrope', sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  .price-gold {
+    color: hsl(var(--gold));
   }
 
   /* Custom Scrollbar */

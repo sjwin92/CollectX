@@ -114,7 +114,7 @@ const CardItem = ({
       className={cn("overflow-hidden group h-full", className)}
       animation={animation}
     >
-      <div className="relative aspect-[2/3] overflow-hidden rounded-md mb-3">
+      <div className="relative aspect-[2/3] overflow-hidden rounded-t-lg -mx-3 -mt-3 mb-3">
         <div className="relative h-full">
           {imageSrc && (
             <>
@@ -234,7 +234,7 @@ const CardItem = ({
         </div>
         
         <div className="text-center">
-          <span className="text-sm font-semibold text-white">{formatCurrency(estimatedValue)}</span>
+          <span className="text-sm font-semibold text-gold">{formatCurrency(estimatedValue)}</span>
         </div>
         
         {/* Compact info row - only show if we have additional details */}

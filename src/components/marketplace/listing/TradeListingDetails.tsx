@@ -11,7 +11,7 @@ interface TradeListingDetailsProps {
 const TradeListingDetails = ({ cardsWanted, description }: TradeListingDetailsProps) => {
   return (
     <div className="w-full md:w-2/3 space-y-3">
-      <div className="border-b pb-2">
+      <div className="pb-3">
         <div className="flex items-center gap-2 mb-1">
           <ArrowRightLeft className="h-4 w-4 text-primary" />
           <h4 className="text-sm font-semibold">Looking to trade for:</h4>

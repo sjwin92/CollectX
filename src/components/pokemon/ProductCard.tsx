@@ -103,8 +103,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
                 <Calendar className="h-4 w-4" />
                 {format(new Date(product.releaseDate), 'MMM d, yyyy')}
               </div>
-              <span className="font-semibold text-primary text-lg">
-                ${product.msrp}
+              <span className="font-semibold text-gold text-lg">
+                £{product.msrp}
               </span>
             </div>
           </div>
