@@ -114,8 +114,8 @@ const Navbar = () => {
   return (
     <>
       <header 
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? "bg-card/95 backdrop-blur-md shadow-md border-b border-white/5" : "bg-card/70 backdrop-blur-sm border-b border-white/5"
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-card border-b border-white/5 ${
+          scrolled ? "shadow-md" : ""
         }`}
       >
         <div className="container flex h-16 items-center justify-between">
