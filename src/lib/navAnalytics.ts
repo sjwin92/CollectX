@@ -6,10 +6,16 @@
  * route chunk was prefetched (hover/focus before click) or not, so we
  * can confirm prefetching is improving first-click performance.
  *
+ * Each event also includes the app build version, browser name, device
+ * type, and screen size so metrics can be compared across releases and
+ * device profiles.
+ *
  * Inspect at runtime in the browser console:
  *   window.__navAnalytics.summary()
  *   window.__navAnalytics.events
  */
+
+declare const __APP_VERSION__: string;
 
 export type NavSample = {
   to: string;
@@ -100,12 +106,41 @@ type RemoteRow = {
   prefetched: boolean;
   duration_ms: number;
   user_agent: string | null;
+  app_version: string | null;
+  browser: string | null;
+  device_type: string | null;
+  screen_size: string | null;
 };
 
 const queue: RemoteRow[] = [];
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 const FLUSH_DELAY_MS = 4000;
 const MAX_BATCH = 20;
+
+function getBrowser(): string | null {
+  if (typeof navigator === "undefined") return null;
+  const ua = navigator.userAgent;
+  if (/Edg\/\d+/i.test(ua)) return "Edge";
+  if (/OPR\/\d+/i.test(ua) || /Opera/.test(ua)) return "Opera";
+  if (/Chrome\/\d+/i.test(ua)) return "Chrome";
+  if (/Safari\/\d+/i.test(ua)) return "Safari";
+  if (/Firefox\/\d+/i.test(ua)) return "Firefox";
+  if (/MSIE|Trident/.test(ua)) return "IE";
+  return "Other";
+}
+
+function getDeviceType(): string | null {
+  if (typeof navigator === "undefined") return null;
+  const ua = navigator.userAgent;
+  if (/Mobi|Android/i.test(ua)) return "Mobile";
+  if (/Tablet|iPad/i.test(ua)) return "Tablet";
+  return "Desktop";
+}
+
+function getScreenSize(): string | null {
+  if (typeof window === "undefined") return null;
+  return `${window.screen.width}x${window.screen.height}`;
+}
 
 function enqueueRemote(sample: NavSample) {
   if (typeof window === "undefined") return;
@@ -116,6 +151,10 @@ function enqueueRemote(sample: NavSample) {
     duration_ms: sample.durationMs,
     user_agent:
       typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 500) : null,
+    app_version: typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : null,
+    browser: getBrowser(),
+    device_type: getDeviceType(),
+    screen_size: getScreenSize(),
   });
   if (queue.length >= MAX_BATCH) {
     void flush();
