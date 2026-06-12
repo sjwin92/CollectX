@@ -96,12 +96,8 @@ const PokemonCards = () => {
           const newLocalCards = await supabasePokemonService.getCardsBySetId(normalizedSetId);
           if (newLocalCards.length > 0) {
             const formattedCards: CardItemProps[] = newLocalCards.map(card => {
-              const price = card.tcgplayer_prices?.holofoil?.market 
-                ? formatToGBP(card.tcgplayer_prices.holofoil.market) 
-                : card.tcgplayer_prices?.normal?.market 
-                  ? formatToGBP(card.tcgplayer_prices.normal.market) 
-                  : "N/A";
-                  
+              const price = extractGbpPrice(card.tcgplayer_prices);
+
               return {
                 id: card.id,
                 name: card.name || "Unknown Card",
@@ -116,6 +112,7 @@ const PokemonCards = () => {
                 }
               };
             });
+
             
             setAllCards(formattedCards);
             setIsLoading(false);
@@ -176,11 +173,10 @@ const PokemonCards = () => {
             const imgUrl = card.images?.small || card.images?.large || `https://images.pokemontcg.io/${card.id.replace('-', '/')}.png`;
             console.log(`Card ${card.id}: Image URL = ${imgUrl}`);
             
-            const price = card.tcgplayer?.prices?.holofoil?.market 
-              ? formatToGBP(card.tcgplayer.prices.holofoil.market) 
-              : card.tcgplayer?.prices?.normal?.market 
-                ? formatToGBP(card.tcgplayer.prices.normal.market) 
-                : "N/A";
+            const price = card.tcgplayer?.prices
+              ? extractGbpPrice(card.tcgplayer.prices)
+              : "N/A";
+
                 
             return {
               id: card.id,
