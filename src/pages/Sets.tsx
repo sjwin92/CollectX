@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getSets } from "@/services/pokemonSetsApi";
 import { supabasePokemonService } from "@/services/supabasePokemonService";
-import { pokemonDataImporter } from "@/services/pokemonDataImporter";
+import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import SetCard from "@/components/pokemon/SetCard";
@@ -20,6 +20,7 @@ import { fixImageUrl, getSetImageFallbacks } from "@/services/api/cardImageServi
 const Sets = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [imageErrors, setImageErrors] = useState<Record<string, { logo: number; symbol: number }>>({});
+  const [isImporting, setIsImporting] = useState(false);
   const { toast } = useToast();
   
   // First try to get sets from our database
@@ -151,30 +152,52 @@ const Sets = () => {
     }
   };
 
+  // Warm the local mirror by invoking the import edge function for every
+  // currently-loaded set. Each call is gated by the 24h freshness check on
+  // the server so this is safe to run repeatedly.
   const handleImportAllSets = async () => {
+    if (isImporting) return;
+    setIsImporting(true);
     try {
       toast({
         title: "Starting import",
-        description: "Importing all Pokemon sets and images to database...",
+        description: `Caching ${combinedData.length} sets locally — this runs in the background.`,
       });
-      
-      await pokemonDataImporter.importAllSets();
-      
+
+      let imported = 0;
+      let skipped = 0;
+      let failed = 0;
+
+      // Run with a small concurrency limit so we don't hammer the edge runtime.
+      const ids = combinedData.map((s) => s.id);
+      const concurrency = 3;
+      for (let i = 0; i < ids.length; i += concurrency) {
+        const slice = ids.slice(i, i + concurrency);
+        const results = await Promise.allSettled(
+          slice.map((setId) =>
+            supabase.functions.invoke("import-set-cards", { body: { setId } }),
+          ),
+        );
+        for (const r of results) {
+          if (r.status === "rejected") failed++;
+          else if ((r.value as any)?.data?.skipped) skipped++;
+          else imported++;
+        }
+      }
+
       toast({
-        title: "Import completed",
-        description: "All Pokemon sets have been imported successfully!",
-        variant: "default"
+        title: "Import complete",
+        description: `Imported ${imported}, skipped ${skipped} (already fresh), failed ${failed}.`,
       });
-      
-      // Refresh the page data
-      window.location.reload();
     } catch (error) {
-      console.error('Import error:', error);
+      console.error("Import error:", error);
       toast({
         title: "Import failed",
         description: "Failed to import Pokemon sets. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -195,14 +218,14 @@ const Sets = () => {
                 <span className="font-medium">Tip:</span>
                 <span>Hover over any set and click the + button to quickly add cards to your collection.</span>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleImportAllSets}
-                disabled={pokemonDataImporter.isImportInProgress}
+                disabled={isImporting}
               >
                 <Download className="h-4 w-4 mr-2" />
-                {pokemonDataImporter.isImportInProgress ? 'Importing...' : 'Import All Sets'}
+                {isImporting ? "Importing..." : "Import All Sets"}
               </Button>
             </div>
           </div>

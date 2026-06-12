@@ -2,25 +2,6 @@
 import { supabase as supabaseTyped } from '@/integrations/supabase/client';
 const supabase = supabaseTyped as any;
 
-/**
- * Mirror tables (`pokemon_sets`, `pokemon_cards`, `set_images`) may not exist
- * in this environment. After the first "schema cache" miss we flip these flags
- * so subsequent calls return empty immediately instead of round-tripping to
- * Postgres only to log another PGRST205 error.
- */
-const missingTable: Record<string, boolean> = {};
-function isMissingTableError(err: any) {
-  return err?.code === 'PGRST205';
-}
-function markMissing(table: string, err: any) {
-  if (isMissingTableError(err) && !missingTable[table]) {
-    missingTable[table] = true;
-    if (import.meta.env.DEV) {
-      console.warn(`[supabasePokemonService] table "${table}" unavailable — disabling further calls`);
-    }
-  }
-}
-
 interface PokemonSet {
   id: string;
   name: string;
@@ -126,7 +107,6 @@ class SupabasePokemonService {
 
   // Get cards from our database by set ID
   async getCardsBySetId(setId: string): Promise<PokemonCard[]> {
-    if (missingTable.pokemon_cards) return [];
     try {
       const { data, error } = await supabase
         .from('pokemon_cards')
@@ -137,10 +117,7 @@ class SupabasePokemonService {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      markMissing('pokemon_cards', error);
-      if (!isMissingTableError(error)) {
-        console.error('Error fetching cards from database:', error);
-      }
+      console.error('Error fetching cards from database:', error);
       return [];
     }
   }
@@ -227,7 +204,6 @@ class SupabasePokemonService {
 
   // Get working image URLs for a set
   async getSetImages(setId: string): Promise<{ logo?: string; symbol?: string }> {
-    if (missingTable.set_images) return {};
     try {
       const { data, error } = await supabase
         .from('set_images')
@@ -237,7 +213,7 @@ class SupabasePokemonService {
         .order('last_checked', { ascending: false });
 
       if (error) throw error;
-
+      
       const result: { logo?: string; symbol?: string } = {};
       data?.forEach(item => {
         if (item.image_type === 'logo' && !result.logo) {
@@ -246,13 +222,10 @@ class SupabasePokemonService {
           result.symbol = item.image_url;
         }
       });
-
+      
       return result;
     } catch (error) {
-      markMissing('set_images', error);
-      if (!isMissingTableError(error)) {
-        console.error('Error fetching set images:', error);
-      }
+      console.error('Error fetching set images:', error);
       return {};
     }
   }
