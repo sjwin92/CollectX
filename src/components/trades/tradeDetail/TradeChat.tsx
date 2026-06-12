@@ -9,6 +9,7 @@ import GlassCard from "@/components/ui/custom/GlassCard";
 import { useToast } from "@/hooks/use-toast";
 import { addTradeMessage, uploadTradeImage } from "@/services/tradeService";
 import type { TradeProposal } from "@/models/escrow";
+import { SmartImage } from "@/components/common/SmartImage";
 
 type Props = {
   trade: TradeProposal;
