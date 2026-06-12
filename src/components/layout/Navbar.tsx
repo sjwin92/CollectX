@@ -97,7 +97,7 @@ const Navbar = () => {
   const NavLinks = () => (
     <>
       {navigationItems.map((item) => (
-        <Link key={item.path} to={item.path}>
+        <PrefetchLink key={item.path} to={item.path}>
           <Button
             variant={location.pathname === item.path ? "default" : "ghost"}
             className="transition-all duration-300"
@@ -105,7 +105,7 @@ const Navbar = () => {
             {item.icon && item.icon}
             {item.name}
           </Button>
-        </Link>
+        </PrefetchLink>
       ))}
     </>
   );
