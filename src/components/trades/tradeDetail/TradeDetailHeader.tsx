@@ -14,6 +14,7 @@ const STATUS_BADGE: Record<TradeStatus, { variant: "warning" | "info" | "success
   disputed: { variant: "danger", label: "Disputed" },
   cancelled: { variant: "danger", label: "Cancelled" },
   pending: { variant: "warning", label: "Pending" },
+  received: { variant: "info", label: "Received" },
 };
 
 export const TradeDetailHeader = ({ status }: { status: TradeStatus }) => {
@@ -43,4 +44,5 @@ export const TRADE_STEP: Record<TradeStatus, number> = {
   declined: 0,
   disputed: 0,
   cancelled: 0,
+  received: 2,
 };
