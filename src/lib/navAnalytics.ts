@@ -66,7 +66,92 @@ export function markNavigationEnd(pathname: string) {
       }`,
     );
   }
+
+  enqueueRemote(sample);
 }
+
+// ---------- Remote reporting (batched insert into nav_metrics) ----------
+
+let sessionId: string | null = null;
+function getSessionId(): string {
+  if (sessionId) return sessionId;
+  if (typeof window === "undefined") return "ssr";
+  try {
+    const existing = sessionStorage.getItem("nav_session_id");
+    if (existing) {
+      sessionId = existing;
+      return existing;
+    }
+    const fresh =
+      (crypto as Crypto & { randomUUID?: () => string }).randomUUID?.() ??
+      `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    sessionStorage.setItem("nav_session_id", fresh);
+    sessionId = fresh;
+    return fresh;
+  } catch {
+    sessionId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    return sessionId;
+  }
+}
+
+type RemoteRow = {
+  session_id: string;
+  route: string;
+  prefetched: boolean;
+  duration_ms: number;
+  user_agent: string | null;
+};
+
+const queue: RemoteRow[] = [];
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+const FLUSH_DELAY_MS = 4000;
+const MAX_BATCH = 20;
+
+function enqueueRemote(sample: NavSample) {
+  if (typeof window === "undefined") return;
+  queue.push({
+    session_id: getSessionId(),
+    route: sample.to,
+    prefetched: sample.prefetched,
+    duration_ms: sample.durationMs,
+    user_agent:
+      typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 500) : null,
+  });
+  if (queue.length >= MAX_BATCH) {
+    void flush();
+  } else if (!flushTimer) {
+    flushTimer = setTimeout(() => void flush(), FLUSH_DELAY_MS);
+  }
+}
+
+async function flush() {
+  if (flushTimer) {
+    clearTimeout(flushTimer);
+    flushTimer = null;
+  }
+  if (!queue.length) return;
+  const batch = queue.splice(0, queue.length);
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { error } = await supabase.from("nav_metrics").insert(batch);
+    if (error) throw error;
+  } catch (err) {
+    // On failure, drop the batch — telemetry must not break the app or grow unbounded.
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.warn("[nav] failed to flush metrics", err);
+    }
+  }
+}
+
+if (typeof window !== "undefined") {
+  // Best-effort flush when the tab is hidden or unloaded.
+  window.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") void flush();
+  });
+  window.addEventListener("pagehide", () => void flush());
+}
+
 
 function summary() {
   const buckets = { prefetched: [] as number[], cold: [] as number[] };
