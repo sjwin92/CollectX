@@ -3,8 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { normalizeSetId } from "@/services/setIdMappingService";
 import { usdToGbp } from "@/services/currencyService";
 import type { CardItemProps } from "@/components/cards/CardItem";
+import { CACHE_TTL } from "@/lib/cacheConfig";
 
-const FRESHNESS_MS = 24 * 60 * 60 * 1000; // mirror the edge function
+const FRESHNESS_MS = CACHE_TTL.SET_CARDS;
 
 function extractGbpPrice(tcgplayerPrices: any): string {
   const p = tcgplayerPrices;
@@ -89,6 +90,6 @@ export function useSetCards(setId: string | null | undefined) {
     queryKey: ["set-cards", setId ? normalizeSetId(setId) : null] as const,
     queryFn: () => fetchSetCards(setId!),
     enabled: !!setId,
-    staleTime: 24 * 60 * 60 * 1000, // local cache mirrors the server freshness window
+    staleTime: CACHE_TTL.SET_CARDS,
   });
 }

@@ -1,6 +1,6 @@
 // Sealed products service — uses Pokemon TCG API for set data, avoids HEAD-request image probing
 import { PokemonSet } from './api/pokemonTypes';
-import { fetchFromApi, getCachedData, setCachedData } from './api/pokemonApiConfig';
+import { fetchFromApi } from './api/pokemonApiConfig';
 
 export interface FreeSealedProduct {
   id: string;
@@ -89,24 +89,16 @@ const fallbackSets: PokemonSet[] = [
 ];
 
 const fetchPokemonSets = async (): Promise<PokemonSet[]> => {
-  const cached = getCachedData<PokemonSet>('all_sets');
-  if (cached && cached.length > 0) return cached;
-
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
-
     const response = await fetchFromApi(
       'https://api.pokemontcg.io/v2/sets?pageSize=20&orderBy=-releaseDate'
     );
     clearTimeout(timeout);
-
     if (!response.ok) throw new Error(`API returned ${response.status}`);
-
     const data = await response.json();
-    const sets: PokemonSet[] = data.data || fallbackSets;
-    setCachedData('all_sets', sets);
-    return sets;
+    return data.data || fallbackSets;
   } catch {
     return fallbackSets;
   }

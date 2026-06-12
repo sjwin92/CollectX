@@ -1,6 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { persistQueryClient } from "@tanstack/react-query-persist-client";
+import { CACHE_TTL } from "./cacheConfig";
 
 /**
  * Shared React Query client with localStorage persistence.
@@ -9,16 +10,14 @@ import { persistQueryClient } from "@tanstack/react-query-persist-client";
  * and tab restarts for 7 days, so Pokémon set/card data is rehydrated
  * instantly on cold load. Everything else stays in-memory only.
  */
-const PERSISTED_KEYS = ["set-cards", "sets-list", "set-meta"] as const;
-const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+const PERSISTED_KEYS = ["set-cards", "sets-list", "set-meta", "localPokemonSets", "batchSetImages"] as const;
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 60 * 1000,
       refetchOnWindowFocus: false,
-      // Long gcTime so persisted queries survive between sessions.
-      gcTime: SEVEN_DAYS_MS,
+      gcTime: CACHE_TTL.PERSIST_MAX_AGE,
     },
   },
 });
@@ -31,11 +30,9 @@ if (typeof window !== "undefined") {
   });
 
   persistQueryClient({
-    // Cast guards against nested @tanstack/query-core type duplication when
-    // package managers hoist a second copy under react-query.
     queryClient: queryClient as unknown as Parameters<typeof persistQueryClient>[0]["queryClient"],
     persister,
-    maxAge: SEVEN_DAYS_MS,
+    maxAge: CACHE_TTL.PERSIST_MAX_AGE,
     dehydrateOptions: {
       shouldDehydrateQuery: (query) => {
         const key = query.queryKey[0];
