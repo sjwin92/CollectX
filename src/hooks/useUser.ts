@@ -1,7 +1,6 @@
-
-import { useState, useEffect } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 export interface Profile {
   id: string;
@@ -18,66 +17,37 @@ export interface Profile {
   updated_at: string;
 }
 
+/**
+ * Reads the shared auth state from AuthProvider and lazily loads the
+ * matching profile via React Query (cached, deduped, cancellable).
+ *
+ * Public API is unchanged from the previous hook so existing call sites
+ * keep working: `{ user, session, profile, isLoaded, isSignedIn }`.
+ */
 export function useUser() {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const { user, session, isLoaded } = useAuthContext();
 
-  useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Fetch user profile
-          setTimeout(async () => {
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('user_id', session.user.id)
-              .single();
-            
-            setProfile(profileData);
-          }, 0);
-        } else {
-          setProfile(null);
-        }
-        
-        setIsLoaded(true);
-      }
-    );
+  const { data: profile = null } = useQuery({
+    queryKey: ["profile", user?.id],
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes — profile rarely changes
+    queryFn: async (): Promise<Profile | null> => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as Profile | null) ?? null;
+    },
+  });
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        // Fetch user profile
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .single()
-          .then(({ data: profileData }) => {
-            setProfile(profileData);
-          });
-      }
-      
-      setIsLoaded(true);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  return { 
-    user, 
+  return {
+    user,
     session,
     profile,
-    isLoaded, 
-    isSignedIn: !!user 
+    isLoaded,
+    isSignedIn: !!user,
   };
 }
