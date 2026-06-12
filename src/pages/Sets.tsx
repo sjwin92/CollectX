@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getSets } from "@/services/pokemonSetsApi";
 import { supabasePokemonService } from "@/services/supabasePokemonService";
@@ -105,6 +105,18 @@ const Sets = () => {
   // Remaining sets for main grid (oldest → newest), excluding the featured ones
   const featuredIds = new Set(featuredSets.map(s => s.id));
   const remainingSets = combinedData.filter(s => !featuredIds.has(s.id));
+
+  // Batch-fetch stored images for all visible sets in a single query
+  const allVisibleSetIds = useMemo(
+    () => remainingSets.map(s => s.id),
+    [remainingSets]
+  );
+  const { data: batchSetImages = {} } = useQuery({
+    queryKey: ['batchSetImages', allVisibleSetIds],
+    queryFn: () => supabasePokemonService.getBatchSetImages(allVisibleSetIds),
+    enabled: allVisibleSetIds.length > 0,
+    staleTime: 30 * 60 * 1000,
+  });
 
   // Handle image error with fallback logic
   const handleImageError = (setId: string, type: 'logo' | 'symbol', element: HTMLImageElement) => {
@@ -327,7 +339,7 @@ const Sets = () => {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {remainingSets.map(set => (
-                <SetCard key={set.id} set={set} />
+                <SetCard key={set.id} set={set} storedImages={batchSetImages[set.id]} />
               ))}
             </div>
 

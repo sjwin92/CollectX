@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,28 +7,21 @@ import OptimizedImage from "@/components/ui/OptimizedImage";
 import { Trophy, Calendar, Plus, ImageOff, Package } from "lucide-react";
 import { format } from "date-fns";
 import { PokemonSet } from "@/services/api/pokemonTypes";
-import { supabasePokemonService } from "@/services/supabasePokemonService";
 import AddToCollectionModal from "./AddToCollectionModal";
 import { fixImageUrl } from "@/services/api/cardImageService";
 
 interface SetCardProps {
   set: PokemonSet;
+  storedImages?: { logo?: string; symbol?: string };
 }
 
-const SetCard = ({ set }: SetCardProps) => {
+const SetCard = ({ set, storedImages }: SetCardProps) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [logoError, setLogoError] = useState(false);
   const [symbolError, setSymbolError] = useState(false);
   const [logoFallbackIndex, setLogoFallbackIndex] = useState(0);
   const [symbolFallbackIndex, setSymbolFallbackIndex] = useState(0);
   const navigate = useNavigate();
-
-  // Get stored images from our database
-  const { data: storedImages } = useQuery({
-    queryKey: ['setImages', set.id],
-    queryFn: () => supabasePokemonService.getSetImages(set.id),
-    staleTime: 30 * 60 * 1000, // Cache for 30 minutes
-  });
 
   // Generate multiple fallback URLs specifically for Scarlet & Violet sets
   const getSVFallbackUrls = (setId: string, type: 'logo' | 'symbol') => {

@@ -202,6 +202,35 @@ class SupabasePokemonService {
     }
   }
 
+  // Batch-fetch working image URLs for multiple sets in a single query
+  async getBatchSetImages(setIds: string[]): Promise<Record<string, { logo?: string; symbol?: string }>> {
+    if (!setIds.length) return {};
+    try {
+      const { data, error } = await supabase
+        .from('set_images')
+        .select('set_id, image_url, image_type')
+        .in('set_id', setIds)
+        .eq('is_working', true)
+        .order('last_checked', { ascending: false });
+
+      if (error) throw error;
+
+      const result: Record<string, { logo?: string; symbol?: string }> = {};
+      data?.forEach(item => {
+        if (!result[item.set_id]) result[item.set_id] = {};
+        if (item.image_type === 'logo' && !result[item.set_id].logo) {
+          result[item.set_id].logo = item.image_url;
+        } else if (item.image_type === 'symbol' && !result[item.set_id].symbol) {
+          result[item.set_id].symbol = item.image_url;
+        }
+      });
+      return result;
+    } catch (error) {
+      console.error('Error batch-fetching set images:', error);
+      return {};
+    }
+  }
+
   // Get working image URLs for a set
   async getSetImages(setId: string): Promise<{ logo?: string; symbol?: string }> {
     try {
