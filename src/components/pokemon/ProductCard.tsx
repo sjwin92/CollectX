@@ -7,6 +7,7 @@ import { Plus, Package, Calendar, ImageOff } from "lucide-react";
 import { format } from "date-fns";
 import { getProductTypeIcon, getProductTypeLabel } from "@/types/cardTypes";
 import AddToCollectionModal from "./AddToCollectionModal";
+import { SmartImage } from "@/components/common/SmartImage";
 
 interface Product {
   id: string;
@@ -50,8 +51,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
         <CardHeader className="space-y-4 pb-4">
           <div className="h-32 flex items-center justify-center bg-gradient-to-br from-muted/30 to-muted/60 rounded-lg">
             {product.imageUrl && !imageError ? (
-              <img 
-                src={product.imageUrl} 
+              <SmartImage
+                src={product.imageUrl}
                 alt={`${product.name}`}
                 className="max-h-32 max-w-full object-contain transition-opacity duration-200"
                 onError={handleImageError}

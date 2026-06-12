@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Calendar, Trophy, Bookmark, Check, ImageOff, Package } from "lucide-react";
 import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
+import { SmartImage } from "@/components/common/SmartImage";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fixImageUrl } from "@/services/api/cardImageService";
@@ -167,9 +168,9 @@ const SetDetail = () => {
           <div className="md:w-1/3 space-y-6">
             {logoUrl && logoLoaded ? (
               <div className="bg-card border rounded-lg p-4 flex items-center justify-center">
-                <img 
-                  src={logoUrl} 
-                  alt={`${set.name} logo`} 
+                <SmartImage
+                  src={logoUrl}
+                  alt={`${set.name} logo`}
                   className="max-w-full max-h-40 object-contain"
                   onError={() => setLogoLoaded(false)}
                 />
@@ -188,9 +189,9 @@ const SetDetail = () => {
             {symbolUrl && symbolLoaded ? (
               <Card>
                 <CardContent className="p-4 flex items-center gap-3">
-                  <img 
-                    src={symbolUrl} 
-                    alt={`${set.name} symbol`} 
+                  <SmartImage
+                    src={symbolUrl}
+                    alt={`${set.name} symbol`}
                     className="w-10 h-10 object-contain"
                     onError={() => setSymbolLoaded(false)}
                   />

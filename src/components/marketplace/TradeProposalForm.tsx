@@ -12,6 +12,7 @@ import { estimateCardValue, calculateTradeBalance } from "@/services/valueEstima
 import { TradeCard } from "@/models/escrow";
 import TradeCardSuggestions from "@/components/trades/TradeCardSuggestions";
 import CollectionBoxSelector from "@/components/collection/CollectionBoxSelector";
+import { SmartImage } from "@/components/common/SmartImage";
 
 interface TradeProposalFormProps {
   isOpen: boolean;
@@ -131,12 +132,11 @@ const TradeProposalForm = ({
 
           <div className="flex flex-col sm:flex-row gap-4 items-start">
             <div className="sm:w-1/4 w-1/2 mx-auto sm:mx-0">
-              <img 
-                src={targetCard.imageUrl} 
+              <SmartImage
+                src={targetCard.imageUrl}
                 alt={targetCard.name}
                 className="w-full rounded-md"
                 onError={(e) => {
-                  console.log("Target card image failed to load");
                   (e.target as HTMLImageElement).style.display = "none";
                 }}
               />
@@ -177,14 +177,13 @@ const TradeProposalForm = ({
                           className="cursor-pointer p-2 rounded border hover:border-primary/50 transition-colors"
                           onClick={() => handleCardSelect(card)}
                         >
-                          <img
+                          <SmartImage
                             src={card.images.small}
                             alt={card.name}
                             className="w-full aspect-[3/4] object-cover rounded"
-                          onError={(e) => {
-                            console.log("Selected card image failed to load");
-                            (e.target as HTMLImageElement).style.display = "none";
-                          }}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = "none";
+                            }}
                           />
                           <p className="text-xs mt-1 truncate">{card.name}</p>
                         </div>
@@ -197,14 +196,13 @@ const TradeProposalForm = ({
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {selectedCards.map((card, index) => (
                       <div key={index} className="relative group">
-                        <img 
-                          src={card.images.small} 
+                        <SmartImage
+                          src={card.images.small}
                           alt={card.name}
                           className="w-full rounded-md"
-                            onError={(e) => {
-                              console.log("Collection card image failed to load");
-                              (e.target as HTMLImageElement).style.display = "none";
-                            }}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = "none";
+                          }}
                         />
                         <Button 
                           size="icon" 

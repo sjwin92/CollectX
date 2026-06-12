@@ -10,6 +10,7 @@ import { useUser } from "@/hooks/useUser";
 import { createMarketplaceListing } from "@/services/supabaseMarketplaceService";
 import { ExtendedCardItemWithDB, getTradableCards } from "@/services/supabaseCollectionService";
 import { useQuery } from "@tanstack/react-query";
+import { SmartImage } from "@/components/common/SmartImage";
 
 interface CreateListingModalProps {
   isOpen: boolean;
@@ -156,7 +157,7 @@ const CreateListingModal = ({
                     onClick={() => setInternalSelectedCard(card)}
                   >
                     <div className="aspect-[2/3] relative mb-2">
-                      <img 
+                      <SmartImage
                         src={card.imageUrl}
                         alt={card.name}
                         className="w-full h-full object-cover rounded"
@@ -180,7 +181,7 @@ const CreateListingModal = ({
             {/* Card Preview */}
             <div className="flex gap-4 items-start p-4 bg-muted rounded-lg">
               <div className="w-20 h-28 relative">
-                <img 
+                <SmartImage
                   src={currentCard.imageUrl}
                   alt={currentCard.name}
                   className="w-full h-full object-cover rounded-md"
