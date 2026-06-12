@@ -8,6 +8,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/react-query";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import { LoadingProvider } from "./contexts/LoadingContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import { Toaster } from "@/components/ui/toaster";
 import ImagePreloader from "@/components/ui/ImagePreloader";
 import ProtectedRoute from "./components/common/ProtectedRoute";
@@ -43,9 +44,10 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <LoadingProvider>
-          <ImagePreloader />
-          <BrowserRouter>
+        <AuthProvider>
+          <LoadingProvider>
+            <ImagePreloader />
+            <BrowserRouter>
             <NavigationAnalytics />
             <Suspense fallback={<RouteFallback />}>
               <Routes>
@@ -76,8 +78,9 @@ function App() {
               </Routes>
             </Suspense>
           </BrowserRouter>
-          <Toaster />
-        </LoadingProvider>
+            <Toaster />
+          </LoadingProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
