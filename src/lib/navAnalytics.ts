@@ -110,6 +110,8 @@ type RemoteRow = {
   browser: string | null;
   device_type: string | null;
   screen_size: string | null;
+  os_name: string | null;
+  os_version: string | null;
 };
 
 const queue: RemoteRow[] = [];
@@ -142,8 +144,46 @@ function getScreenSize(): string | null {
   return `${window.screen.width}x${window.screen.height}`;
 }
 
+function getOS(): { name: string | null; version: string | null } {
+  if (typeof navigator === "undefined") return { name: null, version: null };
+  const ua = navigator.userAgent;
+  const platform = navigator.platform ?? "";
+
+  let name: string | null = null;
+  let version: string | null = null;
+
+  // Windows
+  const winMatch = ua.match(/Windows NT ([\d.]+)/);
+  if (winMatch) {
+    name = "Windows";
+    version = winMatch[1];
+  }
+
+  // macOS / iOS
+  const macMatch = ua.match(/Mac OS X ([\d_]+)/);
+  if (macMatch) {
+    name = /iPhone|iPad|iPod/.test(ua) ? "iOS" : "macOS";
+    version = macMatch[1].replace(/_/g, ".");
+  }
+
+  // Android
+  const androidMatch = ua.match(/Android ([\d.]+)/);
+  if (androidMatch) {
+    name = "Android";
+    version = androidMatch[1];
+  }
+
+  // Linux (fallback when no other OS matched)
+  if (!name && /Linux/.test(platform)) {
+    name = "Linux";
+  }
+
+  return { name, version };
+}
+
 function enqueueRemote(sample: NavSample) {
   if (typeof window === "undefined") return;
+  const os = getOS();
   queue.push({
     session_id: getSessionId(),
     route: sample.to,
@@ -155,6 +195,8 @@ function enqueueRemote(sample: NavSample) {
     browser: getBrowser(),
     device_type: getDeviceType(),
     screen_size: getScreenSize(),
+    os_name: os.name,
+    os_version: os.version,
   });
   if (queue.length >= MAX_BATCH) {
     void flush();

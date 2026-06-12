@@ -356,6 +356,8 @@ export type Database = {
           device_type: string | null
           duration_ms: number
           id: string
+          os_name: string | null
+          os_version: string | null
           prefetched: boolean
           route: string
           screen_size: string | null
@@ -370,6 +372,8 @@ export type Database = {
           device_type?: string | null
           duration_ms: number
           id?: string
+          os_name?: string | null
+          os_version?: string | null
           prefetched: boolean
           route: string
           screen_size?: string | null
@@ -384,6 +388,8 @@ export type Database = {
           device_type?: string | null
           duration_ms?: number
           id?: string
+          os_name?: string | null
+          os_version?: string | null
           prefetched?: boolean
           route?: string
           screen_size?: string | null
