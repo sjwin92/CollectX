@@ -27,7 +27,14 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  esbuild: {
+    // Strip console.* and debugger statements from production bundles.
+    // Keep them in dev so logs still surface during development.
+    drop: mode === "production" ? ["console", "debugger"] : [],
+  },
   build: {
+    target: "es2020",
+    chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
         manualChunks: (id) => {
