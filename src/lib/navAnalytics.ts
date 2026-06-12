@@ -133,7 +133,10 @@ async function flush() {
   const batch = queue.splice(0, queue.length);
   try {
     const { supabase } = await import("@/integrations/supabase/client");
-    const { error } = await supabase.from("nav_metrics").insert(batch);
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id ?? null;
+    const rows = batch.map((r) => ({ ...r, user_id: userId }));
+    const { error } = await supabase.from("nav_metrics").insert(rows);
     if (error) throw error;
   } catch (err) {
     // On failure, drop the batch — telemetry must not break the app or grow unbounded.
