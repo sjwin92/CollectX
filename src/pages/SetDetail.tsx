@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getSetById } from "@/services/api/pokemonSetsService";
 import { supabasePokemonService } from "@/services/supabasePokemonService";
-import { getProducts } from "@/services/api/pokemonProductsService";
+import { getProductsForSet } from "@/services/api/pokemonProductsService";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import ProductCard from "@/components/pokemon/ProductCard";
@@ -26,63 +26,57 @@ const SetDetail = () => {
   const [logoLoaded, setLogoLoaded] = React.useState(true);
   const [symbolLoaded, setSymbolLoaded] = React.useState(true);
 
-  // Try to get set from local database first, fallback to API
+  // Fire local set + stored images in parallel — both only need `id`
   const { data: localSet } = useQuery({
     queryKey: ['localPokemonSet', id],
     queryFn: () => id ? supabasePokemonService.getSetById(id) : null,
     enabled: !!id,
   });
 
-  const { data: apiSet, isLoading, isError } = useQuery({
-    queryKey: ['pokemonSet', id],
-    queryFn: () => id ? getSetById(id) : null,
-    enabled: !!id && !localSet, // Only fetch from API if no local data
-    meta: {
-      onError: (error: Error) => {
-        toast({
-          title: "Error loading set details",
-          description: error.message,
-          variant: "destructive"
-        });
-      }
-    }
+  const { data: storedImages } = useQuery({
+    queryKey: ['setImages', id],
+    queryFn: () => id ? supabasePokemonService.getSetImages(id) : null,
+    enabled: !!id,
+    staleTime: 30 * 60 * 1000,
   });
 
-  // Use local set if available, otherwise use API set
+  // Only hit the external API if Supabase has no record for this set
+  const { data: apiSet, isLoading: apiLoading, isError } = useQuery({
+    queryKey: ['pokemonSet', id],
+    queryFn: () => id ? getSetById(id) : null,
+    enabled: !!id && localSet === null,
+  });
+
+  const isLoading = apiLoading && !localSet;
+
+  // Normalise whichever source resolved first
   const set = React.useMemo(() => {
     if (localSet) {
-      // Convert database format to API format
       return {
         ...localSet,
-        images: localSet.images || { logo: localSet.logo_url, symbol: localSet.symbol_url },
-        printedTotal: localSet.printed_total || (localSet as any).printedTotal,
-        releaseDate: localSet.release_date || (localSet as any).releaseDate,
+        images: localSet.images || { logo: (localSet as any).logo_url, symbol: (localSet as any).symbol_url },
+        printedTotal: (localSet as any).printed_total || (localSet as any).printedTotal,
+        releaseDate: (localSet as any).release_date || (localSet as any).releaseDate,
         legalities: localSet.legalities || {}
       };
     }
     return apiSet;
   }, [localSet, apiSet]);
 
-  // Fetch products and filter by the current set
-  const { data: allProducts = [] } = useQuery({
+  // Derive products from the set already in memory — no extra API call
+  const { data: setProducts = [] } = useQuery({
     queryKey: ['setProducts', id],
-    queryFn: () => getProducts(1, 100), // Get more products to find matches
-    enabled: !!id,
+    queryFn: () => getProductsForSet(set as any),
+    enabled: !!set,
+    staleTime: 60 * 60 * 1000,
   });
 
-  // Filter products that match this set
-  const setProducts = React.useMemo(() => {
-    if (!id || !allProducts.length) return [];
-    return allProducts.filter(product => product.setId === id);
-  }, [allProducts, id]);
-
-  // Fetch real product images from eBay by keyword-matching listing titles to product types
+  // eBay image enrichment — fires as soon as set name is available, parallel to products
   const { data: ebayImageMap = {} } = useQuery({
     queryKey: ['ebayProductImages', set?.name],
     queryFn: async () => {
-      if (!set?.name) return {};
       const { data } = await (supabase as any).functions.invoke('ebay-integration', {
-        body: { action: 'search', query: `pokemon ${set.name}`, itemType: 'sealed_product', limit: 10 }
+        body: { action: 'search', query: `pokemon ${set!.name}`, itemType: 'sealed_product', limit: 10 }
       });
       const imageMap: Record<string, string> = {};
       for (const listing of (data?.listings || [])) {
@@ -102,9 +96,20 @@ const SetDetail = () => {
   });
 
   const enrichedProducts = React.useMemo(() =>
-    setProducts.map(p => ({ ...p, imageUrl: ebayImageMap[p.productType] || p.imageUrl })),
+    setProducts.map((p: any) => ({ ...p, imageUrl: ebayImageMap[p.productType] || p.imageUrl })),
     [setProducts, ebayImageMap]
   );
+
+  // Process image URLs — storedImages already loaded in parallel above
+  const logoUrl = React.useMemo(() => {
+    if (storedImages?.logo) return storedImages.logo;
+    return set ? fixImageUrl(set.images?.logo, set.id, 'logo') : undefined;
+  }, [set, storedImages]);
+
+  const symbolUrl = React.useMemo(() => {
+    if (storedImages?.symbol) return storedImages.symbol;
+    return set ? fixImageUrl(set.images?.symbol, set.id, 'symbol') : undefined;
+  }, [set, storedImages]);
 
   const handleBack = () => {
     navigate('/pokemon-sets');
@@ -119,24 +124,6 @@ const SetDetail = () => {
       });
     }
   };
-
-  // Get stored images from database for better URLs
-  const { data: storedImages } = useQuery({
-    queryKey: ['setImages', id],
-    queryFn: () => id ? supabasePokemonService.getSetImages(id) : null,
-    enabled: !!id,
-  });
-
-  // Process URLs with priority to stored images
-  const logoUrl = React.useMemo(() => {
-    if (storedImages?.logo) return storedImages.logo;
-    return set ? fixImageUrl(set.images?.logo, set.id, 'logo') : undefined;
-  }, [set, storedImages]);
-
-  const symbolUrl = React.useMemo(() => {
-    if (storedImages?.symbol) return storedImages.symbol;
-    return set ? fixImageUrl(set.images?.symbol, set.id, 'symbol') : undefined;
-  }, [set, storedImages]);
 
   if (isLoading && !localSet) {
     return (

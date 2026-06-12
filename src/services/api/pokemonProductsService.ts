@@ -111,6 +111,11 @@ const transformSetToProducts = async (set: ProductSet) => {
   return productsWithImages;
 };
 
+// Generate the standard product lineup for a single set without any extra API calls
+export const getProductsForSet = async (set: ProductSet): Promise<any[]> => {
+  return transformSetToProducts(set);
+};
+
 export const getProducts = async (page = 1, pageSize = 20): Promise<any[]> => {
   try {
     // Fetch sets from the API and transform them into products
