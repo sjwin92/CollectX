@@ -31,7 +31,9 @@ if (typeof window !== "undefined") {
   });
 
   persistQueryClient({
-    queryClient,
+    // Cast guards against nested @tanstack/query-core type duplication when
+    // package managers hoist a second copy under react-query.
+    queryClient: queryClient as unknown as Parameters<typeof persistQueryClient>[0]["queryClient"],
     persister,
     maxAge: SEVEN_DAYS_MS,
     dehydrateOptions: {
