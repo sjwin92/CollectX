@@ -1,5 +1,6 @@
 import { Link, type LinkProps } from "react-router-dom";
-import { forwardRef, useCallback, type ReactNode } from "react";
+import { forwardRef, useCallback, type ReactNode, type MouseEvent } from "react";
+import { markPrefetched, markNavigationStart } from "@/lib/navAnalytics";
 
 /**
  * Maps route paths to their lazy import functions.
@@ -25,13 +26,11 @@ interface PrefetchLinkProps extends Omit<LinkProps, "to"> {
  * target route chunk on hover or focus so navigation feels instant.
  */
 export const PrefetchLink = forwardRef<HTMLAnchorElement, PrefetchLinkProps>(
-  ({ to, children, ...props }, ref) => {
+  ({ to, children, onClick, ...props }, ref) => {
     const prefetch = useCallback(() => {
-      // Match exact path or a parent path if no exact match exists
       const prefetcher =
         routePrefetchers[to] ||
         Object.entries(routePrefetchers).find(([key]) => {
-          // Support wildcard-ish parent routes (e.g. /trades/:id -> /trades)
           if (key.includes(":")) {
             const base = key.split("/:")[0];
             return to.startsWith(base);
@@ -40,12 +39,21 @@ export const PrefetchLink = forwardRef<HTMLAnchorElement, PrefetchLinkProps>(
         })?.[1];
 
       if (prefetcher) {
-        // Vite caches the dynamic import; calling it again is a no-op
-        prefetcher().catch(() => {
-          // Silently ignore failed prefetches
-        });
+        prefetcher()
+          .then(() => markPrefetched(to))
+          .catch(() => {
+            // Silently ignore failed prefetches
+          });
       }
     }, [to]);
+
+    const handleClick = useCallback(
+      (e: MouseEvent<HTMLAnchorElement>) => {
+        markNavigationStart(to);
+        onClick?.(e);
+      },
+      [to, onClick],
+    );
 
     return (
       <Link
@@ -54,6 +62,7 @@ export const PrefetchLink = forwardRef<HTMLAnchorElement, PrefetchLinkProps>(
         onMouseEnter={prefetch}
         onFocus={prefetch}
         onTouchStart={prefetch}
+        onClick={handleClick}
         {...props}
       >
         {children}

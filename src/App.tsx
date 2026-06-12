@@ -11,6 +11,7 @@ import { LoadingProvider } from "./contexts/LoadingContext";
 import { Toaster } from "@/components/ui/toaster";
 import ImagePreloader from "@/components/ui/ImagePreloader";
 import ProtectedRoute from "./components/common/ProtectedRoute";
+import NavigationAnalytics from "./components/common/NavigationAnalytics";
 import Index from "./pages/Index";
 
 // Lazy-loaded routes — code-split for faster initial load
@@ -44,6 +45,7 @@ function App() {
         <LoadingProvider>
           <ImagePreloader />
           <BrowserRouter>
+            <NavigationAnalytics />
             <Suspense fallback={<RouteFallback />}>
               <Routes>
                 <Route path="/" element={<Index />} />
