@@ -78,8 +78,9 @@ function App() {
               </Routes>
             </Suspense>
           </BrowserRouter>
-          <Toaster />
-        </LoadingProvider>
+            <Toaster />
+          </LoadingProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
