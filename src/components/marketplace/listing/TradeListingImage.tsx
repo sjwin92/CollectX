@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { getAllPossibleCardImageUrls } from "@/services/api/cardImageService";
 import { getFeaturedCardImageUrl } from "@/services/api/featuredCardsService";
+import { SmartImage } from "@/components/common/SmartImage";
 
 interface TradeListingImageProps {
   cardId?: string;
@@ -113,8 +114,8 @@ const TradeListingImage = ({
       {!imageError ? (
         <div className="relative w-full h-full">
           {imageSrc && (
-            <img 
-              src={imageSrc} 
+            <SmartImage
+              src={imageSrc}
               alt={cardName}
               className={`w-full h-auto rounded-md transition-transform duration-300 group-hover:scale-105 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
               onLoad={handleImageLoad}

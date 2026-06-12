@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Button } from "@/components/ui/button";
 import { getAllPossibleImageUrlsFromCardObject } from "@/services/api/cardImageService";
 import QuickAddToCollection from "./QuickAddToCollection";
+import { SmartImage } from "@/components/common/SmartImage";
 
 interface PokemonCardDetailProps {
   card: PokemonCard;
@@ -72,12 +73,13 @@ const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
         <div className="relative aspect-[2/3] overflow-hidden rounded-lg">
           <div className="relative h-full">
             {currentImageUrl && (
-              <img 
-                src={currentImageUrl} 
-                alt={`Detailed view of ${card?.name} Pokémon card from set ${card?.set?.name}`} 
-                className="w-full h-full object-contain" 
-                onLoad={handleImageLoad} 
-                onError={handleImageError} 
+              <SmartImage
+                src={currentImageUrl}
+                alt={`Detailed view of ${card?.name} Pokémon card from set ${card?.set?.name}`}
+                className="w-full h-full object-contain"
+                priority
+                onLoad={handleImageLoad}
+                onError={handleImageError}
               />
             )}
             
@@ -205,13 +207,12 @@ const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
                 <div className="text-sm text-muted-foreground">Set</div>
                 <div className="flex items-center mt-1">
                   {card?.set.images.symbol && (
-                    <img 
-                      src={card.set.images.symbol} 
-                      alt={card.set.name} 
-                      className="h-6 w-6 mr-2" 
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }} 
+                    <SmartImage
+                      src={card.set.images.symbol}
+                      alt={card.set.name}
+                      className="h-6 w-6 mr-2"
+                      wrapperClassName="h-6 w-6 mr-2"
+                      fallback={null}
                     />
                   )}
                   <span>{card?.set.name}</span>
