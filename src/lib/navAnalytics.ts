@@ -6,10 +6,16 @@
  * route chunk was prefetched (hover/focus before click) or not, so we
  * can confirm prefetching is improving first-click performance.
  *
+ * Each event also includes the app build version, browser name, device
+ * type, and screen size so metrics can be compared across releases and
+ * device profiles.
+ *
  * Inspect at runtime in the browser console:
  *   window.__navAnalytics.summary()
  *   window.__navAnalytics.events
  */
+
+declare const __APP_VERSION__: string;
 
 export type NavSample = {
   to: string;
