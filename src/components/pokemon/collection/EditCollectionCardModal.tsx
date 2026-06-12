@@ -11,6 +11,7 @@ import { ExtendedCardItemWithDB, updateCardInCollection } from '@/services/supab
 import { uploadUserCardImage, getUserCardImages } from '@/services/cardImageUploadService';
 import { Camera, Upload, X, Star } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { SmartImage } from '@/components/common/SmartImage';
 
 interface EditCollectionCardModalProps {
   card: ExtendedCardItemWithDB | null;
@@ -165,8 +166,8 @@ const EditCollectionCardModal: React.FC<EditCollectionCardModalProps> = ({
         <div className="space-y-6">
           {/* Card Info */}
           <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
-            <img 
-              src={card.imageUrl} 
+            <SmartImage
+              src={card.imageUrl}
               alt={card.name}
               className="w-16 h-22 object-cover rounded"
             />

@@ -5,6 +5,7 @@ import Badge, { ReputationLevel } from "@/components/ui/custom/Badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeftRight, Calendar, Package, Shield, Truck, Lock, AlertTriangle } from "lucide-react";
+import { SmartImage } from "@/components/common/SmartImage";
 
 export interface TradeOfferProps {
   id: string;
@@ -127,9 +128,9 @@ const TradeListing = ({
           <div className="text-xs text-muted-foreground mb-1">You're giving:</div>
           <div className="flex items-center gap-2">
             <div className="relative h-14 w-14 rounded-md overflow-hidden bg-muted">
-              <img 
-                src={giving.preview} 
-                alt="Cards preview" 
+              <SmartImage
+                src={giving.preview}
+                alt="Cards preview"
                 className="object-cover h-full w-full"
               />
               {giving.count > 1 && (
@@ -157,9 +158,9 @@ const TradeListing = ({
           <div className="text-xs text-muted-foreground mb-1">You're receiving:</div>
           <div className="flex items-center gap-2">
             <div className="relative h-14 w-14 rounded-md overflow-hidden bg-muted">
-              <img 
-                src={receiving.preview} 
-                alt="Cards preview" 
+              <SmartImage
+                src={receiving.preview}
+                alt="Cards preview"
                 className="object-cover h-full w-full"
               />
               {receiving.count > 1 && (
