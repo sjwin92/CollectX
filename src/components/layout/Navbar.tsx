@@ -36,6 +36,8 @@ import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { useUser } from "@/hooks/useUser";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { PrefetchLink } from "@/components/common/PrefetchLink";
+
 
 const Navbar = () => {
   const location = useLocation();
