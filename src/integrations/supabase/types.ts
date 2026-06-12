@@ -350,31 +350,43 @@ export type Database = {
       }
       nav_metrics: {
         Row: {
+          app_version: string | null
+          browser: string | null
           created_at: string
+          device_type: string | null
           duration_ms: number
           id: string
           prefetched: boolean
           route: string
+          screen_size: string | null
           session_id: string
           user_agent: string | null
           user_id: string | null
         }
         Insert: {
+          app_version?: string | null
+          browser?: string | null
           created_at?: string
+          device_type?: string | null
           duration_ms: number
           id?: string
           prefetched: boolean
           route: string
+          screen_size?: string | null
           session_id: string
           user_agent?: string | null
           user_id?: string | null
         }
         Update: {
+          app_version?: string | null
+          browser?: string | null
           created_at?: string
+          device_type?: string | null
           duration_ms?: number
           id?: string
           prefetched?: boolean
           route?: string
+          screen_size?: string | null
           session_id?: string
           user_agent?: string | null
           user_id?: string | null
