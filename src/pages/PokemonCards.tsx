@@ -13,6 +13,7 @@ import { searchCards } from "@/services/api/pokemonCardsService";
 import { CardItemProps } from "@/components/cards/CardItem";
 import { normalizeSetId } from "@/services/setIdMappingService";
 import { supabasePokemonService } from "@/services/supabasePokemonService";
+import { enhancedImageService } from "@/services/enhancedImageService";
 import { pokemonDataImporter } from "@/services/pokemonDataImporter";
 import { usdToGbp } from "@/services/currencyService";
 
@@ -213,9 +214,8 @@ const PokemonCards = () => {
           .slice(0, 10); // Preload first 10 cards
           
         // Use enhanced image service for preloading
-        import('@/services/enhancedImageService').then(({ enhancedImageService }) => {
-          enhancedImageService.preloadImages(cardIds, 'low').catch(console.warn);
-        });
+        enhancedImageService.preloadImages(cardIds, 'low').catch(console.warn);
+
       }
     } catch (error) {
       console.error("Error loading cards:", error);
