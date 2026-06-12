@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Package, Calendar, ImageOff } from "lucide-react";
+import { Plus, Package, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { getProductTypeIcon, getProductTypeLabel } from "@/types/cardTypes";
 import AddToCollectionModal from "./AddToCollectionModal";
@@ -28,57 +28,40 @@ interface ProductCardProps {
 
 const ProductCard = ({ product }: ProductCardProps) => {
   const [showAddModal, setShowAddModal] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(true);
-  const [imageError, setImageError] = useState(false);
-
-  const openAddModal = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setShowAddModal(true);
-  };
-
-  const handleImageError = () => {
-    setImageLoaded(false);
-    setImageError(true);
-  };
 
   const productTypeIcon = getProductTypeIcon(product.productType);
   const productTypeLabel = getProductTypeLabel(product.productType);
 
+  const imageFallback = (
+    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+      <span className="text-4xl">{productTypeIcon}</span>
+      <span className="text-sm font-medium">{productTypeLabel}</span>
+    </div>
+  );
+
   return (
     <>
       <Card className="overflow-hidden h-full transition-all hover:shadow-lg hover:border-primary/50 relative group">
-        <CardHeader className="space-y-4 pb-4">
-          <div className="h-32 flex items-center justify-center bg-gradient-to-br from-muted/30 to-muted/60 rounded-lg">
-            {product.imageUrl && !imageError ? (
+        <CardHeader className="space-y-3 pb-3 p-4">
+          {/* Product image — tall enough to show real product art */}
+          <div className="h-48 flex items-center justify-center bg-gradient-to-br from-muted/30 to-muted/60 rounded-lg overflow-hidden">
+            {product.imageUrl ? (
               <SmartImage
                 src={product.imageUrl}
-                alt={`${product.name}`}
-                className="max-h-32 max-w-full object-contain transition-opacity duration-200"
-                onError={handleImageError}
-                style={{ display: imageLoaded && !imageError ? 'block' : 'none' }}
+                alt={product.name}
+                className="h-full w-full object-contain p-2"
+                fallback={imageFallback}
               />
-            ) : null}
-            
-            {(!product.imageUrl || imageError || !imageLoaded) && (
-              <div className="flex flex-col items-center text-muted-foreground">
-                <span className="text-3xl mb-2">{productTypeIcon}</span>
-                <span className="text-sm font-medium">{productTypeLabel}</span>
-                {imageError && (
-                  <div className="flex items-center mt-1 text-xs">
-                    <ImageOff className="h-3 w-3 mr-1" />
-                    <span>Image unavailable</span>
-                  </div>
-                )}
-              </div>
-            )}
+            ) : imageFallback}
           </div>
-          
+
           <div>
-            <h3 className="text-lg font-semibold text-center mb-2 line-clamp-2">{product.name}</h3>
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">{product.series}</span>
-              <div className="flex gap-2">
+            <h3 className="text-base font-semibold text-center mb-2 line-clamp-2 leading-snug">
+              {product.name}
+            </h3>
+            <div className="flex items-center justify-between flex-wrap gap-1">
+              <span className="text-xs text-muted-foreground">{product.series}</span>
+              <div className="flex gap-1 flex-wrap">
                 <Badge variant="secondary" className="text-xs">
                   <span className="mr-1">{productTypeIcon}</span>
                   {productTypeLabel}
@@ -93,38 +76,33 @@ const ProductCard = ({ product }: ProductCardProps) => {
             </div>
           </div>
         </CardHeader>
-        
-        <CardContent className="pb-4">
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground line-clamp-2">
-              {product.description}
-            </p>
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                {format(new Date(product.releaseDate), 'MMM d, yyyy')}
-              </div>
-              <span className="font-semibold text-gold text-lg">
-                £{product.msrp}
-              </span>
+
+        <CardContent className="pb-4 px-4">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-1 text-muted-foreground">
+              <Calendar className="h-4 w-4" />
+              {format(new Date(product.releaseDate), 'MMM d, yyyy')}
             </div>
+            <span className="font-bold text-lg text-primary">
+              £{product.msrp.toFixed(2)}
+            </span>
           </div>
         </CardContent>
-        
+
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button 
-            variant="default" 
-            size="sm" 
+          <Button
+            variant="default"
+            size="sm"
             className="h-8 w-8 p-0 rounded-full shadow-lg"
-            onClick={openAddModal}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowAddModal(true); }}
           >
             <Plus className="h-4 w-4" />
           </Button>
         </div>
       </Card>
-      
+
       {showAddModal && (
-        <AddToCollectionModal 
+        <AddToCollectionModal
           set={{ id: product.setId, name: product.series } as any}
           open={showAddModal}
           onClose={() => setShowAddModal(false)}

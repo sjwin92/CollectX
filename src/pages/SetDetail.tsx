@@ -17,6 +17,7 @@ import { SmartImage } from "@/components/common/SmartImage";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fixImageUrl } from "@/services/api/cardImageService";
+import { supabase } from "@/integrations/supabase/client";
 
 const SetDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -74,6 +75,36 @@ const SetDetail = () => {
     if (!id || !allProducts.length) return [];
     return allProducts.filter(product => product.setId === id);
   }, [allProducts, id]);
+
+  // Fetch real product images from eBay by keyword-matching listing titles to product types
+  const { data: ebayImageMap = {} } = useQuery({
+    queryKey: ['ebayProductImages', set?.name],
+    queryFn: async () => {
+      if (!set?.name) return {};
+      const { data } = await (supabase as any).functions.invoke('ebay-integration', {
+        body: { action: 'search', query: `pokemon ${set.name}`, itemType: 'sealed_product', limit: 10 }
+      });
+      const imageMap: Record<string, string> = {};
+      for (const listing of (data?.listings || [])) {
+        if (!listing.imageUrl) continue;
+        const title = (listing.title || '').toLowerCase();
+        if (!imageMap['etb'] && (title.includes('elite trainer') || title.includes('etb'))) imageMap['etb'] = listing.imageUrl;
+        if (!imageMap['box'] && title.includes('booster box')) imageMap['box'] = listing.imageUrl;
+        if (!imageMap['tin'] && title.includes('tin')) imageMap['tin'] = listing.imageUrl;
+        if (!imageMap['blister-pack'] && title.includes('blister')) imageMap['blister-pack'] = listing.imageUrl;
+        if (!imageMap['deck'] && title.includes('deck')) imageMap['deck'] = listing.imageUrl;
+        if (!imageMap['booster-pack'] && title.includes('booster pack') && !title.includes('box')) imageMap['booster-pack'] = listing.imageUrl;
+      }
+      return imageMap;
+    },
+    enabled: !!set?.name,
+    staleTime: 30 * 60 * 1000,
+  });
+
+  const enrichedProducts = React.useMemo(() =>
+    setProducts.map(p => ({ ...p, imageUrl: ebayImageMap[p.productType] || p.imageUrl })),
+    [setProducts, ebayImageMap]
+  );
 
   const handleBack = () => {
     navigate('/pokemon-sets');
@@ -288,7 +319,7 @@ const SetDetail = () => {
         </div>
 
         {/* Products Section */}
-        {setProducts.length > 0 && (
+        {enrichedProducts.length > 0 && (
           <section className="mt-12">
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -301,9 +332,9 @@ const SetDetail = () => {
                 </p>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {setProducts.map(product => (
+              {enrichedProducts.map(product => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
