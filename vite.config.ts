@@ -35,6 +35,13 @@ export default defineConfig(({ mode }) => ({
   build: {
     target: "es2020",
     chunkSizeWarningLimit: 600,
+    // Production source maps add weight and leak source. Dev builds get them automatically.
+    sourcemap: mode !== "production",
+    // Skip computing gzipped sizes — saves several seconds on big builds.
+    reportCompressedSize: false,
+    // Inline assets below 4 KB as data URIs to cut request count.
+    assetsInlineLimit: 4096,
+    cssCodeSplit: true,
     rollupOptions: {
       output: {
         manualChunks: (id) => {
