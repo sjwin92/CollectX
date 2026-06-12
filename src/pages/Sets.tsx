@@ -1,7 +1,6 @@
 
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getSets } from "@/services/pokemonSetsApi";
 import { supabasePokemonService } from "@/services/supabasePokemonService";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
@@ -22,79 +21,50 @@ const Sets = () => {
   const [imageErrors, setImageErrors] = useState<Record<string, { logo: number; symbol: number }>>({});
   const [isImporting, setIsImporting] = useState(false);
   const { toast } = useToast();
-  
-  // First try to get sets from our database
-  const { data: localSets, isLoading: localLoading } = useQuery({
-    queryKey: ['localPokemonSets'],
-    queryFn: () => supabasePokemonService.getAllSets(),
-    staleTime: 10 * 60 * 1000, // Consider local data fresh for 10 minutes
+
+  // Read sets from the local mirror (pokemon_sets). If the mirror is empty or
+  // tiny, kick off the import-sets edge function once, then re-read.
+  const { data: localSets, isLoading, isError, error } = useQuery({
+    queryKey: ['sets-list'],
+    queryFn: async () => {
+      let sets = await supabasePokemonService.getAllSets();
+      if (!sets || sets.length < 10) {
+        await supabase.functions.invoke('import-sets', { body: {} });
+        sets = await supabasePokemonService.getAllSets();
+      }
+      return sets;
+    },
+    staleTime: 24 * 60 * 60 * 1000,
+    retry: 1,
   });
 
-  // Fallback to external API with pagination
-  const { data: apiData, isLoading: apiLoading, isError, error } = useQuery({
-    queryKey: ['pokemonSets', currentPage],
-    queryFn: () => getSets(currentPage, 20),
-    enabled: !localSets || localSets.length === 0, // Only fetch if no local data
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-    retry: 3
-  });
-
-  const isLoading = localLoading || apiLoading;
-  
-  // Properly handle the different data structures
-  const data = React.useMemo(() => {
-    if (localSets && localSets.length > 0) {
-      // Local data is an array, wrap it in the expected structure
-      return { data: localSets, totalCount: localSets.length };
-    }
-    return apiData; // API data already has the correct structure
-  }, [localSets, apiData]);
-
-  // Handle errors with toast
   React.useEffect(() => {
     if (isError && error) {
-      console.error("Query error:", error);
+      console.error("Sets query error:", error);
       toast({
         title: "Error loading sets",
-        description: error.message,
-        variant: "destructive"
+        description: (error as Error).message,
+        variant: "destructive",
       });
     }
   }, [isError, error, toast]);
 
-  // Debug logging
-  React.useEffect(() => {
-    console.log("Sets page state:", { 
-      isLoading, 
-      isError, 
-      dataLength: data?.data?.length,
-      currentPage,
-      error: error?.message 
-    });
-  }, [isLoading, isError, data, currentPage, error]);
-
-  // Use combined data with proper structure handling and sort by release date
   const combinedData = React.useMemo(() => {
-    console.log("Computing combinedData:", { isLoading, isError, hasData: !!data, dataLength: data?.data?.length });
-    if (isLoading || isError || !data?.data) return [];
-    
-    // Convert database format to API format if needed
-    const processedSets = data.data.map(set => ({
+    if (!localSets) return [] as any[];
+    const processed = localSets.map((set: any) => ({
       ...set,
-      // Ensure the set has the expected API structure
       images: set.images || { logo: set.logo_url, symbol: set.symbol_url },
-      printedTotal: set.printed_total || set.printedTotal,
-      releaseDate: set.release_date || set.releaseDate
+      printedTotal: set.printed_total ?? set.printedTotal,
+      releaseDate: set.release_date ?? set.releaseDate,
     }));
-
-    // Sort by release date (oldest to newest)
-    return processedSets.sort((a, b) => {
+    return processed.sort((a: any, b: any) => {
       const dateA = new Date(a.releaseDate || '1900-01-01');
       const dateB = new Date(b.releaseDate || '1900-01-01');
       return dateA.getTime() - dateB.getTime();
     });
-  }, [data, isLoading, isError]);
+  }, [localSets]);
+
+  const data = { data: combinedData, totalCount: combinedData.length };
 
   // Featured = the 4 most recently released sets (newest first)
   const featuredSets = React.useMemo(
