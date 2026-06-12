@@ -33,6 +33,7 @@ const SetDetail = lazy(() => import("./pages/SetDetail"));
 const Products = lazy(() => import("./pages/Products"));
 const SealedProducts = lazy(() => import("./pages/SealedProducts"));
 const NavMetricsAdmin = lazy(() => import("./pages/admin/NavMetrics"));
+const SeedDatabase = lazy(() => import("./pages/admin/SeedDatabase"));
 
 const RouteFallback = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -72,6 +73,7 @@ function App() {
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
                 <Route path="/admin/nav-metrics" element={<ProtectedRoute><NavMetricsAdmin /></ProtectedRoute>} />
+                <Route path="/admin/seed-database" element={<ProtectedRoute><SeedDatabase /></ProtectedRoute>} />
 
                 {/* 404 Page */}
                 <Route path="*" element={<NotFound />} />
