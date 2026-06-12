@@ -36,6 +36,8 @@ import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { useUser } from "@/hooks/useUser";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { PrefetchLink } from "@/components/common/PrefetchLink";
+
 
 const Navbar = () => {
   const location = useLocation();
@@ -95,7 +97,7 @@ const Navbar = () => {
   const NavLinks = () => (
     <>
       {navigationItems.map((item) => (
-        <Link key={item.path} to={item.path}>
+        <PrefetchLink key={item.path} to={item.path}>
           <Button
             variant={location.pathname === item.path ? "default" : "ghost"}
             className="transition-all duration-300"
@@ -103,7 +105,7 @@ const Navbar = () => {
             {item.icon && item.icon}
             {item.name}
           </Button>
-        </Link>
+        </PrefetchLink>
       ))}
     </>
   );
@@ -171,35 +173,35 @@ const Navbar = () => {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link to="/account-settings">
+                      <PrefetchLink to="/account-settings">
                         <Settings className="mr-2 h-4 w-4" />
                         <span>Account Settings</span>
-                      </Link>
+                      </PrefetchLink>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link to="/profile">
+                      <PrefetchLink to="/profile">
                         <User className="mr-2 h-4 w-4" />
                         <span>Profile</span>
-                      </Link>
+                      </PrefetchLink>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/collection">
+                      <PrefetchLink to="/collection">
                         <Archive className="mr-2 h-4 w-4" />
                         <span>My Collection</span>
-                      </Link>
+                      </PrefetchLink>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/collection-boxes">
+                      <PrefetchLink to="/collection-boxes">
                         <Box className="mr-2 h-4 w-4" />
                         <span>Collection Boxes</span>
-                      </Link>
+                      </PrefetchLink>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/trades">
+                      <PrefetchLink to="/trades">
                         <ArrowLeftRight className="mr-2 h-4 w-4" />
                         <span>Trades</span>
-                      </Link>
+                      </PrefetchLink>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/sealed-products">
@@ -208,10 +210,10 @@ const Navbar = () => {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/marketplace">
+                      <PrefetchLink to="/marketplace">
                         <ShoppingCart className="mr-2 h-4 w-4" />
                         <span>Marketplace</span>
-                      </Link>
+                      </PrefetchLink>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut}>
