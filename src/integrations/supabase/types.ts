@@ -510,6 +510,125 @@ export type Database = {
         }
         Relationships: []
       }
+      pokemon_cards: {
+        Row: {
+          artist: string | null
+          created_at: string
+          flavor_text: string | null
+          hp: string | null
+          id: string
+          images: Json | null
+          large_image_url: string | null
+          name: string
+          number: string | null
+          rarity: string | null
+          set_id: string | null
+          set_name: string | null
+          small_image_url: string | null
+          subtypes: string[] | null
+          supertype: string | null
+          tcgplayer_prices: Json | null
+          types: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          artist?: string | null
+          created_at?: string
+          flavor_text?: string | null
+          hp?: string | null
+          id: string
+          images?: Json | null
+          large_image_url?: string | null
+          name: string
+          number?: string | null
+          rarity?: string | null
+          set_id?: string | null
+          set_name?: string | null
+          small_image_url?: string | null
+          subtypes?: string[] | null
+          supertype?: string | null
+          tcgplayer_prices?: Json | null
+          types?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          artist?: string | null
+          created_at?: string
+          flavor_text?: string | null
+          hp?: string | null
+          id?: string
+          images?: Json | null
+          large_image_url?: string | null
+          name?: string
+          number?: string | null
+          rarity?: string | null
+          set_id?: string | null
+          set_name?: string | null
+          small_image_url?: string | null
+          subtypes?: string[] | null
+          supertype?: string | null
+          tcgplayer_prices?: Json | null
+          types?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pokemon_cards_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "pokemon_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pokemon_sets: {
+        Row: {
+          created_at: string
+          id: string
+          images: Json | null
+          legalities: Json | null
+          logo_url: string | null
+          name: string
+          printed_total: number | null
+          ptcgo_code: string | null
+          release_date: string | null
+          series: string | null
+          symbol_url: string | null
+          total: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          images?: Json | null
+          legalities?: Json | null
+          logo_url?: string | null
+          name: string
+          printed_total?: number | null
+          ptcgo_code?: string | null
+          release_date?: string | null
+          series?: string | null
+          symbol_url?: string | null
+          total?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          images?: Json | null
+          legalities?: Json | null
+          logo_url?: string | null
+          name?: string
+          printed_total?: number | null
+          ptcgo_code?: string | null
+          release_date?: string | null
+          series?: string | null
+          symbol_url?: string | null
+          total?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -554,6 +673,76 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
+      }
+      set_images: {
+        Row: {
+          created_at: string
+          id: string
+          image_type: string
+          image_url: string
+          is_working: boolean
+          last_checked: string
+          set_id: string | null
+          source: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_type: string
+          image_url: string
+          is_working?: boolean
+          last_checked?: string
+          set_id?: string | null
+          source?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_type?: string
+          image_url?: string
+          is_working?: boolean
+          last_checked?: string
+          set_id?: string | null
+          source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "set_images_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "pokemon_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      set_imports: {
+        Row: {
+          card_count: number
+          last_error: string | null
+          last_imported_at: string
+          set_id: string
+        }
+        Insert: {
+          card_count?: number
+          last_error?: string | null
+          last_imported_at?: string
+          set_id: string
+        }
+        Update: {
+          card_count?: number
+          last_error?: string | null
+          last_imported_at?: string
+          set_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "set_imports_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: true
+            referencedRelation: "pokemon_sets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shipping_methods: {
         Row: {

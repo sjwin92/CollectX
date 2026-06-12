@@ -1,74 +1,85 @@
-# Build review — prioritized improvements
+## Goal
+Cards load instantly on every visit — first user to view a set pays a ~2s import cost, everyone else (including the same user across reloads) gets the cards from the database in <200ms. Prices stay fresh because each set auto-refreshes after 24h.
 
-Reviewed the codebase, dependency tree, `index.html`, Vite config, DB linter, slow-query stats, and the largest source files. Findings grouped by impact. Pick which groups to ship.
+## Architecture
 
-## P0 — Easy wins, ship first
+```text
+        ┌────────────────────────────────────────────┐
+        │ Browser (PokemonCards page)                │
+        │                                            │
+        │ 1. React Query reads ['set-cards', id]     │
+        │    from IndexedDB (instant if cached)      │
+        │                                            │
+        │ 2. Fetch from Supabase mirror tables ◄─────┼──┐
+        │                                            │  │
+        │ 3. If miss OR stale (>24h), call edge fn ──┼──┼──► import-set-cards
+        │                                            │  │     (server-side)
+        │ 4. Re-read mirror tables, render           │  │       │
+        └────────────────────────────────────────────┘  │       ▼
+                                                        │  External TCG API
+        ┌────────────────────────────────────────────┐  │       │
+        │ Supabase Postgres                          │  │       │
+        │  • pokemon_sets       (set metadata)       │◄─┴───────┘
+        │  • pokemon_cards      (card rows + prices) │
+        │  • set_images         (logo/symbol URLs)   │
+        │  • set_imports        (last_imported_at)   │
+        └────────────────────────────────────────────┘
+```
 
-### 1. Remove unused heavyweight dependencies
-`package.json` still lists packages that aren't imported anywhere in `src/`:
-- `@clerk/clerk-react` — no `@clerk` imports anywhere. The app uses Supabase auth via `useUser`. Removing it cuts a large chunk from cold install + reduces lockfile churn.
-- `uuid` + `@types/uuid` — codebase uses `crypto.randomUUID()`. Confirm no remaining imports; remove.
-- `@lovable.dev/cloud-auth-js` — verify usage; drop if unused.
+## What gets built
 
-### 2. Fix `index.html` metadata bugs
-Currently shipped with broken/placeholder values:
-- `og:url`, `twitter:url`, `canonical` all point to `https://your-domain.com/` — replace with the real published URL (`https://trade-collectors-haven.lovable.app` or the custom domain).
-- Duplicate `og:title` / `twitter:title` / `twitter:description` / `twitter:card` / `twitter:image` tags (declared twice). Keep one.
-- `<meta name="title">` says "PokéTrade Hub" while `<title>` says "CollectX" — pick one brand string and use it everywhere.
-- `dns-prefetch` for `kitejduabjzmhraiyzre.supabase.co` is for a different project. Replace with the actual Supabase host or drop.
-- Remove `<meta http-equiv="X-Frame-Options">` and `<meta http-equiv="X-XSS-Protection">` — neither works as a meta tag; X-XSS-Protection is also deprecated. Drop them.
+### 1. Database (one migration)
+- Recreate `pokemon_sets`, `pokemon_cards`, `set_images` from the existing 2025-07-31 migration files (they reference dropped tables today).
+- New table `set_imports(set_id pk, last_imported_at timestamptz, card_count int)` — drives the 24h staleness check.
+- Public-read RLS so the browser can `SELECT` directly without an edge function on the happy path.
+- Indexes: `pokemon_cards(set_id)`, `pokemon_cards(set_id, number)`, `pokemon_sets(release_date desc)`.
 
-### 3. Strip console output in production builds
-~100+ `console.*` calls across services. Add Vite/esbuild `drop: ['console', 'debugger']` for production builds. Keep `console.error` if you want runtime error visibility.
+### 2. Edge function `import-set-cards`
+- Input: `{ setId: string, force?: boolean }`.
+- Reads `set_imports.last_imported_at`. If <24h old and `force !== true`, returns `{ skipped: true }` immediately.
+- Otherwise pages through the TCG API for that set, upserts into `pokemon_sets` + `pokemon_cards` + `set_images`, then stamps `set_imports`.
+- Uses the service-role key (server-side) so it bypasses RLS for writes.
+- Validates `setId` with Zod, returns standard CORS headers.
 
-## P1 — Quality and maintainability
+### 3. Frontend
+- Replace the `loadAllCards` flow in `src/pages/PokemonCards.tsx` with a single React Query hook `useSetCards(setId)`:
+  1. Read `pokemon_cards` rows for `setId` from Supabase.
+  2. Read `set_imports.last_imported_at`. If missing or >24h, fire `supabase.functions.invoke('import-set-cards', { body: { setId } })` and then re-read.
+  3. Return mapped `CardItemProps[]`.
+- Add React Query **persistence**: `@tanstack/query-sync-storage-persister` + `persistQueryClient` writing to `localStorage` (small footprint, instant rehydrate on cold load). Persist only the `set-cards` and `sets-list` keys for 7 days.
+- Same hook for the sets list (`useAllSets`) so the homepage tiles are also instant after first load.
+- Delete the now-dead "Falling back to external API" branch — mirror is the only path. Keeps the rule in project memory true again.
 
-### 4. Split the largest files
-- `src/pages/TradeDetail.tsx` (974 lines) — extract sub-sections (header, messages, shipment panel, actions) into smaller components in `src/components/trades/tradeDetail/`.
-- `src/components/trades/SocialTradeHub.tsx` (490 lines) and `TradeMessaging.tsx` (440) — same treatment.
+### 4. Backfill
+- Add a tiny admin route (or one-time button on `/admin/nav-metrics`) that calls `import-set-cards` for every set returned by `getSets()` once, so popular sets are warm before users touch them. Optional — without it, the first visitor to each set just waits ~2s.
 
-Benefit: faster lazy-route load (smaller chunks), better DX, easier code review.
+## Files touched
+- `supabase/migrations/<new>.sql` — recreate 3 tables, add `set_imports`, indexes, RLS, GRANTs.
+- `supabase/functions/import-set-cards/index.ts` — new edge function.
+- `src/hooks/useSetCards.ts` — new React Query hook (replaces ad-hoc `loadAllCards`).
+- `src/hooks/useAllSets.ts` — new React Query hook for sets list.
+- `src/lib/queryClient.ts` — set up persistent React Query client (new file).
+- `src/main.tsx` — wrap with `PersistQueryClientProvider`.
+- `src/pages/PokemonCards.tsx` — swap to `useSetCards`, drop the 5-page external loop and in-memory cache (superseded).
+- `src/pages/Sets.tsx` — swap to `useAllSets`.
+- `src/services/supabasePokemonService.ts` — keep, but remove the "missing table" short-circuit since tables exist again.
+- `src/services/pokemonDataImporter.ts` — delete (replaced by edge function).
 
-### 5. `useUser` hook hygiene
-`src/hooks/useUser.ts` uses `setTimeout(async () => …)` to fetch the profile inside `onAuthStateChange`. The setTimeout has no cleanup and runs on every auth event — on rapid auth changes or unmounts you'll get stale `setState` warnings and orphan fetches. Move the profile fetch into a React Query query keyed by `user.id` (cached, deduped, cancellable), and drop the setTimeout.
+## Performance expectations
+| Scenario | Before | After |
+|---|---|---|
+| First user clicks a brand-new set | 3–8s (5 API pages) | ~2s (edge function import) |
+| Same user revisits set | 3–8s again | <50ms (IndexedDB hydrate) |
+| Different user, same set | 3–8s | <200ms (Supabase read) |
+| Set last imported >24h ago | n/a | <200ms render + silent background refresh |
 
-### 6. Cap navAnalytics in dev
-The dev console emits `[nav]` lines on every route change. Optional: only log them when a `?debugNav` flag is on, so the console stays readable.
+## Risks / trade-offs
+- **Edge function cold start**: ~300–500ms extra on the very first import. Acceptable for a one-time-per-set cost.
+- **TCG API rate limits**: import-set-cards is gated by the 24h freshness check, so each set is fetched at most once per day across all users.
+- **Storage**: ~250 cards × ~50 sets × ~2KB = ~25MB total. Negligible.
+- **Stale prices**: bounded at 24h. If you ever want real-time prices, swap to eBay live pricing (already integrated for sealed products).
 
-## P2 — Backend security tightening
-
-The linter reports 10 warnings. Most are not bugs, but here's what to act on:
-
-- **RLS "WITH CHECK (true)" on nav_metrics** — intentional for public telemetry intake. Leave, or replace with `WITH CHECK (duration_ms >= 0 AND duration_ms <= 60000 AND length(route) < 256)` to harden the payload shape.
-- **Public bucket allows listing** — `card-images` bucket can be listed by anyone. Replace the broad SELECT policy on `storage.objects` with one that allows reads of specific paths but blocks `list` operations, or scope listing to the owning user.
-- **SECURITY DEFINER functions callable by public/auth** — `has_role`, `get_nav_metrics_summary`, `increment_listing_views`, `handle_new_user`, `update_updated_at_column`. `handle_new_user` and `update_updated_at_column` are trigger-only — `REVOKE EXECUTE ... FROM public, authenticated, anon` on those so they can't be called over the API. `increment_listing_views` should validate input/rate-limit (currently lets anyone bump any listing's view count). `has_role` and `get_nav_metrics_summary` should stay callable by authenticated users.
-
-### 7. Profile query duplication
-Slow-query log shows `profiles WHERE user_id = $1 LIMIT 1` ran 452 times. Cheap individually (0.10ms avg) but signals over-fetching. Once `useUser` uses React Query, this drops naturally.
-
-## P3 — Performance polish
-
-### 8. Image optimization
-Pokemon card grids load many images. No image plugin or `loading="lazy"` audit exists. Two options:
-- Add `vite-imagetools` and convert bundled card placeholders to AVIF/WebP at build time.
-- For Supabase-stored card images, use Supabase's image transformation (`width`/`quality` query params on render URLs) sized to the actual grid cell.
-
-### 9. Vite build polish
-- Add `build.target: 'es2020'` (smaller output, all modern browsers OK).
-- Add `build.chunkSizeWarningLimit: 600` so you see real warnings.
-- Add `esbuild: { drop: ['console', 'debugger'] }` (ties into P0 #3).
-
-### 10. Error visibility in production
-No error monitoring tool wired up. If you want post-deploy crash visibility, add a lightweight Sentry init (or your provider of choice) gated to production only.
-
----
-
-## What I'd skip
-- Refactoring `supabase/types.ts` (auto-generated).
-- Refactoring `ui/sidebar.tsx` / `ui/chart.tsx` (shadcn-vendored).
-- Adding SSR — not worth it for this app shape.
-
----
-
-## Suggested first batch to implement
-P0 items 1, 2, 3 + P2 item 6 (REVOKE on trigger-only functions, fix `card-images` listing). Small, safe, high-signal. Want me to proceed with that, or pick a different set?
+## Out of scope
+- Per-card price history.
+- Backfilling ALL sets upfront (the optional admin button covers this on demand).
+- Search across all cards globally — current search scope (within a set / by name) is unchanged.
