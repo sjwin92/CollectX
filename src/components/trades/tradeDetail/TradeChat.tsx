@@ -105,7 +105,7 @@ export const TradeChat = ({ trade, tradeId, currentUserId, onMessageSent, onOpen
                       className="cursor-pointer rounded-md overflow-hidden mb-2"
                       onClick={() => onOpenLightbox(msg.imageUrl!)}
                     >
-                      <img src={msg.imageUrl} alt="Trade image" className="max-h-48 object-cover" />
+                      <SmartImage src={msg.imageUrl} alt="Trade image" className="max-h-48 object-cover" />
                     </div>
                   )}
                   <div className="text-xs text-muted-foreground">
@@ -127,7 +127,7 @@ export const TradeChat = ({ trade, tradeId, currentUserId, onMessageSent, onOpen
           />
           {imagePreview ? (
             <div className="relative h-20 w-20 rounded-md overflow-hidden border border-border">
-              <img src={imagePreview} alt="Selected" className="h-full w-full object-cover" />
+              <SmartImage src={imagePreview} alt="Selected" className="h-full w-full object-cover" />
               <Button
                 variant="ghost"
                 size="icon"

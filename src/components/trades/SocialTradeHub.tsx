@@ -21,6 +21,7 @@ import {
   Paperclip,
   Plus
 } from 'lucide-react';
+import { SmartImage } from '@/components/common/SmartImage';
 
 interface SocialTradeHubProps {
   isOpen: boolean;
@@ -400,9 +401,9 @@ const SocialTradeHub = ({ isOpen, onClose }: SocialTradeHubProps) => {
                         }`}>
                           {message.type === 'image' && message.imageUrl ? (
                             <div className="mb-2">
-                              <img 
-                                src={message.imageUrl} 
-                                alt="Shared image" 
+                              <SmartImage
+                                src={message.imageUrl}
+                                alt="Shared image"
                                 className="max-w-full h-auto rounded-lg"
                                 style={{ maxHeight: '200px' }}
                               />

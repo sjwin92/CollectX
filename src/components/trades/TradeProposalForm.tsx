@@ -12,6 +12,7 @@ import {
   calculateTradeValue 
 } from "@/services/valueEstimationService";
 import TradeBalancePayment from "./TradeBalancePayment";
+import { SmartImage } from "@/components/common/SmartImage";
 
 interface TradeProposalFormProps {
   myCards: TradeCard[];
@@ -177,9 +178,9 @@ const TradeProposalForm = ({
                   <div key={card.id} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="relative h-12 w-12 rounded-md overflow-hidden">
-                        <img 
-                          src={card.imageUrl} 
-                          alt={card.name} 
+                        <SmartImage
+                          src={card.imageUrl}
+                          alt={card.name}
                           className="h-full w-full object-cover"
                         />
                       </div>
@@ -226,10 +227,10 @@ const TradeProposalForm = ({
                     >
                       <div className="flex items-center gap-2">
                         <div className="h-10 w-10 rounded-md overflow-hidden">
-                          <img 
-                            src={card.imageUrl} 
-                            alt={card.name} 
-                            className="h-full w-full object-cover" 
+                          <SmartImage
+                            src={card.imageUrl}
+                            alt={card.name}
+                            className="h-full w-full object-cover"
                           />
                         </div>
                         <div>
@@ -263,9 +264,9 @@ const TradeProposalForm = ({
                   <div key={card.id} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="relative h-12 w-12 rounded-md overflow-hidden">
-                        <img 
-                          src={card.imageUrl} 
-                          alt={card.name} 
+                        <SmartImage
+                          src={card.imageUrl}
+                          alt={card.name}
                           className="h-full w-full object-cover"
                         />
                       </div>
@@ -312,10 +313,10 @@ const TradeProposalForm = ({
                     >
                       <div className="flex items-center gap-2">
                         <div className="h-10 w-10 rounded-md overflow-hidden">
-                          <img 
-                            src={card.imageUrl} 
-                            alt={card.name} 
-                            className="h-full w-full object-cover" 
+                          <SmartImage
+                            src={card.imageUrl}
+                            alt={card.name}
+                            className="h-full w-full object-cover"
                           />
                         </div>
                         <div>
