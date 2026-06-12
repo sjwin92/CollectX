@@ -68,7 +68,7 @@ const PokemonCards = () => {
   });
 
   const activeQuery = setId ? setCardsQuery : nameSearchQuery;
-  const allCards: CardItemProps[] = activeQuery.data ?? [];
+  const allCards: CardItemProps[] = Array.isArray(activeQuery.data) ? activeQuery.data : [];
   const isLoading = (!!setId || !!nameQuery) && activeQuery.isLoading;
 
   // Surface query errors as toasts (once per change).
@@ -107,7 +107,7 @@ const PokemonCards = () => {
 
     if (filters.rarityFilter !== "all") {
       filtered = filtered.filter((card) => {
-        const rarity = card.rarity.toLowerCase();
+        const rarity = (card.rarity ?? "").toLowerCase();
         switch (filters.rarityFilter) {
           case "common":      return rarity.includes("common");
           case "uncommon":    return rarity.includes("uncommon");
