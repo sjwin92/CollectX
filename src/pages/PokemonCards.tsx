@@ -47,185 +47,135 @@ const PokemonCards = () => {
     return usd > 0 ? `£${usdToGbp(usd).toFixed(2)}` : "N/A";
   };
 
+  // Simple in-memory cache keyed by setId/nameQuery so navigating away and
+  // back is instant instead of refetching from the external API.
+  const cacheRef = React.useRef<Map<string, CardItemProps[]>>(new Map());
+
   // Load all cards when setId or nameQuery changes
   const loadAllCards = async () => {
+    // Nothing to load → don't burn an external API call fetching random cards.
+    if (!setId && !nameQuery) {
+      setAllCards([]);
+      setIsLoading(false);
+      return;
+    }
+
+    const cacheKey = `${setId ?? ''}|${nameQuery ?? ''}`;
+    const cached = cacheRef.current.get(cacheKey);
+    if (cached) {
+      setAllCards(cached);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const searchParams: Record<string, string> = {};
-      
+
       if (setId) {
         const normalizedSetId = normalizeSetId(setId);
         searchParams.setId = normalizedSetId;
-        console.log(`Loading cards for setId: ${setId} (normalized to: ${normalizedSetId})`);
-        
-        // First, try to get cards from our database
+
+        // Try the local mirror first (no-op if the table is missing).
         const localCards = await supabasePokemonService.getCardsBySetId(normalizedSetId);
-        
         if (localCards.length > 0) {
-          console.log(`Found ${localCards.length} cards in local database for set ${normalizedSetId}`);
-          
-          // Convert database cards to CardItemProps format
-          const formattedCards: CardItemProps[] = localCards.map(card => {
-            const price = extractGbpPrice(card.tcgplayer_prices);
-                
-            return {
-              id: card.id,
-              name: card.name || "Unknown Card",
-              imageUrl: card.small_image_url || card.large_image_url,
-              rarity: card.rarity || "Unknown",
-              condition: "Near Mint",
-              estimatedValue: price,
-              number: card.number,
-              set: {
-                id: card.set_id,
-                name: card.set_name
-              }
-            };
-          });
-          
-          setAllCards(formattedCards);
-          setIsLoading(false);
-          return; // Exit early, we have local data
-        }
-        
-        // If no local data, check if we should import it
-        console.log(`No local data found for set ${normalizedSetId}, attempting to import...`);
-        const importSuccess = await pokemonDataImporter.importSetCards(normalizedSetId);
-        
-        if (importSuccess) {
-          // Retry loading from database after import
-          const newLocalCards = await supabasePokemonService.getCardsBySetId(normalizedSetId);
-          if (newLocalCards.length > 0) {
-            const formattedCards: CardItemProps[] = newLocalCards.map(card => {
-              const price = extractGbpPrice(card.tcgplayer_prices);
-
-              return {
-                id: card.id,
-                name: card.name || "Unknown Card",
-                imageUrl: card.small_image_url || card.large_image_url,
-                rarity: card.rarity || "Unknown",
-                condition: "Near Mint",
-                estimatedValue: price,
-                number: card.number,
-                set: {
-                  id: card.set_id,
-                  name: card.set_name
-                }
-              };
-            });
-
-            
-            setAllCards(formattedCards);
-            setIsLoading(false);
-            return;
-          }
-        }
-      }
-      
-      if (nameQuery) {
-        searchParams.name = nameQuery.trim();
-        console.log(`Loading cards for name query: ${nameQuery}`);
-        
-        // Try searching in local database first
-        const localResults = await supabasePokemonService.searchCards(nameQuery);
-        if (localResults.length > 0) {
-          const formattedCards: CardItemProps[] = localResults.map(card => {
-            const price = extractGbpPrice(card.tcgplayer_prices);
-                
-            return {
-              id: card.id,
-              name: card.name || "Unknown Card",
-              imageUrl: card.small_image_url || card.large_image_url,
-              rarity: card.rarity || "Unknown",
-              condition: "Near Mint",
-              estimatedValue: price,
-              number: card.number,
-              set: {
-                id: card.set_id,
-                name: card.set_name
-              }
-            };
-          });
-          
+          const formattedCards: CardItemProps[] = localCards.map(card => ({
+            id: card.id,
+            name: card.name || "Unknown Card",
+            imageUrl: card.small_image_url || card.large_image_url,
+            rarity: card.rarity || "Unknown",
+            condition: "Near Mint",
+            estimatedValue: extractGbpPrice(card.tcgplayer_prices),
+            number: card.number,
+            set: { id: card.set_id, name: card.set_name },
+          }));
+          cacheRef.current.set(cacheKey, formattedCards);
           setAllCards(formattedCards);
           setIsLoading(false);
           return;
         }
       }
-      
-      // Fallback to external API if no local data
-      console.log('Falling back to external API...');
-      console.log('Search params:', searchParams);
-      
-      // Load multiple pages to get all cards for better filtering and preload images
-      let allResults: CardItemProps[] = [];
-      let currentPage = 1;
-      let hasMore = true;
-      
-      while (hasMore && currentPage <= 5) { // Reduced to 5 pages for faster loading
-        console.log(`Fetching page ${currentPage} with params:`, searchParams);
-        const response = await searchCards(searchParams, currentPage, 50);
-        
-        console.log(`Page ${currentPage} response:`, response);
-        
-        if (response?.data?.length > 0) {
-          console.log(`Got ${response.data.length} cards from page ${currentPage}`);
-          const formattedCards: CardItemProps[] = response.data.map(card => {
-            const imgUrl = card.images?.small || card.images?.large || `https://images.pokemontcg.io/${card.id.replace('-', '/')}.png`;
-            console.log(`Card ${card.id}: Image URL = ${imgUrl}`);
-            
-            const price = card.tcgplayer?.prices
-              ? extractGbpPrice(card.tcgplayer.prices)
-              : "N/A";
 
-                
-            return {
-              id: card.id,
-              name: card.name || "Unknown Card",
-              imageUrl: imgUrl,
-              rarity: card.rarity || "Unknown",
-              condition: "Near Mint",
-              estimatedValue: price,
-              number: card.number,
-              set: {
-                id: card.set?.id,
-                name: card.set?.name
-              }
-            };
-          });
-          
-          allResults = [...allResults, ...formattedCards];
-          hasMore = formattedCards.length >= 50;
-          currentPage++;
-        } else {
-          console.log(`No cards found on page ${currentPage}`);
-          hasMore = false;
+      if (nameQuery) {
+        searchParams.name = nameQuery.trim();
+        const localResults = await supabasePokemonService.searchCards(nameQuery);
+        if (localResults.length > 0) {
+          const formattedCards: CardItemProps[] = localResults.map(card => ({
+            id: card.id,
+            name: card.name || "Unknown Card",
+            imageUrl: card.small_image_url || card.large_image_url,
+            rarity: card.rarity || "Unknown",
+            condition: "Near Mint",
+            estimatedValue: extractGbpPrice(card.tcgplayer_prices),
+            number: card.number,
+            set: { id: card.set_id, name: card.set_name },
+          }));
+          cacheRef.current.set(cacheKey, formattedCards);
+          setAllCards(formattedCards);
+          setIsLoading(false);
+          return;
         }
       }
-      
-      console.log(`Total cards loaded: ${allResults.length}`);
-      setAllCards(allResults);
-      
-      // Preload images for better performance
-      if (allResults.length > 0) {
-        const cardIds = allResults
-          .map(card => card.id)
-          .filter(Boolean)
-          .slice(0, 10); // Preload first 10 cards
-          
-        // Use enhanced image service for preloading
-        enhancedImageService.preloadImages(cardIds, 'low').catch(console.warn);
 
+      // Fallback to external API. Fetch ONE page so the grid paints
+      // immediately, then quietly stream additional pages in the background.
+      const firstPage = await searchCards(searchParams, 1, 50);
+      const formatPage = (data: any[]): CardItemProps[] =>
+        data.map(card => ({
+          id: card.id,
+          name: card.name || "Unknown Card",
+          imageUrl:
+            card.images?.small ||
+            card.images?.large ||
+            `https://images.pokemontcg.io/${card.id.replace('-', '/')}.png`,
+          rarity: card.rarity || "Unknown",
+          condition: "Near Mint",
+          estimatedValue: card.tcgplayer?.prices
+            ? extractGbpPrice(card.tcgplayer.prices)
+            : "N/A",
+          number: card.number,
+          set: { id: card.set?.id, name: card.set?.name },
+        }));
+
+      const firstFormatted = formatPage(firstPage?.data ?? []);
+      cacheRef.current.set(cacheKey, firstFormatted);
+      setAllCards(firstFormatted);
+      setIsLoading(false);
+
+      // Preload first batch of images so the visible grid renders smoothly.
+      if (firstFormatted.length > 0) {
+        enhancedImageService
+          .preloadImages(firstFormatted.slice(0, 10).map(c => c.id), 'low')
+          .catch(() => {});
+      }
+
+      // Background-fetch additional pages (only if the first looked full).
+      if (firstFormatted.length >= 50) {
+        (async () => {
+          let merged = firstFormatted;
+          for (let page = 2; page <= 3; page++) {
+            try {
+              const resp = await searchCards(searchParams, page, 50);
+              const extra = formatPage(resp?.data ?? []);
+              if (extra.length === 0) break;
+              merged = [...merged, ...extra];
+              cacheRef.current.set(cacheKey, merged);
+              setAllCards(merged);
+              if (extra.length < 50) break;
+            } catch {
+              break;
+            }
+          }
+        })();
       }
     } catch (error) {
       console.error("Error loading cards:", error);
       toast({
         title: "Error loading cards",
         description: "There was a problem fetching the cards. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
       setAllCards([]);
-    } finally {
       setIsLoading(false);
     }
   };
