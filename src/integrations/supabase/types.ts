@@ -352,50 +352,83 @@ export type Database = {
         Row: {
           app_version: string | null
           browser: string | null
+          connection_type: string | null
           created_at: string
           device_type: string | null
+          downlink_mbps: number | null
           duration_ms: number
+          from_route: string | null
           id: string
+          is_authenticated: boolean | null
+          nav_type: string | null
           os_name: string | null
           os_version: string | null
           prefetched: boolean
+          referrer_host: string | null
+          region: string | null
           route: string
+          save_data: boolean | null
           screen_size: string | null
           session_id: string
           user_agent: string | null
           user_id: string | null
+          web_vitals_cls: number | null
+          web_vitals_inp_ms: number | null
+          web_vitals_lcp_ms: number | null
         }
         Insert: {
           app_version?: string | null
           browser?: string | null
+          connection_type?: string | null
           created_at?: string
           device_type?: string | null
+          downlink_mbps?: number | null
           duration_ms: number
+          from_route?: string | null
           id?: string
+          is_authenticated?: boolean | null
+          nav_type?: string | null
           os_name?: string | null
           os_version?: string | null
           prefetched: boolean
+          referrer_host?: string | null
+          region?: string | null
           route: string
+          save_data?: boolean | null
           screen_size?: string | null
           session_id: string
           user_agent?: string | null
           user_id?: string | null
+          web_vitals_cls?: number | null
+          web_vitals_inp_ms?: number | null
+          web_vitals_lcp_ms?: number | null
         }
         Update: {
           app_version?: string | null
           browser?: string | null
+          connection_type?: string | null
           created_at?: string
           device_type?: string | null
+          downlink_mbps?: number | null
           duration_ms?: number
+          from_route?: string | null
           id?: string
+          is_authenticated?: boolean | null
+          nav_type?: string | null
           os_name?: string | null
           os_version?: string | null
           prefetched?: boolean
+          referrer_host?: string | null
+          region?: string | null
           route?: string
+          save_data?: boolean | null
           screen_size?: string | null
           session_id?: string
           user_agent?: string | null
           user_id?: string | null
+          web_vitals_cls?: number | null
+          web_vitals_inp_ms?: number | null
+          web_vitals_lcp_ms?: number | null
         }
         Relationships: []
       }
@@ -944,18 +977,47 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      get_nav_metrics_summary: { Args: { _days?: number }; Returns: Json }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       increment_listing_views: {
         Args: { listing_id: string }
         Returns: undefined
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1082,6 +1144,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const

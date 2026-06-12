@@ -1,34 +1,59 @@
+# Recommended additions to navigation analytics
 
-The user wants to push code to GitHub. This isn't a code task — it's a workflow/setup question. I should explain how GitHub sync works in Lovable rather than write a plan for code changes.
+Building on the existing `nav_metrics` pipeline, here are the highest-leverage additions. Grouped so you can accept/decline per group.
 
-Key points from the GitHub integration docs:
-- Lovable has bidirectional sync with GitHub
-- Connect via Connectors → GitHub → Connect project
-- Once connected, changes auto-sync both ways in real-time
-- No manual push needed
+## 1. Richer per-event context (DB + client)
 
-Also worth noting: there are currently outstanding build errors in the project (from the previous message). Pushing broken code to GitHub is fine technically, but I should mention it so the user is aware.
+Add columns to `nav_metrics` and populate them in `src/lib/navAnalytics.ts`:
 
-## How to push to GitHub
+- `from_route` (text) — previous route, so you can analyze transitions (e.g. `/collection → /trades`), not just destinations.
+- `nav_type` (text) — `link_click` | `back_forward` | `initial_load` | `programmatic`. Detected via `performance.getEntriesByType('navigation')` + popstate listener.
+- `connection_type` (text) + `downlink_mbps` (numeric) — from `navigator.connection` (Chrome/Android). Lets you separate slow-network outliers.
+- `save_data` (bool) — `navigator.connection.saveData`.
+- `is_authenticated` (bool) — already derivable, but storing avoids joins.
+- `referrer_host` (text) — only for `initial_load`, to see where cold traffic lands.
+- `web_vitals_lcp_ms`, `web_vitals_inp_ms`, `web_vitals_cls` (numeric, nullable) — captured per route using the `web-vitals` package; sent on the next flush. This is what actually tells you whether prefetch improved perceived perf, not just JS duration.
 
-Lovable has a built-in two-way GitHub sync — you don't need to run `git push` manually. Once connected, every change you make in Lovable is automatically committed and pushed to your GitHub repo in real-time.
+## 2. Data hygiene
 
-### Steps to connect
+- Add a CHECK constraint: `duration_ms between 0 and 60000` to drop absurd outliers at write time.
+- Add a partial index on `(route, prefetched, created_at desc)` for the dashboard query.
+- Add a `region` column populated client-side from `Intl.DateTimeFormat().resolvedOptions().timeZone` (cheap proxy; no IP lookup needed).
 
-1. In the Lovable editor sidebar, open **Connectors** (root level)
-2. Find **GitHub** and click **Connect project**
-3. Authorize the Lovable GitHub App
-4. Choose the GitHub account/organization for the repo
-5. Click **Create Repository** — Lovable will generate a new repo and push the current code
+## 3. Sampling + payload safety
 
-After that, all future edits sync automatically. You can also push commits from your local machine back to GitHub and they'll flow into Lovable.
+In `navAnalytics.ts`:
 
-### Heads up: build errors
+- Configurable sample rate (default 100%, but easy to dial down later via a constant).
+- Cap batch payload size and drop the oldest events if the queue exceeds e.g. 200 (protects against offline tabs accumulating forever).
+- Use `navigator.sendBeacon` on `pagehide` instead of `fetch` so the final flush survives tab close.
 
-Your project currently has unresolved TypeScript build errors (the `process` references in `ErrorBoundary.tsx`, plus a large set of Supabase typing errors because the database tables referenced in code — `trade_messages`, `profiles`, `trades`, `card_images`, `shipping_methods`, etc. — don't yet exist in the Cloud database). The code will still push to GitHub fine, but it won't build until those are fixed.
+## 4. In-app metrics dashboard (admin-only)
 
-If you'd like, I can switch to default mode and:
-1. Fix the `process.env` references in `ErrorBoundary.tsx`
-2. Create the missing database tables with proper RLS so the Supabase-typed calls compile
+New route `/admin/nav-metrics` that renders:
 
-Just let me know.
+- p50 / p95 / count per route, split by `prefetched`.
+- Trend line of p95 per `app_version` (release regression detector).
+- Breakdown by `os_name` and `connection_type`.
+- Worst 20 transitions by p95 (`from_route → route`).
+
+Access control:
+- Add `app_role` enum + `user_roles` table + `has_role()` security-definer function (per the user-roles guidance).
+- Page checks `has_role(auth.uid(), 'admin')`; otherwise redirects.
+- Add RLS policy on `nav_metrics`: `SELECT` allowed when `has_role(auth.uid(), 'admin')`. Today only `service_role` can read, which blocks an in-app dashboard.
+
+Data fetched via a SECURITY DEFINER SQL function `get_nav_metrics_summary(days int)` that returns the aggregates, so the client never pulls raw rows.
+
+## 5. Optional follow-ups (not in this plan unless you want them)
+
+- Edge function ingestion endpoint instead of direct insert (lets you add server-side IP→country, bot filtering, rate limiting).
+- Retention job: delete `nav_metrics` rows older than 90 days via pg_cron.
+
+## What I'd skip
+
+- Full user-agent string storage — already covered by `browser` + `os_name` + `os_version`; raw UA is PII-ish and noisy.
+- Per-user dashboards — not useful at this stage; aggregate views answer the perf questions.
+
+---
+
+Tell me which groups to include (1–4) and I'll implement. Default if you just say "go": all of 1, 2, 3, and the dashboard in 4.
