@@ -9,6 +9,7 @@ import TradeTabs from "@/components/trades/TradeTabs";
 import TradeProposalForm from "@/components/marketplace/TradeProposalForm";
 import { CardItemProps } from "@/components/cards/CardItem";
 import { supabase } from "@/integrations/supabase/client";
+import { createTradeOffer } from "@/services/supabaseTradeService";
 import { useUser } from "@/hooks/useUser";
 
 type TradeStatus = "pending" | "accepted" | "shipped" | "completed" | "declined";
@@ -133,40 +134,46 @@ const Trades = () => {
     window.location.href = '/marketplace';
   };
 
-  const handleSubmitProposal = (message: string, offeredCards: any[], paymentCompleted?: boolean) => {
-    console.log('Trade proposal submitted:', { message, offeredCards, paymentCompleted });
-    
-    // Create new trade entry
-    const newTrade = {
-      id: `t-${Date.now()}`,
-      status: "pending" as const,
-      date: "just now",
-      user: {
-        id: "marketplace-user",
-        name: "Marketplace Trader",
-        reputation: "new" as const
-      },
-      giving: {
-        count: offeredCards.length,
-        preview: offeredCards[0]?.images?.small || "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
-      },
-      receiving: {
-        count: 1,
-        preview: selectedTargetCard?.imageUrl || "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg"
-      },
-      message,
-      offeredCards,
-      targetCard: selectedTargetCard
-    };
-    
-    // Add to trades list
-    setUserTrades(prev => [newTrade, ...prev]);
-    
-    toast.success('Trade proposal sent successfully!');
-    setIsTradeProposalOpen(false);
-    
-    // Clear URL parameters
-    window.history.replaceState({}, '', '/trades');
+  const handleSubmitProposal = async (message: string, offeredCards: any[], paymentCompleted?: boolean) => {
+    if (!selectedTargetCard || !user) return;
+
+    // Find the listing to get the owner's user ID
+    const { data: listing } = await supabase
+      .from('marketplace_listings')
+      .select('user_id')
+      .eq('card_id', selectedTargetCard.id)
+      .single();
+
+    if (!listing?.user_id) {
+      toast.error('Could not find the listing owner. Please try again.');
+      return;
+    }
+
+    try {
+      const mappedCards = offeredCards.map((c: any) => ({
+        id: c.id,
+        card_name: c.name,
+        imageUrl: c.images?.small || '',
+        condition: 'Near Mint',
+        estimatedValue: String(c.cardmarket?.prices?.averageSellPrice || '0'),
+        quantity: 1,
+      }));
+
+      const trade = await createTradeOffer({
+        recipient_user_id: listing.user_id,
+        description: message,
+        initiator_cards: mappedCards as any,
+        escrow_required: true,
+      });
+
+      toast.success('Trade proposal sent!');
+      setIsTradeProposalOpen(false);
+      window.history.replaceState({}, '', '/trades');
+      loadUserTrades();
+    } catch (err) {
+      console.error('Trade creation failed:', err);
+      toast.error('Failed to send trade proposal. Please try again.');
+    }
   };
 
   const handleCloseProposal = () => {

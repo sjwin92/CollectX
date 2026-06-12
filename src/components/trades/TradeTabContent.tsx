@@ -4,7 +4,10 @@ import { TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
+import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import TradeEmptyState from "./TradeEmptyState";
 
 interface TradeTabContentProps {
@@ -14,24 +17,30 @@ interface TradeTabContentProps {
   currentUserId?: string;
 }
 
-const TradeTabContent = ({ value, onCreateTrade, trades = [], currentUserId }: TradeTabContentProps) => {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'proposed': return 'bg-blue-500';
-      case 'accepted': return 'bg-green-500';
-      case 'processing': return 'bg-yellow-500';
-      case 'shipped': return 'bg-purple-500';
-      case 'completed': return 'bg-green-600';
-      case 'declined': return 'bg-red-500';
-      default: return 'bg-gray-500';
-    }
-  };
+const STATUS_COLORS: Record<string, string> = {
+  proposed: "bg-blue-500",
+  accepted: "bg-green-500",
+  processing: "bg-yellow-500",
+  shipped: "bg-purple-500",
+  completed: "bg-green-600",
+  declined: "bg-red-500",
+  disputed: "bg-red-600",
+  cancelled: "bg-gray-500",
+};
 
+const parseCardArray = (raw: any): any[] => {
+  if (!raw) return [];
+  if (typeof raw === "string") {
+    try { return JSON.parse(raw); } catch { return []; }
+  }
+  return Array.isArray(raw) ? raw : [];
+};
+
+const TradeTabContent = ({ value, onCreateTrade, trades = [], currentUserId }: TradeTabContentProps) => {
   const getTradePartner = (trade: any) => {
-    if (trade.initiator_user_id === currentUserId) {
-      return trade.recipient_profile;
-    }
-    return trade.initiator_profile;
+    return trade.initiator_user_id === currentUserId
+      ? trade.recipient_profile
+      : trade.initiator_profile;
   };
 
   return (
@@ -43,7 +52,12 @@ const TradeTabContent = ({ value, onCreateTrade, trades = [], currentUserId }: T
           {trades.map((trade) => {
             const partner = getTradePartner(trade);
             const isInitiator = trade.initiator_user_id === currentUserId;
-            
+
+            const myCards = parseCardArray(isInitiator ? trade.initiator_cards : trade.recipient_cards);
+            const theirCards = parseCardArray(isInitiator ? trade.recipient_cards : trade.initiator_cards);
+            const myValue = isInitiator ? trade.initiator_value : trade.recipient_value;
+            const theirValue = isInitiator ? trade.recipient_value : trade.initiator_value;
+
             return (
               <Card key={trade.id} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-3">
@@ -52,48 +66,53 @@ const TradeTabContent = ({ value, onCreateTrade, trades = [], currentUserId }: T
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={partner?.avatar_url} />
                         <AvatarFallback>
-                          {(partner?.display_name || partner?.username || 'U').substring(0, 2).toUpperCase()}
+                          {(partner?.display_name || partner?.username || "U").substring(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <CardTitle className="text-base">
-                          {partner?.display_name || partner?.username || 'Unknown User'}
+                          {partner?.display_name || partner?.username || "Unknown User"}
                         </CardTitle>
                         <p className="text-sm text-muted-foreground">
-                          {isInitiator ? 'You proposed' : 'Proposed to you'} • {formatDistanceToNow(new Date(trade.created_at), { addSuffix: true })}
+                          {isInitiator ? "You proposed" : "Proposed to you"} •{" "}
+                          {formatDistanceToNow(new Date(trade.created_at), { addSuffix: true })}
                         </p>
                       </div>
                     </div>
-                    <Badge className={`${getStatusColor(trade.status)} text-white`}>
-                      {trade.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge className={`${STATUS_COLORS[trade.status] || "bg-gray-500"} text-white capitalize`}>
+                        {trade.status}
+                      </Badge>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
                   {trade.description && (
-                    <p className="text-sm text-muted-foreground mb-3">
-                      {trade.description}
-                    </p>
+                    <p className="text-sm text-muted-foreground mb-3">{trade.description}</p>
                   )}
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-2 gap-4 text-sm mb-4">
                     <div>
                       <span className="font-medium">Your Cards:</span>
                       <div className="text-muted-foreground">
-                        {isInitiator 
-                          ? JSON.parse(trade.initiator_cards || '[]').length 
-                          : JSON.parse(trade.recipient_cards || '[]').length
-                        } cards (£{isInitiator ? trade.initiator_value : trade.recipient_value})
+                        {myCards.length} card{myCards.length !== 1 ? "s" : ""}
+                        {myValue > 0 && ` (£${Number(myValue).toFixed(2)})`}
                       </div>
                     </div>
                     <div>
                       <span className="font-medium">Their Cards:</span>
                       <div className="text-muted-foreground">
-                        {isInitiator 
-                          ? JSON.parse(trade.recipient_cards || '[]').length 
-                          : JSON.parse(trade.initiator_cards || '[]').length
-                        } cards (£{isInitiator ? trade.recipient_value : trade.initiator_value})
+                        {theirCards.length} card{theirCards.length !== 1 ? "s" : ""}
+                        {theirValue > 0 && ` (£${Number(theirValue).toFixed(2)})`}
                       </div>
                     </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button asChild size="sm" variant="outline">
+                      <Link to={`/trades/${trade.id}`}>
+                        View Trade
+                        <ArrowRight className="ml-2 h-3 w-3" />
+                      </Link>
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

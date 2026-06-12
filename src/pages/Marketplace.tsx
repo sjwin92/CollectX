@@ -9,7 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import { useToast } from "@/hooks/use-toast";
 import TradeListing from "@/components/marketplace/TradeListing";
-import SocialTradeHub from "@/components/trades/SocialTradeHub";
 import { 
   Plus, 
   Search, 
@@ -171,26 +170,12 @@ const Marketplace = () => {
   };
 
   const handleProposeTrade = (listingId: string) => {
-    setSelectedListing(listingId);
-    
-    const listing = listings.find(l => l.id === listingId);
-    
-    // Open the social hub with the conversation for this listing
-    setIsSocialHubOpen(true);
-    
-    toast({
-      title: "Opening trade conversation",
-      description: `Starting chat with ${listing?.username} about ${listing?.cardOffered.name}`,
-    });
+    // Navigate to the trades page with the listing pre-selected
+    navigate(`/trades?propose=true&listingId=${listingId}`);
   };
 
-  const [isSocialHubOpen, setIsSocialHubOpen] = useState(false);
-
   const handleViewCard = (cardId: string) => {
-    toast({
-      title: "Viewing card details",
-      description: "Navigating to card details page",
-    });
+    navigate(`/card/${cardId}`);
   };
 
   return (
@@ -369,11 +354,6 @@ const Marketplace = () => {
           />
         )}
 
-        {/* Social Trade Hub */}
-        <SocialTradeHub 
-          isOpen={isSocialHubOpen} 
-          onClose={() => setIsSocialHubOpen(false)} 
-        />
       </main>
 
       <Footer />

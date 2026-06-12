@@ -264,3 +264,24 @@ export const subscribeToTradeMessages = (
 
   return () => supabase.removeChannel(channel);
 };
+
+// Upload a trade image to Supabase storage
+export const uploadTradeImage = async (file: File): Promise<string> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('User not authenticated');
+
+  const fileExt = file.name.split('.').pop() || 'jpg';
+  const filePath = `trade-images/${user.id}/${Date.now()}.${fileExt}`;
+
+  const { error } = await (supabase as any).storage
+    .from('card-images')
+    .upload(filePath, file, { upsert: false });
+
+  if (error) throw new Error(`Image upload failed: ${error.message}`);
+
+  const { data: urlData } = (supabase as any).storage
+    .from('card-images')
+    .getPublicUrl(filePath);
+
+  return urlData.publicUrl;
+};
