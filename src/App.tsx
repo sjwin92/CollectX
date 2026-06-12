@@ -5,7 +5,7 @@ import { refreshUsdToGbpRate } from "./services/currencyService";
 
 refreshUsdToGbpRate();
 import { QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "./lib/react-query";
+import { queryClient } from "./lib/react-query"; // side effect: wires up localStorage persistence
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import { LoadingProvider } from "./contexts/LoadingContext";
 import { AuthProvider } from "./contexts/AuthContext";
