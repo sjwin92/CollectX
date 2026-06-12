@@ -173,35 +173,35 @@ const Navbar = () => {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link to="/account-settings">
+                      <PrefetchLink to="/account-settings">
                         <Settings className="mr-2 h-4 w-4" />
                         <span>Account Settings</span>
-                      </Link>
+                      </PrefetchLink>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link to="/profile">
+                      <PrefetchLink to="/profile">
                         <User className="mr-2 h-4 w-4" />
                         <span>Profile</span>
-                      </Link>
+                      </PrefetchLink>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/collection">
+                      <PrefetchLink to="/collection">
                         <Archive className="mr-2 h-4 w-4" />
                         <span>My Collection</span>
-                      </Link>
+                      </PrefetchLink>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/collection-boxes">
+                      <PrefetchLink to="/collection-boxes">
                         <Box className="mr-2 h-4 w-4" />
                         <span>Collection Boxes</span>
-                      </Link>
+                      </PrefetchLink>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/trades">
+                      <PrefetchLink to="/trades">
                         <ArrowLeftRight className="mr-2 h-4 w-4" />
                         <span>Trades</span>
-                      </Link>
+                      </PrefetchLink>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/sealed-products">
@@ -210,10 +210,10 @@ const Navbar = () => {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/marketplace">
+                      <PrefetchLink to="/marketplace">
                         <ShoppingCart className="mr-2 h-4 w-4" />
                         <span>Marketplace</span>
-                      </Link>
+                      </PrefetchLink>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut}>
