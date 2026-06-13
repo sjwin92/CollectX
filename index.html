@@ -54,6 +54,18 @@
     <!-- Security: nosniff is the only http-equiv directive browsers still honor reliably.
          X-Frame-Options and X-XSS-Protection must be HTTP headers, not meta tags. -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+
+    <!-- Structured Data: Organization -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "CollectX",
+        "url": "https://trade-collectors-haven.lovable.app/",
+        "logo": "https://trade-collectors-haven.lovable.app/favicon-32x32.png",
+        "description": "The ultimate platform for Pokémon card trading. Build your collection, trade with other collectors, and discover rare cards."
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

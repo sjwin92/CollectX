@@ -95,10 +95,11 @@ const SetDetail = () => {
     staleTime: 30 * 60 * 1000,
   });
 
-  const enrichedProducts = React.useMemo(() =>
-    setProducts.map((p: any) => ({ ...p, imageUrl: ebayImageMap[p.productType] || p.imageUrl })),
-    [setProducts, ebayImageMap]
-  );
+  const enrichedProducts = React.useMemo(() => {
+    const list = Array.isArray(setProducts) ? setProducts : [];
+    return list.map((p: any) => ({ ...p, imageUrl: ebayImageMap[p.productType] || p.imageUrl }));
+  }, [setProducts, ebayImageMap]);
+
 
   // Process image URLs — storedImages already loaded in parallel above
   const logoUrl = React.useMemo(() => {
