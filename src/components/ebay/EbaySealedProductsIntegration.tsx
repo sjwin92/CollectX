@@ -33,8 +33,16 @@ const EbaySealedProductsIntegration: React.FC<EbaySealedProductsIntegrationProps
   const fetchEbayListings = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
+      // Skip the call entirely if the user isn't signed in — the edge
+      // function requires auth and would just 401.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setError("Sign in to view live eBay market data for this product.");
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('ebay-integration', {
         body: {
           action: 'search',
@@ -45,25 +53,24 @@ const EbaySealedProductsIntegration: React.FC<EbaySealedProductsIntegrationProps
 
       if (error) throw error;
 
-      setEbayListings(data.listings || []);
-      setAveragePrice(data.averagePrice || null);
-    } catch (error: any) {
-      console.error('Error fetching eBay listings:', error);
-      setError(error.message || 'Failed to fetch eBay listings');
-      toast({
-        title: "Error",
-        description: "Failed to fetch eBay price data",
-        variant: "destructive",
-      });
+      setEbayListings(data?.listings || []);
+      setAveragePrice(data?.averagePrice || null);
+    } catch (err: any) {
+      console.error('Error fetching eBay listings:', err);
+      const msg = err?.message?.includes('401') || err?.message?.toLowerCase?.().includes('unauthorized')
+        ? "Sign in to view live eBay market data for this product."
+        : (err?.message || 'Failed to fetch eBay listings');
+      setError(msg);
+      // Don't toast — error is shown inline in the card.
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    // Auto-fetch listings when component mounts
     fetchEbayListings();
   }, [product.id]);
+
 
   const handleListOnEbay = async () => {
     try {
