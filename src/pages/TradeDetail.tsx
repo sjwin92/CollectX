@@ -95,11 +95,6 @@ const TradeDetail: React.FC = () => {
   const canDispute = ["accepted", "shipped"].includes(trade.status);
 
   const otherParty = isInitiator ? trade.recipient : trade.initiator;
-  const { data: alreadyRated } = useQuery({
-    queryKey: ["trade-rated", tradeId, user?.id],
-    queryFn: () => hasRatedTrade(tradeId!),
-    enabled: !!tradeId && !!user && trade.status === "completed",
-  });
   const canRate = trade.status === "completed" && !!user && !alreadyRated;
 
   return (
