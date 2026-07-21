@@ -30,8 +30,8 @@ export interface NotificationPreferences {
 
 export interface ChatConversation {
   id: string;
-  participant_1_id: string;
-  participant_2_id: string;
+  user1_id: string;
+  user2_id: string;
   last_message_at: string;
   created_at: string;
 }
@@ -39,38 +39,13 @@ export interface ChatConversation {
 export interface ChatMessage {
   id: string;
   conversation_id: string;
-  sender_id: string;
+  sender_user_id: string;
   message: string;
   message_type: 'text' | 'image' | 'trade_offer' | 'system';
   metadata: any;
   read: boolean;
-  read_at?: string;
   created_at: string;
 }
-
-// Notification functions
-export const createNotification = async (
-  userId: string,
-  type: Notification['type'],
-  title: string,
-  message: string,
-  data?: any,
-  actionUrl?: string,
-  expiresAt?: string
-): Promise<string> => {
-  const { data: notificationId, error } = await supabase.rpc('create_notification', {
-    p_user_id: userId,
-    p_type: type,
-    p_title: title,
-    p_message: message,
-    p_data: data || {},
-    p_action_url: actionUrl,
-    p_expires_at: expiresAt
-  });
-
-  if (error) throw error;
-  return notificationId;
-};
 
 // Get user's notifications
 export const getNotifications = async (unreadOnly: boolean = false): Promise<Notification[]> => {
@@ -107,11 +82,7 @@ export const markAllNotificationsAsRead = async (): Promise<void> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
 
-  const { error } = await supabase
-    .from('notifications')
-    .update({ read: true, read_at: new Date().toISOString() })
-    .eq('user_id', user.id)
-    .eq('read', false);
+  const { error } = await supabase.rpc('mark_all_notifications_read');
 
   if (error) throw error;
 };
@@ -169,7 +140,7 @@ export const getConversations = async (): Promise<ChatConversation[]> => {
   const { data, error } = await supabase
     .from('chat_conversations')
     .select('*')
-    .or(`participant_1_id.eq.${user.id},participant_2_id.eq.${user.id}`)
+    .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
     .order('last_message_at', { ascending: false });
 
   if (error) throw error;
@@ -202,7 +173,7 @@ export const sendMessage = async (
     .from('chat_messages')
     .insert([{
       conversation_id: conversationId,
-      sender_id: user.id,
+      sender_user_id: user.id,
       message,
       message_type: messageType,
       metadata: metadata || {}
@@ -212,12 +183,6 @@ export const sendMessage = async (
 
   if (error) throw error;
 
-  // Update conversation last_message_at
-  await supabase
-    .from('chat_conversations')
-    .update({ last_message_at: new Date().toISOString() })
-    .eq('id', conversationId);
-
   return data as ChatMessage;
 };
 
@@ -226,12 +191,9 @@ export const markMessagesAsRead = async (conversationId: string): Promise<void> 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
 
-  const { error } = await supabase
-    .from('chat_messages')
-    .update({ read: true, read_at: new Date().toISOString() })
-    .eq('conversation_id', conversationId)
-    .neq('sender_id', user.id)
-    .eq('read', false);
+  const { error } = await supabase.rpc('mark_conversation_messages_read', {
+    _conversation_id: conversationId
+  });
 
   if (error) throw error;
 };
@@ -245,7 +207,7 @@ export const getUnreadMessageCount = async (): Promise<number> => {
   const { data: conversations } = await supabase
     .from('chat_conversations')
     .select('id')
-    .or(`participant_1_id.eq.${user.id},participant_2_id.eq.${user.id}`);
+    .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
 
   if (!conversations || conversations.length === 0) return 0;
 
@@ -254,7 +216,7 @@ export const getUnreadMessageCount = async (): Promise<number> => {
   const { count, error } = await supabase
     .from('chat_messages')
     .select('*', { count: 'exact', head: true })
-    .neq('sender_id', user.id)
+    .neq('sender_user_id', user.id)
     .eq('read', false)
     .in('conversation_id', conversationIds);
 
@@ -332,7 +294,7 @@ export const subscribeToConversations = (
         event: '*',
         schema: 'public',
         table: 'chat_conversations',
-        filter: `participant_1_id=eq.${userId}`
+        filter: `user1_id=eq.${userId}`
       },
       onUpdate
     )
@@ -342,42 +304,11 @@ export const subscribeToConversations = (
         event: '*',
         schema: 'public',
         table: 'chat_conversations',
-        filter: `participant_2_id=eq.${userId}`
+        filter: `user2_id=eq.${userId}`
       },
       onUpdate
     )
     .subscribe();
 
   return () => supabase.removeChannel(channel);
-};
-
-// Helper functions for creating specific notification types
-export const createTradeProposalNotification = async (
-  recipientUserId: string,
-  initiatorName: string,
-  tradeId: string
-) => {
-  return createNotification(
-    recipientUserId,
-    'trade_proposal',
-    'New Trade Proposal',
-    `${initiatorName} has proposed a trade with you`,
-    { trade_id: tradeId, initiator_name: initiatorName },
-    `/trades/${tradeId}`
-  );
-};
-
-export const createListingInterestNotification = async (
-  listingOwnerId: string,
-  interestedUserName: string,
-  listingId: string
-) => {
-  return createNotification(
-    listingOwnerId,
-    'listing_interest',
-    'Someone is interested in your listing',
-    `${interestedUserName} expressed interest in your card listing`,
-    { listing_id: listingId, interested_user_name: interestedUserName },
-    `/marketplace/${listingId}`
-  );
 };
