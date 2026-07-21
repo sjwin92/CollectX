@@ -12,11 +12,13 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { Toaster } from "@/components/ui/toaster";
 import ImagePreloader from "@/components/ui/ImagePreloader";
 import ProtectedRoute from "./components/common/ProtectedRoute";
+import AdminRoute from "./components/common/AdminRoute";
 import NavigationAnalytics from "./components/common/NavigationAnalytics";
 import Index from "./pages/Index";
 
 // Lazy-loaded routes — code-split for faster initial load
 const Auth = lazy(() => import("./pages/Auth"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Trades = lazy(() => import("./pages/Trades"));
 const TradeDetail = lazy(() => import("./pages/TradeDetail"));
 const Collection = lazy(() => import("./pages/Collection"));
@@ -54,6 +56,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
 
                 {/* Public routes */}
                 <Route path="/pokemon-sets" element={<Sets />} />
@@ -72,8 +75,10 @@ function App() {
                 <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
-                <Route path="/admin/nav-metrics" element={<ProtectedRoute><NavMetricsAdmin /></ProtectedRoute>} />
-                <Route path="/admin/seed-database" element={<ProtectedRoute><SeedDatabase /></ProtectedRoute>} />
+
+                {/* Admin routes — role-gated */}
+                <Route path="/admin/nav-metrics" element={<AdminRoute><NavMetricsAdmin /></AdminRoute>} />
+                <Route path="/admin/seed-database" element={<AdminRoute><SeedDatabase /></AdminRoute>} />
 
                 {/* 404 Page */}
                 <Route path="*" element={<NotFound />} />
