@@ -78,8 +78,8 @@ export const getUserReputation = async (userId: string): Promise<ReputationScore
     supabase.from('trade_ratings').select('rating').eq('rated_user_id', userId),
     supabase
       .from('trades')
-      .select('status, initiator_id, recipient_id')
-      .or(`initiator_id.eq.${userId},recipient_id.eq.${userId}`),
+      .select('status, initiator_user_id, recipient_user_id')
+      .or(`initiator_user_id.eq.${userId},recipient_user_id.eq.${userId}`),
   ]);
 
   const totalTrades = trades?.length ?? 0;
@@ -113,10 +113,10 @@ export const submitTradeRating = async (
     .from('trade_ratings')
     .insert({
       trade_id: tradeId,
-      rater_id: userResp.user.id,
+      rater_user_id: userResp.user.id,
       rated_user_id: ratedUserId,
       rating,
-      feedback,
+      review: feedback,
     })
     .select()
     .single();
@@ -126,10 +126,10 @@ export const submitTradeRating = async (
   return {
     id: data.id,
     tradeId: data.trade_id,
-    raterId: data.rater_id,
+    raterId: data.rater_user_id,
     ratedUserId: data.rated_user_id,
     rating: data.rating,
-    feedback: data.feedback ?? '',
+    feedback: data.review ?? '',
     createdAt: data.created_at,
   };
 };
