@@ -26,8 +26,6 @@ const CreateListingModal = ({
   onListingCreated
 }: CreateListingModalProps) => {
   const [internalSelectedCard, setInternalSelectedCard] = useState<ExtendedCardItemWithDB | null>(selectedCard);
-  const [listingType, setListingType] = useState<'trade' | 'sale' | 'both'>('trade');
-  const [askingPrice, setAskingPrice] = useState<string>("");
   const [tradePreferences, setTradePreferences] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [expiresAt, setExpiresAt] = useState<string>("");
