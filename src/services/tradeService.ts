@@ -44,7 +44,12 @@ const mapCards = (rows: any[]): TradeCard[] =>
 
 // ── Reads ──────────────────────────────────────────────────────────────────
 
-export const getTradeById = async (tradeId: string): Promise<TradeProposal> => {
+export type TradeProposalWithConfirms = TradeProposal & {
+  initiator_confirmed_at: string | null;
+  recipient_confirmed_at: string | null;
+};
+
+export const getTradeById = async (tradeId: string): Promise<TradeProposalWithConfirms> => {
   const { data, error } = await supabase
     .from("trades")
     .select(
@@ -61,14 +66,25 @@ export const getTradeById = async (tradeId: string): Promise<TradeProposal> => {
   const initiatorCards = mapCards(parseCards(data.initiator_cards));
   const recipientCards = mapCards(parseCards(data.recipient_cards));
 
-  const proposal: TradeProposal = {
+  const initiatorName =
+    data.initiator_profile?.display_name || data.initiator_profile?.username || "Unknown";
+  const recipientName =
+    data.recipient_profile?.display_name || data.recipient_profile?.username || "Unknown";
+
+  // Enrich messages with the sender's display name from the two participants
+  const nameOf = (uid: string) =>
+    uid === data.initiator_user_id ? initiatorName :
+    uid === data.recipient_user_id ? recipientName : "";
+  const enrichedMessages = messages.map((m) => ({ ...m, username: nameOf(m.userId) }));
+
+  return {
     id: data.id,
     status: data.status as TradeStatus,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     initiator: {
       userId: data.initiator_user_id,
-      username: data.initiator_profile?.display_name || data.initiator_profile?.username || "Unknown",
+      username: initiatorName,
       reputation: repTier(data.initiator_profile?.reputation_score),
       tradeCount: data.initiator_profile?.total_trades || 0,
       successRate: data.initiator_profile?.total_trades
@@ -79,7 +95,7 @@ export const getTradeById = async (tradeId: string): Promise<TradeProposal> => {
     },
     recipient: {
       userId: data.recipient_user_id,
-      username: data.recipient_profile?.display_name || data.recipient_profile?.username || "Unknown",
+      username: recipientName,
       reputation: repTier(data.recipient_profile?.reputation_score),
       tradeCount: data.recipient_profile?.total_trades || 0,
       successRate: data.recipient_profile?.total_trades
@@ -89,9 +105,10 @@ export const getTradeById = async (tradeId: string): Promise<TradeProposal> => {
       escrowAmount: { baseAmount: 0, reputationDiscount: 0, finalAmount: 0, currency: "GBP" },
     },
     escrow: null,
-    messages,
+    messages: enrichedMessages,
+    initiator_confirmed_at: data.initiator_confirmed_at ?? null,
+    recipient_confirmed_at: data.recipient_confirmed_at ?? null,
   };
-  return proposal;
 };
 
 export const getTradeMessages = async (tradeId: string) => {
@@ -104,7 +121,7 @@ export const getTradeMessages = async (tradeId: string) => {
   return (data || []).map((m: any) => ({
     id: m.id,
     tradeId: m.trade_id,
-    userId: m.user_id,
+    userId: m.sender_user_id,
     username: "",
     message: m.message,
     createdAt: m.created_at,
@@ -122,10 +139,12 @@ export const addTradeMessage = async (
 ): Promise<void> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not signed in");
+  const text = (message ?? "").trim();
+  if (!text && !imageUrl) throw new Error("Message text or image required");
   const { error } = await supabase.from("trade_messages").insert({
     trade_id: tradeId,
-    user_id: user.id,
-    message,
+    sender_user_id: user.id,
+    message: text || "",
     message_type: "text",
     image_url: imageUrl,
   });
@@ -137,6 +156,13 @@ const rpc = async (fn: string, args: Record<string, any>) => {
   if (error) throw new Error(error.message);
   return data;
 };
+
+export const proposeTrade = (listingId: string, offeredUserCardIds: string[], message?: string) =>
+  rpc("propose_trade", {
+    _listing_id: listingId,
+    _offered_user_card_ids: offeredUserCardIds,
+    _message: message ?? null,
+  });
 
 export const acceptTradeProposal  = (tradeId: string) => rpc("accept_trade",  { _trade_id: tradeId });
 export const declineTradeProposal = (tradeId: string) => rpc("decline_trade", { _trade_id: tradeId });
@@ -150,6 +176,82 @@ export const markTradeShipped = (
   tracking: string,
   carrier: string,
 ) => rpc("mark_trade_shipped", { _trade_id: tradeId, _tracking: tracking, _carrier: carrier });
+
+// Address & shipment RPCs
+export type TradeAddress = {
+  full_name?: string;
+  line1?: string;
+  line2?: string;
+  city?: string;
+  region?: string;
+  postal_code?: string;
+  country?: string;
+};
+
+export const submitTradeAddress = (tradeId: string, address: TradeAddress) =>
+  rpc("submit_trade_address", { _trade_id: tradeId, _address: address });
+
+export const getMyTradeAddress = async (tradeId: string): Promise<TradeAddress | null> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data, error } = await supabase
+    .from("trade_addresses")
+    .select("address")
+    .eq("trade_id", tradeId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (error) return null;
+  return (data?.address as TradeAddress) ?? null;
+};
+
+export const getTradeDestinationAddress = (tradeId: string) =>
+  rpc("get_trade_destination_address", { _trade_id: tradeId }) as Promise<TradeAddress | null>;
+
+export type SafeShipment = {
+  id: string;
+  sender_user_id: string;
+  recipient_user_id: string;
+  status: string;
+  tracking_number: string | null;
+  carrier: string | null;
+  shipped_at: string | null;
+  delivered_at: string | null;
+};
+
+export const getTradeShipments = async (tradeId: string): Promise<SafeShipment[]> => {
+  const data = (await rpc("get_trade_shipments", { _trade_id: tradeId })) as SafeShipment[] | null;
+  return data ?? [];
+};
+
+// Ratings
+export const submitTradeRating = async (
+  tradeId: string,
+  ratedUserId: string,
+  rating: number,
+  review?: string,
+) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not signed in");
+  const { error } = await supabase.from("trade_ratings").insert({
+    trade_id: tradeId,
+    rater_user_id: user.id,
+    rated_user_id: ratedUserId,
+    rating,
+    review: review ?? null,
+  });
+  if (error) throw new Error(error.message);
+};
+
+export const hasRatedTrade = async (tradeId: string): Promise<boolean> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+  const { count } = await supabase
+    .from("trade_ratings")
+    .select("id", { count: "exact", head: true })
+    .eq("trade_id", tradeId)
+    .eq("rater_user_id", user.id);
+  return (count ?? 0) > 0;
+};
 
 // ── Image upload ───────────────────────────────────────────────────────────
 

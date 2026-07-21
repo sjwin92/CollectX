@@ -287,6 +287,7 @@ export type Database = {
           status: string
           trade_preferences: string | null
           updated_at: string
+          user_card_id: string | null
           user_id: string
           views_count: number
         }
@@ -315,6 +316,7 @@ export type Database = {
           status?: string
           trade_preferences?: string | null
           updated_at?: string
+          user_card_id?: string | null
           user_id: string
           views_count?: number
         }
@@ -343,10 +345,19 @@ export type Database = {
           status?: string
           trade_preferences?: string | null
           updated_at?: string
+          user_card_id?: string | null
           user_id?: string
           views_count?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_listings_user_card_id_fkey"
+            columns: ["user_card_id"]
+            isOneToOne: false
+            referencedRelation: "user_cards"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       nav_metrics: {
         Row: {
@@ -878,11 +889,39 @@ export type Database = {
             referencedRelation: "trade_shipments"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      trade_addresses: {
+        Row: {
+          address: Json
+          created_at: string
+          id: string
+          trade_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: Json
+          created_at?: string
+          id?: string
+          trade_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: Json
+          created_at?: string
+          id?: string
+          trade_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
           {
-            foreignKeyName: "tracking_events_shipment_id_fkey"
-            columns: ["shipment_id"]
+            foreignKeyName: "trade_addresses_trade_id_fkey"
+            columns: ["trade_id"]
             isOneToOne: false
-            referencedRelation: "trade_shipments_public"
+            referencedRelation: "trades"
             referencedColumns: ["id"]
           },
         ]
@@ -1205,75 +1244,7 @@ export type Database = {
       }
     }
     Views: {
-      trade_shipments_public: {
-        Row: {
-          created_at: string | null
-          delivered_at: string | null
-          dimensions_cm: string | null
-          id: string | null
-          insurance_value: number | null
-          recipient_user_id: string | null
-          sender_user_id: string | null
-          shipped_at: string | null
-          shipping_cost: number | null
-          shipping_method_id: string | null
-          status: string | null
-          tracking_number: string | null
-          trade_id: string | null
-          updated_at: string | null
-          weight_kg: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          delivered_at?: string | null
-          dimensions_cm?: string | null
-          id?: string | null
-          insurance_value?: number | null
-          recipient_user_id?: string | null
-          sender_user_id?: string | null
-          shipped_at?: string | null
-          shipping_cost?: number | null
-          shipping_method_id?: string | null
-          status?: string | null
-          tracking_number?: string | null
-          trade_id?: string | null
-          updated_at?: string | null
-          weight_kg?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          delivered_at?: string | null
-          dimensions_cm?: string | null
-          id?: string | null
-          insurance_value?: number | null
-          recipient_user_id?: string | null
-          sender_user_id?: string | null
-          shipped_at?: string | null
-          shipping_cost?: number | null
-          shipping_method_id?: string | null
-          status?: string | null
-          tracking_number?: string | null
-          trade_id?: string | null
-          updated_at?: string | null
-          weight_kg?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "trade_shipments_shipping_method_id_fkey"
-            columns: ["shipping_method_id"]
-            isOneToOne: false
-            referencedRelation: "shipping_methods"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "trade_shipments_trade_id_fkey"
-            columns: ["trade_id"]
-            isOneToOne: false
-            referencedRelation: "trades"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       accept_trade: {
@@ -1385,6 +1356,23 @@ export type Database = {
         }
       }
       get_nav_metrics_summary: { Args: { _days?: number }; Returns: Json }
+      get_trade_destination_address: {
+        Args: { _trade_id: string }
+        Returns: Json
+      }
+      get_trade_shipments: {
+        Args: { _trade_id: string }
+        Returns: {
+          carrier: string
+          delivered_at: string
+          id: string
+          recipient_user_id: string
+          sender_user_id: string
+          shipped_at: string
+          status: string
+          tracking_number: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1449,6 +1437,54 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "trades"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      propose_trade: {
+        Args: {
+          _listing_id: string
+          _message?: string
+          _offered_user_card_ids: string[]
+        }
+        Returns: {
+          accepted_at: string | null
+          cancelled_at: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          initiator_cards: Json
+          initiator_confirmed_at: string | null
+          initiator_user_id: string
+          metadata: Json | null
+          recipient_cards: Json
+          recipient_confirmed_at: string | null
+          recipient_user_id: string
+          status: string
+          title: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "trades"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      submit_trade_address: {
+        Args: { _address: Json; _trade_id: string }
+        Returns: {
+          address: Json
+          created_at: string
+          id: string
+          trade_id: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "trade_addresses"
           isOneToOne: true
           isSetofReturn: false
         }

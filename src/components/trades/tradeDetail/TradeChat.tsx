@@ -88,6 +88,13 @@ export const TradeChat = ({ trade, tradeId, currentUserId, onMessageSent, onOpen
           <div className="space-y-2">
             {trade.messages.map((msg) => {
               const isMine = msg.userId === currentUserId;
+              const otherName =
+                msg.username ||
+                (msg.userId === trade.initiator.userId
+                  ? trade.initiator.username
+                  : msg.userId === trade.recipient.userId
+                    ? trade.recipient.username
+                    : "");
               return (
                 <div
                   key={msg.id}
@@ -98,7 +105,7 @@ export const TradeChat = ({ trade, tradeId, currentUserId, onMessageSent, onOpen
                   }`}
                 >
                   <div className="text-xs text-muted-foreground">
-                    {isMine ? "You" : msg.username}
+                    {isMine ? "You" : otherName}
                   </div>
                   {msg.message && <div className="mb-2">{msg.message}</div>}
                   {msg.imageUrl && (

@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Star } from 'lucide-react';
-import { submitTradeRating } from '@/services/reputationService';
+import { submitTradeRating } from '@/services/tradeService';
 import { useToast } from '@/hooks/use-toast';
 
 interface TradeRatingModalProps {
@@ -53,11 +53,13 @@ const TradeRatingModal = ({
         description: "Thank you for your feedback!"
       });
       onClose();
-    } catch (error) {
+    } catch (error: any) {
+      const msg = String(error?.message || "").toLowerCase();
+      const duplicate = msg.includes("duplicate") || msg.includes("unique");
       toast({
         variant: "destructive",
-        title: "Error submitting rating",
-        description: "Please try again later."
+        title: duplicate ? "Already rated" : "Couldn't submit rating",
+        description: error?.message || "Please try again later.",
       });
     } finally {
       setIsSubmitting(false);

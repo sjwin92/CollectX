@@ -9,7 +9,7 @@ import TradeTabs from "@/components/trades/TradeTabs";
 import TradeProposalForm from "@/components/marketplace/TradeProposalForm";
 import { CardItemProps } from "@/components/cards/CardItem";
 import { supabase } from "@/integrations/supabase/client";
-import { createTradeOffer } from "@/services/supabaseTradeService";
+import { proposeTrade } from "@/services/tradeService";
 import { useUser } from "@/hooks/useUser";
 
 type TradeStatus = "pending" | "accepted" | "shipped" | "completed" | "declined";
@@ -134,57 +134,15 @@ const Trades = () => {
     window.location.href = '/marketplace';
   };
 
-  const handleSubmitProposal = async (message: string, offeredCards: any[]) => {
+  const handleSubmitProposal = async (message: string, selectedUserCardIds: string[]) => {
     if (!selectedTargetCard || !user) return;
-
-    if (!offeredCards?.length) {
-      toast.error('Add at least one card to your offer.');
+    if (!selectedUserCardIds?.length) {
+      toast.error('Select at least one card to offer.');
       return;
     }
-
-    // Find the listing to get the owner's user ID
-    const { data: listing } = await supabase
-      .from('marketplace_listings')
-      .select('user_id, card_id, card_name, image_url, condition, asking_price')
-      .eq('id', selectedTargetCard.id)
-      .maybeSingle();
-
-    if (!listing?.user_id) {
-      toast.error('Could not find the listing owner. Please try again.');
-      return;
-    }
-
-    if (listing.user_id === user.id) {
-      toast.error("You can't propose a trade against your own listing.");
-      return;
-    }
-
     try {
-      const mappedCards = offeredCards.map((c: any) => ({
-        id: c.id,
-        card_name: c.name,
-        imageUrl: c.images?.small || c.imageUrl || '',
-        condition: 'Near Mint',
-        estimatedValue: String(c.cardmarket?.prices?.averageSellPrice || '0'),
-        quantity: 1,
-      }));
-
-      const recipientCards = [{
-        id: listing.card_id,
-        card_name: listing.card_name,
-        imageUrl: listing.image_url || '',
-        condition: listing.condition || 'Near Mint',
-        estimatedValue: String(listing.asking_price ?? '0'),
-        quantity: 1,
-      }];
-
-      await createTradeOffer({
-        recipient_user_id: listing.user_id,
-        description: message,
-        initiator_cards: mappedCards as any,
-        recipient_cards: recipientCards as any,
-      });
-
+      // selectedTargetCard.id here holds the listing id (see effect above)
+      await proposeTrade(selectedTargetCard.id, selectedUserCardIds, message);
       toast.success('Trade proposal sent!');
       setIsTradeProposalOpen(false);
       window.history.replaceState({}, '', '/trades');
