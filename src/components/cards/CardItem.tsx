@@ -75,6 +75,22 @@ const CardItem = ({
       setImageStatus("error");
     }
   }, [id, imageUrl]);
+
+  useEffect(() => {
+    if (imageStatus !== "loading") return;
+
+    const timeoutId = window.setTimeout(() => {
+      setImageStatus((currentStatus) => {
+        if (currentStatus === "loading") {
+          console.log("Image loading timed out");
+          return "error";
+        }
+        return currentStatus;
+      });
+    }, 5000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [imageStatus]);
   
   const handleImageLoad = () => {
     console.log(`Image loaded successfully: ${imageSrc}`);
@@ -342,22 +358,6 @@ const CardItem = ({
     }
   }
 
-  useEffect(() => {
-    let timeoutId: number | undefined;
-    
-    if (imageStatus === "loading") {
-      timeoutId = window.setTimeout(() => {
-        if (imageStatus === "loading") {
-          console.log("Image loading timed out");
-          setImageStatus("error");
-        }
-      }, 5000);
-    }
-    
-    return () => {
-      if (timeoutId) window.clearTimeout(timeoutId);
-    };
-  }, [imageStatus]);
 };
 
 export default CardItem;
