@@ -26,8 +26,6 @@ const CreateListingModal = ({
   onListingCreated
 }: CreateListingModalProps) => {
   const [internalSelectedCard, setInternalSelectedCard] = useState<ExtendedCardItemWithDB | null>(selectedCard);
-  const [listingType, setListingType] = useState<'trade' | 'sale' | 'both'>('trade');
-  const [askingPrice, setAskingPrice] = useState<string>("");
   const [tradePreferences, setTradePreferences] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [expiresAt, setExpiresAt] = useState<string>("");
@@ -63,16 +61,7 @@ const CreateListingModal = ({
       return;
     }
 
-    if (listingType === 'sale' && !askingPrice) {
-      toast({
-        title: "Error",
-        description: "Please enter an asking price for sale listings",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (listingType === 'trade' && !tradePreferences) {
+    if (!tradePreferences) {
       toast({
         title: "Error",
         description: "Please specify what you're looking for in trade",
@@ -82,11 +71,10 @@ const CreateListingModal = ({
     }
 
     setIsLoading(true);
-    
+
     try {
       await createMarketplaceListing(currentCard, {
-        listing_type: listingType,
-        asking_price: askingPrice ? parseFloat(askingPrice) : undefined,
+        listing_type: 'trade',
         trade_preferences: tradePreferences,
         description,
         expires_at: expiresAt || undefined
@@ -98,12 +86,10 @@ const CreateListingModal = ({
       });
 
       // Reset form
-      setListingType('trade');
-      setAskingPrice("");
       setTradePreferences("");
       setDescription("");
       setExpiresAt("");
-      
+
       onListingCreated?.();
       onClose();
     } catch (error) {
@@ -221,44 +207,15 @@ const CreateListingModal = ({
             {/* Listing Details Form */}
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="listingType">Listing Type</Label>
-                <Select value={listingType} onValueChange={(value: 'trade' | 'sale' | 'both') => setListingType(value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select listing type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="trade">Trade Only</SelectItem>
-                    <SelectItem value="sale">Sale Only</SelectItem>
-                    <SelectItem value="both">Trade or Sale</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="tradePreferences">Trade Preferences</Label>
+                <Textarea
+                  id="tradePreferences"
+                  placeholder="What cards are you looking for? (e.g., Charizard cards, specific sets, etc.)"
+                  value={tradePreferences}
+                  onChange={(e) => setTradePreferences(e.target.value)}
+                />
               </div>
 
-              {(listingType === 'sale' || listingType === 'both') && (
-                <div className="space-y-2">
-                  <Label htmlFor="askingPrice">Asking Price ($)</Label>
-                  <Input
-                    id="askingPrice"
-                    type="number"
-                    step="0.01"
-                    placeholder="Enter asking price"
-                    value={askingPrice}
-                    onChange={(e) => setAskingPrice(e.target.value)}
-                  />
-                </div>
-              )}
-
-              {(listingType === 'trade' || listingType === 'both') && (
-                <div className="space-y-2">
-                  <Label htmlFor="tradePreferences">Trade Preferences</Label>
-                  <Textarea
-                    id="tradePreferences"
-                    placeholder="What cards are you looking for? (e.g., Charizard cards, specific sets, etc.)"
-                    value={tradePreferences}
-                    onChange={(e) => setTradePreferences(e.target.value)}
-                  />
-                </div>
-              )}
 
               <div className="space-y-2">
                 <Label htmlFor="description">Additional Description</Label>

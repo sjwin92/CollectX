@@ -53,8 +53,10 @@ const TradeTabContent = ({ value, onCreateTrade, trades = [], currentUserId }: T
 
             const myCards = parseCardArray(isInitiator ? trade.initiator_cards : trade.recipient_cards);
             const theirCards = parseCardArray(isInitiator ? trade.recipient_cards : trade.initiator_cards);
-            const myValue = isInitiator ? trade.initiator_value : trade.recipient_value;
-            const theirValue = isInitiator ? trade.recipient_value : trade.initiator_value;
+            const sumQty = (arr: any[]) =>
+              arr.reduce((n, c) => n + (Number(c?.quantity) > 0 ? Number(c.quantity) : 1), 0);
+            const myQty = sumQty(myCards);
+            const theirQty = sumQty(theirCards);
 
             return (
               <Card key={trade.id} className="hover:shadow-md transition-shadow">
@@ -93,14 +95,14 @@ const TradeTabContent = ({ value, onCreateTrade, trades = [], currentUserId }: T
                       <span className="font-medium">Your Cards:</span>
                       <div className="text-muted-foreground">
                         {myCards.length} card{myCards.length !== 1 ? "s" : ""}
-                        {myValue > 0 && ` (£${Number(myValue).toFixed(2)})`}
+                        {myQty !== myCards.length && ` (${myQty} total)`}
                       </div>
                     </div>
                     <div>
                       <span className="font-medium">Their Cards:</span>
                       <div className="text-muted-foreground">
                         {theirCards.length} card{theirCards.length !== 1 ? "s" : ""}
-                        {theirValue > 0 && ` (£${Number(theirValue).toFixed(2)})`}
+                        {theirQty !== theirCards.length && ` (${theirQty} total)`}
                       </div>
                     </div>
                   </div>

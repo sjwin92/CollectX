@@ -64,31 +64,41 @@ const Marketplace = () => {
   const [selectedListing, setSelectedListing] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: dbListings = [], isLoading } = useQuery({
+  const { data: dbListings = [], isLoading, error: listingsError } = useQuery({
     queryKey: ['marketplace_listings'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: rows, error } = await supabase
         .from('marketplace_listings')
-        .select('*, profiles:user_id(display_name, username)')
+        .select('*')
         .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(50);
       if (error) throw error;
-      return data || [];
+      const list = rows || [];
+      const ownerIds = Array.from(new Set(list.map((r: any) => r.user_id).filter(Boolean)));
+      let profileMap = new Map<string, any>();
+      if (ownerIds.length) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, display_name, username')
+          .in('user_id', ownerIds);
+        profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+      }
+      return list.map((r: any) => ({ ...r, _profile: profileMap.get(r.user_id) }));
     },
   });
 
   const listings: ListingType[] = dbListings.map((row: any) => ({
     id: row.id,
     userId: row.user_id,
-    username: row.profiles?.display_name || row.profiles?.username || 'Anonymous',
+    username: row._profile?.display_name || row._profile?.username || 'Anonymous',
     cardOffered: {
       id: row.card_id,
       name: row.card_name,
       imageUrl: row.image_url || '',
       rarity: row.rarity || 'Unknown',
       condition: row.condition,
-      estimatedValue: row.asking_price ? `£${Number(row.asking_price).toFixed(2)}` : 'N/A',
+      estimatedValue: '',
     },
     cardsWanted: row.trade_preferences ? [row.trade_preferences] : [],
     description: row.description || '',
@@ -96,9 +106,8 @@ const Marketplace = () => {
     featured: row.featured,
   }));
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState<'featured' | 'recent' | 'trending'>('featured');
+  const [activeCategory, setActiveCategory] = useState<'featured' | 'recent' | 'trending'>('recent');
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<string>("newest");
   const { toast } = useToast();
   const { user } = useUser();
@@ -107,58 +116,32 @@ const Marketplace = () => {
   const filteredListings = React.useMemo(() => {
     return listings
       .filter(listing => {
-        const matchesSearch = searchQuery === "" || 
+        const matchesSearch = searchQuery === "" ||
           listing.cardOffered.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           listing.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
           listing.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
           listing.cardsWanted.some(card => card.toLowerCase().includes(searchQuery.toLowerCase()));
-        
-        const matchesCategory = 
+
+        const matchesCategory =
           (activeCategory === 'featured' && listing.featured) ||
           (activeCategory === 'recent') ||
           (activeCategory === 'trending');
-        
-        const matchesCondition = selectedConditions.length === 0 || 
+
+        const matchesCondition = selectedConditions.length === 0 ||
           selectedConditions.includes(listing.cardOffered.condition);
-        
-        let matchesPrice = true;
-        if (priceRange !== "all") {
-          const price = parseFloat(listing.cardOffered.estimatedValue.replace(/[^0-9.]/g, ''));
-          switch (priceRange) {
-            case "under-10":
-              matchesPrice = price < 10;
-              break;
-            case "10-50":
-              matchesPrice = price >= 10 && price <= 50;
-              break;
-            case "50-100":
-              matchesPrice = price >= 50 && price <= 100;
-              break;
-            case "over-100":
-              matchesPrice = price > 100;
-              break;
-          }
-        }
-        
-        return matchesSearch && matchesCategory && matchesCondition && matchesPrice;
+
+        return matchesSearch && matchesCategory && matchesCondition;
       })
       .sort((a, b) => {
         switch (sortOrder) {
-          case "newest":
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
           case "oldest":
             return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-          case "price-high":
-            return parseFloat(b.cardOffered.estimatedValue.replace(/[^0-9.]/g, '')) - 
-                  parseFloat(a.cardOffered.estimatedValue.replace(/[^0-9.]/g, ''));
-          case "price-low":
-            return parseFloat(a.cardOffered.estimatedValue.replace(/[^0-9.]/g, '')) - 
-                  parseFloat(b.cardOffered.estimatedValue.replace(/[^0-9.]/g, ''));
+          case "newest":
           default:
-            return 0;
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         }
       });
-  }, [listings, searchQuery, activeCategory, selectedConditions, priceRange, sortOrder]);
+  }, [listings, searchQuery, activeCategory, selectedConditions, sortOrder]);
 
 
   const toggleConditionFilter = (condition: string) => {
@@ -233,30 +216,9 @@ const Marketplace = () => {
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Price Range</DropdownMenuLabel>
-                <DropdownMenuGroup>
-                  {[
-                    {id: "all", label: "All Prices"},
-                    {id: "under-10", label: "Under £10"},
-                    {id: "10-50", label: "£10 - £50"},
-                    {id: "50-100", label: "£50 - £100"},
-                    {id: "over-100", label: "Over £100"}
-                  ].map((range) => (
-                    <DropdownMenuItem 
-                      key={range.id} 
-                      className="flex items-center gap-2"
-                      onClick={() => setPriceRange(range.id)}
-                    >
-                      <div className="w-4 h-4 flex items-center justify-center">
-                        {priceRange === range.id && <Check className="h-3 w-3" />}
-                      </div>
-                      <span>{range.label}</span>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
+
 
             <Select
               value={sortOrder}
@@ -268,9 +230,8 @@ const Marketplace = () => {
               <SelectContent>
                 <SelectItem value="newest">Newest First</SelectItem>
                 <SelectItem value="oldest">Oldest First</SelectItem>
-                <SelectItem value="price-high">Price: High to Low</SelectItem>
-                <SelectItem value="price-low">Price: Low to High</SelectItem>
               </SelectContent>
+
             </Select>
 
             <Button className="md:hidden" onClick={() => setCreateListingOpen(true)}>
@@ -306,7 +267,15 @@ const Marketplace = () => {
           </div>
         </div>
 
-        {filteredListings.length > 0 ? (
+        {listingsError ? (
+          <GlassCard className="p-8 text-center">
+            <PackageOpen className="h-12 w-12 mx-auto mb-4 text-destructive" />
+            <h3 className="text-xl font-medium mb-2">Couldn't load listings</h3>
+            <p className="text-muted-foreground mb-4">
+              {(listingsError as any)?.message || "Please try again in a moment."}
+            </p>
+          </GlassCard>
+        ) : filteredListings.length > 0 ? (
           <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
             {filteredListings.map(listing => (
               <TradeListing 
