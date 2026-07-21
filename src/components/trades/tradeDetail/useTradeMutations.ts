@@ -72,7 +72,7 @@ export function useTradeMutations(tradeId: string, refetch: () => void) {
   const dispute = useMutation({
     mutationFn: (reason: string) => openTradeDispute(tradeId, reason),
     onSuccess: () => {
-      toast({ title: "Dispute opened", description: "Our team will follow up." });
+      toast({ title: "Dispute opened", description: "The issue was recorded and this trade is now paused." });
       refetch();
     },
     onError: oops("Couldn't open dispute."),
