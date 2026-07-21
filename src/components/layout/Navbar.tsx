@@ -26,7 +26,6 @@ import {
   Layers,
   Archive,
   Home,
-  Camera,
   Settings,
   Box
 } from "lucide-react";
@@ -202,12 +201,6 @@ const Navbar = () => {
                         <ArrowLeftRight className="mr-2 h-4 w-4" />
                         <span>Trades</span>
                       </PrefetchLink>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/sealed-products">
-                        <Box className="mr-2 h-4 w-4" />
-                        <span>Sealed Products</span>
-                      </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <PrefetchLink to="/marketplace">

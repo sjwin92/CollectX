@@ -4,20 +4,17 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getSetById } from "@/services/api/pokemonSetsService";
 import { supabasePokemonService } from "@/services/supabasePokemonService";
-import { getProductsForSet } from "@/services/api/pokemonProductsService";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import ProductCard from "@/components/pokemon/ProductCard";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Calendar, Trophy, Bookmark, Check, ImageOff, Package } from "lucide-react";
+import { ArrowLeft, Calendar, Trophy, Bookmark, Check, ImageOff } from "lucide-react";
 import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { SmartImage } from "@/components/common/SmartImage";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fixImageUrl } from "@/services/api/cardImageService";
-import { supabase } from "@/integrations/supabase/client";
 
 const SetDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -26,13 +23,6 @@ const SetDetail = () => {
   const [logoLoaded, setLogoLoaded] = React.useState(true);
   const [symbolLoaded, setSymbolLoaded] = React.useState(true);
 
-  // Fire local set + stored images in parallel — both only need `id`
-  const { data: localSet } = useQuery({
-    queryKey: ['localPokemonSet', id],
-    queryFn: () => id ? supabasePokemonService.getSetById(id) : null,
-    enabled: !!id,
-  });
-
   const { data: storedImages } = useQuery({
     queryKey: ['setImages', id],
     queryFn: () => id ? supabasePokemonService.getSetImages(id) : null,
@@ -40,66 +30,11 @@ const SetDetail = () => {
     staleTime: 30 * 60 * 1000,
   });
 
-  // Only hit the external API if Supabase has no record for this set
-  const { data: apiSet, isLoading: apiLoading, isError } = useQuery({
+  const { data: set, isLoading, isError } = useQuery({
     queryKey: ['pokemonSet', id],
     queryFn: () => id ? getSetById(id) : null,
-    enabled: !!id && localSet === null,
+    enabled: !!id,
   });
-
-  const isLoading = apiLoading && !localSet;
-
-  // Normalise whichever source resolved first
-  const set = React.useMemo(() => {
-    if (localSet) {
-      return {
-        ...localSet,
-        images: localSet.images || { logo: (localSet as any).logo_url, symbol: (localSet as any).symbol_url },
-        printedTotal: (localSet as any).printed_total || (localSet as any).printedTotal,
-        releaseDate: (localSet as any).release_date || (localSet as any).releaseDate,
-        legalities: localSet.legalities || {}
-      };
-    }
-    return apiSet;
-  }, [localSet, apiSet]);
-
-  // Derive products from the set already in memory — no extra API call
-  const { data: setProducts = [] } = useQuery({
-    queryKey: ['setProducts', id],
-    queryFn: () => getProductsForSet(set as any),
-    enabled: !!set,
-    staleTime: 60 * 60 * 1000,
-  });
-
-  // eBay image enrichment — fires as soon as set name is available, parallel to products
-  const { data: ebayImageMap = {} } = useQuery({
-    queryKey: ['ebayProductImages', set?.name],
-    queryFn: async () => {
-      const { data } = await (supabase as any).functions.invoke('ebay-integration', {
-        body: { action: 'search', query: `pokemon ${set!.name}`, itemType: 'sealed_product', limit: 10 }
-      });
-      const imageMap: Record<string, string> = {};
-      for (const listing of (data?.listings || [])) {
-        if (!listing.imageUrl) continue;
-        const title = (listing.title || '').toLowerCase();
-        if (!imageMap['etb'] && (title.includes('elite trainer') || title.includes('etb'))) imageMap['etb'] = listing.imageUrl;
-        if (!imageMap['box'] && title.includes('booster box')) imageMap['box'] = listing.imageUrl;
-        if (!imageMap['tin'] && title.includes('tin')) imageMap['tin'] = listing.imageUrl;
-        if (!imageMap['blister-pack'] && title.includes('blister')) imageMap['blister-pack'] = listing.imageUrl;
-        if (!imageMap['deck'] && title.includes('deck')) imageMap['deck'] = listing.imageUrl;
-        if (!imageMap['booster-pack'] && title.includes('booster pack') && !title.includes('box')) imageMap['booster-pack'] = listing.imageUrl;
-      }
-      return imageMap;
-    },
-    enabled: !!set?.name,
-    staleTime: 30 * 60 * 1000,
-  });
-
-  const enrichedProducts = React.useMemo(() => {
-    const list = Array.isArray(setProducts) ? setProducts : [];
-    return list.map((p: any) => ({ ...p, imageUrl: ebayImageMap[p.productType] || p.imageUrl }));
-  }, [setProducts, ebayImageMap]);
-
 
   // Process image URLs — storedImages already loaded in parallel above
   const logoUrl = React.useMemo(() => {
@@ -126,7 +61,7 @@ const SetDetail = () => {
     }
   };
 
-  if (isLoading && !localSet) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
@@ -305,29 +240,6 @@ const SetDetail = () => {
             </div>
           </div>
         </div>
-
-        {/* Products Section */}
-        {enrichedProducts.length > 0 && (
-          <section className="mt-12">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold mb-2 flex items-center">
-                  <Package className="h-5 w-5 text-primary mr-2" />
-                  Available Products
-                </h2>
-                <p className="text-muted-foreground">
-                  All product types available for {set.name}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {enrichedProducts.map(product => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          </section>
-        )}
       </main>
       
       <Footer />

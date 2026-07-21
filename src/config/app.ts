@@ -2,12 +2,11 @@
 export const APP_CONFIG = {
   // App Info
   name: 'CollectX',
-  description: 'The ultimate platform for Pokemon card trading, collection management, and marketplace interactions.',
+  description: 'Card-for-card Pokémon trading and collection management.',
   version: '1.0.0',
   
   // URLs
   baseUrl: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173',
-  apiUrl: 'https://api.pokemontcg.io/v2',
   
   // Features
   features: {
@@ -77,9 +76,9 @@ export const APP_CONFIG = {
   // SEO
   seo: {
     siteName: 'CollectX',
-    siteDescription: 'Trade Pokemon cards, manage your collection, and connect with fellow collectors.',
+    siteDescription: 'Catalogue and trade Pokémon cards with other collectors.',
     keywords: ['pokemon', 'cards', 'trading', 'collection', 'marketplace', 'tcg'],
-    author: 'CollectX Team',
+    author: 'CollectX',
     ogImage: '/og-image.png',
     favicon: '/favicon.ico'
   }

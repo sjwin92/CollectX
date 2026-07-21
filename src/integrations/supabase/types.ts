@@ -64,6 +64,45 @@ export type Database = {
           },
         ]
       }
+      catalogue_sync_runs: {
+        Row: {
+          card_count: number
+          completed_at: string | null
+          details: Json
+          id: string
+          language_code: string
+          set_count: number
+          source: string
+          source_revision: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          card_count?: number
+          completed_at?: string | null
+          details?: Json
+          id?: string
+          language_code?: string
+          set_count?: number
+          source: string
+          source_revision: string
+          started_at?: string
+          status: string
+        }
+        Update: {
+          card_count?: number
+          completed_at?: string | null
+          details?: Json
+          id?: string
+          language_code?: string
+          set_count?: number
+          source?: string
+          source_revision?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           created_at: string
@@ -1738,3 +1777,4 @@ export const Constants = {
     },
   },
 } as const
+

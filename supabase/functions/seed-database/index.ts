@@ -16,9 +16,11 @@
 //     — Skips sets whose import record is fresher than 24 h (override with force).
 //     — Keep limit ≤ 10 to stay within the 60s timeout comfortably.
 //
-// Public endpoint — no auth required (service role only touches our own DB).
+// Admin-only endpoint. The Supabase gateway verifies the caller's JWT and the
+// function independently checks public.user_roles before using service-role
+// writes.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "npm:@supabase/supabase-js@2.103.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,29 +77,19 @@ function json(body: unknown, status = 200) {
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
-  const res = await fetch(url, { headers: { Accept: "application/json" } });
+  const apiKey = Deno.env.get("POKEMON_TCG_API_KEY");
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (apiKey) headers["X-Api-Key"] = apiKey;
+  const res = await fetch(url, { headers });
   if (!res.ok) throw new Error(`TCG API ${res.status} — ${url}: ${await res.text()}`);
   return res.json() as Promise<T>;
 }
 
 // ─── Phase: sets ──────────────────────────────────────────────────────────────
 
-async function importSets(supabase: ReturnType<typeof createClient>, force: boolean) {
-  const SENTINEL = "__all_sets__";
-
-  if (!force) {
-    const { data: existing } = await supabase
-      .from("set_imports")
-      .select("last_imported_at, card_count")
-      .eq("set_id", SENTINEL)
-      .maybeSingle();
-    if (existing?.last_imported_at) {
-      const age = Date.now() - new Date(existing.last_imported_at).getTime();
-      if (age < FRESHNESS_MS) {
-        return { skipped: true, reason: "fresh", ageMs: age, count: existing.card_count };
-      }
-    }
-  }
+async function importSets(supabase: ReturnType<typeof createClient>, _force: boolean) {
+  // Set metadata is a small upsert and does not need a fake set_imports row.
+  // Individual card-set freshness remains tracked by each real set ID.
 
   let all: TcgSet[] = [];
   let page = 1;
@@ -138,15 +130,11 @@ async function importSets(supabase: ReturnType<typeof createClient>, force: bool
     return rows;
   });
   for (let i = 0; i < imageRows.length; i += 100) {
-    await supabase.from("set_images").upsert(imageRows.slice(i, i + 100), { onConflict: "set_id,image_type,image_url" });
+    const { error } = await supabase
+      .from("set_images")
+      .upsert(imageRows.slice(i, i + 100), { onConflict: "set_id,image_type,image_url" });
+    if (error) throw new Error(`upsert set images: ${error.message}`);
   }
-
-  await supabase.from("set_imports").upsert({
-    set_id: SENTINEL,
-    last_imported_at: new Date().toISOString(),
-    card_count: all.length,
-    last_error: null,
-  });
 
   return { skipped: false, count: all.length };
 }
@@ -208,12 +196,13 @@ async function importCardsForSet(
       }
     }
 
-    await supabase.from("set_imports").upsert({
+    const { error: importError } = await supabase.from("set_imports").upsert({
       set_id: setId,
       last_imported_at: new Date().toISOString(),
       card_count: allCards.length,
       last_error: null,
     });
+    if (importError) throw new Error(`record import: ${importError.message}`);
 
     return { cardCount: allCards.length };
   } catch (err) {
@@ -234,14 +223,27 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  if (!supabaseUrl || !serviceKey || !anonKey) return json({ error: "Server misconfigured" }, 500);
+  const readDefaultKey = (name: string) => {
+    const value = Deno.env.get(name);
+    if (!value) return undefined;
+    try {
+      return JSON.parse(value)?.default as string | undefined;
+    } catch {
+      return undefined;
+    }
+  };
+  const serviceKey =
+    readDefaultKey("SUPABASE_SECRET_KEYS") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const publishableKey =
+    readDefaultKey("SUPABASE_PUBLISHABLE_KEYS") ?? Deno.env.get("SUPABASE_ANON_KEY");
+  if (!supabaseUrl || !serviceKey || !publishableKey) {
+    return json({ error: "Server misconfigured" }, 500);
+  }
 
   // --- Admin auth gate ---
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) return json({ error: "Unauthorized" }, 401);
-  const authClient = createClient(supabaseUrl, anonKey);
+  const authClient = createClient(supabaseUrl, publishableKey);
   const token = authHeader.replace("Bearer ", "");
   const { data: userData, error: userErr } = await authClient.auth.getUser(token);
   if (userErr || !userData?.user) return json({ error: "Unauthorized" }, 401);
@@ -261,7 +263,7 @@ Deno.serve(async (req) => {
 
   const phase = body.phase ?? "cards";
   const offset = typeof body.offset === "number" ? body.offset : 0;
-  const limit = Math.min(typeof body.limit === "number" ? body.limit : 10, 20);
+  const limit = Math.min(Math.max(typeof body.limit === "number" ? body.limit : 5, 1), 5);
   const force = body.force === true;
 
   // ── Phase: sets ──

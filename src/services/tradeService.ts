@@ -1,4 +1,4 @@
-// Real trade service — talks to Lovable Cloud (Supabase) exclusively.
+// Real trade service — talks to the CollectX Supabase backend exclusively.
 // State machine: proposed → accepted → shipped → completed | cancelled | disputed
 // All state transitions go through SECURITY DEFINER RPCs to enforce rules.
 

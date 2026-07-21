@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import OptimizedImage from "@/components/ui/OptimizedImage";
-import { Trophy, Calendar, Plus, ImageOff, Package } from "lucide-react";
+import { Trophy, Calendar, Plus, ImageOff, Layers } from "lucide-react";
 import { format } from "date-fns";
 import { PokemonSet } from "@/services/api/pokemonTypes";
 import AddToCollectionModal from "./AddToCollectionModal";
@@ -40,10 +40,10 @@ const SetCard = ({ set, storedImages }: SetCardProps) => {
     setShowAddModal(true);
   };
 
-  const handleViewProducts = (e: React.MouseEvent) => {
+  const handleViewCards = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    navigate(`/products?setId=${encodeURIComponent(set.id)}`);
+    navigate(`/pokemon-cards?setId=${encodeURIComponent(set.id)}`);
   };
 
   const handleLogoError = () => {
@@ -169,10 +169,10 @@ const SetCard = ({ set, storedImages }: SetCardProps) => {
               variant="outline" 
               size="sm" 
               className="w-full"
-              onClick={handleViewProducts}
+              onClick={handleViewCards}
             >
-              <Package className="h-4 w-4 mr-2" />
-              View Products
+              <Layers className="h-4 w-4 mr-2" />
+              View Cards
             </Button>
           </CardContent>
           

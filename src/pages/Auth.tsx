@@ -49,6 +49,25 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const displayName = username.trim();
+    if (displayName.length < 2 || displayName.length > 50) {
+      toast({
+        title: "Check your display name",
+        description: "Use between 2 and 50 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (password.length < 8) {
+      toast({
+        title: "Password too short",
+        description: "Use at least 8 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -58,8 +77,8 @@ const Auth = () => {
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
-            username,
-            display_name: username,
+            username: displayName,
+            display_name: displayName,
           },
         },
       });
@@ -221,6 +240,9 @@ const Auth = () => {
                     id="signup-username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
+                    minLength={2}
+                    maxLength={50}
+                    autoComplete="nickname"
                     required
                   />
                 </div>
@@ -241,6 +263,8 @@ const Auth = () => {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    minLength={8}
+                    autoComplete="new-password"
                     required
                   />
                 </div>

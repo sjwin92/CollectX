@@ -144,7 +144,7 @@ const Trades = () => {
               imageUrl: data.image_url,
               rarity: data.rarity || '',
               condition: data.condition || '',
-              estimatedValue: data.asking_price ? `£${data.asking_price}` : '0',
+              estimatedValue: data.asking_price ? `£${data.asking_price}` : 'N/A',
             });
             setIsTradeProposalOpen(true);
           }

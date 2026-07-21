@@ -29,6 +29,7 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     target: "es2020",
+    emptyOutDir: true,
     chunkSizeWarningLimit: 600,
     // Production source maps add weight and leak source. Dev builds get them automatically.
     sourcemap: mode !== "production",

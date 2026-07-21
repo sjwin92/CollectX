@@ -47,12 +47,18 @@ Pull requests and pushes to `main` run the typecheck and production build automa
 
 ## Database changes
 
-Supabase migrations live in `supabase/migrations`. The active history begins with the two consolidated migrations deployed to `collectx-prod`; the incompatible Lovable-era files are retained for audit purposes under `supabase/legacy_migrations` and must not be applied. Review and test each new migration before applying it to production. Do not rewrite migrations that have already been deployed; add an incremental migration instead.
+Supabase migrations live in `supabase/migrations`. The active history is deployed to `collectx-prod`; the incompatible Lovable-era files are retained for audit purposes under `supabase/legacy_migrations` and must not be applied. Review and test each new migration before applying it to production. Do not rewrite migrations that have already been deployed; add an incremental migration instead.
 
-No Edge Functions are currently deployed to `collectx-prod`. The legacy function sources under `supabase/functions` must be security-reviewed before any deployment.
+The official English card catalogue is copied into Supabase from the public `PokemonTCG/pokemon-tcg-data` repository. `scripts/catalogueSnapshot.mjs` creates reproducible import payloads without placing a third-party API key in the browser. Public users only read the resulting catalogue tables.
+
+`seed-database` is the only deployed Edge Function. It performs its own token validation and requires the caller to have the database `admin` role. It is a bounded maintenance fallback; it is not a public import endpoint.
+
+`supabase/tests/trade_journey_rollback.sql` exercises the full authenticated backend journey with two temporary identities. The script wraps all synthetic data in a transaction, rolls it back, and returns zero counts for its fixed test identifiers. Run it through an authorised SQL session after any trade-state migration.
 
 ## Development and deployment
 
 GitHub `main` is the source of truth. Development happens on short-lived branches and is reviewed through pull requests. Production database migrations and frontend deployments require separate approval after the branch checks pass.
 
-The frontend is a standard Vite build and can be hosted by any provider that supports a static single-page application. Configure the Supabase environment variables in the hosting provider rather than committing credentials to the repository.
+The frontend is a standard Vite build and can be hosted by any provider that supports a static single-page application. `vercel.json` supplies SPA rewrites and baseline browser security headers for Vercel. Configure the Supabase environment variables in the hosting provider rather than committing credentials to the repository.
+
+See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the independent deployment and Supabase Auth checklist.
