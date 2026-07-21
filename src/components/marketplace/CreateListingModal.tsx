@@ -61,16 +61,7 @@ const CreateListingModal = ({
       return;
     }
 
-    if (listingType === 'sale' && !askingPrice) {
-      toast({
-        title: "Error",
-        description: "Please enter an asking price for sale listings",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (listingType === 'trade' && !tradePreferences) {
+    if (!tradePreferences) {
       toast({
         title: "Error",
         description: "Please specify what you're looking for in trade",
@@ -80,11 +71,10 @@ const CreateListingModal = ({
     }
 
     setIsLoading(true);
-    
+
     try {
       await createMarketplaceListing(currentCard, {
-        listing_type: listingType,
-        asking_price: askingPrice ? parseFloat(askingPrice) : undefined,
+        listing_type: 'trade',
         trade_preferences: tradePreferences,
         description,
         expires_at: expiresAt || undefined
@@ -96,12 +86,10 @@ const CreateListingModal = ({
       });
 
       // Reset form
-      setListingType('trade');
-      setAskingPrice("");
       setTradePreferences("");
       setDescription("");
       setExpiresAt("");
-      
+
       onListingCreated?.();
       onClose();
     } catch (error) {
