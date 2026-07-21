@@ -64,31 +64,41 @@ const Marketplace = () => {
   const [selectedListing, setSelectedListing] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: dbListings = [], isLoading } = useQuery({
+  const { data: dbListings = [], isLoading, error: listingsError } = useQuery({
     queryKey: ['marketplace_listings'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: rows, error } = await supabase
         .from('marketplace_listings')
-        .select('*, profiles:user_id(display_name, username)')
+        .select('*')
         .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(50);
       if (error) throw error;
-      return data || [];
+      const list = rows || [];
+      const ownerIds = Array.from(new Set(list.map((r: any) => r.user_id).filter(Boolean)));
+      let profileMap = new Map<string, any>();
+      if (ownerIds.length) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, display_name, username')
+          .in('user_id', ownerIds);
+        profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+      }
+      return list.map((r: any) => ({ ...r, _profile: profileMap.get(r.user_id) }));
     },
   });
 
   const listings: ListingType[] = dbListings.map((row: any) => ({
     id: row.id,
     userId: row.user_id,
-    username: row.profiles?.display_name || row.profiles?.username || 'Anonymous',
+    username: row._profile?.display_name || row._profile?.username || 'Anonymous',
     cardOffered: {
       id: row.card_id,
       name: row.card_name,
       imageUrl: row.image_url || '',
       rarity: row.rarity || 'Unknown',
       condition: row.condition,
-      estimatedValue: row.asking_price ? `£${Number(row.asking_price).toFixed(2)}` : 'N/A',
+      estimatedValue: '',
     },
     cardsWanted: row.trade_preferences ? [row.trade_preferences] : [],
     description: row.description || '',
