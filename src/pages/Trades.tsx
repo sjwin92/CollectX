@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { proposeTrade } from "@/services/tradeService";
 import { useUser } from "@/hooks/useUser";
 
-type TradeStatus = "pending" | "accepted" | "shipped" | "completed" | "declined";
+type TradeStatus = "proposed" | "accepted" | "shipped" | "completed" | "cancelled" | "disputed";
 type ReputationType = "trusted" | "established" | "new";
 
 interface Trade {
