@@ -267,7 +267,15 @@ const Marketplace = () => {
           </div>
         </div>
 
-        {filteredListings.length > 0 ? (
+        {listingsError ? (
+          <GlassCard className="p-8 text-center">
+            <PackageOpen className="h-12 w-12 mx-auto mb-4 text-destructive" />
+            <h3 className="text-xl font-medium mb-2">Couldn't load listings</h3>
+            <p className="text-muted-foreground mb-4">
+              {(listingsError as any)?.message || "Please try again in a moment."}
+            </p>
+          </GlassCard>
+        ) : filteredListings.length > 0 ? (
           <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
             {filteredListings.map(listing => (
               <TradeListing 
