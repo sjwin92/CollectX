@@ -149,11 +149,29 @@ const TradeDetail: React.FC = () => {
               <span className="font-medium">Trade Complete</span>
             </div>
           )}
+          {canRate && (
+            <Button variant="outline" onClick={() => setRatingOpen(true)}>
+              <Star className="h-4 w-4 mr-2" /> Rate trade
+            </Button>
+          )}
+          {trade.status === "completed" && alreadyRated && (
+            <span className="text-sm text-muted-foreground">You’ve rated this trade.</span>
+          )}
           {trade.status === "shipped" && iConfirmed && !canConfirm && (
             <p className="text-sm text-muted-foreground">You confirmed receipt. Waiting for the other side.</p>
           )}
         </div>
       </GlassCard>
+
+      {tradeId && user && (
+        <TradeRatingModal
+          isOpen={ratingOpen}
+          onClose={() => { setRatingOpen(false); refetch(); }}
+          tradeId={tradeId}
+          tradedWithUserId={otherParty.userId}
+          tradedWithUsername={otherParty.username}
+        />
+      )}
 
       <TradeChat
         trade={trade}
