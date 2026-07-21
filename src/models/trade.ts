@@ -1,13 +1,10 @@
+// Canonical trade model for the card-for-card journey.
+// No escrow, no payments — this app trades cards directly.
 
 export type TradeStatus =
   | "proposed"
   | "accepted"
-  | "declined"
-  | "pending"
-  | "processing"
-  | "escrowed"
   | "shipped"
-  | "received"
   | "completed"
   | "disputed"
   | "cancelled";
@@ -30,20 +27,6 @@ export interface TradeCard {
   grade?: string;
 }
 
-export interface TradeAmount {
-  baseAmount: number;
-  reputationDiscount: number;
-  finalAmount: number;
-  currency: Currency;
-}
-
-export interface EscrowCalculation {
-  baseAmount: number;
-  reputationDiscount: number;
-  finalAmount: number;
-  currency: string;
-}
-
 export interface TradeParticipant {
   userId: string;
   username: string;
@@ -51,30 +34,12 @@ export interface TradeParticipant {
   tradeCount: number;
   successRate: number;
   offeringCards: TradeCard[];
-  escrowAmount: TradeAmount;
 }
 
 export interface ShippingInfo {
   carrier: string;
   trackingNumber: string;
   estimatedDelivery?: string;
-}
-
-export interface TradeEscrow {
-  id: string;
-  tradeId: string;
-  status: TradeStatus;
-  initiatorId: string;
-  recipientId: string;
-  initiatorEscrowAmount: TradeAmount;
-  recipientEscrowAmount: TradeAmount;
-  initiatorPaid: boolean;
-  recipientPaid: boolean;
-  createdAt: string;
-  updatedAt: string;
-  completedAt?: string;
-  shippingInfo?: ShippingInfo;
-  releaseCode?: string;
 }
 
 export interface TradeMessage {
@@ -95,6 +60,5 @@ export interface TradeProposal {
   updatedAt: string;
   initiator: TradeParticipant;
   recipient: TradeParticipant;
-  escrow: TradeEscrow | null;
   messages: TradeMessage[];
 }
