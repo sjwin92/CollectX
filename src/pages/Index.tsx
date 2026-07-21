@@ -122,8 +122,8 @@ const Index = () => {
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl font-bold mb-4">Ready to Start Trading?</h2>
             <p className="text-muted-foreground mb-8">
-              Join thousands of Pokémon card collectors already trading safely on our platform.
-              It only takes a minute to set up your collection and start making trades.
+              Set up your collection, mark cards as available for trade, and start
+              proposing card-for-card swaps with other collectors.
             </p>
             <Button size="lg" asChild>
               <Link to="/auth">Get Started Now</Link>
