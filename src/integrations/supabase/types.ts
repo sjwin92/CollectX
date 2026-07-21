@@ -287,7 +287,7 @@ export type Database = {
           status: string
           trade_preferences: string | null
           updated_at: string
-          user_card_id: string | null
+          user_card_id: string
           user_id: string
           views_count: number
         }
@@ -316,7 +316,7 @@ export type Database = {
           status?: string
           trade_preferences?: string | null
           updated_at?: string
-          user_card_id?: string | null
+          user_card_id: string
           user_id: string
           views_count?: number
         }
@@ -345,7 +345,7 @@ export type Database = {
           status?: string
           trade_preferences?: string | null
           updated_at?: string
-          user_card_id?: string | null
+          user_card_id?: string
           user_id?: string
           views_count?: number
         }
