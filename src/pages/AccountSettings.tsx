@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -24,6 +24,20 @@ const AccountSettings = () => {
     location: profile?.location || "",
     avatar_url: profile?.avatar_url || ""
   });
+  const initializedProfileId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!profile || initializedProfileId.current === profile.user_id) return;
+
+    setFormData({
+      display_name: profile.display_name || "",
+      username: profile.username || "",
+      bio: profile.bio || "",
+      location: profile.location || "",
+      avatar_url: profile.avatar_url || ""
+    });
+    initializedProfileId.current = profile.user_id;
+  }, [profile]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
