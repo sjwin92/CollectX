@@ -5,6 +5,7 @@ const supabase = supabaseTyped as any;
 export interface MarketplaceListing {
   id: string;
   user_id: string;
+  user_card_id: string;
   card_id: string;
   card_name: string;
   set_id: string;
