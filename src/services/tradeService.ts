@@ -32,7 +32,7 @@ const parseCards = (raw: any): any[] => {
   return Array.isArray(raw) ? raw : [];
 };
 
-const mapCards = (rows: any[]): TradeCard[] =>
+const mapCards = (rows: any[]): (TradeCard & { quantity: number })[] =>
   rows.map((c) => ({
     id: c.id || c.card_id || "",
     name: c.card_name || c.name || "Unknown Card",
@@ -40,6 +40,7 @@ const mapCards = (rows: any[]): TradeCard[] =>
     condition: c.condition || "Unknown",
     estimatedValue: parseFloat(c.estimatedValue || c.trade_value || "0") || 0,
     currency: (c.currency as Currency) || "GBP",
+    quantity: Number(c.quantity) > 0 ? Number(c.quantity) : 1,
   }));
 
 // ── Reads ──────────────────────────────────────────────────────────────────
