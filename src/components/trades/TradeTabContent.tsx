@@ -95,14 +95,14 @@ const TradeTabContent = ({ value, onCreateTrade, trades = [], currentUserId }: T
                       <span className="font-medium">Your Cards:</span>
                       <div className="text-muted-foreground">
                         {myCards.length} card{myCards.length !== 1 ? "s" : ""}
-                        {myValue > 0 && ` (£${Number(myValue).toFixed(2)})`}
+                        {myQty !== myCards.length && ` (${myQty} total)`}
                       </div>
                     </div>
                     <div>
                       <span className="font-medium">Their Cards:</span>
                       <div className="text-muted-foreground">
                         {theirCards.length} card{theirCards.length !== 1 ? "s" : ""}
-                        {theirValue > 0 && ` (£${Number(theirValue).toFixed(2)})`}
+                        {theirQty !== theirCards.length && ` (${theirQty} total)`}
                       </div>
                     </div>
                   </div>
