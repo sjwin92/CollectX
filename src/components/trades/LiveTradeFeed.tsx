@@ -54,9 +54,9 @@ const LiveTradeFeed = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold mb-2">Live Trading Activity</h2>
+          <h2 className="text-3xl font-bold mb-2">Recent Trade Activity</h2>
           <p className="text-muted-foreground">
-            See the latest trades happening on the platform
+            Your latest trades appear here when you’re signed in.
           </p>
         </div>
         <Button variant="ghost" className="hidden md:flex" asChild>
@@ -69,14 +69,15 @@ const LiveTradeFeed = () => {
       {trades.length === 0 ? (
         <GlassCard className="p-8 text-center">
           <ArrowLeftRight className="h-12 w-12 mx-auto mb-4 opacity-30" />
-          <h3 className="text-lg font-medium mb-2">No Trades Yet</h3>
+          <h3 className="text-lg font-medium mb-2">No trade activity to show yet</h3>
           <p className="text-muted-foreground mb-4">
-            Be the first to complete a trade and show up here!
+            Sign in and propose or accept a trade to see it here.
           </p>
           <Button variant="outline" asChild>
-            <Link to="/auth">Get Started</Link>
+            <Link to="/auth">Sign In</Link>
           </Button>
         </GlassCard>
+
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {(trades as any[]).map((trade) => {
