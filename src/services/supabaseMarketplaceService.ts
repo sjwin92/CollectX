@@ -61,11 +61,15 @@ export const createMarketplaceListing = async (
 ): Promise<MarketplaceListing> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
+  if (!card.dbId) {
+    throw new Error('This card must exist in your collection (marked for trade) before you can list it.');
+  }
 
   const { data, error } = await supabase
     .from('marketplace_listings')
     .insert([{
       user_id: user.id,
+      user_card_id: card.dbId,
       card_id: card.id,
       card_name: card.name,
       set_id: card.set?.id || '',
