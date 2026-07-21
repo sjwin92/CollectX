@@ -85,7 +85,6 @@ export const getUserReputation = async (userId: string): Promise<ReputationScore
     totalTrades,
     successfulTrades,
     averageRating,
-    escrowDiscountPercentage: getEscrowDiscount(reputation),
   };
 };
 
