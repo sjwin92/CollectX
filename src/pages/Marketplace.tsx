@@ -230,9 +230,8 @@ const Marketplace = () => {
               <SelectContent>
                 <SelectItem value="newest">Newest First</SelectItem>
                 <SelectItem value="oldest">Oldest First</SelectItem>
-                <SelectItem value="price-high">Price: High to Low</SelectItem>
-                <SelectItem value="price-low">Price: Low to High</SelectItem>
               </SelectContent>
+
             </Select>
 
             <Button className="md:hidden" onClick={() => setCreateListingOpen(true)}>
