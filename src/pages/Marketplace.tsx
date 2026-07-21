@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import { useToast } from "@/hooks/use-toast";
 import TradeListing from "@/components/marketplace/TradeListing";
@@ -13,19 +12,11 @@ import {
   Plus, 
   Search, 
   Filter,
-  Star, 
-  Clock, 
-  TrendingUp,
-  Heart,
-  Check,
   ArrowRightLeft,
-  ShoppingBag,
   PackageOpen
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { CardItemProps } from "@/components/cards/CardItem";
-import { useUser } from "@/hooks/useUser";
-import { PokemonCard } from "@/services/pokemonTcgApi";
 import CreateListingModal from "@/components/marketplace/CreateListingModal";
 import { 
   DropdownMenu,
@@ -36,7 +27,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Select,
@@ -60,8 +50,6 @@ interface ListingType {
 
 const Marketplace = () => {
   const [isCreateListingOpen, setCreateListingOpen] = useState(false);
-  const [isTradeModalOpen, setTradeModalOpen] = useState(false);
-  const [selectedListing, setSelectedListing] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: dbListings = [], isLoading, error: listingsError } = useQuery({
@@ -78,10 +66,11 @@ const Marketplace = () => {
       const ownerIds = Array.from(new Set(list.map((r: any) => r.user_id).filter(Boolean)));
       let profileMap = new Map<string, any>();
       if (ownerIds.length) {
-        const { data: profiles } = await supabase
+        const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('user_id, display_name, username')
           .in('user_id', ownerIds);
+        if (profilesError) throw profilesError;
         profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
       }
       return list.map((r: any) => ({ ...r, _profile: profileMap.get(r.user_id) }));
@@ -106,11 +95,9 @@ const Marketplace = () => {
     featured: row.featured,
   }));
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState<'featured' | 'recent' | 'trending'>('recent');
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
   const [sortOrder, setSortOrder] = useState<string>("newest");
   const { toast } = useToast();
-  const { user } = useUser();
   const navigate = useNavigate();
 
   const filteredListings = React.useMemo(() => {
@@ -122,15 +109,10 @@ const Marketplace = () => {
           listing.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
           listing.cardsWanted.some(card => card.toLowerCase().includes(searchQuery.toLowerCase()));
 
-        const matchesCategory =
-          (activeCategory === 'featured' && listing.featured) ||
-          (activeCategory === 'recent') ||
-          (activeCategory === 'trending');
-
         const matchesCondition = selectedConditions.length === 0 ||
           selectedConditions.includes(listing.cardOffered.condition);
 
-        return matchesSearch && matchesCategory && matchesCondition;
+        return matchesSearch && matchesCondition;
       })
       .sort((a, b) => {
         switch (sortOrder) {
@@ -141,7 +123,7 @@ const Marketplace = () => {
             return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         }
       });
-  }, [listings, searchQuery, activeCategory, selectedConditions, sortOrder]);
+  }, [listings, searchQuery, selectedConditions, sortOrder]);
 
 
   const toggleConditionFilter = (condition: string) => {
@@ -155,10 +137,6 @@ const Marketplace = () => {
   const handleProposeTrade = (listingId: string) => {
     // Navigate to the trades page with the listing pre-selected
     navigate(`/trades?propose=true&listingId=${listingId}`);
-  };
-
-  const handleViewCard = (cardId: string) => {
-    navigate(`/card/${cardId}`);
   };
 
   return (
@@ -238,32 +216,6 @@ const Marketplace = () => {
               <Plus className="h-4 w-4 mr-2" />
               Create
             </Button>
-          </div>
-        </div>
-
-        <div className="border rounded-lg p-1 bg-background/50 mb-6 overflow-hidden">
-          <div className="flex space-x-2 items-center overflow-x-auto scrollbar-hide pb-1">
-            <button
-              className={`py-2 px-4 rounded-md font-medium flex items-center gap-1.5 transition-colors shrink-0 ${activeCategory === 'featured' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-              onClick={() => setActiveCategory('featured')}
-            >
-              <Star className="h-4 w-4" />
-              <span>Featured</span>
-            </button>
-            <button
-              className={`py-2 px-4 rounded-md font-medium flex items-center gap-1.5 transition-colors shrink-0 ${activeCategory === 'recent' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-              onClick={() => setActiveCategory('recent')}
-            >
-              <Clock className="h-4 w-4" />
-              <span>New Listings</span>
-            </button>
-            <button
-              className={`py-2 px-4 rounded-md font-medium flex items-center gap-1.5 transition-colors shrink-0 ${activeCategory === 'trending' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-              onClick={() => setActiveCategory('trending')}
-            >
-              <TrendingUp className="h-4 w-4" />
-              <span>Hot Trades</span>
-            </button>
           </div>
         </div>
 
