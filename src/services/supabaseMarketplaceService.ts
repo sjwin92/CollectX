@@ -48,12 +48,10 @@ export interface MarketplaceFavorite {
   created_at: string;
 }
 
-// Create a marketplace listing
 export const createMarketplaceListing = async (
   card: ExtendedCardItemWithDB,
   listingData: {
-    listing_type: 'trade' | 'sale' | 'both';
-    asking_price?: number;
+    listing_type?: 'trade';
     trade_preferences?: string;
     description?: string;
     expires_at?: string;
@@ -65,6 +63,8 @@ export const createMarketplaceListing = async (
     throw new Error('This card must exist in your collection (marked for trade) before you can list it.');
   }
 
+  // The DB trigger snapshots card identity from user_card_id; we only submit the reference
+  // and the trade-specific fields.
   const { data, error } = await supabase
     .from('marketplace_listings')
     .insert([{
@@ -74,20 +74,11 @@ export const createMarketplaceListing = async (
       card_name: card.name,
       set_id: card.set?.id || '',
       set_name: card.set?.name || '',
-      card_number: card.number,
-      rarity: card.rarity,
-      image_url: card.imageUrl,
-      image_url_small: card.imageUrl,
-      condition: card.condition || 'near_mint',
-      is_graded: card.graded || false,
-      grade_company: card.gradingCompany,
-      grade_score: card.gradeScore ? parseFloat(card.gradeScore) : null,
-      quantity: card.quantity || 1,
-      listing_type: listingData.listing_type,
-      asking_price: listingData.asking_price,
+      listing_type: 'trade',
+      asking_price: null,
       trade_preferences: listingData.trade_preferences,
       description: listingData.description,
-      expires_at: listingData.expires_at
+      expires_at: listingData.expires_at,
     }])
     .select()
     .single();
