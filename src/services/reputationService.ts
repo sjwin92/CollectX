@@ -7,7 +7,6 @@ export interface ReputationScore {
   totalTrades: number;
   successfulTrades: number;
   averageRating: number;
-  escrowDiscountPercentage: number;
 }
 
 export interface TradeRating {
@@ -37,16 +36,6 @@ export const calculateReputation = (
   return 'new';
 };
 
-export const getEscrowDiscount = (reputation: UserReputation): number => {
-  switch (reputation) {
-    case 'new': return 0;
-    case 'starter': return 10;
-    case 'established': return 25;
-    case 'trusted': return 50;
-    case 'elite': return 75;
-    default: return 0;
-  }
-};
 
 export const getReputationColor = (reputation: UserReputation): string => {
   switch (reputation) {
