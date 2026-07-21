@@ -53,7 +53,7 @@ const Trades = () => {
     pending: 0,
     inProgress: 0,
     completed: 0,
-    declined: 0
+    cancelled: 0
   });
 
   // Load real trades from database
@@ -89,9 +89,9 @@ const Trades = () => {
       const stats = {
         total: trades?.length || 0,
         pending: trades?.filter(t => t.status === 'proposed').length || 0,
-        inProgress: trades?.filter(t => ['accepted', 'processing', 'shipped'].includes(t.status)).length || 0,
+        inProgress: trades?.filter(t => ['accepted', 'shipped'].includes(t.status)).length || 0,
         completed: trades?.filter(t => t.status === 'completed').length || 0,
-        declined: trades?.filter(t => t.status === 'declined').length || 0
+        cancelled: trades?.filter(t => t.status === 'cancelled').length || 0
       };
       
       setTradeStats(stats);
@@ -207,7 +207,7 @@ const Trades = () => {
             pendingCount={tradeStats.pending}
             inProgressCount={tradeStats.inProgress}
             completedCount={tradeStats.completed}
-            declinedCount={tradeStats.declined}
+            cancelledCount={tradeStats.cancelled}
             onCreateTrade={handleCreateTrade}
             trades={userTrades}
             currentUserId={user?.id}

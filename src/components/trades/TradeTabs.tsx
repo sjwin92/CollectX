@@ -1,11 +1,5 @@
-
 import React from "react";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Badge from "@/components/ui/custom/Badge";
 import TradeTabContent from "./TradeTabContent";
 
@@ -13,20 +7,20 @@ interface TradeTabsProps {
   pendingCount: number;
   inProgressCount: number;
   completedCount: number;
-  declinedCount: number;
+  cancelledCount: number;
   onCreateTrade: () => void;
   trades?: any[];
   currentUserId?: string;
 }
 
-const TradeTabs = ({ 
-  pendingCount, 
-  inProgressCount, 
-  completedCount, 
-  declinedCount,
+const TradeTabs = ({
+  pendingCount,
+  inProgressCount,
+  completedCount,
+  cancelledCount,
   onCreateTrade,
   trades = [],
-  currentUserId
+  currentUserId,
 }: TradeTabsProps) => {
   return (
     <Tabs defaultValue="active">
@@ -43,28 +37,28 @@ const TradeTabs = ({
             {completedCount}
           </Badge>
         </TabsTrigger>
-        <TabsTrigger value="declined">
-          Declined
+        <TabsTrigger value="cancelled">
+          Cancelled
           <Badge variant="default" className="ml-2">
-            {declinedCount}
+            {cancelledCount}
           </Badge>
         </TabsTrigger>
       </TabsList>
-      
-      <TradeTabContent 
-        value="active" 
-        onCreateTrade={onCreateTrade} 
-        trades={trades?.filter(t => ['proposed', 'accepted', 'processing', 'shipped'].includes(t.status))} 
+
+      <TradeTabContent
+        value="active"
+        onCreateTrade={onCreateTrade}
+        trades={trades?.filter(t => ['proposed', 'accepted', 'shipped'].includes(t.status))}
         currentUserId={currentUserId}
       />
-      <TradeTabContent 
-        value="completed" 
-        trades={trades?.filter(t => t.status === 'completed')} 
+      <TradeTabContent
+        value="completed"
+        trades={trades?.filter(t => t.status === 'completed')}
         currentUserId={currentUserId}
       />
-      <TradeTabContent 
-        value="declined" 
-        trades={trades?.filter(t => t.status === 'declined')} 
+      <TradeTabContent
+        value="cancelled"
+        trades={trades?.filter(t => t.status === 'cancelled')}
         currentUserId={currentUserId}
       />
     </Tabs>
