@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import { useToast } from "@/hooks/use-toast";
 import { addTradeMessage, uploadTradeImage } from "@/services/tradeService";
-import type { TradeProposal } from "@/models/escrow";
+import type { TradeProposal } from "@/models/trade";
 import { SmartImage } from "@/components/common/SmartImage";
 
 type Props = {

@@ -1,6 +1,6 @@
 import GlassCard from "@/components/ui/custom/GlassCard";
 import { TRADE_STEP } from "./TradeDetailHeader";
-import type { TradeStatus } from "@/models/escrow";
+import type { TradeStatus } from "@/models/trade";
 
 const STEPS = ["Proposed", "Accepted", "Shipped", "Completed"];
 

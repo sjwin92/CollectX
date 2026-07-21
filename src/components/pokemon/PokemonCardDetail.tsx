@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { PokemonCard } from "@/services/pokemonTcgApi";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
-import { formatCurrency } from "@/utils/escrowCalculator";
+import { formatCurrency } from "@/utils/formatCurrency";
 import { Flame, Zap, Shield, TrendingUp, AlertTriangle, Check, Info, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";

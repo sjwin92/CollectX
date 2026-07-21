@@ -102,7 +102,7 @@ const TradeDetail: React.FC = () => {
       <ImageLightbox src={lightbox} onClose={() => setLightbox(null)} />
 
       <TradeDetailHeader status={trade.status} />
-      <TradeParticipantsCard trade={trade} />
+      <TradeParticipantsCard trade={trade} currentUserId={user?.id} />
       <TradeProgressBar status={trade.status} />
 
       <ShippingInfoCard

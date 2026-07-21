@@ -1,5 +1,5 @@
 
-import { TradeCard } from "@/models/escrow";
+import { TradeCard } from "@/models/trade";
 
 // Grading company multipliers (how much more valuable a graded card is vs raw)
 const GRADING_COMPANY_MULTIPLIERS: Record<string, number> = {

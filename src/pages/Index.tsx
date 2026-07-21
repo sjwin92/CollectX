@@ -67,7 +67,7 @@ const Index = () => {
               {
                 icon: <Shield className="h-6 w-6 text-primary" />,
                 title: "Trade Protection",
-                description: "Our escrow system ensures both parties fulfill their obligations before a trade is completed."
+                description: "Two-party confirmation, tracked shipments, and disputes keep every card-for-card trade accountable."
               },
               {
                 icon: <Users className="h-6 w-6 text-primary" />,

@@ -16,7 +16,7 @@ import {
   type SafeShipment,
   type TradeAddress,
 } from "@/services/tradeService";
-import type { TradeProposal } from "@/models/escrow";
+import type { TradeProposal } from "@/models/trade";
 
 type Props = {
   trade: TradeProposal;

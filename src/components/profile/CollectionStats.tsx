@@ -2,7 +2,7 @@
 import React from "react";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import { ExtendedCardItemProps } from "@/types/cardTypes";
-import { formatCurrency } from "@/utils/escrowCalculator";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 interface CollectionStatsProps {
   collection: ExtendedCardItemProps[];

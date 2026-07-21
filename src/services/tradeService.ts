@@ -9,7 +9,7 @@ import type {
   TradeCard,
   Currency,
   UserReputation,
-} from "@/models/escrow";
+} from "@/models/trade";
 
 const supabase = supabaseTyped as any;
 
@@ -91,7 +91,6 @@ export const getTradeById = async (tradeId: string): Promise<TradeProposalWithCo
         ? (data.initiator_profile.successful_trades / data.initiator_profile.total_trades) * 100
         : 0,
       offeringCards: initiatorCards,
-      escrowAmount: { baseAmount: 0, reputationDiscount: 0, finalAmount: 0, currency: "GBP" },
     },
     recipient: {
       userId: data.recipient_user_id,
@@ -102,9 +101,7 @@ export const getTradeById = async (tradeId: string): Promise<TradeProposalWithCo
         ? (data.recipient_profile.successful_trades / data.recipient_profile.total_trades) * 100
         : 0,
       offeringCards: recipientCards,
-      escrowAmount: { baseAmount: 0, reputationDiscount: 0, finalAmount: 0, currency: "GBP" },
     },
-    escrow: null,
     messages: enrichedMessages,
     initiator_confirmed_at: data.initiator_confirmed_at ?? null,
     recipient_confirmed_at: data.recipient_confirmed_at ?? null,
