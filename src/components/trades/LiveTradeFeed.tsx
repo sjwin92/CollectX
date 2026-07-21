@@ -21,17 +21,30 @@ const LiveTradeFeed = () => {
   const { data: trades = [] } = useQuery({
     queryKey: ['live_trade_feed'],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('trades')
-        .select(`
-          id, status, created_at, initiator_cards, recipient_cards,
-          initiator:profiles!trades_initiator_user_id_fkey(display_name, username),
-          recipient:profiles!trades_recipient_user_id_fkey(display_name, username)
-        `)
+        .select('id, status, created_at, initiator_cards, recipient_cards, initiator_user_id, recipient_user_id')
         .in('status', ['completed', 'shipped', 'accepted', 'proposed'])
         .order('created_at', { ascending: false })
         .limit(8);
-      return data || [];
+      if (error) return [];
+      const rows = data || [];
+      const ids = Array.from(new Set(
+        rows.flatMap((t: any) => [t.initiator_user_id, t.recipient_user_id]).filter(Boolean)
+      ));
+      let profileMap = new Map<string, any>();
+      if (ids.length) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, display_name, username')
+          .in('user_id', ids);
+        profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+      }
+      return rows.map((t: any) => ({
+        ...t,
+        initiator: profileMap.get(t.initiator_user_id) || null,
+        recipient: profileMap.get(t.recipient_user_id) || null,
+      }));
     },
     refetchInterval: 60_000,
   });
