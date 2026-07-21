@@ -9,7 +9,7 @@ import type {
   TradeCard,
   Currency,
   UserReputation,
-} from "@/models/escrow";
+} from "@/models/trade";
 
 const supabase = supabaseTyped as any;
 

@@ -1,7 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import Badge from "@/components/ui/custom/Badge";
-import type { TradeStatus } from "@/models/escrow";
+import type { TradeStatus } from "@/models/trade";
 
 const STATUS_BADGE: Partial<Record<TradeStatus, { variant: "warning" | "info" | "success" | "danger" | "default"; label: string }>> = {
   proposed: { variant: "warning", label: "Proposed" },

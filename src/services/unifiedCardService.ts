@@ -9,7 +9,7 @@ import {
   PokemonCard, 
   PokemonCardResponse 
 } from './api/pokemonTypes';
-import { TradeCard } from '@/models/escrow';
+import { TradeCard } from '@/models/trade';
 import { 
   convertTcgdxToPokemonTcg,
   convertPokemonTcgToTcgdx,

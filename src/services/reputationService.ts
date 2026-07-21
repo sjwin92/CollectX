@@ -1,4 +1,4 @@
-import { UserReputation } from '@/models/escrow';
+import { UserReputation } from '@/models/trade';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface ReputationScore {

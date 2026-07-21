@@ -2,8 +2,8 @@ import { Package } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Badge from "@/components/ui/custom/Badge";
 import GlassCard from "@/components/ui/custom/GlassCard";
-import { formatCurrency } from "@/utils/escrowCalculator";
-import type { TradeProposal } from "@/models/escrow";
+import { formatCurrency } from "@/utils/formatCurrency";
+import type { TradeProposal } from "@/models/trade";
 
 type Side = TradeProposal["initiator"] | TradeProposal["recipient"];
 
