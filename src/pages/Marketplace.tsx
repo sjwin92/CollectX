@@ -216,30 +216,9 @@ const Marketplace = () => {
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Price Range</DropdownMenuLabel>
-                <DropdownMenuGroup>
-                  {[
-                    {id: "all", label: "All Prices"},
-                    {id: "under-10", label: "Under £10"},
-                    {id: "10-50", label: "£10 - £50"},
-                    {id: "50-100", label: "£50 - £100"},
-                    {id: "over-100", label: "Over £100"}
-                  ].map((range) => (
-                    <DropdownMenuItem 
-                      key={range.id} 
-                      className="flex items-center gap-2"
-                      onClick={() => setPriceRange(range.id)}
-                    >
-                      <div className="w-4 h-4 flex items-center justify-center">
-                        {priceRange === range.id && <Check className="h-3 w-3" />}
-                      </div>
-                      <span>{range.label}</span>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
+
 
             <Select
               value={sortOrder}
