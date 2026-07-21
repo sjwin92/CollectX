@@ -967,6 +967,41 @@ export type Database = {
           },
         ]
       }
+      trade_ownership_transfers: {
+        Row: {
+          from_user_id: string
+          id: string
+          to_user_id: string
+          trade_id: string
+          transferred_at: string
+          user_card_id: string
+        }
+        Insert: {
+          from_user_id: string
+          id?: string
+          to_user_id: string
+          trade_id: string
+          transferred_at?: string
+          user_card_id: string
+        }
+        Update: {
+          from_user_id?: string
+          id?: string
+          to_user_id?: string
+          trade_id?: string
+          transferred_at?: string
+          user_card_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_ownership_transfers_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trade_ratings: {
         Row: {
           created_at: string
@@ -1274,6 +1309,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      can_manage_card_image_object: {
+        Args: { _name: string }
+        Returns: boolean
+      }
       cancel_trade: {
         Args: { _trade_id: string }
         Returns: {
@@ -1488,6 +1527,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      user_card_locked_in_live_trade: {
+        Args: { _user_card_id: string }
+        Returns: boolean
       }
     }
     Enums: {
