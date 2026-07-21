@@ -29,11 +29,11 @@ const Index = () => {
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 animate-slide-down">
               Trade Pokémon Cards <br className="hidden sm:block" />
-              <span className="text-primary">Safely and Securely</span>
+              <span className="text-primary">Card for Card</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground mb-8 animate-slide-down animation-delay-100">
-              CollectX is a community-focused platform that helps collectors find,
-              trade, and manage their Pokémon card collections with confidence.
+              CollectX is a community platform for collectors to list, propose, and manage
+              card-for-card Pokémon trades alongside their personal collections.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-up animation-delay-200">
               <Button size="lg" asChild>
