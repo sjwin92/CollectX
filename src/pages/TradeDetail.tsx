@@ -170,7 +170,11 @@ const TradeDetail: React.FC = () => {
       {tradeId && user && (
         <TradeRatingModal
           isOpen={ratingOpen}
-          onClose={() => { setRatingOpen(false); refetch(); }}
+          onClose={() => {
+            setRatingOpen(false);
+            queryClient.invalidateQueries({ queryKey: ["trade-rated", tradeId, user.id] });
+            refetch();
+          }}
           tradeId={tradeId}
           tradedWithUserId={otherParty.userId}
           tradedWithUsername={otherParty.username}
