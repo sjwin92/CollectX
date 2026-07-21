@@ -8,7 +8,6 @@ import TradeListingDetails from "./listing/TradeListingDetails";
 import TradeListingFooter from "./listing/TradeListingFooter";
 import TradeListingProtection from "./listing/TradeListingProtection";
 import FeaturedBadge from "./listing/FeaturedBadge";
-import { useNavigate } from "react-router-dom";
 
 interface TradeListingProps {
   listing: {
@@ -26,19 +25,6 @@ interface TradeListingProps {
 }
 
 const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListingProps) => {
-  const navigate = useNavigate();
-
-  const handleProposeTrade = () => {
-    // Call the parent component's handler first
-    onProposeTrade();
-    
-    // Navigate to the trades page with the correct query parameters
-    navigate({
-      pathname: '/trades',
-      search: `?propose=true&listingId=${listing.id}`
-    });
-  };
-
   return (
     <Card className={`overflow-hidden transition-all hover:shadow-md ${featured ? 'border-amber-400 shadow-lg dark:border-amber-500 bg-gradient-to-br from-transparent to-amber-50/5' : ''}`}>
       {featured && <FeaturedBadge />}
@@ -47,7 +33,6 @@ const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListin
         cardName={listing.cardOffered.name}
         username={listing.username}
         createdAt={listing.createdAt}
-        estimatedValue={listing.cardOffered.estimatedValue}
         featured={featured}
       />
 
@@ -70,7 +55,7 @@ const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListin
 
       <TradeListingFooter 
         cardId={listing.cardOffered.id}
-        onProposeTrade={handleProposeTrade}
+        onProposeTrade={onProposeTrade}
         featured={featured}
       />
       
