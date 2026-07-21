@@ -83,7 +83,7 @@ const TradeDetail: React.FC = () => {
 
   return (
     <div className="container py-12">
-      <ImageLightbox url={lightbox} onClose={() => setLightbox(null)} />
+      <ImageLightbox src={lightbox} onClose={() => setLightbox(null)} />
 
       <TradeDetailHeader status={trade.status} />
       <TradeParticipantsCard trade={trade} />
