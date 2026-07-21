@@ -116,7 +116,7 @@ const Trades = () => {
         .then(({ data }) => {
           if (data) {
             setSelectedTargetCard({
-              id: data.card_id,
+              id: data.id, // listing id — resolved back to listing on submit
               name: data.card_name,
               imageUrl: data.image_url,
               rarity: data.rarity || '',
