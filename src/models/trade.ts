@@ -22,6 +22,7 @@ export interface TradeCard {
   condition: string;
   estimatedValue: number;
   currency: Currency;
+  quantity?: number;
   graded?: boolean;
   gradingCompany?: string;
   grade?: string;
