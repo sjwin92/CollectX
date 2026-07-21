@@ -43,25 +43,21 @@ export interface TradeRating {
   created_at: string;
 }
 
-// Create a new trade offer
+// Create a new trade offer. Both sides MUST include at least one card
+// (enforced by a DB trigger — trades are card-for-card only).
 export const createTradeOffer = async (tradeData: {
   recipient_user_id: string;
   title?: string;
   description?: string;
   initiator_cards: ExtendedCardItemWithDB[];
-  recipient_cards?: ExtendedCardItemWithDB[];
-  escrow_required?: boolean;
+  recipient_cards: ExtendedCardItemWithDB[];
 }): Promise<TradeOffer> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
 
-  const initiator_value = tradeData.initiator_cards.reduce((sum, card) => 
-    sum + (parseFloat(card.estimatedValue || '0') * (card.quantity || 1)), 0
-  );
-
-  const recipient_value = (tradeData.recipient_cards || []).reduce((sum, card) => 
-    sum + (parseFloat(card.estimatedValue || '0') * (card.quantity || 1)), 0
-  );
+  if (!tradeData.initiator_cards?.length || !tradeData.recipient_cards?.length) {
+    throw new Error('Both sides of the trade must include at least one card.');
+  }
 
   const { data, error } = await supabase
     .from('trades')
@@ -71,11 +67,7 @@ export const createTradeOffer = async (tradeData: {
       title: tradeData.title,
       description: tradeData.description,
       initiator_cards: tradeData.initiator_cards as any,
-      recipient_cards: (tradeData.recipient_cards || []) as any,
-      initiator_value,
-      recipient_value,
-      escrow_required: tradeData.escrow_required || false,
-      escrow_amount: tradeData.escrow_required ? Math.max(initiator_value, recipient_value) * 0.1 : 0
+      recipient_cards: tradeData.recipient_cards as any,
     }])
     .select()
     .single();

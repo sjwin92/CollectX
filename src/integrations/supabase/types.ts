@@ -878,12 +878,20 @@ export type Database = {
             referencedRelation: "trade_shipments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "tracking_events_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "trade_shipments_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       trade_messages: {
         Row: {
           created_at: string
           id: string
+          image_url: string | null
           message: string
           message_type: string
           metadata: Json | null
@@ -893,6 +901,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          image_url?: string | null
           message: string
           message_type?: string
           metadata?: Json | null
@@ -902,6 +911,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          image_url?: string | null
           message?: string
           message_type?: string
           metadata?: Json | null
@@ -1039,49 +1049,55 @@ export type Database = {
       }
       trades: {
         Row: {
+          accepted_at: string | null
+          cancelled_at: string | null
+          completed_at: string | null
           created_at: string
           description: string | null
-          escrow_required: boolean
           id: string
           initiator_cards: Json
+          initiator_confirmed_at: string | null
           initiator_user_id: string
-          initiator_value: number
           metadata: Json | null
           recipient_cards: Json
+          recipient_confirmed_at: string | null
           recipient_user_id: string
-          recipient_value: number
           status: string
           title: string | null
           updated_at: string
         }
         Insert: {
+          accepted_at?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
           created_at?: string
           description?: string | null
-          escrow_required?: boolean
           id?: string
           initiator_cards?: Json
+          initiator_confirmed_at?: string | null
           initiator_user_id: string
-          initiator_value?: number
           metadata?: Json | null
           recipient_cards?: Json
+          recipient_confirmed_at?: string | null
           recipient_user_id: string
-          recipient_value?: number
           status?: string
           title?: string | null
           updated_at?: string
         }
         Update: {
+          accepted_at?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
           created_at?: string
           description?: string | null
-          escrow_required?: boolean
           id?: string
           initiator_cards?: Json
+          initiator_confirmed_at?: string | null
           initiator_user_id?: string
-          initiator_value?: number
           metadata?: Json | null
           recipient_cards?: Json
+          recipient_confirmed_at?: string | null
           recipient_user_id?: string
-          recipient_value?: number
           status?: string
           title?: string | null
           updated_at?: string
@@ -1189,9 +1205,185 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      trade_shipments_public: {
+        Row: {
+          created_at: string | null
+          delivered_at: string | null
+          dimensions_cm: string | null
+          id: string | null
+          insurance_value: number | null
+          recipient_user_id: string | null
+          sender_user_id: string | null
+          shipped_at: string | null
+          shipping_cost: number | null
+          shipping_method_id: string | null
+          status: string | null
+          tracking_number: string | null
+          trade_id: string | null
+          updated_at: string | null
+          weight_kg: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          delivered_at?: string | null
+          dimensions_cm?: string | null
+          id?: string | null
+          insurance_value?: number | null
+          recipient_user_id?: string | null
+          sender_user_id?: string | null
+          shipped_at?: string | null
+          shipping_cost?: number | null
+          shipping_method_id?: string | null
+          status?: string | null
+          tracking_number?: string | null
+          trade_id?: string | null
+          updated_at?: string | null
+          weight_kg?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          delivered_at?: string | null
+          dimensions_cm?: string | null
+          id?: string | null
+          insurance_value?: number | null
+          recipient_user_id?: string | null
+          sender_user_id?: string | null
+          shipped_at?: string | null
+          shipping_cost?: number | null
+          shipping_method_id?: string | null
+          status?: string | null
+          tracking_number?: string | null
+          trade_id?: string | null
+          updated_at?: string | null
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_shipments_shipping_method_id_fkey"
+            columns: ["shipping_method_id"]
+            isOneToOne: false
+            referencedRelation: "shipping_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_shipments_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      accept_trade: {
+        Args: { _trade_id: string }
+        Returns: {
+          accepted_at: string | null
+          cancelled_at: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          initiator_cards: Json
+          initiator_confirmed_at: string | null
+          initiator_user_id: string
+          metadata: Json | null
+          recipient_cards: Json
+          recipient_confirmed_at: string | null
+          recipient_user_id: string
+          status: string
+          title: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "trades"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      cancel_trade: {
+        Args: { _trade_id: string }
+        Returns: {
+          accepted_at: string | null
+          cancelled_at: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          initiator_cards: Json
+          initiator_confirmed_at: string | null
+          initiator_user_id: string
+          metadata: Json | null
+          recipient_cards: Json
+          recipient_confirmed_at: string | null
+          recipient_user_id: string
+          status: string
+          title: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "trades"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      confirm_trade_receipt: {
+        Args: { _trade_id: string }
+        Returns: {
+          accepted_at: string | null
+          cancelled_at: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          initiator_cards: Json
+          initiator_confirmed_at: string | null
+          initiator_user_id: string
+          metadata: Json | null
+          recipient_cards: Json
+          recipient_confirmed_at: string | null
+          recipient_user_id: string
+          status: string
+          title: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "trades"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      decline_trade: {
+        Args: { _trade_id: string }
+        Returns: {
+          accepted_at: string | null
+          cancelled_at: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          initiator_cards: Json
+          initiator_confirmed_at: string | null
+          initiator_user_id: string
+          metadata: Json | null
+          recipient_cards: Json
+          recipient_confirmed_at: string | null
+          recipient_user_id: string
+          status: string
+          title: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "trades"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_nav_metrics_summary: { Args: { _days?: number }; Returns: Json }
       has_role: {
         Args: {
@@ -1203,6 +1395,63 @@ export type Database = {
       increment_listing_views: {
         Args: { listing_id: string }
         Returns: undefined
+      }
+      mark_trade_shipped: {
+        Args: { _carrier: string; _tracking: string; _trade_id: string }
+        Returns: {
+          created_at: string
+          delivered_at: string | null
+          dimensions_cm: string | null
+          id: string
+          insurance_value: number
+          metadata: Json | null
+          recipient_address: Json | null
+          recipient_user_id: string
+          sender_address: Json | null
+          sender_user_id: string
+          shipped_at: string | null
+          shipping_cost: number
+          shipping_label_url: string | null
+          shipping_method_id: string | null
+          status: string
+          tracking_number: string | null
+          trade_id: string
+          updated_at: string
+          weight_kg: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "trade_shipments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      open_trade_dispute: {
+        Args: { _reason: string; _trade_id: string }
+        Returns: {
+          accepted_at: string | null
+          cancelled_at: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          initiator_cards: Json
+          initiator_confirmed_at: string | null
+          initiator_user_id: string
+          metadata: Json | null
+          recipient_cards: Json
+          recipient_confirmed_at: string | null
+          recipient_user_id: string
+          status: string
+          title: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "trades"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {

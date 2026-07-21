@@ -3,98 +3,80 @@ import { useToast } from "@/hooks/use-toast";
 import {
   acceptTradeProposal,
   declineTradeProposal,
-  payInitiatorEscrow,
-  payRecipientEscrow,
-  releaseTradeEscrow,
+  cancelTradeProposal,
   confirmTradeReceipt,
-  validateReleaseEscrow,
+  markTradeShipped,
+  openTradeDispute,
 } from "@/services/tradeService";
 
 /**
- * All the side-effecting trade mutations in one place. Each one shows a
- * consistent error toast and triggers `refetch` on success.
+ * All state-changing trade actions. Each shows a consistent error toast
+ * and calls `refetch` on success.
  */
 export function useTradeMutations(tradeId: string, refetch: () => void) {
   const { toast } = useToast();
 
-  const oops = (description: string) => () =>
+  const oops = (description: string) => (err?: any) =>
     toast({
       variant: "destructive",
       title: "Something went wrong",
-      description,
+      description: err?.message || description,
     });
 
   const accept = useMutation({
     mutationFn: () => acceptTradeProposal(tradeId),
     onSuccess: () => {
-      toast({ title: "Trade Accepted", description: "You have accepted the trade proposal." });
+      toast({ title: "Trade accepted", description: "You accepted the trade proposal." });
       refetch();
     },
-    onError: oops("There was a problem accepting the trade proposal."),
+    onError: oops("Couldn't accept the trade."),
   });
 
   const decline = useMutation({
     mutationFn: () => declineTradeProposal(tradeId),
     onSuccess: () => {
-      toast({ title: "Trade Declined", description: "You have declined the trade proposal." });
+      toast({ title: "Trade declined" });
       refetch();
     },
-    onError: oops("There was a problem declining the trade proposal."),
+    onError: oops("Couldn't decline the trade."),
   });
 
-  const payInitiator = useMutation({
-    mutationFn: () => payInitiatorEscrow(tradeId),
+  const cancel = useMutation({
+    mutationFn: () => cancelTradeProposal(tradeId),
     onSuccess: () => {
-      toast({ title: "Escrow Paid", description: "You have paid the escrow amount." });
+      toast({ title: "Trade cancelled" });
       refetch();
     },
-    onError: oops("There was a problem paying the escrow amount."),
-  });
-
-  const payRecipient = useMutation({
-    mutationFn: () => payRecipientEscrow(tradeId),
-    onSuccess: () => {
-      toast({ title: "Escrow Paid", description: "You have paid the escrow amount." });
-      refetch();
-    },
-    onError: oops("There was a problem paying the escrow amount."),
+    onError: oops("Couldn't cancel the trade."),
   });
 
   const confirmReceipt = useMutation({
     mutationFn: () => confirmTradeReceipt(tradeId),
     onSuccess: () => {
-      toast({ title: "Receipt confirmed", description: "You have confirmed receipt of the traded cards." });
+      toast({ title: "Receipt confirmed", description: "Waiting for the other party to confirm as well." });
       refetch();
     },
-    onError: oops("There was a problem confirming receipt."),
+    onError: oops("Couldn't confirm receipt."),
   });
 
-  const releaseEscrow = useMutation({
-    mutationFn: (releaseCode: string) => releaseTradeEscrow(tradeId, releaseCode),
-    onSuccess: (success) => {
-      if (success) {
-        toast({ title: "Escrow released", description: "The escrow has been released and the trade is now complete." });
-        refetch();
-      } else {
-        toast({ variant: "destructive", title: "Release failed", description: "Failed to release the escrow. Please try again." });
-      }
+  const markShipped = useMutation({
+    mutationFn: ({ tracking, carrier }: { tracking: string; carrier: string }) =>
+      markTradeShipped(tradeId, tracking, carrier),
+    onSuccess: () => {
+      toast({ title: "Shipment updated" });
+      refetch();
     },
-    onError: oops("There was a problem releasing the escrow."),
+    onError: oops("Couldn't update shipment."),
   });
 
-  const validateRelease = useMutation({
-    mutationFn: (releaseCode: string) => validateReleaseEscrow(tradeId, releaseCode),
-    onSuccess: (isValid, releaseCode) => {
-      if (isValid) releaseEscrow.mutate(releaseCode);
-      else
-        toast({
-          variant: "destructive",
-          title: "Invalid release code",
-          description: "The release code you entered is not valid.",
-        });
+  const dispute = useMutation({
+    mutationFn: (reason: string) => openTradeDispute(tradeId, reason),
+    onSuccess: () => {
+      toast({ title: "Dispute opened", description: "Our team will follow up." });
+      refetch();
     },
-    onError: oops("There was a problem validating the release code."),
+    onError: oops("Couldn't open dispute."),
   });
 
-  return { accept, decline, payInitiator, payRecipient, confirmReceipt, releaseEscrow, validateRelease };
+  return { accept, decline, cancel, confirmReceipt, markShipped, dispute };
 }
