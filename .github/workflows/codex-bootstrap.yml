@@ -1,0 +1,25 @@
+name: Codex workspace bootstrap
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  export-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Create source archive
+        run: git archive --format=zip HEAD --output=trade-collectors-haven.zip
+
+      - name: Upload source archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: trade-collectors-haven-source
+          path: trade-collectors-haven.zip
+          retention-days: 1
