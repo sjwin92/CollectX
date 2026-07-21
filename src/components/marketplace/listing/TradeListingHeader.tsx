@@ -1,7 +1,6 @@
 
 import React from "react";
 import { CardTitle, CardDescription, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Calendar, User } from "lucide-react";
 import { format } from "date-fns";
 
@@ -9,7 +8,6 @@ interface TradeListingHeaderProps {
   cardName: string;
   username: string;
   createdAt: Date;
-  estimatedValue: string;
   featured?: boolean;
 }
 
@@ -17,7 +15,6 @@ const TradeListingHeader = ({
   cardName, 
   username, 
   createdAt, 
-  estimatedValue, 
   featured = false 
 }: TradeListingHeaderProps) => {
   return (
@@ -35,9 +32,6 @@ const TradeListingHeader = ({
             </div>
           </CardDescription>
         </div>
-        <Badge variant="outline" className={featured ? "bg-amber-400/10" : ""}>
-          {estimatedValue}
-        </Badge>
       </div>
     </CardHeader>
   );
