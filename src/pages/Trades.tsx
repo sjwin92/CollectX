@@ -65,39 +65,56 @@ const Trades = () => {
 
   const loadUserTrades = async () => {
     if (!user) return;
-    
+
     setLoading(true);
     try {
       const { data: trades, error } = await supabase
         .from('trades')
-        .select(`
-          *,
-          initiator_profile:profiles!trades_initiator_user_id_fkey(display_name, username, avatar_url),
-          recipient_profile:profiles!trades_recipient_user_id_fkey(display_name, username, avatar_url)
-        `)
+        .select('*')
         .or(`initiator_user_id.eq.${user.id},recipient_user_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error loading trades:', error);
+        toast.error(error.message || 'Failed to load trades');
+        setLoading(false);
         return;
       }
 
-      setUserTrades(trades || []);
-      
-      // Calculate stats
+      const rows = trades || [];
+      const participantIds = Array.from(new Set(
+        rows.flatMap((t: any) => [t.initiator_user_id, t.recipient_user_id]).filter(Boolean)
+      ));
+
+      let profileMap = new Map<string, any>();
+      if (participantIds.length) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, display_name, username, avatar_url')
+          .in('user_id', participantIds);
+        profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+      }
+
+      const enriched = rows.map((t: any) => ({
+        ...t,
+        initiator_profile: profileMap.get(t.initiator_user_id) || null,
+        recipient_profile: profileMap.get(t.recipient_user_id) || null,
+      }));
+
+      setUserTrades(enriched);
+
       const stats = {
-        total: trades?.length || 0,
-        pending: trades?.filter(t => t.status === 'proposed').length || 0,
-        inProgress: trades?.filter(t => ['accepted', 'shipped', 'disputed'].includes(t.status)).length || 0,
-        completed: trades?.filter(t => t.status === 'completed').length || 0,
-        cancelled: trades?.filter(t => t.status === 'cancelled').length || 0
+        total: enriched.length,
+        pending: enriched.filter((t: any) => t.status === 'proposed').length,
+        inProgress: enriched.filter((t: any) => ['accepted', 'shipped', 'disputed'].includes(t.status)).length,
+        completed: enriched.filter((t: any) => t.status === 'completed').length,
+        cancelled: enriched.filter((t: any) => t.status === 'cancelled').length,
       };
-      
+
       setTradeStats(stats);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading trades:', error);
-      toast.error('Failed to load trades');
+      toast.error(error?.message || 'Failed to load trades');
     } finally {
       setLoading(false);
     }
