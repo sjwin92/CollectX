@@ -56,9 +56,10 @@ const Index = () => {
       <section className="py-16 md:py-24 bg-secondary/30">
         <div className="container">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Safe Trading for Collectors</h2>
+            <h2 className="text-3xl font-bold mb-4">Built for Card-for-Card Trading</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Our platform is built by collectors, for collectors, with features designed to make trading both safe and enjoyable.
+              A structured workflow for proposing, confirming, and completing
+              collector-to-collector Pokémon card trades.
             </p>
           </div>
           
@@ -66,34 +67,35 @@ const Index = () => {
             {[
               {
                 icon: <Shield className="h-6 w-6 text-primary" />,
-                title: "Trade Protection",
-                description: "Two-party confirmation, tracked shipments, and disputes keep every card-for-card trade accountable."
+                title: "Structured Trade Workflow",
+                description: "Server-validated proposals from real collection cards, in-trade messaging, private fulfilment addresses, recorded carrier/tracking details, and two-party receipt confirmation. Either participant can pause an accepted or shipped trade by recording an issue."
               },
               {
                 icon: <Users className="h-6 w-6 text-primary" />,
                 title: "Reputation System",
-                description: "Trade with confidence using our tiered reputation system that recognizes trusted collectors."
+                description: "Profiles show completed-trade counts and database-backed ratings left by prior trade partners."
               },
               {
                 icon: <TrendingUp className="h-6 w-6 text-primary" />,
                 title: "Value Estimation",
-                description: "Get approximate values for your cards based on condition and recent market data."
+                description: "Indicative catalogue values and available market data to help you compare cards. Prices are approximate, not live."
               },
               {
                 icon: <Camera className="h-6 w-6 text-primary" />,
                 title: "Card Photos",
-                description: "Upload and view high-quality photos of cards to verify condition before trading."
+                description: "Upload and view condition photos so both sides can review a card before proposing or accepting a trade."
               },
               {
                 icon: <ListChecks className="h-6 w-6 text-primary" />,
                 title: "Collection Management",
-                description: "Organize your collection by set, rarity, type, and more with our intuitive tools."
+                description: "Organize your collection by set, rarity, type, and more with intuitive tools."
               },
               {
                 icon: <Truck className="h-6 w-6 text-primary" />,
-                title: "Shipping Tracking",
-                description: "Integrate shipping information for real-time tracking of your trades."
+                title: "Shipping Details",
+                description: "Both participants record their carrier and tracking number for their outbound parcel so each side can look it up with the carrier directly."
               }
+
             ].map((feature, index) => (
               <GlassCard 
                 key={index} 
