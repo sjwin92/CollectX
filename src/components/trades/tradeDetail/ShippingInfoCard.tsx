@@ -89,14 +89,28 @@ export const ShippingInfoCard = ({ trade, tradeId, currentUserId, onUpdated }: P
   const destinationReady = !!destAddressQ.data;
 
   const saveAddress = async () => {
-    if (!address.line1?.trim() || !address.city?.trim() || !address.country?.trim()) {
-      toast({ variant: "destructive", title: "Missing address", description: "Address line, city and country are required." });
+    if (
+      !address.full_name?.trim() ||
+      !address.line1?.trim() ||
+      !address.city?.trim() ||
+      !address.postal_code?.trim() ||
+      !address.country?.trim()
+    ) {
+      toast({
+        variant: "destructive",
+        title: "Missing address",
+        description: "Full name, address line 1, city, postal code and country are required.",
+      });
       return;
     }
     setSavingAddress(true);
     try {
       await submitTradeAddress(tradeId, address);
-      toast({ title: "Address saved", description: "Only you can see this. The other party will use it as their destination." });
+      toast({
+        title: "Address saved",
+        description:
+          "Stored privately. It is revealed only to the other participant as needed to ship their parcel.",
+      });
       await Promise.all([myAddressQ.refetch(), destAddressQ.refetch()]);
     } catch (e: any) {
       toast({ variant: "destructive", title: "Couldn't save address", description: e?.message ?? "Try again." });
