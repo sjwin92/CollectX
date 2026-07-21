@@ -16,8 +16,8 @@ The product is currently in private beta. It does not collect money, provide esc
 Use Node.js 20 or later.
 
 ```sh
-git clone https://github.com/sjwin92/trade-collectors-haven.git
-cd trade-collectors-haven
+git clone https://github.com/sjwin92/CollectX.git
+cd CollectX
 npm ci
 npm run dev
 ```
