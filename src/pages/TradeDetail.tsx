@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle, Loader2, Shield, XCircle } from "lucide-react";
+import { CheckCircle, Loader2, Shield, Star, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/hooks/useUser";
-import { getTradeById } from "@/services/tradeService";
+import { getTradeById, hasRatedTrade } from "@/services/tradeService";
 import { TradeDetailHeader } from "@/components/trades/tradeDetail/TradeDetailHeader";
 import { TradeParticipantsCard } from "@/components/trades/tradeDetail/TradeParticipantsCard";
 import { TradeProgressBar } from "@/components/trades/tradeDetail/TradeProgressBar";
@@ -14,11 +14,13 @@ import { ShippingInfoCard } from "@/components/trades/tradeDetail/ShippingInfoCa
 import { TradeChat } from "@/components/trades/tradeDetail/TradeChat";
 import { ImageLightbox } from "@/components/trades/tradeDetail/ImageLightbox";
 import { useTradeMutations } from "@/components/trades/tradeDetail/useTradeMutations";
+import TradeRatingModal from "@/components/trades/TradeRatingModal";
 
 const TradeDetail: React.FC = () => {
   const { tradeId } = useParams<{ tradeId: string }>();
   const { user } = useUser();
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [ratingOpen, setRatingOpen] = useState(false);
 
   const { data: trade, isLoading, isError, refetch } = useQuery({
     queryKey: ["trade", tradeId],
@@ -77,9 +79,19 @@ const TradeDetail: React.FC = () => {
   const canAccept  = trade.status === "proposed" && isRecipient;
   const canDecline = trade.status === "proposed" && isRecipient;
   const canCancel  = trade.status === "proposed" && isInitiator;
-  const iConfirmed = isInitiator ? !!(trade as any).initiator_confirmed_at : !!(trade as any).recipient_confirmed_at;
+  const iConfirmed = isInitiator
+    ? !!(trade as any).initiator_confirmed_at
+    : !!(trade as any).recipient_confirmed_at;
   const canConfirm = trade.status === "shipped" && !iConfirmed;
   const canDispute = ["accepted", "shipped"].includes(trade.status);
+
+  const otherParty = isInitiator ? trade.recipient : trade.initiator;
+  const { data: alreadyRated } = useQuery({
+    queryKey: ["trade-rated", tradeId, user?.id],
+    queryFn: () => hasRatedTrade(tradeId!),
+    enabled: !!tradeId && !!user && trade.status === "completed",
+  });
+  const canRate = trade.status === "completed" && !!user && !alreadyRated;
 
   return (
     <div className="container py-12">
