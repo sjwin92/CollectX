@@ -2,10 +2,10 @@ import GlassCard from "@/components/ui/custom/GlassCard";
 import { TRADE_STEP } from "./TradeDetailHeader";
 import type { TradeStatus } from "@/models/escrow";
 
-const STEPS = ["Proposed", "Accepted", "Escrowed", "Shipped", "Completed"];
+const STEPS = ["Proposed", "Accepted", "Shipped", "Completed"];
 
 export const TradeProgressBar = ({ status }: { status: TradeStatus }) => {
-  if (["declined", "disputed", "cancelled"].includes(status)) return null;
+  if (["cancelled", "disputed"].includes(status)) return null;
   const step = TRADE_STEP[status] ?? 0;
   return (
     <GlassCard className="mb-6">

@@ -1,153 +1,144 @@
-import { useState } from "react";
-import { format } from "date-fns";
-import { Calendar as CalendarIcon, Copy, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Copy, Loader2, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import GlassCard from "@/components/ui/custom/GlassCard";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
-import { updateShippingInfo } from "@/services/tradeService";
+import { supabase } from "@/integrations/supabase/client";
+import { markTradeShipped } from "@/services/tradeService";
 import type { TradeProposal } from "@/models/escrow";
 
 type Props = {
   trade: TradeProposal;
   tradeId: string;
-  isInitiator: boolean;
+  currentUserId: string | undefined;
   onUpdated: () => void;
 };
 
-export const ShippingInfoCard = ({ trade, tradeId, isInitiator, onUpdated }: Props) => {
-  const { toast } = useToast();
-  const showShipping =
-    trade.status === "escrowed" || trade.status === "shipped" || trade.status === "completed";
+type ShipmentRow = {
+  id: string;
+  sender_user_id: string;
+  tracking_number: string | null;
+  status: string;
+  shipped_at: string | null;
+  delivered_at: string | null;
+  metadata: any;
+};
 
-  const [editMode, setEditMode] = useState(false);
-  const [carrier, setCarrier] = useState(trade.escrow?.shippingInfo?.carrier ?? "");
-  const [trackingNumber, setTrackingNumber] = useState(
-    trade.escrow?.shippingInfo?.trackingNumber ?? "",
-  );
-  const [estimatedDelivery, setEstimatedDelivery] = useState<Date | undefined>(
-    trade.escrow?.shippingInfo?.estimatedDelivery
-      ? new Date(trade.escrow.shippingInfo.estimatedDelivery)
-      : undefined,
-  );
+export const ShippingInfoCard = ({ trade, tradeId, currentUserId, onUpdated }: Props) => {
+  const { toast } = useToast();
+  const [shipments, setShipments] = useState<ShipmentRow[]>([]);
+  const [tracking, setTracking] = useState("");
+  const [carrier, setCarrier] = useState("");
   const [saving, setSaving] = useState(false);
 
-  if (!showShipping) return null;
+  const canShow = ["accepted", "shipped", "completed"].includes(trade.status);
 
-  const copy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({ title: "Copied to clipboard" });
+  const refresh = async () => {
+    const { data } = await (supabase as any)
+      .from("trade_shipments_public")
+      .select("id, sender_user_id, tracking_number, status, shipped_at, delivered_at, metadata")
+      .eq("trade_id", tradeId);
+    setShipments((data as any[]) ?? []);
   };
 
-  const save = async () => {
+  useEffect(() => {
+    if (canShow) refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tradeId, canShow]);
+
+  if (!canShow) return null;
+
+  const mine = shipments.find((s) => s.sender_user_id === currentUserId);
+  const theirs = shipments.find((s) => s.sender_user_id !== currentUserId);
+
+  const submit = async () => {
+    if (!tracking.trim() || !carrier.trim()) {
+      toast({ variant: "destructive", title: "Missing info", description: "Carrier and tracking are required." });
+      return;
+    }
     setSaving(true);
     try {
-      await updateShippingInfo(tradeId, carrier, trackingNumber, estimatedDelivery);
-      toast({ title: "Shipping updated", description: "Shipping information saved." });
-      setEditMode(false);
+      await markTradeShipped(tradeId, tracking.trim(), carrier.trim());
+      toast({ title: "Marked as shipped" });
+      setTracking(""); setCarrier("");
+      await refresh();
       onUpdated();
-    } catch {
-      toast({
-        variant: "destructive",
-        title: "Shipping update failed",
-        description: "There was a problem updating the shipping information.",
-      });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Couldn't update shipment", description: e?.message ?? "Try again." });
     } finally {
       setSaving(false);
     }
   };
 
+  const copy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "Copied" });
+  };
+
   return (
     <GlassCard className="mb-6">
-      <div className="p-4">
-        <h3 className="text-lg font-medium mb-2">Shipping Information</h3>
-        {editMode ? (
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="shippingCarrier">Shipping Carrier</Label>
-              <Input
-                id="shippingCarrier"
-                value={carrier}
-                onChange={(e) => setCarrier(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="trackingNumber">Tracking Number</Label>
-              <Input
-                id="trackingNumber"
-                value={trackingNumber}
-                onChange={(e) => setTrackingNumber(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label>Estimated Delivery</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-[240px] justify-start text-left font-normal",
-                      !estimatedDelivery && "text-muted-foreground",
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {estimatedDelivery ? format(estimatedDelivery, "PPP") : <span>Pick a date</span>}
+      <div className="p-4 space-y-4">
+        <h3 className="text-lg font-medium flex items-center gap-2"><Truck className="h-5 w-5" /> Shipping</h3>
+
+        {/* Your shipment */}
+        <div className="rounded-md border p-3">
+          <div className="text-sm font-medium mb-2">Your shipment</div>
+          {mine ? (
+            <div className="text-sm space-y-1">
+              <div>Status: <span className="capitalize">{mine.status}</span></div>
+              <div>Carrier: {mine.metadata?.carrier || "—"}</div>
+              <div className="flex items-center gap-2">
+                Tracking: {mine.tracking_number || "—"}
+                {mine.tracking_number && (
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copy(mine.tracking_number!)}>
+                    <Copy className="h-3 w-3" />
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="center" side="bottom">
-                  <Calendar
-                    mode="single"
-                    selected={estimatedDelivery}
-                    onSelect={setEstimatedDelivery}
-                    disabled={(d) => d < new Date()}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+                )}
+              </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setEditMode(false)}>
-                Cancel
+          ) : (
+            <p className="text-sm text-muted-foreground">No shipment recorded yet.</p>
+          )}
+
+          {trade.status === "accepted" && (mine?.status !== "shipped" && mine?.status !== "delivered") && (
+            <div className="mt-3 space-y-2">
+              <div>
+                <Label htmlFor="carrier">Carrier</Label>
+                <Input id="carrier" value={carrier} onChange={(e) => setCarrier(e.target.value)} placeholder="Royal Mail, USPS…" />
+              </div>
+              <div>
+                <Label htmlFor="tracking">Tracking number</Label>
+                <Input id="tracking" value={tracking} onChange={(e) => setTracking(e.target.value)} />
+              </div>
+              <Button size="sm" onClick={submit} disabled={saving}>
+                {saving ? <>Saving...<Loader2 className="ml-2 h-4 w-4 animate-spin" /></> : "Mark as shipped"}
               </Button>
-              <Button onClick={save} disabled={saving}>
-                {saving ? (
-                  <>Updating...<Loader2 className="ml-2 h-4 w-4 animate-spin" /></>
-                ) : "Update Shipping"}
-              </Button>
             </div>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <div className="text-sm">Carrier: {trade.escrow?.shippingInfo?.carrier || "N/A"}</div>
-            <div className="text-sm">
-              Tracking Number: {trade.escrow?.shippingInfo?.trackingNumber || "N/A"}
-              {trade.escrow?.shippingInfo?.trackingNumber && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => copy(trade.escrow!.shippingInfo!.trackingNumber)}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              )}
+          )}
+        </div>
+
+        {/* Their shipment (public projection — no address ever exposed) */}
+        <div className="rounded-md border p-3">
+          <div className="text-sm font-medium mb-2">Their shipment</div>
+          {theirs ? (
+            <div className="text-sm space-y-1">
+              <div>Status: <span className="capitalize">{theirs.status}</span></div>
+              <div>Carrier: {theirs.metadata?.carrier || "—"}</div>
+              <div className="flex items-center gap-2">
+                Tracking: {theirs.tracking_number || "—"}
+                {theirs.tracking_number && (
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copy(theirs.tracking_number!)}>
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
             </div>
-            <div className="text-sm">
-              Estimated Delivery:{" "}
-              {trade.escrow?.shippingInfo?.estimatedDelivery
-                ? format(new Date(trade.escrow.shippingInfo.estimatedDelivery), "PPP")
-                : "N/A"}
-            </div>
-            {isInitiator && trade.status === "escrowed" && (
-              <Button size="sm" onClick={() => setEditMode(true)}>
-                Edit Shipping Info
-              </Button>
-            )}
-          </div>
-        )}
+          ) : (
+            <p className="text-sm text-muted-foreground">Awaiting the other party to ship.</p>
+          )}
+        </div>
       </div>
     </GlassCard>
   );
