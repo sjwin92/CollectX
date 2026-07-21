@@ -106,9 +106,8 @@ const Marketplace = () => {
     featured: row.featured,
   }));
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState<'featured' | 'recent' | 'trending'>('featured');
+  const [activeCategory, setActiveCategory] = useState<'featured' | 'recent' | 'trending'>('recent');
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<string>("newest");
   const { toast } = useToast();
   const { user } = useUser();
@@ -117,58 +116,32 @@ const Marketplace = () => {
   const filteredListings = React.useMemo(() => {
     return listings
       .filter(listing => {
-        const matchesSearch = searchQuery === "" || 
+        const matchesSearch = searchQuery === "" ||
           listing.cardOffered.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           listing.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
           listing.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
           listing.cardsWanted.some(card => card.toLowerCase().includes(searchQuery.toLowerCase()));
-        
-        const matchesCategory = 
+
+        const matchesCategory =
           (activeCategory === 'featured' && listing.featured) ||
           (activeCategory === 'recent') ||
           (activeCategory === 'trending');
-        
-        const matchesCondition = selectedConditions.length === 0 || 
+
+        const matchesCondition = selectedConditions.length === 0 ||
           selectedConditions.includes(listing.cardOffered.condition);
-        
-        let matchesPrice = true;
-        if (priceRange !== "all") {
-          const price = parseFloat(listing.cardOffered.estimatedValue.replace(/[^0-9.]/g, ''));
-          switch (priceRange) {
-            case "under-10":
-              matchesPrice = price < 10;
-              break;
-            case "10-50":
-              matchesPrice = price >= 10 && price <= 50;
-              break;
-            case "50-100":
-              matchesPrice = price >= 50 && price <= 100;
-              break;
-            case "over-100":
-              matchesPrice = price > 100;
-              break;
-          }
-        }
-        
-        return matchesSearch && matchesCategory && matchesCondition && matchesPrice;
+
+        return matchesSearch && matchesCategory && matchesCondition;
       })
       .sort((a, b) => {
         switch (sortOrder) {
-          case "newest":
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
           case "oldest":
             return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-          case "price-high":
-            return parseFloat(b.cardOffered.estimatedValue.replace(/[^0-9.]/g, '')) - 
-                  parseFloat(a.cardOffered.estimatedValue.replace(/[^0-9.]/g, ''));
-          case "price-low":
-            return parseFloat(a.cardOffered.estimatedValue.replace(/[^0-9.]/g, '')) - 
-                  parseFloat(b.cardOffered.estimatedValue.replace(/[^0-9.]/g, ''));
+          case "newest":
           default:
-            return 0;
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         }
       });
-  }, [listings, searchQuery, activeCategory, selectedConditions, priceRange, sortOrder]);
+  }, [listings, searchQuery, activeCategory, selectedConditions, sortOrder]);
 
 
   const toggleConditionFilter = (condition: string) => {
