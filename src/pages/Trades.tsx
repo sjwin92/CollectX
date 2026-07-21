@@ -88,10 +88,11 @@ const Trades = () => {
 
       let profileMap = new Map<string, any>();
       if (participantIds.length) {
-        const { data: profiles } = await supabase
+        const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('user_id, display_name, username, avatar_url')
           .in('user_id', participantIds);
+        if (profilesError) throw profilesError;
         profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
       }
 
@@ -130,7 +131,12 @@ const Trades = () => {
         .select('*')
         .eq('id', listingId)
         .single()
-        .then(({ data }) => {
+        .then(({ data, error }) => {
+          if (error) {
+            toast.error(error.message || 'This listing is no longer available.');
+            window.history.replaceState({}, '', '/trades');
+            return;
+          }
           if (data) {
             setSelectedTargetCard({
               id: data.id, // listing id — resolved back to listing on submit
