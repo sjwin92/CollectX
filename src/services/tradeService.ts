@@ -53,26 +53,28 @@ export type TradeProposalWithConfirms = TradeProposal & {
 export const getTradeById = async (tradeId: string): Promise<TradeProposalWithConfirms> => {
   const { data, error } = await supabase
     .from("trades")
-    .select(
-      `*,
-       initiator_profile:profiles!trades_initiator_user_id_fkey(display_name, username, avatar_url, reputation_score, successful_trades, total_trades),
-       recipient_profile:profiles!trades_recipient_user_id_fkey(display_name, username, avatar_url, reputation_score, successful_trades, total_trades)`
-    )
+    .select("*")
     .eq("id", tradeId)
     .single();
   if (error) throw error;
+
+  const participantIds = [data.initiator_user_id, data.recipient_user_id].filter(Boolean);
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("user_id, display_name, username, avatar_url, reputation_score, successful_trades, total_trades")
+    .in("user_id", participantIds);
+  const profileMap = new Map<string, any>((profiles || []).map((p: any) => [p.user_id, p]));
+  const initiatorProfile = profileMap.get(data.initiator_user_id);
+  const recipientProfile = profileMap.get(data.recipient_user_id);
 
   const messages = await getTradeMessages(tradeId);
 
   const initiatorCards = mapCards(parseCards(data.initiator_cards));
   const recipientCards = mapCards(parseCards(data.recipient_cards));
 
-  const initiatorName =
-    data.initiator_profile?.display_name || data.initiator_profile?.username || "Unknown";
-  const recipientName =
-    data.recipient_profile?.display_name || data.recipient_profile?.username || "Unknown";
+  const initiatorName = initiatorProfile?.display_name || initiatorProfile?.username || "Unknown";
+  const recipientName = recipientProfile?.display_name || recipientProfile?.username || "Unknown";
 
-  // Enrich messages with the sender's display name from the two participants
   const nameOf = (uid: string) =>
     uid === data.initiator_user_id ? initiatorName :
     uid === data.recipient_user_id ? recipientName : "";
@@ -86,20 +88,20 @@ export const getTradeById = async (tradeId: string): Promise<TradeProposalWithCo
     initiator: {
       userId: data.initiator_user_id,
       username: initiatorName,
-      reputation: repTier(data.initiator_profile?.reputation_score),
-      tradeCount: data.initiator_profile?.total_trades || 0,
-      successRate: data.initiator_profile?.total_trades
-        ? (data.initiator_profile.successful_trades / data.initiator_profile.total_trades) * 100
+      reputation: repTier(initiatorProfile?.reputation_score),
+      tradeCount: initiatorProfile?.total_trades || 0,
+      successRate: initiatorProfile?.total_trades
+        ? (initiatorProfile.successful_trades / initiatorProfile.total_trades) * 100
         : 0,
       offeringCards: initiatorCards,
     },
     recipient: {
       userId: data.recipient_user_id,
       username: recipientName,
-      reputation: repTier(data.recipient_profile?.reputation_score),
-      tradeCount: data.recipient_profile?.total_trades || 0,
-      successRate: data.recipient_profile?.total_trades
-        ? (data.recipient_profile.successful_trades / data.recipient_profile.total_trades) * 100
+      reputation: repTier(recipientProfile?.reputation_score),
+      tradeCount: recipientProfile?.total_trades || 0,
+      successRate: recipientProfile?.total_trades
+        ? (recipientProfile.successful_trades / recipientProfile.total_trades) * 100
         : 0,
       offeringCards: recipientCards,
     },
