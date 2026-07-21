@@ -60,7 +60,6 @@ export const updateSEO = ({
 
   // Twitter Card tags
   updateMetaTag('twitter:card', 'summary_large_image');
-  updateMetaTag('twitter:site', APP_CONFIG.seo.twitterSite);
   updateMetaTag('twitter:title', title);
   updateMetaTag('twitter:description', description);
   updateMetaTag('twitter:image', `${APP_CONFIG.baseUrl}${image}`);
@@ -93,14 +92,14 @@ export const useSEO = (seoProps: SEOProps) => {
 export const SEO_CONFIGS = {
   home: {
     title: 'CollectX - Trade Pokemon Cards & Manage Collections',
-    description: 'The ultimate platform for Pokemon card trading. Build your collection, trade with other collectors, and discover rare cards.',
+    description: 'Catalogue Pokemon cards and arrange card-for-card trades with other collectors.',
     keywords: ['pokemon cards', 'trading', 'collection', 'TCG', 'marketplace']
   },
   
   marketplace: {
-    title: 'Marketplace - Buy & Trade Pokemon Cards',
-    description: 'Browse and trade Pokemon cards with collectors worldwide. Find rare cards, make offers, and expand your collection.',
-    keywords: ['pokemon marketplace', 'buy cards', 'sell cards', 'trading cards']
+    title: 'Marketplace - Trade Pokemon Cards',
+    description: 'Browse card-for-card listings and make trade proposals to other collectors.',
+    keywords: ['pokemon marketplace', 'trade cards', 'card swap', 'trading cards']
   },
   
   collection: {
@@ -111,7 +110,7 @@ export const SEO_CONFIGS = {
   
   trades: {
     title: 'Trades - Pokemon Card Trading Hub',
-    description: 'View and manage your Pokemon card trades. Propose trades, negotiate, and complete transactions safely.',
+    description: 'View and manage Pokemon card trade proposals, messages, shipping, receipts, and ratings.',
     keywords: ['pokemon trades', 'card trading', 'trade proposals', 'swap cards']
   },
   

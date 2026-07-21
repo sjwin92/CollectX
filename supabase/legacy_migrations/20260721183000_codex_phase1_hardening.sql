@@ -416,32 +416,11 @@ DROP POLICY IF EXISTS "Recipients can mark as read" ON public.chat_messages;
 DROP POLICY IF EXISTS "Participants can send messages" ON public.chat_messages;
 REVOKE UPDATE, DELETE ON public.chat_messages FROM anon, authenticated;
 
-CREATE OR REPLACE FUNCTION public.prepare_chat_message()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $function$
-BEGIN
-  -- Clients may submit these columns, so normalize them before the RLS
-  -- WITH CHECK runs and before the conversation timestamp is updated.
-  NEW.created_at := now();
-  NEW.read := false;
-  RETURN NEW;
-END;
-$function$;
-
-DROP TRIGGER IF EXISTS trg_prepare_chat_message ON public.chat_messages;
-CREATE TRIGGER trg_prepare_chat_message
-  BEFORE INSERT ON public.chat_messages
-  FOR EACH ROW EXECUTE FUNCTION public.prepare_chat_message();
-
 CREATE POLICY "Participants can send messages"
   ON public.chat_messages
   FOR INSERT TO authenticated
   WITH CHECK (
     auth.uid() = sender_user_id
-    AND read = false
     AND message_type <> 'system'
     AND EXISTS (
       SELECT 1
@@ -459,7 +438,7 @@ SET search_path = public
 AS $function$
 BEGIN
   UPDATE public.chat_conversations
-     SET last_message_at = greatest(last_message_at, NEW.created_at)
+     SET last_message_at = NEW.created_at
    WHERE id = NEW.conversation_id;
   RETURN NEW;
 END;
@@ -496,7 +475,6 @@ BEGIN
 END;
 $function$;
 
-REVOKE ALL ON FUNCTION public.prepare_chat_message() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.touch_chat_conversation() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.mark_conversation_messages_read(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.mark_conversation_messages_read(uuid) TO authenticated;

@@ -249,18 +249,6 @@ if (typeof window !== "undefined") {
   }
 }
 
-let cachedAuth: boolean | null = null;
-async function isAuthenticated(): Promise<boolean> {
-  try {
-    const { supabase } = await import("@/integrations/supabase/client");
-    const { data } = await supabase.auth.getSession();
-    cachedAuth = !!data.session?.user;
-    return cachedAuth;
-  } catch {
-    return cachedAuth ?? false;
-  }
-}
-
 function enqueueRemote(sample: NavSample) {
   if (typeof window === "undefined") return;
   if (Math.random() > SAMPLE_RATE) return;
@@ -285,7 +273,7 @@ function enqueueRemote(sample: NavSample) {
     connection_type: conn.effectiveType ?? null,
     downlink_mbps: typeof conn.downlink === "number" ? conn.downlink : null,
     save_data: typeof conn.saveData === "boolean" ? conn.saveData : null,
-    is_authenticated: cachedAuth,
+    is_authenticated: null,
     referrer_host: sample.navType === "initial_load" ? getReferrerHost() : null,
     region: getRegion(),
     web_vitals_lcp_ms: lcp,
@@ -311,20 +299,26 @@ async function flush(useBeacon = false) {
   if (!queue.length) return;
   const batch = queue.splice(0, queue.length);
   try {
-    const auth = await isAuthenticated();
     const { supabase } = await import("@/integrations/supabase/client");
     const { data: { session } } = await supabase.auth.getSession();
-    const userId = session?.user?.id ?? null;
+    // Anonymous telemetry is intentionally disabled. This keeps the public
+    // API from accepting untrusted analytics writes and avoids collecting
+    // navigation data before a user signs in.
+    if (!session) return;
+
+    const userId = session.user.id;
     const rows = batch.map((r) => ({
       ...r,
       user_id: userId,
-      is_authenticated: r.is_authenticated ?? auth,
+      is_authenticated: true,
     }));
 
     if (useBeacon && typeof navigator !== "undefined" && "sendBeacon" in navigator) {
       // Direct PostgREST insert via beacon — survives tab close.
       const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/nav_metrics`;
-      const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const key =
+        import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
+        import.meta.env.VITE_SUPABASE_ANON_KEY;
       const blob = new Blob([JSON.stringify(rows)], { type: "application/json" });
       // sendBeacon can't set custom headers; fall back to fetch with keepalive.
       try {
@@ -333,7 +327,7 @@ async function flush(useBeacon = false) {
           headers: {
             "content-type": "application/json",
             apikey: key,
-            authorization: `Bearer ${session?.access_token ?? key}`,
+            authorization: `Bearer ${session.access_token}`,
             prefer: "return=minimal",
           },
           body: blob,
@@ -341,7 +335,6 @@ async function flush(useBeacon = false) {
         });
         return;
       } catch {
-        navigator.sendBeacon(url, blob);
         return;
       }
     }
