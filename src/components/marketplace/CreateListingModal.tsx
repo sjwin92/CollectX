@@ -207,44 +207,15 @@ const CreateListingModal = ({
             {/* Listing Details Form */}
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="listingType">Listing Type</Label>
-                <Select value={listingType} onValueChange={(value: 'trade' | 'sale' | 'both') => setListingType(value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select listing type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="trade">Trade Only</SelectItem>
-                    <SelectItem value="sale">Sale Only</SelectItem>
-                    <SelectItem value="both">Trade or Sale</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="tradePreferences">Trade Preferences</Label>
+                <Textarea
+                  id="tradePreferences"
+                  placeholder="What cards are you looking for? (e.g., Charizard cards, specific sets, etc.)"
+                  value={tradePreferences}
+                  onChange={(e) => setTradePreferences(e.target.value)}
+                />
               </div>
 
-              {(listingType === 'sale' || listingType === 'both') && (
-                <div className="space-y-2">
-                  <Label htmlFor="askingPrice">Asking Price ($)</Label>
-                  <Input
-                    id="askingPrice"
-                    type="number"
-                    step="0.01"
-                    placeholder="Enter asking price"
-                    value={askingPrice}
-                    onChange={(e) => setAskingPrice(e.target.value)}
-                  />
-                </div>
-              )}
-
-              {(listingType === 'trade' || listingType === 'both') && (
-                <div className="space-y-2">
-                  <Label htmlFor="tradePreferences">Trade Preferences</Label>
-                  <Textarea
-                    id="tradePreferences"
-                    placeholder="What cards are you looking for? (e.g., Charizard cards, specific sets, etc.)"
-                    value={tradePreferences}
-                    onChange={(e) => setTradePreferences(e.target.value)}
-                  />
-                </div>
-              )}
 
               <div className="space-y-2">
                 <Label htmlFor="description">Additional Description</Label>
