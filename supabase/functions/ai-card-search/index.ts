@@ -59,10 +59,10 @@ serve(async (req) => {
       });
     }
 
-    // --- Claude API key check ---
-    const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
-    if (!anthropicApiKey) {
-      return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' }), {
+    // --- Lovable AI Gateway ---
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!lovableApiKey) {
+      return new Response(JSON.stringify({ error: 'AI gateway not configured' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -76,17 +76,7 @@ serve(async (req) => {
       });
     }
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': anthropicApiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 512,
-        system: `You are a Pokemon TCG card search assistant. Transform natural language queries into structured search parameters for the Pokemon TCG API.
+    const systemPrompt = `You are a Pokemon TCG card search assistant. Transform natural language queries into structured search parameters for the Pokemon TCG API.
 
 Return ONLY a valid JSON object with these optional fields:
 {
@@ -98,23 +88,42 @@ Return ONLY a valid JSON object with these optional fields:
   "type": "pokemon type if mentioned",
   "searchTerms": ["alternative", "terms"],
   "interpretation": "human readable summary"
-}
+}`;
 
-Examples:
-- "shiny charizard" → {"name":"Charizard","rarity":"secret rare","interpretation":"Secret Rare Charizard cards"}
-- "pikachu base set" → {"name":"Pikachu","setName":"Base Set","interpretation":"Pikachu from Base Set"}
-- "card 25" → {"cardNumber":"25","interpretation":"Card number 25 from any set"}`,
-        messages: [{ role: 'user', content: query }],
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${lovableApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: query },
+        ],
       }),
     });
 
+    if (response.status === 429) {
+      return new Response(JSON.stringify({ error: 'AI rate limit — try again in a moment.' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (response.status === 402) {
+      return new Response(JSON.stringify({ error: 'AI credits exhausted. Add credits in Project Settings.' }), {
+        status: 402,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     if (!response.ok) {
       const err = await response.text();
-      throw new Error(`Claude API error ${response.status}: ${err}`);
+      throw new Error(`Gateway ${response.status}: ${err}`);
     }
 
     const data = await response.json();
-    const text = data.content?.[0]?.text || '';
+    const text: string = data.choices?.[0]?.message?.content ?? '';
 
     try {
       const cleaned = text.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
