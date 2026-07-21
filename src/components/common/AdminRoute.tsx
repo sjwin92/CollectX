@@ -12,7 +12,8 @@ interface Props {
  * Server-side RLS + has_role() remain the source of truth; this is a UX guard.
  */
 const AdminRoute = ({ children }: Props) => {
-  const { user, loading: authLoading } = useAuthContext();
+  const { user, isLoaded } = useAuthContext();
+  const authLoading = !isLoaded;
   const [checking, setChecking] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
