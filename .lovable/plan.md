@@ -1,85 +1,90 @@
-## Goal
-Cards load instantly on every visit — first user to view a set pays a ~2s import cost, everyone else (including the same user across reloads) gets the cards from the database in <200ms. Prices stay fresh because each set auto-refreshes after 24h.
+# CollectX / Trade Collectors Haven — Status Audit & Launch Plan
 
-## Architecture
+## TL;DR
+The Pokémon data layer, auth, and collection are real and working. **The entire trade → escrow → shipping → rating pipeline is demo-grade**: escrow payments are `setTimeout` simulations, reputation is hardcoded, ratings never persist, and every transactional table is empty (0 trades, 0 listings, 0 escrows, 0 ratings). Admin routes and one edge function are under-protected. MCP is not implemented anywhere. Nothing has ever gone through the live flow.
 
-```text
-        ┌────────────────────────────────────────────┐
-        │ Browser (PokemonCards page)                │
-        │                                            │
-        │ 1. React Query reads ['set-cards', id]     │
-        │    from IndexedDB (instant if cached)      │
-        │                                            │
-        │ 2. Fetch from Supabase mirror tables ◄─────┼──┐
-        │                                            │  │
-        │ 3. If miss OR stale (>24h), call edge fn ──┼──┼──► import-set-cards
-        │                                            │  │     (server-side)
-        │ 4. Re-read mirror tables, render           │  │       │
-        └────────────────────────────────────────────┘  │       ▼
-                                                        │  External TCG API
-        ┌────────────────────────────────────────────┐  │       │
-        │ Supabase Postgres                          │  │       │
-        │  • pokemon_sets       (set metadata)       │◄─┴───────┘
-        │  • pokemon_cards      (card rows + prices) │
-        │  • set_images         (logo/symbol URLs)   │
-        │  • set_imports        (last_imported_at)   │
-        └────────────────────────────────────────────┘
-```
+---
 
-## What gets built
+## Current state by area
 
-### 1. Database (one migration)
-- Recreate `pokemon_sets`, `pokemon_cards`, `set_images` from the existing 2025-07-31 migration files (they reference dropped tables today).
-- New table `set_imports(set_id pk, last_imported_at timestamptz, card_count int)` — drives the 24h staleness check.
-- Public-read RLS so the browser can `SELECT` directly without an edge function on the happy path.
-- Indexes: `pokemon_cards(set_id)`, `pokemon_cards(set_id, number)`, `pokemon_sets(release_date desc)`.
+| # | Area | Verdict | Evidence |
+|---|------|---------|----------|
+| 1 | Auth (email + Google via Lovable Cloud) | Working | `Auth.tsx`, `AuthContext.tsx`, `integrations/lovable/index.ts` |
+| 1a | Password reset UI | Missing | No `resetPasswordForEmail` in `src/pages` |
+| 2 | Collection CRUD + image upload | Working (1 row in `user_cards`) | `supabaseCollectionService.ts`, `cardImageUploadService.ts` |
+| 3 | Pokémon sets/cards mirror | Working (173 sets, 616 cards) | `import-sets`, `import-set-cards` edge functions |
+| 3a | Legacy Pokémon services | Dead code | `pokemonSetsApi.ts`, `unifiedCardService.ts`, `simpleImageService.ts` (0 imports) |
+| 4 | Marketplace | Plumbing real, 0 listings ever | `supabaseMarketplaceService.ts`, `increment_listing_views` RPC live |
+| 5 | Trades / proposals | Real backend, 0 trades ever; duplicated code | Two `TradeProposalForm` files; `tradeService.ts` + `supabaseTradeService.ts` split |
+| 6 | Escrow & payments | **Stubbed — no processor** | `escrowService.ts:73-113` `setTimeout` + `return true`; no Stripe/Paddle anywhere |
+| 7 | Shipping | Schema real, no carrier API | `shipping_methods` etc. exist, 0 shipments; no FedEx/UPS/Shippo integration |
+| 8 | Messaging | Working; overlapping schemas | `trade_messages` used; `chat_conversations`/`chat_messages` tables exist but likely unwired |
+| 9 | Notifications | Working schema, 0 rows | `supabaseNotificationService.ts` with realtime channels |
+| 10 | Ratings / reputation | **Broken — mock only** | `reputationService.ts:90-124` returns hardcoded data, `submitTradeRating` `console.log`s and returns without persisting |
+| 10a | Disputes | Missing | No dispute table, no UI |
+| 11 | AI card search | **Likely broken** | `ai-card-search/index.ts:63` reads `ANTHROPIC_API_KEY`; project secret is named `Claude` — name mismatch |
+| 12 | eBay integration | Real OAuth, auth-gated (401 by design), needs creds | `ebay-integration/index.ts`; `EBAY_APP_ID`/`EBAY_CERT_ID` presence unconfirmed |
+| 13 | Admin & roles | Backend gated correctly, **no admin seeded** | `user_roles` = 0 rows; `has_role` RLS wired |
+| 13a | Admin routes client-side | **Under-protected** | `App.tsx:75-76` only `ProtectedRoute` (login), not role check |
+| 13b | `seed-database` edge function | **Public/unauthenticated** | No `Authorization` check — cost/DoS risk |
+| 14 | Nav analytics | Working | `navAnalytics.ts` → `nav_metrics` (65 rows) |
+| 14a | General analytics | Explicit no-op stub | `supabaseAnalyticsService.ts` header: "All methods are no-ops" |
+| 15 | Currency (USD→GBP) | Working, low risk | `currencyService.ts` via frankfurter.app |
+| 16 | Build/perf | Solid | Manual chunking, lazy admin routes, `SmartImage` |
+| 17 | Duplicate/dead code | See §17 audit above | Confirmed |
+| 18 | MCP | **Not implemented anywhere** | Zero hits repo-wide |
 
-### 2. Edge function `import-set-cards`
-- Input: `{ setId: string, force?: boolean }`.
-- Reads `set_imports.last_imported_at`. If <24h old and `force !== true`, returns `{ skipped: true }` immediately.
-- Otherwise pages through the TCG API for that set, upserts into `pokemon_sets` + `pokemon_cards` + `set_images`, then stamps `set_imports`.
-- Uses the service-role key (server-side) so it bypasses RLS for writes.
-- Validates `setId` with Zod, returns standard CORS headers.
+**Live DB row counts:** pokemon_sets 173 · pokemon_cards 616 · profiles 1 · user_cards 1 · user_roles 0 · marketplace_listings 0 · trades 0 · escrow_transactions 0 · trade_ratings 0 · trade_shipments 0 · notifications 0 · nav_metrics 65.
 
-### 3. Frontend
-- Replace the `loadAllCards` flow in `src/pages/PokemonCards.tsx` with a single React Query hook `useSetCards(setId)`:
-  1. Read `pokemon_cards` rows for `setId` from Supabase.
-  2. Read `set_imports.last_imported_at`. If missing or >24h, fire `supabase.functions.invoke('import-set-cards', { body: { setId } })` and then re-read.
-  3. Return mapped `CardItemProps[]`.
-- Add React Query **persistence**: `@tanstack/query-sync-storage-persister` + `persistQueryClient` writing to `localStorage` (small footprint, instant rehydrate on cold load). Persist only the `set-cards` and `sets-list` keys for 7 days.
-- Same hook for the sets list (`useAllSets`) so the homepage tiles are also instant after first load.
-- Delete the now-dead "Falling back to external API" branch — mirror is the only path. Keeps the rule in project memory true again.
+---
 
-### 4. Backfill
-- Add a tiny admin route (or one-time button on `/admin/nav-metrics`) that calls `import-set-cards` for every set returned by `getSets()` once, so popular sets are warm before users touch them. Optional — without it, the first visitor to each set just waits ~2s.
+## Top 10 launch blockers (ranked)
 
-## Files touched
-- `supabase/migrations/<new>.sql` — recreate 3 tables, add `set_imports`, indexes, RLS, GRANTs.
-- `supabase/functions/import-set-cards/index.ts` — new edge function.
-- `src/hooks/useSetCards.ts` — new React Query hook (replaces ad-hoc `loadAllCards`).
-- `src/hooks/useAllSets.ts` — new React Query hook for sets list.
-- `src/lib/queryClient.ts` — set up persistent React Query client (new file).
-- `src/main.tsx` — wrap with `PersistQueryClientProvider`.
-- `src/pages/PokemonCards.tsx` — swap to `useSetCards`, drop the 5-page external loop and in-memory cache (superseded).
-- `src/pages/Sets.tsx` — swap to `useAllSets`.
-- `src/services/supabasePokemonService.ts` — keep, but remove the "missing table" short-circuit since tables exist again.
-- `src/services/pokemonDataImporter.ts` — delete (replaced by edge function).
+1. **Escrow is fake.** `escrowService.ts` simulates payment success unconditionally; no processor SDK exists in the repo. Real money cannot move.
+2. **Ratings never persist.** `reputationService.ts` mocks reputation and skips DB writes — `trade_ratings` will stay empty even after users rate.
+3. **`seed-database` edge function is publicly callable** and reachable from a login-only `/admin/seed-database` page.
+4. **No admin user in `user_roles`** — the admin dashboard is unreachable by anyone today.
+5. **AI card search secret name mismatch** — `ANTHROPIC_API_KEY` vs the actual `Claude` secret. Will 500 on every call.
+6. **Zero live data in every transactional table** — the trade flow has never end-to-end run in this project.
+7. **No password reset flow.**
+8. **`supabaseAnalyticsService.ts` is a stub** — any "your activity/stats" UI silently shows zeros.
+9. **Duplicated code** (`tradeService` vs `supabaseTradeService`, two `TradeProposalForm`s) risks divergent behavior.
+10. **No real carrier shipping** — labels/tracking are manual text fields.
 
-## Performance expectations
-| Scenario | Before | After |
-|---|---|---|
-| First user clicks a brand-new set | 3–8s (5 API pages) | ~2s (edge function import) |
-| Same user revisits set | 3–8s again | <50ms (IndexedDB hydrate) |
-| Different user, same set | 3–8s | <200ms (Supabase read) |
-| Set last imported >24h ago | n/a | <200ms render + silent background refresh |
+---
 
-## Risks / trade-offs
-- **Edge function cold start**: ~300–500ms extra on the very first import. Acceptable for a one-time-per-set cost.
-- **TCG API rate limits**: import-set-cards is gated by the 24h freshness check, so each set is fetched at most once per day across all users.
-- **Storage**: ~250 cards × ~50 sets × ~2KB = ~25MB total. Negligible.
-- **Stale prices**: bounded at 24h. If you ever want real-time prices, swap to eBay live pricing (already integrated for sealed products).
+## Prioritized next-step roadmap
 
-## Out of scope
-- Per-card price history.
-- Backfilling ALL sets upfront (the optional admin button covers this on demand).
-- Search across all cards globally — current search scope (within a set / by name) is unchanged.
+### Phase 1 — Unblock a believable demo (small, non-payment)
+- Seed one admin row into `user_roles`.
+- Add a client-side admin-role gate to `/admin/*` routes.
+- Add an `Authorization` + `has_role('admin')` check to the `seed-database` edge function.
+- Rename `ai-card-search` env read from `ANTHROPIC_API_KEY` to match the existing `Claude` secret (or add a `ANTHROPIC_API_KEY` alias secret).
+- Wire `reputationService.ts` and `TradeRatingModal` to the real `trade_ratings` table.
+- Add password-reset UI + `/reset-password` page.
+- Manually create sample marketplace listings and one full simulated trade so the UI shows non-empty state.
+
+### Phase 2 — Real transactions
+- Integrate Stripe (Connect for peer escrow) behind `escrowService.ts`; keep `supabaseEscrowService.ts` bookkeeping.
+- Consolidate `tradeService.ts` + `supabaseTradeService.ts`; delete dead `components/trades/TradeProposalForm.tsx`, `pokemonSetsApi.ts`, `unifiedCardService.ts`, `simpleImageService.ts`; audit `collectionService.ts`.
+- Real carrier integration (Shippo or EasyPost) populating `tracking_events`.
+- Replace `supabaseAnalyticsService.ts` stub with real tables + writes.
+- Confirm eBay creds (`EBAY_APP_ID`/`EBAY_CERT_ID`); decide fate of `freeSealedProductsService.ts` fallback.
+- Add a dispute-resolution flow (table + UI + escrow state machine hooks).
+- Reconcile chat storage: pick either `trade_messages` or `chat_conversations`+`chat_messages` and drop the other.
+
+### Phase 3 — Growth & MCP
+- Build MCP from scratch: add `@lovable.dev/mcp-js`, create `src/lib/mcp/` with `defineTool` per capability (collection, marketplace, trades, pokemon lookup) and `defineMcp` entry; the Vite plugin emits `supabase/functions/mcp/index.ts`; wire Supabase OAuth 2.1 as the auth server so each caller acts as the signed-in user under existing RLS. This is a from-scratch build, not a wiring fix.
+- Load-test the trade pipeline once real transactions exist.
+- Expand product analytics dashboards.
+
+---
+
+## Open questions (need answers to firm up Phase 1)
+1. Actual value/name of the AI secret (`Claude` vs `ANTHROPIC_API_KEY`)?
+2. Are `EBAY_APP_ID`/`EBAY_CERT_ID` set?
+3. Is `collectionService.ts` still referenced anywhere?
+4. Are `chat_conversations`/`chat_messages` used by any service?
+5. Current live state of the `user_cards.product_type` CHECK constraint (a later migration re-declared the column without the CHECK)?
+
+Approve this plan and I'll switch to build mode and execute Phase 1 in order. Say "start with X" if you want to reorder.

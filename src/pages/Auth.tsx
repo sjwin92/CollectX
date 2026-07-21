@@ -16,8 +16,26 @@ const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
+  const [resetting, setResetting] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({ title: 'Enter your email first', description: 'Type your email above, then click Forgot password.', variant: 'destructive' });
+      return;
+    }
+    setResetting(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setResetting(false);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Check your email', description: 'We sent a link to reset your password.' });
+  };
 
   useEffect(() => {
     // Check if user is already authenticated
@@ -149,6 +167,17 @@ const Auth = () => {
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Sign In
                 </Button>
+
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    disabled={resetting}
+                    className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2 disabled:opacity-50"
+                  >
+                    {resetting ? 'Sending…' : 'Forgot password?'}
+                  </button>
+                </div>
                 
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">

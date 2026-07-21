@@ -1,5 +1,5 @@
-
-import { TradeStatus, UserReputation } from '@/models/escrow';
+import { UserReputation } from '@/models/escrow';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface ReputationScore {
   userId: string;
@@ -15,55 +15,39 @@ export interface TradeRating {
   tradeId: string;
   raterId: string;
   ratedUserId: string;
-  rating: number; // 1-5 stars
+  rating: number;
   feedback: string;
   createdAt: string;
 }
 
-// Calculate reputation based on trade history and ratings
 export const calculateReputation = (
   totalTrades: number,
   successfulTrades: number,
-  averageRating: number
+  averageRating: number,
 ): UserReputation => {
   const successRate = totalTrades > 0 ? successfulTrades / totalTrades : 0;
-  
-  // New user (0-2 trades)
   if (totalTrades < 3) return 'new';
-  
-  // Starter (3-9 trades, >80% success rate, >3.5 rating)
   if (totalTrades < 10 && successRate >= 0.8 && averageRating >= 3.5) return 'starter';
-  
-  // Established (10-24 trades, >85% success rate, >4.0 rating)
   if (totalTrades < 25 && successRate >= 0.85 && averageRating >= 4.0) return 'established';
-  
-  // Trusted (25-49 trades, >90% success rate, >4.2 rating)
-  if (totalTrades < 50 && successRate >= 0.90 && averageRating >= 4.2) return 'trusted';
-  
-  // Elite (50+ trades, >95% success rate, >4.5 rating)
+  if (totalTrades < 50 && successRate >= 0.9 && averageRating >= 4.2) return 'trusted';
   if (totalTrades >= 50 && successRate >= 0.95 && averageRating >= 4.5) return 'elite';
-  
-  // Default based on success rate for edge cases
   if (successRate >= 0.9) return 'trusted';
   if (successRate >= 0.8) return 'established';
   if (successRate >= 0.7) return 'starter';
-  
   return 'new';
 };
 
-// Calculate escrow discount percentage based on reputation
 export const getEscrowDiscount = (reputation: UserReputation): number => {
   switch (reputation) {
-    case 'new': return 0;        // 0% discount
-    case 'starter': return 10;   // 10% discount
-    case 'established': return 25; // 25% discount
-    case 'trusted': return 50;   // 50% discount
-    case 'elite': return 75;     // 75% discount
+    case 'new': return 0;
+    case 'starter': return 10;
+    case 'established': return 25;
+    case 'trusted': return 50;
+    case 'elite': return 75;
     default: return 0;
   }
 };
 
-// Get reputation color for UI display
 export const getReputationColor = (reputation: UserReputation): string => {
   switch (reputation) {
     case 'new': return 'text-gray-600';
@@ -75,8 +59,9 @@ export const getReputationColor = (reputation: UserReputation): string => {
   }
 };
 
-// Get reputation badge variant
-export const getReputationBadgeVariant = (reputation: UserReputation): 'default' | 'secondary' | 'success' | 'warning' | 'info' => {
+export const getReputationBadgeVariant = (
+  reputation: UserReputation,
+): 'default' | 'secondary' | 'success' | 'warning' | 'info' => {
   switch (reputation) {
     case 'new': return 'default';
     case 'starter': return 'info';
@@ -87,38 +72,64 @@ export const getReputationBadgeVariant = (reputation: UserReputation): 'default'
   }
 };
 
-// Mock service to get user reputation
+// Real backend: reads trade_ratings + trades tables
 export const getUserReputation = async (userId: string): Promise<ReputationScore> => {
-  // In a real app, this would fetch from your database
+  const [{ data: ratings }, { data: trades }] = await Promise.all([
+    supabase.from('trade_ratings').select('rating').eq('rated_user_id', userId),
+    supabase
+      .from('trades')
+      .select('status, initiator_user_id, recipient_user_id')
+      .or(`initiator_user_id.eq.${userId},recipient_user_id.eq.${userId}`),
+  ]);
+
+  const totalTrades = trades?.length ?? 0;
+  const successfulTrades = trades?.filter((t) => t.status === 'completed').length ?? 0;
+  const averageRating =
+    ratings && ratings.length > 0
+      ? ratings.reduce((sum, r) => sum + (r.rating ?? 0), 0) / ratings.length
+      : 0;
+
+  const reputation = calculateReputation(totalTrades, successfulTrades, averageRating);
   return {
     userId,
-    reputation: 'established',
-    totalTrades: 15,
-    successfulTrades: 14,
-    averageRating: 4.2,
-    escrowDiscountPercentage: getEscrowDiscount('established')
+    reputation,
+    totalTrades,
+    successfulTrades,
+    averageRating,
+    escrowDiscountPercentage: getEscrowDiscount(reputation),
   };
 };
 
-// Mock service to submit trade rating
 export const submitTradeRating = async (
   tradeId: string,
   ratedUserId: string,
   rating: number,
-  feedback: string
+  feedback: string,
 ): Promise<TradeRating> => {
-  const newRating: TradeRating = {
-    id: `rating_${Date.now()}`,
-    tradeId,
-    raterId: 'current_user_id', // Would get from auth
-    ratedUserId,
-    rating,
-    feedback,
-    createdAt: new Date().toISOString()
+  const { data: userResp, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userResp.user) throw new Error('You must be signed in to rate.');
+
+  const { data, error } = await supabase
+    .from('trade_ratings')
+    .insert({
+      trade_id: tradeId,
+      rater_user_id: userResp.user.id,
+      rated_user_id: ratedUserId,
+      rating,
+      review: feedback,
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  return {
+    id: data.id,
+    tradeId: data.trade_id,
+    raterId: data.rater_user_id,
+    ratedUserId: data.rated_user_id,
+    rating: data.rating,
+    feedback: data.review ?? '',
+    createdAt: data.created_at,
   };
-  
-  // In a real app, this would save to your database
-  console.log('Submitting trade rating:', newRating);
-  
-  return newRating;
 };

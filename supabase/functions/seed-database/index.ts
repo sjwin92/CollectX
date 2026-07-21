@@ -235,9 +235,26 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!supabaseUrl || !serviceKey) return json({ error: "Server misconfigured" }, 500);
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  if (!supabaseUrl || !serviceKey || !anonKey) return json({ error: "Server misconfigured" }, 500);
+
+  // --- Admin auth gate ---
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) return json({ error: "Unauthorized" }, 401);
+  const authClient = createClient(supabaseUrl, anonKey);
+  const token = authHeader.replace("Bearer ", "");
+  const { data: userData, error: userErr } = await authClient.auth.getUser(token);
+  if (userErr || !userData?.user) return json({ error: "Unauthorized" }, 401);
 
   const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+  const { data: roleRow } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userData.user.id)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (!roleRow) return json({ error: "Forbidden — admin only" }, 403);
+
 
   let body: { phase?: string; offset?: number; limit?: number; force?: boolean } = {};
   try { body = await req.json(); } catch { /* empty body ok */ }
