@@ -48,7 +48,7 @@ const TradeTabs = ({
       <TradeTabContent
         value="active"
         onCreateTrade={onCreateTrade}
-        trades={trades?.filter(t => ['proposed', 'accepted', 'shipped'].includes(t.status))}
+        trades={trades?.filter(t => ['proposed', 'accepted', 'shipped', 'disputed'].includes(t.status))}
         currentUserId={currentUserId}
       />
       <TradeTabContent
