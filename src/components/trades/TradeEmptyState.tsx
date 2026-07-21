@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { HandshakeIcon } from "lucide-react";
 
 interface TradeEmptyStateProps {
-  type: "active" | "completed" | "declined";
+  type: "active" | "completed" | "cancelled";
   onCreateTrade?: () => void;
 }
 
@@ -20,7 +20,7 @@ const TradeEmptyState = ({ type, onCreateTrade }: TradeEmptyStateProps) => {
             </div>
             <h3 className="text-xl font-medium mb-2">No active trades</h3>
             <p className="text-muted-foreground mb-4">
-              You don't have any active trades at the moment. 
+              You don't have any active trades at the moment.
               Start by creating a new trade proposal.
             </p>
             {onCreateTrade && <Button onClick={onCreateTrade}>Create New Trade</Button>}
@@ -31,17 +31,17 @@ const TradeEmptyState = ({ type, onCreateTrade }: TradeEmptyStateProps) => {
           <>
             <h3 className="text-xl font-medium mb-2">No completed trades</h3>
             <p className="text-muted-foreground mb-4">
-              You haven't completed any trades yet. 
+              You haven't completed any trades yet.
               Complete one of your active trades to see it here.
             </p>
           </>
         );
-      case "declined":
+      case "cancelled":
         return (
           <>
-            <h3 className="text-xl font-medium mb-2">No declined trades</h3>
+            <h3 className="text-xl font-medium mb-2">No cancelled trades</h3>
             <p className="text-muted-foreground">
-              You don't have any declined trades.
+              You don't have any cancelled trades.
             </p>
           </>
         );

@@ -11,7 +11,7 @@ import { Link } from "react-router-dom";
 import TradeEmptyState from "./TradeEmptyState";
 
 interface TradeTabContentProps {
-  value: "active" | "completed" | "declined";
+  value: "active" | "completed" | "cancelled";
   onCreateTrade?: () => void;
   trades?: any[];
   currentUserId?: string;
@@ -20,10 +20,8 @@ interface TradeTabContentProps {
 const STATUS_COLORS: Record<string, string> = {
   proposed: "bg-blue-500",
   accepted: "bg-green-500",
-  processing: "bg-yellow-500",
   shipped: "bg-purple-500",
   completed: "bg-green-600",
-  declined: "bg-red-500",
   disputed: "bg-red-600",
   cancelled: "bg-gray-500",
 };

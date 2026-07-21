@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle, Loader2, Shield, Star, XCircle } from "lucide-react";
@@ -19,6 +20,7 @@ import TradeRatingModal from "@/components/trades/TradeRatingModal";
 const TradeDetail: React.FC = () => {
   const { tradeId } = useParams<{ tradeId: string }>();
   const { user } = useUser();
+  const queryClient = useQueryClient();
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [ratingOpen, setRatingOpen] = useState(false);
 
@@ -26,6 +28,13 @@ const TradeDetail: React.FC = () => {
     queryKey: ["trade", tradeId],
     queryFn: () => getTradeById(tradeId!),
     enabled: !!tradeId,
+  });
+
+  // Hook-order safety: keep every hook above conditional returns.
+  const { data: alreadyRated } = useQuery({
+    queryKey: ["trade-rated", tradeId, user?.id],
+    queryFn: () => hasRatedTrade(tradeId!),
+    enabled: !!tradeId && !!user && trade?.status === "completed",
   });
 
   // Realtime: refetch on message or trade update
@@ -86,11 +95,6 @@ const TradeDetail: React.FC = () => {
   const canDispute = ["accepted", "shipped"].includes(trade.status);
 
   const otherParty = isInitiator ? trade.recipient : trade.initiator;
-  const { data: alreadyRated } = useQuery({
-    queryKey: ["trade-rated", tradeId, user?.id],
-    queryFn: () => hasRatedTrade(tradeId!),
-    enabled: !!tradeId && !!user && trade.status === "completed",
-  });
   const canRate = trade.status === "completed" && !!user && !alreadyRated;
 
   return (
@@ -166,7 +170,11 @@ const TradeDetail: React.FC = () => {
       {tradeId && user && (
         <TradeRatingModal
           isOpen={ratingOpen}
-          onClose={() => { setRatingOpen(false); refetch(); }}
+          onClose={() => {
+            setRatingOpen(false);
+            queryClient.invalidateQueries({ queryKey: ["trade-rated", tradeId, user.id] });
+            refetch();
+          }}
           tradeId={tradeId}
           tradedWithUserId={otherParty.userId}
           tradedWithUsername={otherParty.username}
