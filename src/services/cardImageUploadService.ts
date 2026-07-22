@@ -35,10 +35,13 @@ export const uploadCardImage = async (upload: CardImageUpload): Promise<Uploaded
     throw new Error(`Upload failed: ${uploadError.message}`);
   }
   
-  // Get public URL
-  const { data: { publicUrl } } = supabase.storage
+  // Get signed URL (bucket is private)
+  const { data: signed, error: signErr } = await supabase.storage
     .from('card-images')
-    .getPublicUrl(fileName);
+    .createSignedUrl(fileName, 60 * 60 * 24 * 365);
+  if (signErr) throw new Error(`Signing failed: ${signErr.message}`);
+  const publicUrl = signed.signedUrl;
+
   
   // Save to database
   const { data: dbData, error: dbError } = await supabase
@@ -96,10 +99,13 @@ export const uploadUserCardImage = async (
 
   if (uploadError) throw uploadError;
 
-  // Get public URL
-  const { data: { publicUrl } } = supabase.storage
+  // Get signed URL (bucket is private)
+  const { data: signed, error: signErr } = await supabase.storage
     .from('card-images')
-    .getPublicUrl(uploadData.path);
+    .createSignedUrl(uploadData.path, 60 * 60 * 24 * 365);
+  if (signErr) throw signErr;
+  const publicUrl = signed.signedUrl;
+
 
   // Save image metadata to database
   const { error: dbError } = await supabase
@@ -121,6 +127,21 @@ export const uploadUserCardImage = async (
   return publicUrl;
 };
 
+// Refresh URLs with signed URLs (bucket is private)
+const signPaths = async (rows: Array<{ image_path: string | null; image_url: string | null }>) => {
+  const paths = rows.map(r => r.image_path).filter((p): p is string => !!p);
+  if (paths.length === 0) return new Map<string, string>();
+  const { data, error } = await supabase.storage
+    .from('card-images')
+    .createSignedUrls(paths, 60 * 60);
+  if (error) return new Map<string, string>();
+  const map = new Map<string, string>();
+  (data || []).forEach((entry) => {
+    if (entry.path && entry.signedUrl) map.set(entry.path, entry.signedUrl);
+  });
+  return map;
+};
+
 // Get card images for a specific user card
 export const getUserCardImages = async (userCardId: string) => {
   const { data, error } = await supabase
@@ -130,7 +151,9 @@ export const getUserCardImages = async (userCardId: string) => {
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data || [];
+  const rows = data || [];
+  const urlMap = await signPaths(rows);
+  return rows.map(r => ({ ...r, image_url: (r.image_path && urlMap.get(r.image_path)) || r.image_url }));
 };
 
 // Get card images for a specific card
@@ -145,10 +168,13 @@ export const getCardImages = async (cardId: string, userId: string): Promise<Upl
   if (error) {
     throw new Error(`Failed to fetch images: ${error.message}`);
   }
-  
-  return data.map(img => ({
+
+  const rows = data || [];
+  const urlMap = await signPaths(rows);
+
+  return rows.map(img => ({
     id: img.id,
-    url: img.image_url,
+    url: (img.image_path && urlMap.get(img.image_path)) || img.image_url,
     cardId: img.card_id,
     userId: img.user_id,
     uploadedAt: img.created_at,
@@ -156,6 +182,7 @@ export const getCardImages = async (cardId: string, userId: string): Promise<Upl
     isPrimary: img.is_primary
   }));
 };
+
 
 // Delete card image
 export const deleteCardImage = async (imageId: string): Promise<boolean> => {
