@@ -30,7 +30,7 @@ const Footer = () => {
               <Link to="/trades" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Trades
               </Link>
-              <Link to="/pokemons" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link to="/pokemon-cards" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Pokémon Cards
               </Link>
               <Link to="/profile" className="text-sm text-muted-foreground hover:text-foreground transition-colors">

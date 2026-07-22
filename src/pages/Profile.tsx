@@ -1,9 +1,8 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import GlassCard from "@/components/ui/custom/GlassCard";
-import Badge from "@/components/ui/custom/Badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import CardGrid from "@/components/cards/CardGrid";
@@ -20,87 +19,120 @@ import { supabase } from "@/integrations/supabase/client";
 import UserDashboard from "@/components/analytics/UserDashboard";
 import { 
   Star, 
-  Mail, 
   MapPin, 
   Calendar, 
-  Package, 
   ArrowLeftRight, 
-  ShieldCheck,
-  Award,
   Settings,
-  ListChecks,
   Plus,
   Search
 } from "lucide-react";
 
-// Empty user data for fresh spawn
-const userData = {
-  name: "New User",
-  username: "newuser", 
-  joined: "Just now",
-  location: "",
-  reputation: "new" as const,
-  bio: "",
-  stats: {
-    trades: 0,
-    collectionSize: 0,
-    reputationScore: 0,
-    reviewCount: 0
-  },
-  badges: []
+type Review = {
+  id: string;
+  rating: number;
+  review: string | null;
+  created_at: string;
 };
 
 const Profile = () => {
   const { user, profile } = useUser();
   const [searchQuery, setSearchQuery] = useState("");
   const [userCollection, setUserCollection] = useState<CardItemProps[]>([]);
-  const [filteredCards, setFilteredCards] = useState<CardItemProps[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
 
   useEffect(() => {
-    if (!user) return;
-    supabase
-      .from('user_cards')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('product_type', 'card')
-      .then(({ data }) => {
-        if (!data) return;
-        const cards: CardItemProps[] = data.map(c => ({
-          id: c.card_id,
-          name: c.card_name || 'Unknown Card',
-          imageUrl: c.card_image || '',
-          rarity: c.rarity || 'Unknown',
-          condition: c.condition || 'Near Mint',
-          estimatedValue: c.trade_value ? `£${Number(c.trade_value).toFixed(2)}` : 'N/A',
-          forTrade: c.for_trade,
-          quantity: c.quantity,
-          graded: c.is_graded,
-          gradingCompany: c.grading_company || undefined,
-          gradeScore: c.grade_score || undefined,
-          set: c.set_id ? { id: c.set_id, name: c.set_name || '' } : undefined,
-          number: c.card_number || undefined,
-          dbId: c.id,
-        }));
-        setUserCollection(cards);
-        setFilteredCards(cards);
-      });
+    if (!user) {
+      setUserCollection([]);
+      setReviews([]);
+      return;
+    }
+
+    let cancelled = false;
+    Promise.all([
+      supabase
+        .from('user_cards')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('product_type', 'single'),
+      supabase
+        .from('trade_ratings')
+        .select('id,rating,review,created_at')
+        .eq('rated_user_id', user.id)
+        .order('created_at', { ascending: false }),
+    ]).then(([cardsResult, reviewsResult]) => {
+      if (cancelled) return;
+      if (cardsResult.error) throw cardsResult.error;
+      if (reviewsResult.error) throw reviewsResult.error;
+
+      const cards: CardItemProps[] = (cardsResult.data ?? []).map(c => ({
+        id: c.card_id,
+        name: c.card_name || 'Unknown Card',
+        imageUrl: c.card_image || '',
+        rarity: c.rarity || 'Unknown',
+        condition: c.condition || 'Near Mint',
+        estimatedValue: c.trade_value ? `£${Number(c.trade_value).toFixed(2)}` : 'N/A',
+        forTrade: c.for_trade,
+        quantity: c.quantity,
+        graded: c.is_graded,
+        gradingCompany: c.grading_company || undefined,
+        gradeScore: c.grade_score || undefined,
+        set: c.set_id ? { id: c.set_id, name: c.set_name || '' } : undefined,
+        number: c.card_number || undefined,
+        dbId: c.id,
+      }));
+      setUserCollection(cards);
+      setReviews(reviewsResult.data ?? []);
+    }).catch((error) => {
+      if (!cancelled) console.error('Error loading profile data:', error);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
+
+  const totalCards = userCollection.reduce((sum, card) => sum + (card.quantity ?? 1), 0);
+  const tradableCards = userCollection.reduce(
+    (sum, card) => sum + (card.forTrade ? card.quantity ?? 1 : 0),
+    0,
+  );
+  const rareCards = userCollection.reduce(
+    (sum, card) => sum + (card.rarity.toLowerCase().includes('rare') ? card.quantity ?? 1 : 0),
+    0,
+  );
+  const collectionValue = userCollection.reduce((sum, card) => {
+    const value = Number.parseFloat(card.estimatedValue.replace(/[£,]/g, ''));
+    return sum + (Number.isFinite(value) ? value * (card.quantity ?? 1) : 0);
+  }, 0);
+  const representedSets = new Set(
+    userCollection.map(card => card.set?.id).filter((setId): setId is string => !!setId),
+  ).size;
+
+  const filteredCards = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return userCollection;
+    return userCollection.filter(card =>
+      card.name.toLowerCase().includes(query) ||
+      card.rarity.toLowerCase().includes(query) ||
+      card.condition.toLowerCase().includes(query) ||
+      card.id.toLowerCase().includes(query) ||
+      card.estimatedValue.toLowerCase().includes(query)
+    );
+  }, [searchQuery, userCollection]);
   
   // Use actual user data when available
   const displayData = {
     name: profile?.display_name || user?.email?.split('@')[0] || "New User",
-    username: profile?.username || "newuser",
-    joined: profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : "Just now",
+    joined: profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) : "Recently",
     location: profile?.location || "",
     reputation: "new" as const,
     bio: profile?.bio || "",
     stats: {
       trades: profile?.total_trades || 0,
-      collectionSize: userCollection.length,
+      collectionSize: totalCards,
       reputationScore: profile?.reputation_score || 0,
-      reviewCount: 0
+      reviewCount: reviews.length
     },
-    badges: [] as string[]
   };
   
   // Function to render reputation stars
@@ -124,21 +156,7 @@ const Profile = () => {
   
   // Filter cards based on search query
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value.toLowerCase();
-    setSearchQuery(query);
-    
-    if (query.trim() === "") {
-      setFilteredCards(userCollection);
-    } else {
-      const filtered = userCollection.filter(card => 
-        card.name.toLowerCase().includes(query) || 
-        card.rarity.toLowerCase().includes(query) ||
-        card.condition.toLowerCase().includes(query) ||
-        (card.id && card.id.toLowerCase().includes(query)) ||
-        (card.estimatedValue && card.estimatedValue.toLowerCase().includes(query))
-      );
-      setFilteredCards(filtered);
-    }
+    setSearchQuery(e.target.value);
   };
 
   const handleAddCards = () => {
@@ -166,11 +184,11 @@ const Profile = () => {
                 </div>
                 
                 <h1 className="text-2xl font-bold mb-1">{displayData.name}</h1>
-                <div className="flex items-center justify-center mb-3">
-                  <Badge variant="reputation" reputation={displayData.reputation} size="md">
-                    {displayData.reputation.charAt(0).toUpperCase() + displayData.reputation.slice(1)} Trader
-                  </Badge>
-                </div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  {displayData.stats.trades === 0
+                    ? 'New collector'
+                    : `${displayData.stats.trades} completed ${displayData.stats.trades === 1 ? 'trade' : 'trades'}`}
+                </p>
                 
                 <div className="flex items-center justify-center mb-4">
                   <div className="flex">
@@ -194,13 +212,10 @@ const Profile = () => {
                   </div>
                 </div>
                 
-                <div className="flex justify-center gap-2 mb-4">
-                  <Button>
-                    <Mail className="h-4 w-4 mr-2" />
-                    Message
-                  </Button>
+                <div className="flex justify-center mb-4">
                   <Button variant="outline" onClick={() => window.location.href = '/account-settings'}>
-                    <Settings className="h-4 w-4" />
+                    <Settings className="h-4 w-4 mr-2" />
+                    Edit profile
                   </Button>
                 </div>
                 
@@ -230,19 +245,6 @@ const Profile = () => {
                   <p className="text-sm text-muted-foreground mb-6 italic">No bio added yet.</p>
                 )}
                 
-                <h3 className="text-sm font-medium mb-2">Badges</h3>
-                <div className="flex flex-wrap gap-2">
-                  {displayData.badges.length > 0 ? (
-                    displayData.badges.map((badge, index) => (
-                      <div key={index} className="flex items-center gap-1.5 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
-                        <Award className="h-3 w-3" />
-                        <span>{badge}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground italic">No badges earned yet.</p>
-                  )}
-                </div>
               </GlassCard>
             </div>
             
@@ -325,24 +327,28 @@ const Profile = () => {
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Tradable Cards</span>
-                          <span className="font-medium">0</span>
+                          <span className="font-medium">{tradableCards}</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Rare Cards</span>
-                          <span className="font-medium">0</span>
+                          <span className="font-medium">{rareCards}</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Est. Collection Value</span>
-                          <span className="font-medium">$0</span>
+                          <span className="font-medium">
+                            {collectionValue > 0 ? `£${collectionValue.toFixed(2)}` : 'N/A'}
+                          </span>
                         </div>
                       </div>
                     </GlassCard>
                     
                     <GlassCard className="p-6">
-                      <h3 className="text-lg font-medium mb-4">Set Completion</h3>
+                      <h3 className="text-lg font-medium mb-4">Collection Coverage</h3>
                       <div className="text-center py-4">
-                        <p className="text-muted-foreground text-sm">No sets in collection yet</p>
-                        <p className="text-muted-foreground text-xs mt-1">Add cards to see set completion progress</p>
+                        <p className="text-2xl font-bold">{representedSets}</p>
+                        <p className="text-muted-foreground text-sm">
+                          {representedSets === 1 ? 'set represented' : 'sets represented'}
+                        </p>
                       </div>
                     </GlassCard>
                   </div>
@@ -355,14 +361,32 @@ const Profile = () => {
                 <TabsContent value="reviews">
                   <GlassCard className="p-6">
                     <h2 className="text-lg font-bold mb-4">Trading Reviews</h2>
-                    <div className="text-center py-8">
-                      <h3 className="text-xl font-medium mb-2">No reviews yet</h3>
-                      <p className="text-muted-foreground mb-4">Complete trades to receive reviews from other traders</p>
-                      <Button onClick={() => window.location.href = '/marketplace'}>
-                        <ArrowLeftRight className="h-4 w-4 mr-2" />
-                        Start Trading
-                      </Button>
-                    </div>
+                    {reviews.length > 0 ? (
+                      <div className="space-y-4">
+                        {reviews.map(review => (
+                          <div key={review.id} className="rounded-lg border p-4">
+                            <div className="flex items-center justify-between gap-4 mb-2">
+                              <div className="flex">{renderReputationStars(review.rating)}</div>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(review.created_at).toLocaleDateString('en-GB')}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {review.review || 'Rating left without a written review.'}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <h3 className="text-xl font-medium mb-2">No reviews yet</h3>
+                        <p className="text-muted-foreground mb-4">Complete trades to receive reviews from other traders</p>
+                        <Button onClick={() => window.location.href = '/marketplace'}>
+                          <ArrowLeftRight className="h-4 w-4 mr-2" />
+                          Start Trading
+                        </Button>
+                      </div>
+                    )}
                   </GlassCard>
                 </TabsContent>
               </Tabs>

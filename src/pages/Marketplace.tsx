@@ -5,27 +5,19 @@ import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/hooks/useUser";
 import TradeListing from "@/components/marketplace/TradeListing";
 import { 
   Plus, 
   Search, 
   Filter,
-  Star, 
-  Clock, 
-  TrendingUp,
-  Heart,
-  Check,
   ArrowRightLeft,
-  ShoppingBag,
   PackageOpen
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { CardItemProps } from "@/components/cards/CardItem";
-import { useUser } from "@/hooks/useUser";
-import { PokemonCard } from "@/services/pokemonTcgApi";
 import CreateListingModal from "@/components/marketplace/CreateListingModal";
 import { 
   DropdownMenu,
@@ -36,7 +28,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Select,
@@ -58,11 +49,22 @@ interface ListingType {
   featured?: boolean;
 }
 
+const CONDITION_OPTIONS = [
+  { value: "mint", label: "Mint" },
+  { value: "near_mint", label: "Near Mint" },
+  { value: "excellent", label: "Excellent" },
+  { value: "good", label: "Good" },
+  { value: "played", label: "Played" },
+  { value: "poor", label: "Poor" },
+] as const;
+
+const normaliseCondition = (condition?: string) =>
+  (condition || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+
 const Marketplace = () => {
   const [isCreateListingOpen, setCreateListingOpen] = useState(false);
-  const [isTradeModalOpen, setTradeModalOpen] = useState(false);
-  const [selectedListing, setSelectedListing] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const { user } = useUser();
 
   const { data: dbListings = [], isLoading, error: listingsError } = useQuery({
     queryKey: ['marketplace_listings'],
@@ -78,10 +80,11 @@ const Marketplace = () => {
       const ownerIds = Array.from(new Set(list.map((r: any) => r.user_id).filter(Boolean)));
       let profileMap = new Map<string, any>();
       if (ownerIds.length) {
-        const { data: profiles } = await supabase
+        const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('user_id, display_name, username')
           .in('user_id', ownerIds);
+        if (profilesError) throw profilesError;
         profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
       }
       return list.map((r: any) => ({ ...r, _profile: profileMap.get(r.user_id) }));
@@ -106,11 +109,9 @@ const Marketplace = () => {
     featured: row.featured,
   }));
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState<'featured' | 'recent' | 'trending'>('recent');
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
   const [sortOrder, setSortOrder] = useState<string>("newest");
   const { toast } = useToast();
-  const { user } = useUser();
   const navigate = useNavigate();
 
   const filteredListings = React.useMemo(() => {
@@ -122,15 +123,10 @@ const Marketplace = () => {
           listing.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
           listing.cardsWanted.some(card => card.toLowerCase().includes(searchQuery.toLowerCase()));
 
-        const matchesCategory =
-          (activeCategory === 'featured' && listing.featured) ||
-          (activeCategory === 'recent') ||
-          (activeCategory === 'trending');
-
         const matchesCondition = selectedConditions.length === 0 ||
-          selectedConditions.includes(listing.cardOffered.condition);
+          selectedConditions.includes(normaliseCondition(listing.cardOffered.condition));
 
-        return matchesSearch && matchesCategory && matchesCondition;
+        return matchesSearch && matchesCondition;
       })
       .sort((a, b) => {
         switch (sortOrder) {
@@ -141,7 +137,7 @@ const Marketplace = () => {
             return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         }
       });
-  }, [listings, searchQuery, activeCategory, selectedConditions, sortOrder]);
+  }, [listings, searchQuery, selectedConditions, sortOrder]);
 
 
   const toggleConditionFilter = (condition: string) => {
@@ -155,10 +151,6 @@ const Marketplace = () => {
   const handleProposeTrade = (listingId: string) => {
     // Navigate to the trades page with the listing pre-selected
     navigate(`/trades?propose=true&listingId=${listingId}`);
-  };
-
-  const handleViewCard = (cardId: string) => {
-    navigate(`/card/${cardId}`);
   };
 
   return (
@@ -205,14 +197,18 @@ const Marketplace = () => {
                 <DropdownMenuLabel>Filter by Condition</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  {["Mint", "Near Mint", "Excellent", "Good", "Played", "Poor"].map((condition) => (
-                    <DropdownMenuItem key={condition} className="flex items-center gap-2">
-                      <Checkbox 
-                        id={`condition-${condition}`} 
-                        checked={selectedConditions.includes(condition)}
-                        onCheckedChange={() => toggleConditionFilter(condition)}
+                  {CONDITION_OPTIONS.map(({ value, label }) => (
+                    <DropdownMenuItem
+                      key={value}
+                      className="flex items-center gap-2"
+                      onSelect={(event) => event.preventDefault()}
+                    >
+                      <Checkbox
+                        id={`condition-${value}`}
+                        checked={selectedConditions.includes(value)}
+                        onCheckedChange={() => toggleConditionFilter(value)}
                       />
-                      <Label htmlFor={`condition-${condition}`}>{condition}</Label>
+                      <Label htmlFor={`condition-${value}`}>{label}</Label>
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuGroup>
@@ -241,33 +237,17 @@ const Marketplace = () => {
           </div>
         </div>
 
-        <div className="border rounded-lg p-1 bg-background/50 mb-6 overflow-hidden">
-          <div className="flex space-x-2 items-center overflow-x-auto scrollbar-hide pb-1">
-            <button
-              className={`py-2 px-4 rounded-md font-medium flex items-center gap-1.5 transition-colors shrink-0 ${activeCategory === 'featured' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-              onClick={() => setActiveCategory('featured')}
-            >
-              <Star className="h-4 w-4" />
-              <span>Featured</span>
-            </button>
-            <button
-              className={`py-2 px-4 rounded-md font-medium flex items-center gap-1.5 transition-colors shrink-0 ${activeCategory === 'recent' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-              onClick={() => setActiveCategory('recent')}
-            >
-              <Clock className="h-4 w-4" />
-              <span>New Listings</span>
-            </button>
-            <button
-              className={`py-2 px-4 rounded-md font-medium flex items-center gap-1.5 transition-colors shrink-0 ${activeCategory === 'trending' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-              onClick={() => setActiveCategory('trending')}
-            >
-              <TrendingUp className="h-4 w-4" />
-              <span>Hot Trades</span>
-            </button>
+        {isLoading ? (
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-2" aria-label="Loading trade listings">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <GlassCard key={index} className="p-5 space-y-4">
+                <div className="h-5 w-2/3 rounded bg-muted animate-pulse" />
+                <div className="h-52 rounded bg-muted animate-pulse" />
+                <div className="h-9 rounded bg-muted animate-pulse" />
+              </GlassCard>
+            ))}
           </div>
-        </div>
-
-        {listingsError ? (
+        ) : listingsError ? (
           <GlassCard className="p-8 text-center">
             <PackageOpen className="h-12 w-12 mx-auto mb-4 text-destructive" />
             <h3 className="text-xl font-medium mb-2">Couldn't load listings</h3>
@@ -283,6 +263,7 @@ const Marketplace = () => {
                 listing={listing}
                 onProposeTrade={() => handleProposeTrade(listing.id)}
                 featured={!!listing.featured}
+                isOwnListing={listing.userId === user?.id}
               />
             ))}
           </div>

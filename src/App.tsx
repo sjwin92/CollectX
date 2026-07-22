@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
 import "./App.css";
 import { refreshUsdToGbpRate } from "./services/currencyService";
 
@@ -28,12 +28,9 @@ const CardDetail = lazy(() => import("./pages/CardDetail"));
 const Profile = lazy(() => import("./pages/Profile"));
 const AccountSettings = lazy(() => import("./pages/AccountSettings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-const Pokemons = lazy(() => import("./pages/Pokemons"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
 const Sets = lazy(() => import("./pages/Sets"));
 const SetDetail = lazy(() => import("./pages/SetDetail"));
-const Products = lazy(() => import("./pages/Products"));
-const SealedProducts = lazy(() => import("./pages/SealedProducts"));
 const NavMetricsAdmin = lazy(() => import("./pages/admin/NavMetrics"));
 const SeedDatabase = lazy(() => import("./pages/admin/SeedDatabase"));
 
@@ -63,9 +60,9 @@ function App() {
                 <Route path="/pokemon-sets/:id" element={<SetDetail />} />
                 <Route path="/pokemon-cards" element={<PokemonCards />} />
                 <Route path="/card/:id" element={<CardDetail />} />
-                <Route path="/pokemons" element={<Pokemons />} />
-                <Route path="/products" element={<Products />} />
-                <Route path="/sealed-products" element={<SealedProducts />} />
+                <Route path="/pokemons" element={<Navigate to="/pokemon-cards" replace />} />
+                <Route path="/products" element={<Navigate to="/pokemon-sets" replace />} />
+                <Route path="/sealed-products" element={<Navigate to="/pokemon-sets" replace />} />
 
                 {/* Protected routes */}
                 <Route path="/trades" element={<ProtectedRoute><Trades /></ProtectedRoute>} />

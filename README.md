@@ -1,69 +1,64 @@
-# Welcome to your Lovable project
+# CollectX
 
-## Project info
+CollectX is a trade-only marketplace for Pokémon card collectors. Users can catalogue cards, create listings from cards they own, propose card-for-card trades, message each other, record tracked shipping, confirm receipt and leave a rating.
 
-**URL**: https://lovable.dev/projects/92636543-83a2-4875-8652-d0834d8274b6
+The product is currently in private beta. It does not collect money, provide escrow or guarantee trades. Shipping and any real-world exchange remain the responsibility of the participants.
 
-## How can I edit this code?
+## Technology
 
-There are several ways of editing your application.
+- React, TypeScript and Vite
+- Tailwind CSS and shadcn/ui
+- Supabase Authentication, Postgres, Storage and Edge Functions
+- GitHub Actions for pull-request validation
 
-**Use Lovable**
+## Local development
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/92636543-83a2-4875-8652-d0834d8274b6) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+Use Node.js 20 or later.
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+git clone https://github.com/sjwin92/CollectX.git
+cd CollectX
+npm ci
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Copy `.env.example` to `.env.local`, then provide these environment variables:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```text
+VITE_SUPABASE_URL=your-project-url
+VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-or-anon-key
+```
 
-**Use GitHub Codespaces**
+`VITE_SUPABASE_ANON_KEY` is also supported as the key variable for compatibility with existing deployments. Never place the Supabase service-role key in frontend environment variables.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Google sign-in is hidden by default. Enable `VITE_ENABLE_GOOGLE_AUTH=true` only after configuring the Google provider and approved redirect URLs in Supabase.
 
-## What technologies are used for this project?
+## Validation
 
-This project is built with .
+Before opening or updating a pull request, run:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```sh
+npm run typecheck
+npm run build
+npm audit --omit=dev
+```
 
-## How can I deploy this project?
+Pull requests and pushes to `main` run the typecheck and production build automatically. The repository has pre-existing lint debt, so linting is being rehabilitated separately rather than used as a merge gate yet.
 
-Simply open [Lovable](https://lovable.dev/projects/92636543-83a2-4875-8652-d0834d8274b6) and click on Share -> Publish.
+## Database changes
 
-## I want to use a custom domain - is that possible?
+Supabase migrations live in `supabase/migrations`. The active history is deployed to `collectx-prod`; the incompatible Lovable-era files are retained for audit purposes under `supabase/legacy_migrations` and must not be applied. Review and test each new migration before applying it to production. Do not rewrite migrations that have already been deployed; add an incremental migration instead.
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+The official English card catalogue is copied into Supabase from the public `PokemonTCG/pokemon-tcg-data` repository. `scripts/catalogueSnapshot.mjs` creates reproducible import payloads without placing a third-party API key in the browser. Public users only read the resulting catalogue tables.
+
+`seed-database` is the only deployed Edge Function. It performs its own token validation and requires the caller to have the database `admin` role. It is a bounded maintenance fallback; it is not a public import endpoint.
+
+`supabase/tests/trade_journey_rollback.sql` exercises the full authenticated backend journey with two temporary identities. The script wraps all synthetic data in a transaction, rolls it back, and returns zero counts for its fixed test identifiers. Run it through an authorised SQL session after any trade-state migration.
+
+## Development and deployment
+
+GitHub `main` is the source of truth. Development happens on short-lived branches and is reviewed through pull requests. Production database migrations and frontend deployments require separate approval after the branch checks pass.
+
+The frontend is a standard Vite build and can be hosted by any provider that supports a static single-page application. `vercel.json` supplies SPA rewrites and baseline browser security headers for Vercel. Configure the Supabase environment variables in the hosting provider rather than committing credentials to the repository.
+
+See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the independent deployment and Supabase Auth checklist.

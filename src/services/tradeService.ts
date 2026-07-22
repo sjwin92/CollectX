@@ -1,4 +1,4 @@
-// Real trade service — talks to Lovable Cloud (Supabase) exclusively.
+// Real trade service — talks to the CollectX Supabase backend exclusively.
 // State machine: proposed → accepted → shipped → completed | cancelled | disputed
 // All state transitions go through SECURITY DEFINER RPCs to enforce rules.
 
@@ -59,10 +59,11 @@ export const getTradeById = async (tradeId: string): Promise<TradeProposalWithCo
   if (error) throw error;
 
   const participantIds = [data.initiator_user_id, data.recipient_user_id].filter(Boolean);
-  const { data: profiles } = await supabase
+  const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
     .select("user_id, display_name, username, avatar_url, reputation_score, successful_trades, total_trades")
     .in("user_id", participantIds);
+  if (profilesError) throw profilesError;
   const profileMap = new Map<string, any>((profiles || []).map((p: any) => [p.user_id, p]));
   const initiatorProfile = profileMap.get(data.initiator_user_id);
   const recipientProfile = profileMap.get(data.recipient_user_id);
@@ -258,8 +259,15 @@ export const hasRatedTrade = async (tradeId: string): Promise<boolean> => {
 export const uploadTradeImage = async (file: File): Promise<string> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not signed in");
-  const ext = file.name.split(".").pop() || "jpg";
-  const path = `trade-images/${user.id}/${Date.now()}.${ext}`;
+  if (!file.type.startsWith("image/")) throw new Error("Please choose an image file");
+  if (file.size > 5 * 1024 * 1024) throw new Error("Image must be smaller than 5 MB");
+
+  const ext = (file.name.split(".").pop() || "jpg")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "") || "jpg";
+  // The card-images bucket only permits uploads beneath the caller's
+  // top-level folder. Keep trade images separate within that folder.
+  const path = `${user.id}/trade-images/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage.from("card-images").upload(path, file, { upsert: false });
   if (error) throw new Error(error.message);
   const { data } = supabase.storage.from("card-images").getPublicUrl(path);

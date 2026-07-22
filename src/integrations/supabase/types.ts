@@ -64,6 +64,45 @@ export type Database = {
           },
         ]
       }
+      catalogue_sync_runs: {
+        Row: {
+          card_count: number
+          completed_at: string | null
+          details: Json
+          id: string
+          language_code: string
+          set_count: number
+          source: string
+          source_revision: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          card_count?: number
+          completed_at?: string | null
+          details?: Json
+          id?: string
+          language_code?: string
+          set_count?: number
+          source: string
+          source_revision: string
+          started_at?: string
+          status: string
+        }
+        Update: {
+          card_count?: number
+          completed_at?: string | null
+          details?: Json
+          id?: string
+          language_code?: string
+          set_count?: number
+          source?: string
+          source_revision?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           created_at: string
@@ -128,71 +167,6 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "chat_conversations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      escrow_transactions: {
-        Row: {
-          completed_at: string | null
-          created_at: string
-          id: string
-          initiator_escrow_amount: number
-          initiator_paid: boolean
-          initiator_payment_id: string | null
-          initiator_user_id: string
-          metadata: Json | null
-          recipient_escrow_amount: number
-          recipient_paid: boolean
-          recipient_payment_id: string | null
-          recipient_user_id: string
-          release_code: string | null
-          status: string
-          trade_id: string
-          updated_at: string
-        }
-        Insert: {
-          completed_at?: string | null
-          created_at?: string
-          id?: string
-          initiator_escrow_amount?: number
-          initiator_paid?: boolean
-          initiator_payment_id?: string | null
-          initiator_user_id: string
-          metadata?: Json | null
-          recipient_escrow_amount?: number
-          recipient_paid?: boolean
-          recipient_payment_id?: string | null
-          recipient_user_id: string
-          release_code?: string | null
-          status?: string
-          trade_id: string
-          updated_at?: string
-        }
-        Update: {
-          completed_at?: string | null
-          created_at?: string
-          id?: string
-          initiator_escrow_amount?: number
-          initiator_paid?: boolean
-          initiator_payment_id?: string | null
-          initiator_user_id?: string
-          metadata?: Json | null
-          recipient_escrow_amount?: number
-          recipient_paid?: boolean
-          recipient_payment_id?: string | null
-          recipient_user_id?: string
-          release_code?: string | null
-          status?: string
-          trade_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "escrow_transactions_trade_id_fkey"
-            columns: ["trade_id"]
-            isOneToOne: false
-            referencedRelation: "trades"
             referencedColumns: ["id"]
           },
         ]
@@ -1313,6 +1287,44 @@ export type Database = {
         Args: { _name: string }
         Returns: boolean
       }
+      cancel_marketplace_listing: {
+        Args: { _listing_id: string }
+        Returns: {
+          asking_price: number | null
+          card_id: string
+          card_name: string
+          card_number: string | null
+          condition: string
+          created_at: string
+          description: string | null
+          expires_at: string | null
+          featured: boolean
+          grade_company: string | null
+          grade_score: number | null
+          id: string
+          image_url: string | null
+          image_url_small: string | null
+          interested_count: number
+          is_graded: boolean
+          listing_type: string
+          quantity: number
+          rarity: string | null
+          set_id: string | null
+          set_name: string | null
+          status: string
+          trade_preferences: string | null
+          updated_at: string
+          user_card_id: string
+          user_id: string
+          views_count: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "marketplace_listings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       cancel_trade: {
         Args: { _trade_id: string }
         Returns: {
@@ -1367,6 +1379,49 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_marketplace_listing: {
+        Args: {
+          _description?: string
+          _expires_at?: string
+          _trade_preferences?: string
+          _user_card_id: string
+        }
+        Returns: {
+          asking_price: number | null
+          card_id: string
+          card_name: string
+          card_number: string | null
+          condition: string
+          created_at: string
+          description: string | null
+          expires_at: string | null
+          featured: boolean
+          grade_company: string | null
+          grade_score: number | null
+          id: string
+          image_url: string | null
+          image_url_small: string | null
+          interested_count: number
+          is_graded: boolean
+          listing_type: string
+          quantity: number
+          rarity: string | null
+          set_id: string | null
+          set_name: string | null
+          status: string
+          trade_preferences: string | null
+          updated_at: string
+          user_card_id: string
+          user_id: string
+          views_count: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "marketplace_listings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       decline_trade: {
         Args: { _trade_id: string }
         Returns: {
@@ -1395,6 +1450,10 @@ export type Database = {
         }
       }
       get_nav_metrics_summary: { Args: { _days?: number }; Returns: Json }
+      get_or_create_conversation: {
+        Args: { other_user_id: string }
+        Returns: string
+      }
       get_trade_destination_address: {
         Args: { _trade_id: string }
         Returns: Json
@@ -1421,6 +1480,15 @@ export type Database = {
       }
       increment_listing_views: {
         Args: { listing_id: string }
+        Returns: undefined
+      }
+      mark_all_notifications_read: { Args: never; Returns: undefined }
+      mark_conversation_messages_read: {
+        Args: { _conversation_id: string }
+        Returns: undefined
+      }
+      mark_notifications_read: {
+        Args: { notification_ids: string[] }
         Returns: undefined
       }
       mark_trade_shipped: {
@@ -1524,6 +1592,49 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "trade_addresses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_marketplace_listing: {
+        Args: {
+          _description?: string
+          _expires_at?: string
+          _listing_id: string
+          _trade_preferences?: string
+        }
+        Returns: {
+          asking_price: number | null
+          card_id: string
+          card_name: string
+          card_number: string | null
+          condition: string
+          created_at: string
+          description: string | null
+          expires_at: string | null
+          featured: boolean
+          grade_company: string | null
+          grade_score: number | null
+          id: string
+          image_url: string | null
+          image_url_small: string | null
+          interested_count: number
+          is_graded: boolean
+          listing_type: string
+          quantity: number
+          rarity: string | null
+          set_id: string | null
+          set_name: string | null
+          status: string
+          trade_preferences: string | null
+          updated_at: string
+          user_card_id: string
+          user_id: string
+          views_count: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "marketplace_listings"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -1666,3 +1777,4 @@ export const Constants = {
     },
   },
 } as const
+

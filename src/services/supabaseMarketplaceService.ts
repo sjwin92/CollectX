@@ -19,8 +19,8 @@ export interface MarketplaceListing {
   grade_company?: string;
   grade_score?: number;
   quantity: number;
-  listing_type: 'trade' | 'sale' | 'both';
-  asking_price?: number;
+  listing_type: 'trade';
+  asking_price: null;
   trade_preferences?: string;
   description?: string;
   featured: boolean;
@@ -36,7 +36,7 @@ export interface MarketplaceInterest {
   id: string;
   listing_id: string;
   user_id: string;
-  interest_type: 'trade' | 'buy';
+  interest_type: 'trade';
   message?: string;
   created_at: string;
 }
@@ -63,25 +63,12 @@ export const createMarketplaceListing = async (
     throw new Error('This card must exist in your collection (marked for trade) before you can list it.');
   }
 
-  // The DB trigger snapshots card identity from user_card_id; we only submit the reference
-  // and the trade-specific fields.
-  const { data, error } = await supabase
-    .from('marketplace_listings')
-    .insert([{
-      user_id: user.id,
-      user_card_id: card.dbId,
-      card_id: card.id,
-      card_name: card.name,
-      set_id: card.set?.id || '',
-      set_name: card.set?.name || '',
-      listing_type: 'trade',
-      asking_price: null,
-      trade_preferences: listingData.trade_preferences,
-      description: listingData.description,
-      expires_at: listingData.expires_at,
-    }])
-    .select()
-    .single();
+  const { data, error } = await supabase.rpc('create_marketplace_listing', {
+    _user_card_id: card.dbId,
+    _trade_preferences: listingData.trade_preferences ?? null,
+    _description: listingData.description ?? null,
+    _expires_at: listingData.expires_at || null,
+  });
 
   if (error) throw error;
   return data as MarketplaceListing;
@@ -89,12 +76,9 @@ export const createMarketplaceListing = async (
 
 // Get marketplace listings with filters
 export const getMarketplaceListings = async (filters?: {
-  listing_type?: 'trade' | 'sale' | 'both';
   search?: string;
   set_id?: string;
   condition?: string;
-  min_price?: number;
-  max_price?: number;
   featured_only?: boolean;
   limit?: number;
   offset?: number;
@@ -104,10 +88,6 @@ export const getMarketplaceListings = async (filters?: {
     .select('*')
     .eq('status', 'active')
     .order('created_at', { ascending: false });
-
-  if (filters?.listing_type) {
-    query = query.or(`listing_type.eq.${filters.listing_type},listing_type.eq.both`);
-  }
 
   if (filters?.search) {
     query = query.or(`card_name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
@@ -119,14 +99,6 @@ export const getMarketplaceListings = async (filters?: {
 
   if (filters?.condition) {
     query = query.eq('condition', filters.condition);
-  }
-
-  if (filters?.min_price && filters?.max_price) {
-    query = query.gte('asking_price', filters.min_price).lte('asking_price', filters.max_price);
-  } else if (filters?.min_price) {
-    query = query.gte('asking_price', filters.min_price);
-  } else if (filters?.max_price) {
-    query = query.lte('asking_price', filters.max_price);
   }
 
   if (filters?.featured_only) {
@@ -168,39 +140,38 @@ export const getMarketplaceListingById = async (listingId: string): Promise<Mark
     .from('marketplace_listings')
     .select('*')
     .eq('id', listingId)
-    .single();
+    .maybeSingle();
 
-  if (error) return null;
-  return data as MarketplaceListing;
+  if (error) throw error;
+  return (data as MarketplaceListing | null) ?? null;
 };
 
 // Update listing
 export const updateMarketplaceListing = async (
   listingId: string,
-  updates: Partial<MarketplaceListing>
+  updates: Pick<MarketplaceListing, 'trade_preferences' | 'description' | 'expires_at'>
 ): Promise<void> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
 
-  const { error } = await supabase
-    .from('marketplace_listings')
-    .update(updates)
-    .eq('id', listingId)
-    .eq('user_id', user.id);
+  const { error } = await supabase.rpc('update_marketplace_listing', {
+    _listing_id: listingId,
+    _trade_preferences: updates.trade_preferences ?? null,
+    _description: updates.description ?? null,
+    _expires_at: updates.expires_at || null,
+  });
 
   if (error) throw error;
 };
 
-// Delete listing
+// Listings are soft-cancelled so accepted-trade references remain auditable.
 export const deleteMarketplaceListing = async (listingId: string): Promise<void> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
 
-  const { error } = await supabase
-    .from('marketplace_listings')
-    .delete()
-    .eq('id', listingId)
-    .eq('user_id', user.id);
+  const { error } = await supabase.rpc('cancel_marketplace_listing', {
+    _listing_id: listingId,
+  });
 
   if (error) throw error;
 };
@@ -208,7 +179,6 @@ export const deleteMarketplaceListing = async (listingId: string): Promise<void>
 // Express interest in a listing
 export const expressInterest = async (
   listingId: string,
-  interestType: 'trade' | 'buy',
   message?: string
 ): Promise<MarketplaceInterest> => {
   const { data: { user } } = await supabase.auth.getUser();
@@ -219,7 +189,7 @@ export const expressInterest = async (
     .insert([{
       listing_id: listingId,
       user_id: user.id,
-      interest_type: interestType,
+      interest_type: 'trade',
       message
     }])
     .select()
@@ -337,14 +307,8 @@ export const subscribeToListingUpdates = (
 
 // Subscribe to marketplace updates
 export const subscribeToMarketplaceUpdates = (
-  filters: { listing_type?: string },
   onUpdate: (payload: any) => void
 ) => {
-  let filterString = 'status=eq.active';
-  if (filters.listing_type) {
-    filterString += ` AND (listing_type=eq.${filters.listing_type} OR listing_type=eq.both)`;
-  }
-
   const channel = supabase
     .channel('marketplace-updates')
     .on(
@@ -353,7 +317,7 @@ export const subscribeToMarketplaceUpdates = (
         event: '*',
         schema: 'public',
         table: 'marketplace_listings',
-        filter: filterString
+        filter: 'status=eq.active'
       },
       onUpdate
     )

@@ -1,229 +1,236 @@
-
-// Service for fetching and managing Pokemon cards
-import { PokemonCard, PokemonCardResponse, CARD_BACK_URL } from './pokemonTypes';
-import { BASE_URL, createApiUrl, fetchFromApi } from './pokemonApiConfig';
+import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
+import type { PokemonCard, PokemonCardResponse } from "./pokemonTypes";
+import { CARD_BACK_URL } from "./pokemonTypes";
 import {
   getAllPossibleImageUrlsFromCardObject,
-  getConsistentCardImageUrl
-} from './cardImageService';
-import { getFeaturedCardImageUrl } from './featuredCardsService';
-import { usdToGbp } from '../currencyService';
+  getConsistentCardImageUrl,
+} from "./cardImageService";
+import { getFeaturedCardImageUrl } from "./featuredCardsService";
+import { usdToGbp } from "../currencyService";
 
-/**
- * Get cards with optional filtering
- */
-export const getCards = async (
-  page = 1, 
-  pageSize = 20, 
-  params: Record<string, string> = {}
-): Promise<PokemonCardResponse> => {
-  try {
-    // Build query parameters
-    const queryParams = {
-      page: page.toString(),
-      pageSize: pageSize.toString(),
-      ...params
-    };
-    
-    const url = createApiUrl('cards', queryParams);
-    
-    console.log('Fetching cards with URL:', url.toString());
-    const response = await fetchFromApi(url.toString());
+const cardColumns = `
+  id,name,supertype,subtypes,hp,types,set_id,set_name,number,artist,rarity,
+  images,tcgplayer_prices,small_image_url,large_image_url,
+  pokemon_sets!pokemon_cards_set_id_fkey(
+    id,name,series,printed_total,total,ptcgo_code,release_date,legalities,
+    images,symbol_url,logo_url
+  )
+`;
 
-    if (!response.ok) {
-      console.error(`Failed to fetch cards: ${response.statusText}`);
-      throw new Error(`Failed to fetch cards: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    console.log(`Successfully fetched ${data.data?.length || 0} cards`);
-    
-    return data;
-  } catch (error) {
-    console.error('Error fetching Pokemon cards:', error);
-    // Return empty response structure in case of error
-    return {
-      data: [],
-      page: page,
-      pageSize: pageSize,
-      count: 0,
-      totalCount: 0
-    };
-  }
+type SetJoin = {
+  id: string;
+  name: string;
+  series: string | null;
+  printed_total: number | null;
+  total: number | null;
+  ptcgo_code: string | null;
+  release_date: string | null;
+  legalities: Json | null;
+  images: Json | null;
+  symbol_url: string | null;
+  logo_url: string | null;
 };
 
-/**
- * Get card by ID
- */
-export const getCardById = async (id: string): Promise<PokemonCard> => {
-  if (!id) {
-    throw new Error('Card ID is required');
-  }
-  
-  try {
-    console.log(`Fetching card with ID: ${id}`);
-    const response = await fetchFromApi(`${BASE_URL}/cards/${id}`);
-    
-    if (!response.ok) {
-      console.error(`Failed to fetch card: ${response.statusText}`);
-      throw new Error(`Failed to fetch card: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    console.log(`Successfully fetched card: ${data.data?.name || 'Unknown'}`);
-    
-    return data.data;
-  } catch (error) {
-    console.error('Error fetching Pokemon card by ID:', error);
-    throw error;
-  }
+type CardRow = {
+  id: string;
+  name: string;
+  supertype: string | null;
+  subtypes: string[] | null;
+  hp: string | null;
+  types: string[] | null;
+  set_id: string | null;
+  set_name: string | null;
+  number: string | null;
+  artist: string | null;
+  rarity: string | null;
+  images: Json | null;
+  tcgplayer_prices: Json | null;
+  small_image_url: string | null;
+  large_image_url: string | null;
+  pokemon_sets: SetJoin | null;
 };
 
-/**
- * Build a query string from search parameters
- */
-export const buildQueryString = (params: Record<string, string>): string => {
-  const queryParts: string[] = [];
-  
-  Object.entries(params).forEach(([key, value]) => {
-    if (value) {
-      // Ignore "all" value for setId as it means no filter
-      if (key === 'setId' && value !== 'all') {
-        queryParts.push(`set.id:${value}`);
-      } 
-      // For name use the format name: with wildcards and trim any whitespace
-      else if (key === 'name') {
-        const trimmedValue = value.trim();
-        if (trimmedValue) {
-          queryParts.push(`name:*${trimmedValue}*`);
+const asRecord = (value: Json | null): Record<string, unknown> =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+
+const mapCard = (row: CardRow): PokemonCard => {
+  const set = row.pokemon_sets;
+  const setImages = asRecord(set?.images ?? null);
+  const images = asRecord(row.images);
+  const prices = asRecord(row.tcgplayer_prices);
+  const hasPrices = Object.keys(prices).length > 0;
+
+  return {
+    id: row.id,
+    name: row.name,
+    supertype: row.supertype ?? "Unknown",
+    subtypes: row.subtypes ?? [],
+    hp: row.hp ?? undefined,
+    types: row.types ?? undefined,
+    set: {
+      id: set?.id ?? row.set_id ?? "",
+      name: set?.name ?? row.set_name ?? "Unknown set",
+      series: set?.series ?? "Unknown series",
+      printedTotal: set?.printed_total ?? 0,
+      total: set?.total ?? set?.printed_total ?? 0,
+      legalities: asRecord(set?.legalities ?? null) as Record<string, string>,
+      ptcgoCode: set?.ptcgo_code ?? "",
+      releaseDate: set?.release_date ?? "",
+      updatedAt: "",
+      images: {
+        symbol: (setImages.symbol as string | undefined) ?? set?.symbol_url ?? "",
+        logo: (setImages.logo as string | undefined) ?? set?.logo_url ?? "",
+      },
+    },
+    number: row.number ?? "",
+    artist: row.artist ?? "",
+    rarity: row.rarity ?? "Unknown",
+    legalities: {},
+    images: {
+      small: (images.small as string | undefined) ?? row.small_image_url ?? CARD_BACK_URL,
+      large:
+        (images.large as string | undefined) ??
+        row.large_image_url ??
+        row.small_image_url ??
+        CARD_BACK_URL,
+    },
+    tcgplayer: hasPrices
+      ? {
+          url: "",
+          updatedAt: "",
+          prices: prices as PokemonCard["tcgplayer"] extends { prices: infer P } ? P : never,
         }
-      }
-      // Other filters can be added here
-    }
-  });
-  
-  return queryParts.join(' ');
+      : undefined,
+  };
 };
 
-/**
- * Search cards with search parameters
- */
+const escapeLike = (value: string) => value.replace(/[\\%_]/g, "\\$&");
+
+async function queryCards(
+  page: number,
+  pageSize: number,
+  filters: { name?: string; setId?: string } = {},
+): Promise<PokemonCardResponse> {
+  const safePage = Math.max(1, page);
+  const safePageSize = Math.min(100, Math.max(1, pageSize));
+  const from = (safePage - 1) * safePageSize;
+  const to = from + safePageSize - 1;
+
+  let query = supabase
+    .from("pokemon_cards")
+    .select(cardColumns, { count: "exact" });
+
+  if (filters.setId && filters.setId !== "all") {
+    query = query.eq("set_id", filters.setId);
+  }
+  if (filters.name?.trim()) {
+    query = query.ilike("name", `%${escapeLike(filters.name.trim())}%`);
+  }
+
+  const { data, count, error } = await query
+    .order("name", { ascending: true })
+    .range(from, to);
+
+  if (error) throw error;
+  const rows = (data ?? []) as unknown as CardRow[];
+  return {
+    data: rows.map(mapCard),
+    page: safePage,
+    pageSize: safePageSize,
+    count: rows.length,
+    totalCount: count ?? rows.length,
+  };
+}
+
+export const getCards = async (
+  page = 1,
+  pageSize = 20,
+  params: Record<string, string> = {},
+): Promise<PokemonCardResponse> =>
+  queryCards(page, pageSize, { name: params.name, setId: params.setId });
+
+export const getCardById = async (id: string): Promise<PokemonCard> => {
+  if (!id) throw new Error("Card ID is required");
+
+  const { data, error } = await supabase
+    .from("pokemon_cards")
+    .select(cardColumns)
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) throw new Error("Card not found");
+  return mapCard(data as unknown as CardRow);
+};
+
+export const buildQueryString = (params: Record<string, string>): string =>
+  [
+    params.setId && params.setId !== "all" ? `set.id:${params.setId}` : "",
+    params.name?.trim() ? `name:*${params.name.trim()}*` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
 export const searchCards = async (
-  queryParams: string | Record<string, string>, 
-  page = 1, 
-  pageSize = 20
+  queryParams: string | Record<string, string>,
+  page = 1,
+  pageSize = 20,
 ): Promise<PokemonCardResponse> => {
-  // Create a params object for the API call
-  let params: Record<string, string> = { page: page.toString(), pageSize: pageSize.toString() };
-  
-  if (typeof queryParams === 'string') {
-    // If it's a raw query string, use it directly as 'q' parameter
-    if (queryParams.trim()) {
-      params.q = queryParams;
-    }
-  } else {
-    // If it's an object of search parameters, build a query string
-    const builtQuery = buildQueryString(queryParams);
-    if (builtQuery) {
-      params.q = builtQuery;
-    }
+  if (typeof queryParams === "string") {
+    const name = queryParams
+      .replace(/^name:\*?/i, "")
+      .replace(/\*$/, "")
+      .trim();
+    return queryCards(page, pageSize, { name });
   }
-  
-  console.log(`Searching cards with final API params:`, params);
-  
-  try {
-    const url = createApiUrl('cards', params);
-    
-    console.log('Fetching cards with URL:', url.toString());
-    const response = await fetchFromApi(url.toString());
-
-    if (!response.ok) {
-      const errorMessage = `Failed to fetch cards: ${response.statusText}`;
-      console.error(errorMessage);
-      throw new Error(errorMessage);
-    }
-    
-    const data = await response.json();
-    console.log(`Successfully fetched ${data.data?.length || 0} cards`);
-    
-    return data;
-  } catch (error) {
-    console.error('Error searching Pokemon cards:', error);
-    // Return empty response structure in case of error
-    return {
-      data: [],
-      page: page,
-      pageSize: pageSize,
-      count: 0,
-      totalCount: 0
-    };
-  }
+  return queryCards(page, pageSize, {
+    name: queryParams.name,
+    setId: queryParams.setId,
+  });
 };
 
-/**
- * Get cards by set ID
- */
 export const getCardsBySetId = async (
-  setId: string, 
-  page = 1, 
-  pageSize = 20
-): Promise<PokemonCardResponse> => {
-  if (!setId || setId === 'all') {
-    return getCards(page, pageSize);
-  }
-  
-  console.log(`Getting cards for set ID: ${setId}`);
-  return searchCards({ setId }, page, pageSize);
+  setId: string,
+  page = 1,
+  pageSize = 20,
+): Promise<PokemonCardResponse> =>
+  queryCards(page, pageSize, { setId: setId === "all" ? undefined : setId });
+
+export const getReliableImageUrl = (
+  cardId: string,
+  size: "small" | "large" = "small",
+  isFeatured = false,
+): string => {
+  if (!cardId) return CARD_BACK_URL;
+  return isFeatured
+    ? getFeaturedCardImageUrl(cardId, size)
+    : getConsistentCardImageUrl(cardId, size);
 };
 
-/**
- * Generate a reliable image URL for a Pokemon card
- */
-export const getReliableImageUrl = (cardId: string, size: 'small' | 'large' = 'small', isFeatured: boolean = false): string => {
-  if (!cardId) {
-    return CARD_BACK_URL;
-  }
-  
-  // Use the featured card image service for featured cards
-  if (isFeatured) {
-    return getFeaturedCardImageUrl(cardId, size);
-  }
-  
-  // Use the consistent image URL function for regular cards
-  return getConsistentCardImageUrl(cardId, size);
-};
-
-/**
- * Map Pokemon TCG card to TradeCard model
- */
-export const mapToTradeCard = (card: PokemonCard, isFeatured: boolean = false): any => {
-  // Try every TCGPlayer price variant — prefer market price, fall back to mid
-  const p = card.tcgplayer?.prices;
+export const mapToTradeCard = (card: PokemonCard, isFeatured = false) => {
+  const prices = card.tcgplayer?.prices;
   const price =
-    p?.holofoil?.market ?? p?.holofoil?.mid ??
-    p?.normal?.market ?? p?.normal?.mid ??
-    p?.reverseHolofoil?.market ?? p?.reverseHolofoil?.mid ??
-    p?.['1stEditionHolofoil']?.market ??
-    p?.unlimitedHolofoil?.market ??
+    prices?.holofoil?.market ??
+    prices?.holofoil?.mid ??
+    prices?.normal?.market ??
+    prices?.normal?.mid ??
+    prices?.reverseHolofoil?.market ??
+    prices?.["1stEditionHolofoil"]?.market ??
+    prices?.unlimitedHolofoil?.market ??
     0;
-  
-  let bestImageUrl;
-  
-  if (isFeatured) {
-    // For featured cards, use our featured card service
-    bestImageUrl = getFeaturedCardImageUrl(card.id);
-  } else {
-    // For regular cards, use all possible sources
-    const imageUrls = getAllPossibleImageUrlsFromCardObject(card);
-    bestImageUrl = imageUrls.length > 0 ? imageUrls[0] : CARD_BACK_URL;
-  }
-  
+  const imageUrls = getAllPossibleImageUrlsFromCardObject(card);
+
   return {
     id: card.id,
     name: card.name,
-    imageUrl: bestImageUrl,
+    imageUrl: isFeatured
+      ? getFeaturedCardImageUrl(card.id)
+      : imageUrls[0] ?? CARD_BACK_URL,
     condition: "Near Mint",
     estimatedValue: price > 0 ? usdToGbp(price) : 0,
-    currency: "GBP"
+    currency: "GBP",
   };
 };

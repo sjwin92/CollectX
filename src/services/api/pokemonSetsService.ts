@@ -1,64 +1,81 @@
+import { supabase } from "@/integrations/supabase/client";
+import type { PokemonSet, PokemonSetResponse } from "./pokemonTypes";
 
-// Service for fetching Pokemon set data from the external API.
-// Caching is handled by React Query at the call site — no localStorage here.
-import { PokemonSet, PokemonSetResponse } from './pokemonTypes';
-import { BASE_URL, createApiUrl, fetchFromApi } from './pokemonApiConfig';
+type SetRow = {
+  id: string;
+  name: string;
+  series: string | null;
+  printed_total: number | null;
+  total: number | null;
+  release_date: string | null;
+  legalities: Record<string, string> | null;
+  images: { symbol?: string; logo?: string } | null;
+  symbol_url: string | null;
+  logo_url: string | null;
+};
+
+const mapSet = (row: SetRow): PokemonSet => ({
+  id: row.id,
+  name: row.name,
+  series: row.series ?? "Unknown series",
+  printedTotal: row.printed_total ?? 0,
+  total: row.total ?? row.printed_total ?? 0,
+  releaseDate: row.release_date ?? "",
+  legalities: row.legalities ?? {},
+  images: {
+    symbol: row.images?.symbol ?? row.symbol_url ?? "",
+    logo: row.images?.logo ?? row.logo_url ?? "",
+  },
+});
+
+const setColumns =
+  "id,name,series,printed_total,total,release_date,legalities,images,symbol_url,logo_url";
 
 export const getSets = async (page = 1, pageSize = 20): Promise<PokemonSetResponse> => {
-  const url = createApiUrl('sets', {
-    page: page.toString(),
-    pageSize: pageSize.toString(),
-    orderBy: '-releaseDate',
-  });
+  const safePage = Math.max(1, page);
+  const safePageSize = Math.min(250, Math.max(1, pageSize));
+  const from = (safePage - 1) * safePageSize;
+  const to = from + safePageSize - 1;
 
-  try {
-    const response = await fetchFromApi(url.toString());
-    if (!response.ok) throw new Error(`Failed to fetch sets: ${response.statusText}`);
-    const data = await response.json();
-    const deduplicatedData = data.data
-      ? data.data.filter((set: PokemonSet, index: number, self: PokemonSet[]) =>
-          self.findIndex(s => s.id === set.id) === index
-        )
-      : [];
-    return { ...data, data: deduplicatedData };
-  } catch (error) {
-    console.error('Error fetching Pokemon sets:', error);
-    return { data: [], page, pageSize, count: 0, totalCount: 0 };
-  }
+  const { data, count, error } = await supabase
+    .from("pokemon_sets")
+    .select(setColumns, { count: "exact" })
+    .order("release_date", { ascending: false })
+    .range(from, to);
+
+  if (error) throw error;
+  const rows = (data ?? []) as unknown as SetRow[];
+  return {
+    data: rows.map(mapSet),
+    page: safePage,
+    pageSize: safePageSize,
+    count: rows.length,
+    totalCount: count ?? rows.length,
+  };
 };
 
 export const getAllSets = async (): Promise<PokemonSet[]> => {
-  try {
-    const url = createApiUrl('sets', { pageSize: '250', orderBy: '-releaseDate' });
-    const response = await fetchFromApi(url.toString());
-    if (!response.ok) throw new Error(`Failed to fetch all sets: ${response.statusText}`);
-    const data = await response.json();
-    return data.data
-      ? data.data.filter((set: PokemonSet, index: number, self: PokemonSet[]) =>
-          self.findIndex(s => s.id === set.id) === index
-        )
-      : [];
-  } catch (error) {
-    console.error('Error fetching all Pokemon sets:', error);
-    return [];
-  }
+  const { data, error } = await supabase
+    .from("pokemon_sets")
+    .select(setColumns)
+    .order("release_date", { ascending: false });
+
+  if (error) throw error;
+  return ((data ?? []) as unknown as SetRow[]).map(mapSet);
 };
 
 export const getSetById = async (setId: string): Promise<PokemonSet | null> => {
-  try {
-    const response = await fetchFromApi(`${BASE_URL}/sets/${setId}`);
-    if (!response.ok) throw new Error(`Failed to fetch set ${setId}: ${response.statusText}`);
-    const data = await response.json();
-    return data?.data ?? null;
-  } catch (error) {
-    console.error(`Error fetching set ${setId}:`, error);
-    return null;
-  }
+  const { data, error } = await supabase
+    .from("pokemon_sets")
+    .select(setColumns)
+    .eq("id", setId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? mapSet(data as unknown as SetRow) : null;
 };
 
 export const getSetInfoForCard = async (cardId: string): Promise<PokemonSet | null> => {
-  if (!cardId) return null;
-  const setId = cardId.split('-')[0];
-  if (!setId) return null;
-  return getSetById(setId);
+  const setId = cardId?.split("-")[0];
+  return setId ? getSetById(setId) : null;
 };

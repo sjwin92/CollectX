@@ -5,16 +5,20 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import PokemonCardSearch from "@/components/pokemon/PokemonCardSearch";
 import CardGrid from "@/components/cards/CardGrid";
+import { Button } from "@/components/ui/button";
 import CardFilters, { FilterOptions } from "@/components/pokemon/CardFilters";
 import { NoResultsDisplay } from "@/components/common/NoResultsDisplay";
 import { useToast } from "@/hooks/use-toast";
 import { getSetById } from "@/services/api/pokemonSetsService";
-import { searchCards } from "@/services/api/pokemonCardsService";
+import { getCards, searchCards } from "@/services/api/pokemonCardsService";
 import { CardItemProps } from "@/components/cards/CardItem";
 import { usdToGbp } from "@/services/currencyService";
 import { useSetCards } from "@/hooks/useSetCards";
+import type { PokemonCard } from "@/services/api/pokemonTypes";
 
-const extractGbpPrice = (tcgplayer_prices: any): string => {
+type TcgplayerPrices = NonNullable<PokemonCard["tcgplayer"]>["prices"];
+
+const extractGbpPrice = (tcgplayer_prices: TcgplayerPrices | undefined): string => {
   const p = tcgplayer_prices;
   const usd =
     p?.holofoil?.market ?? p?.holofoil?.mid ??
@@ -25,11 +29,32 @@ const extractGbpPrice = (tcgplayer_prices: any): string => {
   return usd > 0 ? `£${usdToGbp(usd).toFixed(2)}` : "N/A";
 };
 
+const mapCatalogueCard = (card: PokemonCard): CardItemProps => ({
+  id: card.id,
+  name: card.name || "Unknown Card",
+  imageUrl:
+    card.images?.small ||
+    card.images?.large ||
+    `https://images.pokemontcg.io/${card.id.replace("-", "/")}.png`,
+  rarity: card.rarity || "Unknown",
+  condition: "Near Mint",
+  estimatedValue: card.tcgplayer?.prices
+    ? extractGbpPrice(card.tcgplayer.prices)
+    : "N/A",
+  number: card.number,
+  set: { id: card.set?.id, name: card.set?.name },
+});
+
+const PAGE_SIZE = 50;
+
+type CataloguePage = { cards: CardItemProps[]; totalCount: number };
+
 const PokemonCards = () => {
   const [searchParams] = useSearchParams();
   const setId = searchParams.get("setId");
   const nameQuery = searchParams.get("name");
   const [selectedSetName, setSelectedSetName] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<FilterOptions>({
     sortBy: "value",
     sortOrder: "desc",
@@ -39,37 +64,53 @@ const PokemonCards = () => {
   });
   const { toast } = useToast();
 
-  // ── Set-scoped browsing: served from the local mirror + on-demand import ──
+  // Set-scoped browsing is served from the owned catalogue mirror.
   const setCardsQuery = useSetCards(setId);
 
-  // ── Name search (cross-set): still hits the external TCG API for now. ────
+  // Cross-set name search uses the same verified local catalogue.
   const nameSearchQuery = useQuery({
-    queryKey: ["name-search", nameQuery] as const,
-    queryFn: async (): Promise<CardItemProps[]> => {
-      const resp = await searchCards({ name: nameQuery! }, 1, 50);
-      return (resp.data ?? []).map((card: any) => ({
-        id: card.id,
-        name: card.name || "Unknown Card",
-        imageUrl:
-          card.images?.small ||
-          card.images?.large ||
-          `https://images.pokemontcg.io/${card.id.replace("-", "/")}.png`,
-        rarity: card.rarity || "Unknown",
-        condition: "Near Mint",
-        estimatedValue: card.tcgplayer?.prices
-          ? extractGbpPrice(card.tcgplayer.prices)
-          : "N/A",
-        number: card.number,
-        set: { id: card.set?.id, name: card.set?.name },
-      }));
+    queryKey: ["name-search", nameQuery, page] as const,
+    queryFn: async (): Promise<CataloguePage> => {
+      const resp = await searchCards({ name: nameQuery! }, page, PAGE_SIZE);
+      return {
+        cards: (resp.data ?? []).map(mapCatalogueCard),
+        totalCount: resp.totalCount,
+      };
     },
     enabled: !!nameQuery && !setId,
     staleTime: 5 * 60 * 1000,
   });
 
-  const activeQuery = setId ? setCardsQuery : nameSearchQuery;
-  const allCards: CardItemProps[] = Array.isArray(activeQuery.data) ? activeQuery.data : [];
-  const isLoading = (!!setId || !!nameQuery) && activeQuery.isLoading;
+  const browseQuery = useQuery({
+    queryKey: ["catalogue-browse", page] as const,
+    queryFn: async (): Promise<CataloguePage> => {
+      const resp = await getCards(page, PAGE_SIZE);
+      return {
+        cards: (resp.data ?? []).map(mapCatalogueCard),
+        totalCount: resp.totalCount,
+      };
+    },
+    enabled: !setId && !nameQuery,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const activeQuery = setId ? setCardsQuery : nameQuery ? nameSearchQuery : browseQuery;
+  const pagedData = !setId && activeQuery.data && !Array.isArray(activeQuery.data)
+    ? activeQuery.data as CataloguePage
+    : null;
+  const allCards = useMemo<CardItemProps[]>(
+    () => setId
+      ? (Array.isArray(activeQuery.data) ? activeQuery.data : [])
+      : (pagedData?.cards ?? []),
+    [activeQuery.data, pagedData, setId],
+  );
+  const totalCount = setId ? allCards.length : (pagedData?.totalCount ?? 0);
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const isLoading = activeQuery.isLoading;
+
+  useEffect(() => {
+    setPage(1);
+  }, [setId, nameQuery]);
 
   // Surface query errors as toasts (once per change).
   useEffect(() => {
@@ -192,6 +233,12 @@ const PokemonCards = () => {
           </p>
         )}
 
+        {!setId && !nameQuery && (
+          <p className="text-muted-foreground mb-6">
+            Browse the verified English card catalogue or search by card name.
+          </p>
+        )}
+
         <div className="mb-8">
           <PokemonCardSearch initialSetId={setId} />
         </div>
@@ -213,7 +260,30 @@ const PokemonCards = () => {
             ))}
           </div>
         ) : filteredCards.length > 0 ? (
-          <CardGrid cards={filteredCards} showCondition={false} />
+          <>
+            <CardGrid cards={filteredCards} showCondition={false} />
+            {!setId && totalPages > 1 && (
+              <nav className="mt-8 flex items-center justify-center gap-3" aria-label="Card catalogue pages">
+                <Button
+                  variant="outline"
+                  onClick={() => setPage((current) => Math.max(1, current - 1))}
+                  disabled={page === 1 || activeQuery.isFetching}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-muted-foreground" aria-live="polite">
+                  Page {page} of {totalPages} · {totalCount.toLocaleString()} cards
+                </span>
+                <Button
+                  variant="outline"
+                  onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                  disabled={page >= totalPages || activeQuery.isFetching}
+                >
+                  Next
+                </Button>
+              </nav>
+            )}
+          </>
         ) : (
           <NoResultsDisplay
             setId={setId}

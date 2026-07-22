@@ -4,18 +4,26 @@ import { normalizeSetId } from "@/services/setIdMappingService";
 import { usdToGbp } from "@/services/currencyService";
 import type { CardItemProps } from "@/components/cards/CardItem";
 import { CACHE_TTL } from "@/lib/cacheConfig";
+import type { Json } from "@/integrations/supabase/types";
 
-const FRESHNESS_MS = CACHE_TTL.SET_CARDS;
-
-function extractGbpPrice(tcgplayerPrices: any): string {
-  const p = tcgplayerPrices;
+function extractGbpPrice(tcgplayerPrices: Json | null): string {
+  const p =
+    tcgplayerPrices && typeof tcgplayerPrices === "object" && !Array.isArray(tcgplayerPrices)
+      ? tcgplayerPrices
+      : {};
+  const price = (variant: string, field: "market" | "mid") => {
+    const value = p[variant];
+    return value && typeof value === "object" && !Array.isArray(value)
+      ? value[field]
+      : undefined;
+  };
   const usd =
-    p?.holofoil?.market ?? p?.holofoil?.mid ??
-    p?.normal?.market ?? p?.normal?.mid ??
-    p?.reverseHolofoil?.market ?? p?.reverseHolofoil?.mid ??
-    p?.["1stEditionHolofoil"]?.market ??
-    p?.unlimitedHolofoil?.market ?? 0;
-  return usd > 0 ? `£${usdToGbp(usd).toFixed(2)}` : "N/A";
+    price("holofoil", "market") ?? price("holofoil", "mid") ??
+    price("normal", "market") ?? price("normal", "mid") ??
+    price("reverseHolofoil", "market") ?? price("reverseHolofoil", "mid") ??
+    price("1stEditionHolofoil", "market") ??
+    price("unlimitedHolofoil", "market") ?? 0;
+  return typeof usd === "number" && usd > 0 ? `£${usdToGbp(usd).toFixed(2)}` : "N/A";
 }
 
 interface CardRow {
@@ -27,7 +35,7 @@ interface CardRow {
   rarity: string | null;
   small_image_url: string | null;
   large_image_url: string | null;
-  tcgplayer_prices: any;
+  tcgplayer_prices: Json | null;
 }
 
 function toCardItems(rows: CardRow[]): CardItemProps[] {
@@ -44,7 +52,7 @@ function toCardItems(rows: CardRow[]): CardItemProps[] {
 }
 
 async function readMirror(setId: string): Promise<CardItemProps[]> {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("pokemon_cards")
     .select("id,name,set_id,set_name,number,rarity,small_image_url,large_image_url,tcgplayer_prices")
     .eq("set_id", setId)
@@ -53,36 +61,9 @@ async function readMirror(setId: string): Promise<CardItemProps[]> {
   return toCardItems((data ?? []) as CardRow[]);
 }
 
-async function readFreshness(setId: string): Promise<number | null> {
-  const { data } = await (supabase as any)
-    .from("set_imports")
-    .select("last_imported_at")
-    .eq("set_id", setId)
-    .maybeSingle();
-  return data?.last_imported_at ? new Date(data.last_imported_at).getTime() : null;
-}
-
 async function fetchSetCards(rawSetId: string): Promise<CardItemProps[]> {
   const setId = normalizeSetId(rawSetId);
-
-  // 1. Read whatever the mirror has right now.
-  let cards = await readMirror(setId);
-  const importedAt = await readFreshness(setId);
-  const stale = !importedAt || Date.now() - importedAt > FRESHNESS_MS;
-
-  // 2. If we have nothing OR data is stale, trigger an import.
-  if (cards.length === 0 || stale) {
-    try {
-      await supabase.functions.invoke("import-set-cards", { body: { setId } });
-      cards = await readMirror(setId);
-    } catch (err) {
-      // If we already had cached cards, keep them rather than failing the page.
-      if (cards.length === 0) throw err;
-      console.warn("import-set-cards failed, serving stale data:", err);
-    }
-  }
-
-  return cards;
+  return readMirror(setId);
 }
 
 export function useSetCards(setId: string | null | undefined) {

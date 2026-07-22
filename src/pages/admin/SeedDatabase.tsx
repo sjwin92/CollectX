@@ -24,7 +24,7 @@ interface LogEntry {
   type: "info" | "success" | "error" | "skip";
 }
 
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 5;
 
 const SeedDatabase = () => {
   const [phase, setPhase] = useState<Phase>("idle");

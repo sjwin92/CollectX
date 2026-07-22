@@ -35,7 +35,7 @@ const CreateListingModal = ({
 
   // Get user's collection for card selection
   const { data: userCards = [], isLoading: isLoadingCards } = useQuery({
-    queryKey: ['user-tradable-cards'],
+    queryKey: ['user-tradable-cards', user?.id],
     queryFn: getTradableCards,
     enabled: !!user && !selectedCard
   });
@@ -61,11 +61,20 @@ const CreateListingModal = ({
       return;
     }
 
-    if (!tradePreferences) {
+    if (!tradePreferences.trim()) {
       toast({
         title: "Error",
         description: "Please specify what you're looking for in trade",
         variant: "destructive"
+      });
+      return;
+    }
+
+    if (expiresAt && new Date(expiresAt).getTime() <= Date.now()) {
+      toast({
+        title: "Choose a future expiry",
+        description: "A listing cannot expire in the past.",
+        variant: "destructive",
       });
       return;
     }
@@ -75,8 +84,8 @@ const CreateListingModal = ({
     try {
       await createMarketplaceListing(currentCard, {
         listing_type: 'trade',
-        trade_preferences: tradePreferences,
-        description,
+        trade_preferences: tradePreferences.trim(),
+        description: description.trim(),
         expires_at: expiresAt || undefined
       });
 
@@ -95,8 +104,8 @@ const CreateListingModal = ({
     } catch (error) {
       console.error('Error creating listing:', error);
       toast({
-        title: "Error",
-        description: "Failed to create listing. Please try again.",
+        title: "Couldn\'t create listing",
+        description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -116,7 +125,7 @@ const CreateListingModal = ({
         <DialogHeader>
           <DialogTitle>Create Marketplace Listing</DialogTitle>
           <DialogDescription>
-            List your card for trade or sale in the marketplace
+            List one of your cards for a direct card-for-card trade
           </DialogDescription>
         </DialogHeader>
 
@@ -147,10 +156,6 @@ const CreateListingModal = ({
                         src={card.imageUrl}
                         alt={card.name}
                         className="w-full h-full object-cover rounded"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = "/placeholder.svg";
-                        }}
                       />
                     </div>
                     <h4 className="text-sm font-medium truncate">{card.name}</h4>
@@ -171,10 +176,6 @@ const CreateListingModal = ({
                   src={currentCard.imageUrl}
                   alt={currentCard.name}
                   className="w-full h-full object-cover rounded-md"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = "/placeholder.svg";
-                  }}
                 />
               </div>
               <div className="flex-1 space-y-1">
@@ -234,6 +235,7 @@ const CreateListingModal = ({
                   type="datetime-local"
                   value={expiresAt}
                   onChange={(e) => setExpiresAt(e.target.value)}
+                  min={new Date(Date.now() + 60_000).toISOString().slice(0, 16)}
                 />
               </div>
             </div>

@@ -3,27 +3,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getAllSets } from "@/services/api/pokemonSetsService";
-import { Search, HelpCircle, Sparkles } from "lucide-react";
+import { Search, HelpCircle } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { trackSearch } from "@/services/supabaseAnalyticsService";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 
 interface PokemonCardSearchProps {
   initialSetId?: string | null;
-  onSelect?: (card: any) => void;
 }
 
-const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = null, onSelect }) => {
+const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = null }) => {
   const [nameQuery, setNameQuery] = useState("");
   const [selectedSet, setSelectedSet] = useState<string>("");
   const [sets, setSets] = useState<Array<{ id: string; name: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isAISearching, setIsAISearching] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { toast } = useToast();
   
   // Load available sets
   useEffect(() => {
@@ -120,71 +115,13 @@ const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = nu
     // Otherwise, the user will need to click the search button to submit the combined query
   };
 
-  const handleAISearch = async () => {
-    if (!nameQuery.trim()) {
-      toast({
-        title: "Enter a search query",
-        description: "Please enter what you're looking for to use AI search.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsAISearching(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('ai-card-search', {
-        body: { query: nameQuery }
-      });
-
-      if (error) throw error;
-
-      // Apply AI suggestions to the search form
-      if (data.name) {
-        setNameQuery(data.name);
-      }
-      
-      if (data.setName && sets.length > 0) {
-        const matchingSet = sets.find(set => 
-          set.name.toLowerCase().includes(data.setName.toLowerCase()) ||
-          data.setName.toLowerCase().includes(set.name.toLowerCase())
-        );
-        if (matchingSet) {
-          setSelectedSet(matchingSet.id);
-        }
-      }
-
-      toast({
-        title: "AI Search Applied",
-        description: data.interpretation || "AI has interpreted your search and updated the form.",
-      });
-
-      // Auto-submit the enhanced search
-      setTimeout(() => {
-        const form = document.querySelector('form');
-        if (form) {
-          form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-        }
-      }, 100);
-
-    } catch (error) {
-      console.error('AI search error:', error);
-      toast({
-        title: "AI Search Error",
-        description: "AI search is temporarily unavailable. Using regular search.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsAISearching(false);
-    }
-  };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
         <div className="md:col-span-5 relative">
           <div className="relative">
             <Input
-              placeholder="Search by card name or number (e.g., 25/100, SVI004)..."
+              placeholder="Search by card name (for example, Charizard)..."
               value={nameQuery}
               onChange={(e) => setNameQuery(e.target.value)}
               className="w-full pr-10"
@@ -203,13 +140,8 @@ const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = nu
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs">
                   <p className="text-sm">
-                    Search by card name (e.g., "Charizard") or card number in different formats:
+                    Search the verified CollectX catalogue by card name, then narrow the results to a set if needed.
                   </p>
-                  <ul className="text-xs mt-1 list-disc pl-4">
-                    <li>Collector Number: 25/100</li>
-                    <li>Card Number only: 25</li>
-                    <li>Set Code + Number: SVI025</li>
-                  </ul>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -232,20 +164,10 @@ const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = nu
           </Select>
         </div>
         
-        <div className="md:col-span-2 space-y-2">
+        <div className="md:col-span-2">
           <Button type="submit" className="w-full">
             <Search className="mr-2 h-4 w-4" />
             Search
-          </Button>
-          <Button 
-            type="button" 
-            variant="outline" 
-            className="w-full" 
-            onClick={handleAISearch}
-            disabled={isAISearching}
-          >
-            <Sparkles className="mr-2 h-4 w-4" />
-            {isAISearching ? "AI Searching..." : "AI Search"}
           </Button>
         </div>
       </div>
