@@ -1,131 +1,143 @@
+## Phase 1 — Reliable Two-User Card-for-Card Trade
 
-# Phase 1 — Reliable Card-for-Card Trade Journey
+Goal: one complete trade journey (propose → accept → chat → address → ship → confirm → complete → rate) against real schema, no money/escrow, no misleading copy.
 
-Goal: make one two-user, card-for-card trade complete reliably from listing → proposal → accept → chat → dual shipment → dual receipt → completion → ratings. All monetary/escrow simulation is removed. No new product features.
+Most of this landed in prior turns. This plan closes the remaining verified gaps and locks the invariants.
 
-## Trade state machine
+---
 
-Single `trades.status` column, transitions owned by SECURITY DEFINER RPCs. No client-side status writes.
+### 1. Schema migrations / constraints / RLS
+
+Single migration, additive only (production has 0 listings / 0 trades so tightening is safe):
+
+**`trades`**
+- Drop unused columns if still present: `escrow_required`, `initiator_value`, `recipient_value`.
+- Ensure columns exist: `accepted_at`, `completed_at`, `cancelled_at`, `initiator_confirmed_at`, `recipient_confirmed_at` (all `timestamptz`).
+- `CHECK (status IN ('proposed','accepted','shipped','completed','cancelled','disputed'))`.
+- `CHECK (initiator_user_id <> recipient_user_id)`.
+- Keep `trades_require_both_sides` trigger (non-empty jsonb arrays).
+- RLS: SELECT = participants only; INSERT = `USING (false)` (force `propose_trade` RPC); UPDATE/DELETE = `USING (false)`.
+
+**`trade_shipments`**
+- Unique `(trade_id, sender_user_id)`.
+- RLS: SELECT restricted to `sender_user_id = auth.uid()` only (counterparty reads via `get_trade_shipments` RPC that omits addresses/labels). INSERT/UPDATE/DELETE = `USING (false)`.
+
+**`trade_addresses`**
+- RLS: SELECT/INSERT/UPDATE restricted to `user_id = auth.uid()`; counterparty reads destination via `get_trade_destination_address` RPC only when they are the sender of the corresponding shipment.
+
+**`trade_messages`**
+- Confirm `sender_user_id` and nullable `image_url text` columns exist.
+- RLS: SELECT/INSERT for trade participants where `sender_user_id = auth.uid()` and trade not `cancelled`.
+
+**`trade_ratings`**
+- Unique `(trade_id, rater_user_id)`.
+- `CHECK (rating BETWEEN 1 AND 5)`, `CHECK (rater_user_id <> rated_user_id)`.
+- RLS INSERT: participant of a `completed` trade, rated user is counterparty.
+- Trigger `recompute_profile_reputation` remains authoritative for `profiles.reputation_score`.
+
+**`marketplace_listings`**
+- Keep `marketplace_listing_snapshot` trigger (forces `listing_type='trade'`, nulls `asking_price`, snapshots identity from `user_cards`).
+- RLS UPDATE limited to owner AND `status IN ('active','pending')` (block edits on completed/cancelled).
+
+**GRANTs**: `authenticated` on all RPCs; revoke `EXECUTE` from `anon`/`public` on trigger and internal helper functions.
+
+---
+
+### 2. State machine & protected RPCs
 
 ```text
-proposed ──accept──► accepted ──both shipments created──► shipped
-                │                                          │
-                └──decline / cancel──► cancelled           ├─each side confirm_receipt──►
-                                                           │
-                                              both confirmed → completed
-                                                           │
-                                              either opens issue → disputed (manual)
+proposed ──accept──► accepted ──both mark_shipped──► shipped
+   │                    │                              │
+   ├─decline (recipient)│                              ├─each confirm_receipt──►
+   ├─cancel (initiator) │                              │
+   ▼                    ▼                              ▼
+cancelled            cancelled                     completed
+                                (either) open_dispute → disputed
 ```
 
-Allowed statuses: `proposed | accepted | shipped | completed | cancelled | disputed`.
-Terminal: `completed`, `cancelled`. `disputed` is a flag; resolution is deferred.
+All transitions are `SECURITY DEFINER SET search_path=public` RPCs, each guarded by `WHERE status = <expected>` for idempotency under double-click:
 
-Each transition is a dedicated RPC that (a) verifies `auth.uid()` is the correct participant, (b) verifies current status, (c) does the update in one statement guarded by `WHERE status = <expected>` so concurrent double-clicks cannot duplicate.
+| RPC | Caller | Guard |
+|---|---|---|
+| `propose_trade(_listing_id, _offered_user_card_ids[], _message)` | anyone auth, ≠ listing owner | listing active, offered cards owned + `for_trade=true` |
+| `accept_trade(_trade_id)` | recipient | proposed; deterministic lock of sorted user_cards → listing → trade; reserves cards, cancels competing proposals, seeds two shipments |
+| `decline_trade(_trade_id)` | recipient | proposed |
+| `cancel_trade(_trade_id)` | initiator | proposed |
+| `submit_trade_address(_trade_id, _address)` | participant | trade accepted; locked once other side has shipped to caller |
+| `mark_trade_shipped(_trade_id, _tracking, _carrier)` | sender | trade accepted, own shipment pending, destination address exists; flips trade→shipped when both sides shipped |
+| `confirm_trade_receipt(_trade_id)` | participant | trade shipped; when both confirmed → swaps ownership, moves card_images, marks listing completed, increments `total_trades`/`successful_trades` |
+| `open_trade_dispute(_trade_id, _reason)` | participant | accepted or shipped |
+| `get_trade_shipments(_trade_id)` | participant | returns safe columns only (no addresses/labels) |
+| `get_trade_destination_address(_trade_id)` | sender | returns recipient address only for own outbound shipment |
 
-## Database migrations
+Most of these already exist in the DB (see `db-functions`). Gap check: verify `decline_trade`, `cancel_trade`, `open_trade_dispute`, and per-transition guards are present and match above; add any missing.
 
-One migration, in order:
+---
 
-1. **Clean up `trades` schema**
-   - Drop unused columns: `escrow_required`, `initiator_value`, `recipient_value` (nothing genuine uses them post-Phase-1).
-   - Add: `accepted_at`, `completed_at`, `cancelled_at timestamptz`; `initiator_confirmed_at`, `recipient_confirmed_at timestamptz`.
-   - Add CHECK: `status IN ('proposed','accepted','shipped','completed','cancelled','disputed')`.
-   - Add CHECK: `initiator_user_id <> recipient_user_id`.
-   - Keep `initiator_cards`/`recipient_cards jsonb` as the source of truth for proposed cards (each entry: `{user_card_id, card_id, card_name, card_image, quantity, condition, is_graded, grading_company, grade_score}`), non-empty check on both.
+### 3. Source files to update
 
-2. **Tighten RLS on `trades`**
-   - Replace broad `UPDATE` policy with `USING (false)`; all mutations go through RPCs (SECURITY DEFINER).
-   - Keep participant SELECT policy.
-   - Keep initiator INSERT policy but add trigger: reject INSERT if `recipient_cards` is empty (must be a concrete counter-offer, not open-ended).
+Verification / small edits only — most refactors already landed:
 
-3. **`trade_shipments` privacy split**
-   - Add view `public.trade_shipments_public` with `security_invoker=on` exposing everything **except** `sender_address`, `recipient_address`, `shipping_label_url`.
-   - Replace SELECT policy on base table: participants may read only rows where `auth.uid() = sender_user_id` (own full row incl. own address); the counterparty reads the public view.
-   - Keep INSERT: `auth.uid() = sender_user_id`.
-   - Replace UPDATE policy: sender can update their own shipment fields (tracking, status → `shipped`/`in_transit`); recipient cannot UPDATE the base row. Status transitions to `delivered` and `received` happen via RPC only.
-   - Add unique index `(trade_id, sender_user_id)` — one shipment per sender per trade.
+- `src/services/tradeService.ts` — verify no escrow exports remain; confirm all mutations go through `rpc()`.
+- `src/services/shippingService.ts` — remove any cost/label simulation from the active trade path; only expose real `trade_shipments` reads via the RPC.
+- `src/components/trades/tradeDetail/useTradeMutations.ts` — ensure exactly: `accept`, `decline`, `cancel`, `submitAddress`, `markShipped`, `confirmReceipt`, `openDispute`, `rate`. No escrow mutations.
+- `src/components/trades/tradeDetail/ShippingInfoCard.tsx` — "Your shipment" (own address editable while accepted) vs "Their shipment" (carrier/tracking/status only, never address).
+- `src/components/trades/tradeDetail/TradeChat.tsx` — persist `image_url` on send; render via `SmartImage`.
+- `src/components/trades/tradeDetail/TradeProgressBar.tsx` — steps: Proposed → Accepted → Shipped → Received → Completed.
+- `src/components/trades/tradeDetail/TradeActionsBar.tsx` — buttons 1:1 with RPCs, disabled by status + role.
+- `src/components/marketplace/TradeProposalForm.tsx` — offered cards required, must be caller's `user_cards` with `for_trade=true`.
+- `src/components/marketplace/CreateListingModal.tsx` — trade-only (already done); verify no price fields.
+- `src/components/marketplace/listing/TradeListingProtection.tsx` — copy: "Direct card-for-card trade" (no escrow claim).
+- `src/components/trades/TradeRatingModal.tsx` — wired on `completed`, one-per-rater enforced by unique index (surface violation as toast).
+- `src/pages/TradeDetail.tsx` — confirm no imports of removed escrow components; hook-order safe.
+- `src/pages/Trades.tsx`, `src/components/trades/LiveTradeFeed.tsx`, `src/components/marketplace/TradeListing.tsx` — grep and remove any residual "escrow", "funds", "payment", "protected" strings.
+- Delete if still on disk and unimported: `EscrowDetails`, `EscrowModal`, `EscrowPaymentModal`, `TradeBalancePayment`, `escrowService.ts`, `supabaseEscrowService.ts`, `supabaseTradeService.ts` (mock reputation already removed).
 
-4. **`trade_messages` fix**
-   - Column is already `sender_user_id`; keep it. Add `image_url text` column (nullable) so uploaded images survive. Update policies unchanged.
+---
 
-5. **`trade_ratings` constraints**
-   - Add unique `(trade_id, rater_user_id)` — one rating per rater per trade.
-   - Add CHECK `rating BETWEEN 1 AND 5`.
-   - Add CHECK `rater_user_id <> rated_user_id`.
-   - Tighten INSERT: also require the trade to be `completed` and rated_user to be the counterparty (validated via subquery on `trades`).
-
-6. **Server-side RPCs (SECURITY DEFINER, `SET search_path = public`)**
-   - `accept_trade(_trade_id uuid)` — recipient only; `proposed → accepted`; sets `accepted_at`.
-   - `decline_trade(_trade_id uuid)` — recipient only; `proposed → cancelled`.
-   - `cancel_trade(_trade_id uuid)` — initiator only, only while `proposed`; `→ cancelled`.
-   - `mark_trade_shipped(_shipment_id uuid, _tracking text, _carrier text)` — sender only; updates shipment; if both shipments now have tracking, flips trade `accepted → shipped`.
-   - `confirm_trade_receipt(_trade_id uuid)` — participant only; sets their `*_confirmed_at`; if both set, flips `shipped → completed`, `completed_at = now()`, increments both profiles' `successful_trades` and `total_trades`.
-   - `open_trade_dispute(_trade_id uuid, _reason text)` — participant; sets `status='disputed'`, stores reason in `metadata`.
-
-7. **Reputation from real data**
-   - Replace hand-maintained `profiles.reputation_score` write path with a trigger on `trade_ratings` INSERT that recomputes `AVG(rating)` for `rated_user_id`.
-
-8. **GRANTs** on every new/changed object per platform rules; RPCs granted to `authenticated`.
-
-## Application changes (small, focused)
-
-### Services to consolidate
-
-- `src/services/tradeService.ts` — becomes the single trade API. Rewrite each function to call the RPCs above; remove escrow-related exports (`payInitiatorEscrow`, `payRecipientEscrow`, `releaseTradeEscrow`, `validateReleaseEscrow`).
-- **Delete**: `src/services/escrowService.ts`, `src/services/supabaseEscrowService.ts`, `src/services/reputationService.ts` (mock), `src/services/supabaseTradeService.ts` (duplicate of tradeService, causes drift — merge any still-used helpers like `uploadTradeImage` into `tradeService.ts`).
-- `src/services/shippingService.ts` — wire `createShipment`, `updateTracking`, `getTradeShipments` to real `trade_shipments` table + `trade_shipments_public` view. Remove any simulated cost/label generation from the trade path (keep types but return null/placeholder).
-
-### UI changes (preserve styling)
-
-- `src/components/marketplace/TradeProposalForm.tsx` / `src/components/trades/TradeProposalForm.tsx` — recipient-card side must be **required** and populated from User B's `user_cards where for_trade=true`. Both sides written as jsonb card snapshots into `trades.initiator_cards` / `recipient_cards`.
-- `src/pages/TradeDetail.tsx` composition:
-  - Keep `TradeDetailHeader`, `TradeParticipantsCard`, `TradeProgressBar`, `TradeActionsBar`, `TradeChat`, `ShippingInfoCard`, `ImageLightbox`.
-  - **Remove** `EscrowDetails`, `EscrowModal`, `EscrowPaymentModal`, `TradeBalancePayment` from the render tree (files can stay on disk but are no longer imported; delete imports).
-  - `TradeProgressBar`: relabel steps to `Proposed → Accepted → Shipped → Received → Completed` (no escrow).
-  - `TradeActionsBar`: buttons map 1:1 to RPCs (`Accept`, `Decline`, `Cancel`, `Mark Shipped`, `Confirm Receipt`, `Rate Trader`, `Report Issue`). Buttons disabled based on status + role; mutation calls the RPC and refetches.
-- `src/components/trades/tradeDetail/ShippingInfoCard.tsx` — split into "Your shipment" (full detail, editable while `accepted`) and "Their shipment" (read from `trade_shipments_public`: carrier, tracking number, status, timestamps only). Address never rendered for counterparty.
-- `src/components/trades/tradeDetail/TradeChat.tsx` — uploaded image URL is persisted into new `trade_messages.image_url` (currently discarded). Render via existing `SmartImage`.
-- `src/components/trades/tradeDetail/useTradeMutations.ts` — replace escrow mutations with `markShipped`, `confirmReceipt`, `cancel`, `openDispute`, `rate`. Wire to new RPCs.
-- `src/components/marketplace/listing/TradeListingProtection.tsx` — change copy from "Protected by CollectX Escrow" to "Direct card-for-card trade" (no monetary claim). Keep icon + layout.
-- Add `TradeRatingModal` wiring on the completed state (component exists) — one submit per participant, enforced by the new unique index.
-
-### Removed misleading copy
-
-Grep-and-replace pass in `src/pages/Trades.tsx`, `src/components/marketplace/TradeListing.tsx`, `src/components/trades/*`: remove any "escrow", "funds", "payment protection" strings from the card-for-card flow. Keep visual layout tokens untouched.
-
-## Validation & authorization rules (enforced in RPCs)
+### 4. Authorization & validation
 
 | Action | Who | Precondition |
 |---|---|---|
-| Create trade | any authenticated user | `initiator_user_id = auth.uid()`; both card arrays non-empty; each `user_card_id` in `initiator_cards` belongs to auth.uid() and has `for_trade = true` |
-| Accept / Decline | recipient | status = `proposed` |
-| Cancel | initiator | status = `proposed` |
-| Create shipment | sender participant | status = `accepted`, no existing shipment from this sender |
-| Mark shipped | sender of that shipment | shipment exists, tracking non-empty |
-| Confirm receipt | participant, once | status = `shipped`, own `*_confirmed_at` is null |
-| Rate | participant, once | status = `completed`, rated user is counterparty |
-| Message | participant | trade not `cancelled` |
+| Create listing | owner of `user_card_id` | card `for_trade=true`, not in live trade |
+| Propose trade | authenticated, not listing owner | listing active; every offered card owned by caller + `for_trade=true` |
+| Accept | recipient | status=proposed; all involved cards still owned + `for_trade=true` + not in another live trade |
+| Decline | recipient | status=proposed |
+| Cancel | initiator | status=proposed |
+| Submit address | participant | status=accepted; not locked by other side's shipment |
+| Mark shipped | sender | status=accepted; own shipment pending; destination address present; tracking+carrier non-empty |
+| Confirm receipt | participant, once | status=shipped; own `*_confirmed_at` null |
+| Open dispute | participant | status ∈ (accepted, shipped); reason non-empty ≤2000 |
+| Message | participant | trade not cancelled; text or image required |
+| Rate | participant, once | status=completed; rated user is counterparty |
 
-## Acceptance test (two real accounts A, B)
+Every rule enforced server-side in RPC or RLS. Client checks are UX only.
 
-1. A adds a card to collection with `for_trade=true`. B does the same with a different card.
-2. B opens A's listing → proposes B's card. Verify row in `trades` with both card snapshots, status `proposed`.
-3. A refuses double-click accept: click Accept twice quickly → exactly one status change (RPC guard), no duplicate rows.
-4. Chat: A sends text; B replies with an image → row has `image_url` populated; both users see image after refresh.
-5. A submits own shipping address + creates shipment; B does the same. Verify: A's `ShippingInfoCard` shows A's full address, B's carrier/tracking only; the reverse for B. Direct SELECT on `trade_shipments` as B for A's row returns 0 rows.
-6. Both mark shipped → trade auto-flips to `shipped`.
-7. A confirms receipt → status stays `shipped`; B confirms → status flips to `completed`, `completed_at` set, both `profiles.successful_trades` incremented by 1.
-8. Each submits one rating; second attempt by same rater fails with unique-violation surfaced as toast.
-9. No "escrow"/"payment" string appears anywhere in the trade or listing UI.
-10. Supabase linter: no new errors introduced.
+---
 
-## Deliberately deferred
+### 5. Two-account end-to-end test (accounts A, B)
+
+1. A and B each add a distinct card to collection with `for_trade=true`.
+2. A creates a listing from their card → `marketplace_listings` row snapshot matches `user_cards`.
+3. B opens listing, proposes with B's card + message → `trades` row status `proposed`, both snapshots populated.
+4. Double-click Accept as A → exactly one status change to `accepted`; two `trade_shipments` rows seeded; A's card + B's card `for_trade=false`.
+5. Chat: A sends text; B replies with an image → `trade_messages.image_url` populated; both users see image after reload.
+6. Each submits their own address via `submit_trade_address`. Direct `SELECT` on `trade_addresses` as B for A's row returns 0 rows.
+7. Each calls `mark_trade_shipped` with tracking/carrier → after second call trade flips to `shipped`. Direct `SELECT` on `trade_shipments` base table as B for A's row returns 0 rows; `get_trade_shipments` returns carrier/tracking only, no address.
+8. A confirms receipt → status stays `shipped`; B confirms → status flips to `completed`, ownership swapped in `user_cards`, `card_images.user_id` moved, listing → `completed`, `profiles.total_trades`/`successful_trades` +1 for both.
+9. Each submits one rating; second attempt by same rater surfaces unique-violation toast; `profiles.reputation_score` reflects the new average.
+10. Grep production build for `escrow`, `funds`, `payment protection`, `insurance` → 0 hits in active trade/marketplace UI.
+11. Supabase linter: no new errors.
+
+---
+
+### 6. Deliberately deferred
 
 - Real money escrow, Stripe/PayPal, insurance, refunds.
-- Automated dispute resolution (only flag + admin visibility).
-- Real shipping-label purchase, carrier API tracking events, `tracking_events` polling.
-- Reputation tiers/badges beyond raw average rating.
-- Marketplace price/monetary listings (`listing_type='sale'`) — kept in schema, not part of Phase-1 journey.
+- Automated dispute resolution beyond flag + admin visibility.
+- Real shipping-label purchase, carrier webhook tracking events.
+- Reputation tiers/badges beyond raw average.
+- Marketplace `listing_type='sale'` monetary flow.
 - Notifications integration for trade events.
-- Multi-card-per-side balancing UX beyond storing arrays.
-- Deleting old escrow component files from disk (imports removed this phase; file cleanup next phase).
+- Multi-card balancing UX beyond storing arrays.
+- Physical deletion of any legacy escrow files that are only unimported (post-Phase-1 cleanup).
