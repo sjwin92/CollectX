@@ -5,6 +5,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import PokemonCardSearch from "@/components/pokemon/PokemonCardSearch";
 import CardGrid from "@/components/cards/CardGrid";
+import { Button } from "@/components/ui/button";
 import CardFilters, { FilterOptions } from "@/components/pokemon/CardFilters";
 import { NoResultsDisplay } from "@/components/common/NoResultsDisplay";
 import { useToast } from "@/hooks/use-toast";
@@ -44,11 +45,16 @@ const mapCatalogueCard = (card: PokemonCard): CardItemProps => ({
   set: { id: card.set?.id, name: card.set?.name },
 });
 
+const PAGE_SIZE = 50;
+
+type CataloguePage = { cards: CardItemProps[]; totalCount: number };
+
 const PokemonCards = () => {
   const [searchParams] = useSearchParams();
   const setId = searchParams.get("setId");
   const nameQuery = searchParams.get("name");
   const [selectedSetName, setSelectedSetName] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<FilterOptions>({
     sortBy: "value",
     sortOrder: "desc",
@@ -63,31 +69,48 @@ const PokemonCards = () => {
 
   // Cross-set name search uses the same verified local catalogue.
   const nameSearchQuery = useQuery({
-    queryKey: ["name-search", nameQuery] as const,
-    queryFn: async (): Promise<CardItemProps[]> => {
-      const resp = await searchCards({ name: nameQuery! }, 1, 50);
-      return (resp.data ?? []).map(mapCatalogueCard);
+    queryKey: ["name-search", nameQuery, page] as const,
+    queryFn: async (): Promise<CataloguePage> => {
+      const resp = await searchCards({ name: nameQuery! }, page, PAGE_SIZE);
+      return {
+        cards: (resp.data ?? []).map(mapCatalogueCard),
+        totalCount: resp.totalCount,
+      };
     },
     enabled: !!nameQuery && !setId,
     staleTime: 5 * 60 * 1000,
   });
 
   const browseQuery = useQuery({
-    queryKey: ["catalogue-browse"] as const,
-    queryFn: async (): Promise<CardItemProps[]> => {
-      const resp = await getCards(1, 50);
-      return (resp.data ?? []).map(mapCatalogueCard);
+    queryKey: ["catalogue-browse", page] as const,
+    queryFn: async (): Promise<CataloguePage> => {
+      const resp = await getCards(page, PAGE_SIZE);
+      return {
+        cards: (resp.data ?? []).map(mapCatalogueCard),
+        totalCount: resp.totalCount,
+      };
     },
     enabled: !setId && !nameQuery,
     staleTime: 5 * 60 * 1000,
   });
 
   const activeQuery = setId ? setCardsQuery : nameQuery ? nameSearchQuery : browseQuery;
+  const pagedData = !setId && activeQuery.data && !Array.isArray(activeQuery.data)
+    ? activeQuery.data as CataloguePage
+    : null;
   const allCards = useMemo<CardItemProps[]>(
-    () => (Array.isArray(activeQuery.data) ? activeQuery.data : []),
-    [activeQuery.data],
+    () => setId
+      ? (Array.isArray(activeQuery.data) ? activeQuery.data : [])
+      : (pagedData?.cards ?? []),
+    [activeQuery.data, pagedData, setId],
   );
+  const totalCount = setId ? allCards.length : (pagedData?.totalCount ?? 0);
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const isLoading = activeQuery.isLoading;
+
+  useEffect(() => {
+    setPage(1);
+  }, [setId, nameQuery]);
 
   // Surface query errors as toasts (once per change).
   useEffect(() => {
@@ -237,7 +260,30 @@ const PokemonCards = () => {
             ))}
           </div>
         ) : filteredCards.length > 0 ? (
-          <CardGrid cards={filteredCards} showCondition={false} />
+          <>
+            <CardGrid cards={filteredCards} showCondition={false} />
+            {!setId && totalPages > 1 && (
+              <nav className="mt-8 flex items-center justify-center gap-3" aria-label="Card catalogue pages">
+                <Button
+                  variant="outline"
+                  onClick={() => setPage((current) => Math.max(1, current - 1))}
+                  disabled={page === 1 || activeQuery.isFetching}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-muted-foreground" aria-live="polite">
+                  Page {page} of {totalPages} · {totalCount.toLocaleString()} cards
+                </span>
+                <Button
+                  variant="outline"
+                  onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                  disabled={page >= totalPages || activeQuery.isFetching}
+                >
+                  Next
+                </Button>
+              </nav>
+            )}
+          </>
         ) : (
           <NoResultsDisplay
             setId={setId}
