@@ -11,9 +11,10 @@ interface TradeListingFooterProps {
   cardId: string;
   onProposeTrade: () => void;
   featured?: boolean;
+  isOwnListing?: boolean;
 }
 
-const TradeListingFooter = ({ cardId, onProposeTrade, featured = false }: TradeListingFooterProps) => {
+const TradeListingFooter = ({ cardId, onProposeTrade, featured = false, isOwnListing = false }: TradeListingFooterProps) => {
   const { toast } = useToast();
   const { user } = useUser();
 
@@ -27,11 +28,8 @@ const TradeListingFooter = ({ cardId, onProposeTrade, featured = false }: TradeL
       return;
     }
 
-    toast({
-      title: "Preparing trade proposal",
-      description: "Opening trade proposal form..."
-    });
-    
+    if (isOwnListing) return;
+
     onProposeTrade();
   };
 
@@ -45,12 +43,14 @@ const TradeListingFooter = ({ cardId, onProposeTrade, featured = false }: TradeL
       </Button>
       <Button 
         size="sm" 
-        onClick={handleProposeTrade} 
+        onClick={handleProposeTrade}
+        disabled={isOwnListing}
+        aria-label={isOwnListing ? "This is your listing" : "Propose a trade"}
         className={`w-full ${featured ? "bg-amber-600 hover:bg-amber-700" : ""}`}
       >
         <ArrowRightLeft className="h-4 w-4 mr-2" />
-        Propose Trade
-        {featured && <Star className="h-3 w-3 ml-1 text-amber-200" />}
+        {isOwnListing ? "Your Listing" : "Propose Trade"}
+        {featured && !isOwnListing && <Star className="h-3 w-3 ml-1 text-amber-200" />}
       </Button>
     </CardFooter>
   );
