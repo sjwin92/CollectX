@@ -18,13 +18,14 @@ import {
 import { useUser } from "@/hooks/useUser";
 import { supabase } from "@/integrations/supabase/client";
 import UserDashboard from "@/components/analytics/UserDashboard";
-import { 
-  Star, 
-  Mail, 
-  MapPin, 
-  Calendar, 
-  Package, 
-  ArrowLeftRight, 
+import { getUserReviews, type UserReview } from "@/services/reputationService";
+import {
+  Star,
+  Mail,
+  MapPin,
+  Calendar,
+  Package,
+  ArrowLeftRight,
   ShieldCheck,
   Award,
   Settings,
@@ -32,6 +33,8 @@ import {
   Plus,
   Search
 } from "lucide-react";
+
+const RARE_RARITIES_EXCLUDED = new Set(["common", "uncommon"]);
 
 // Empty user data for fresh spawn
 const userData = {
@@ -55,6 +58,8 @@ const Profile = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [userCollection, setUserCollection] = useState<CardItemProps[]>([]);
   const [filteredCards, setFilteredCards] = useState<CardItemProps[]>([]);
+  const [collectionStats, setCollectionStats] = useState({ tradableCount: 0, rareCount: 0, totalValue: 0 });
+  const [reviews, setReviews] = useState<UserReview[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -83,7 +88,21 @@ const Profile = () => {
         }));
         setUserCollection(cards);
         setFilteredCards(cards);
+
+        const tradableCount = data.filter(c => c.for_trade).length;
+        const rareCount = data.filter(
+          c => c.rarity && !RARE_RARITIES_EXCLUDED.has(c.rarity.toLowerCase())
+        ).length;
+        const totalValue = data.reduce(
+          (sum, c) => sum + (Number(c.trade_value) || 0) * (c.quantity || 1),
+          0
+        );
+        setCollectionStats({ tradableCount, rareCount, totalValue });
       });
+
+    getUserReviews(user.id)
+      .then(setReviews)
+      .catch((error) => console.error('Error loading reviews:', error));
   }, [user]);
   
   // Use actual user data when available
@@ -98,7 +117,7 @@ const Profile = () => {
       trades: profile?.total_trades || 0,
       collectionSize: userCollection.length,
       reputationScore: profile?.reputation_score || 0,
-      reviewCount: 0
+      reviewCount: reviews.length
     },
     badges: [] as string[]
   };
@@ -325,15 +344,17 @@ const Profile = () => {
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Tradable Cards</span>
-                          <span className="font-medium">0</span>
+                          <span className="font-medium">{collectionStats.tradableCount}</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Rare Cards</span>
-                          <span className="font-medium">0</span>
+                          <span className="font-medium">{collectionStats.rareCount}</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Est. Collection Value</span>
-                          <span className="font-medium">$0</span>
+                          <span className="font-medium">
+                            £{collectionStats.totalValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                          </span>
                         </div>
                       </div>
                     </GlassCard>
@@ -355,14 +376,41 @@ const Profile = () => {
                 <TabsContent value="reviews">
                   <GlassCard className="p-6">
                     <h2 className="text-lg font-bold mb-4">Trading Reviews</h2>
-                    <div className="text-center py-8">
-                      <h3 className="text-xl font-medium mb-2">No reviews yet</h3>
-                      <p className="text-muted-foreground mb-4">Complete trades to receive reviews from other traders</p>
-                      <Button onClick={() => window.location.href = '/marketplace'}>
-                        <ArrowLeftRight className="h-4 w-4 mr-2" />
-                        Start Trading
-                      </Button>
-                    </div>
+                    {reviews.length === 0 ? (
+                      <div className="text-center py-8">
+                        <h3 className="text-xl font-medium mb-2">No reviews yet</h3>
+                        <p className="text-muted-foreground mb-4">Complete trades to receive reviews from other traders</p>
+                        <Button onClick={() => window.location.href = '/marketplace'}>
+                          <ArrowLeftRight className="h-4 w-4 mr-2" />
+                          Start Trading
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {reviews.map((review) => (
+                          <div key={review.id} className="border-b border-border pb-4 last:border-0 last:pb-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-6 w-6">
+                                  <AvatarImage src={review.raterAvatar || undefined} alt={review.raterName} />
+                                  <AvatarFallback className="text-xs">
+                                    {review.raterName.substring(0, 2).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="font-medium text-sm">{review.raterName}</span>
+                              </div>
+                              <div className="flex">{renderReputationStars(review.rating)}</div>
+                            </div>
+                            {review.review && (
+                              <p className="text-sm text-muted-foreground">{review.review}</p>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {new Date(review.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </GlassCard>
                 </TabsContent>
               </Tabs>

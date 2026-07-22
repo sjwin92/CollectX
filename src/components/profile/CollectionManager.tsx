@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { ExtendedCardItemProps } from "@/types/cardTypes";
@@ -11,7 +11,6 @@ import EmptyCollection from "./EmptyCollection";
 import NoSearchResults from "./NoSearchResults";
 import CollectionStats from "./CollectionStats";
 import { useCollection } from "@/hooks/useCollection";
-import { debugCollections } from "@/services/collectionService";
 import EditCollectionCardModal from "@/components/pokemon/collection/EditCollectionCardModal";
 import { ExtendedCardItemWithDB } from "@/services/supabaseCollectionService";
 
@@ -34,12 +33,6 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
     handleGradedFilterChange,
     loadCollectionFromStorage
   } = useCollection(propCollection);
-
-  // Debug: Log collection on mount
-  useEffect(() => {
-    console.log("CollectionManager mounted, current collection:", collection.length, "cards");
-    debugCollections();
-  }, []);
 
   const handleAddCard = () => {
     navigate("/pokemon-sets");

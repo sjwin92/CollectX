@@ -1436,6 +1436,18 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_notification: {
+        Args: {
+          p_action_url?: string
+          p_data?: Json
+          p_expires_at?: string
+          p_message: string
+          p_title: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       decline_trade: {
         Args: { _trade_id: string }
         Returns: {
@@ -1464,6 +1476,10 @@ export type Database = {
         }
       }
       get_nav_metrics_summary: { Args: { _days?: number }; Returns: Json }
+      get_or_create_conversation: {
+        Args: { other_user_id: string }
+        Returns: string
+      }
       get_trade_destination_address: {
         Args: { _trade_id: string }
         Returns: Json
@@ -1490,6 +1506,10 @@ export type Database = {
       }
       increment_listing_views: {
         Args: { listing_id: string }
+        Returns: undefined
+      }
+      mark_notifications_read: {
+        Args: { notification_ids: string[] }
         Returns: undefined
       }
       mark_trade_shipped: {

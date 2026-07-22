@@ -1,5 +1,4 @@
-import { supabase as supabaseTyped } from '@/integrations/supabase/client';
-const supabase = supabaseTyped as any;
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Notification {
   id: string;
@@ -9,7 +8,6 @@ export interface Notification {
   message: string;
   data: any;
   read: boolean;
-  read_at?: string;
   action_url?: string;
   expires_at?: string;
   created_at: string;
@@ -22,16 +20,16 @@ export interface NotificationPreferences {
   push_notifications: boolean;
   trade_proposals: boolean;
   trade_updates: boolean;
-  listing_activities: boolean;
-  marketing: boolean;
+  marketplace_interest: boolean;
+  messages: boolean;
   created_at: string;
   updated_at: string;
 }
 
 export interface ChatConversation {
   id: string;
-  participant_1_id: string;
-  participant_2_id: string;
+  user1_id: string;
+  user2_id: string;
   last_message_at: string;
   created_at: string;
 }
@@ -39,12 +37,11 @@ export interface ChatConversation {
 export interface ChatMessage {
   id: string;
   conversation_id: string;
-  sender_id: string;
+  sender_user_id: string;
   message: string;
   message_type: 'text' | 'image' | 'trade_offer' | 'system';
   metadata: any;
   read: boolean;
-  read_at?: string;
   created_at: string;
 }
 
@@ -109,7 +106,7 @@ export const markAllNotificationsAsRead = async (): Promise<void> => {
 
   const { error } = await supabase
     .from('notifications')
-    .update({ read: true, read_at: new Date().toISOString() })
+    .update({ read: true })
     .eq('user_id', user.id)
     .eq('read', false);
 
@@ -169,7 +166,7 @@ export const getConversations = async (): Promise<ChatConversation[]> => {
   const { data, error } = await supabase
     .from('chat_conversations')
     .select('*')
-    .or(`participant_1_id.eq.${user.id},participant_2_id.eq.${user.id}`)
+    .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
     .order('last_message_at', { ascending: false });
 
   if (error) throw error;
@@ -202,7 +199,7 @@ export const sendMessage = async (
     .from('chat_messages')
     .insert([{
       conversation_id: conversationId,
-      sender_id: user.id,
+      sender_user_id: user.id,
       message,
       message_type: messageType,
       metadata: metadata || {}
@@ -228,9 +225,9 @@ export const markMessagesAsRead = async (conversationId: string): Promise<void> 
 
   const { error } = await supabase
     .from('chat_messages')
-    .update({ read: true, read_at: new Date().toISOString() })
+    .update({ read: true })
     .eq('conversation_id', conversationId)
-    .neq('sender_id', user.id)
+    .neq('sender_user_id', user.id)
     .eq('read', false);
 
   if (error) throw error;
@@ -245,7 +242,7 @@ export const getUnreadMessageCount = async (): Promise<number> => {
   const { data: conversations } = await supabase
     .from('chat_conversations')
     .select('id')
-    .or(`participant_1_id.eq.${user.id},participant_2_id.eq.${user.id}`);
+    .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
 
   if (!conversations || conversations.length === 0) return 0;
 
@@ -254,7 +251,7 @@ export const getUnreadMessageCount = async (): Promise<number> => {
   const { count, error } = await supabase
     .from('chat_messages')
     .select('*', { count: 'exact', head: true })
-    .neq('sender_id', user.id)
+    .neq('sender_user_id', user.id)
     .eq('read', false)
     .in('conversation_id', conversationIds);
 
@@ -332,7 +329,7 @@ export const subscribeToConversations = (
         event: '*',
         schema: 'public',
         table: 'chat_conversations',
-        filter: `participant_1_id=eq.${userId}`
+        filter: `user1_id=eq.${userId}`
       },
       onUpdate
     )
@@ -342,7 +339,7 @@ export const subscribeToConversations = (
         event: '*',
         schema: 'public',
         table: 'chat_conversations',
-        filter: `participant_2_id=eq.${userId}`
+        filter: `user2_id=eq.${userId}`
       },
       onUpdate
     )

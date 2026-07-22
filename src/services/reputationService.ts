@@ -88,6 +88,47 @@ export const getUserReputation = async (userId: string): Promise<ReputationScore
   };
 };
 
+export interface UserReview {
+  id: string;
+  raterName: string;
+  raterAvatar: string | null;
+  rating: number;
+  review: string | null;
+  createdAt: string;
+}
+
+// Real reviews left for a user by their trade counterparts (trade_ratings.review).
+export const getUserReviews = async (userId: string): Promise<UserReview[]> => {
+  const { data: ratings, error } = await supabase
+    .from('trade_ratings')
+    .select('id, rating, review, created_at, rater_user_id')
+    .eq('rated_user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  if (!ratings || ratings.length === 0) return [];
+
+  const raterIds = [...new Set(ratings.map((r) => r.rater_user_id))];
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('user_id, display_name, avatar_url')
+    .in('user_id', raterIds);
+
+  const profileMap = new Map((profiles ?? []).map((p) => [p.user_id, p]));
+
+  return ratings.map((r) => {
+    const rater = profileMap.get(r.rater_user_id);
+    return {
+      id: r.id,
+      raterName: rater?.display_name || 'A trader',
+      raterAvatar: rater?.avatar_url ?? null,
+      rating: r.rating,
+      review: r.review,
+      createdAt: r.created_at,
+    };
+  });
+};
+
 export const submitTradeRating = async (
   tradeId: string,
   ratedUserId: string,

@@ -22,7 +22,7 @@ const UserDashboard = () => {
   // Get user stats
   const { data: userStats } = useQuery({
     queryKey: ['user-stats', user?.id],
-    queryFn: () => getUserStats(),
+    queryFn: () => getUserStats(user!.id),
     enabled: !!user
   });
 

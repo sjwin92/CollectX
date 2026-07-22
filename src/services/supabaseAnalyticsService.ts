@@ -1,5 +1,8 @@
-// Analytics service stub — underlying tables are not yet provisioned.
-// All methods are no-ops so the app compiles and runs without errors.
+// getUserStats reads real data (profiles, user_cards, marketplace_listings).
+// The rest of this service (activity feed, trending cards, search history) has
+// no backing tables yet, so those methods stay no-ops until that's built.
+
+import { supabase } from '@/integrations/supabase/client';
 
 export interface UserActivity {
   id: string;
@@ -91,14 +94,30 @@ export const updateUserPreferences = async (
   _updates: Partial<UserPreferences>
 ): Promise<UserPreferences | null> => null;
 
-export const getUserStats = async (): Promise<UserStats> => ({
-  total_cards: 0,
-  total_trades: 0,
-  completed_trades: 0,
-  total_listings: 0,
-  reputation_score: 0,
-  join_date: new Date().toISOString(),
-});
+export const getUserStats = async (userId: string): Promise<UserStats> => {
+  const [{ data: profile }, { count: totalCards }, { count: totalListings }] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('total_trades, successful_trades, reputation_score, created_at')
+      .eq('user_id', userId)
+      .maybeSingle(),
+    supabase.from('user_cards').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+    supabase
+      .from('marketplace_listings')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'active'),
+  ]);
+
+  return {
+    total_cards: totalCards ?? 0,
+    total_trades: profile?.total_trades ?? 0,
+    completed_trades: profile?.successful_trades ?? 0,
+    total_listings: totalListings ?? 0,
+    reputation_score: profile?.reputation_score ?? 0,
+    join_date: profile?.created_at ?? new Date().toISOString(),
+  };
+};
 
 export const getTrendingCards = async (_limit: number = 10): Promise<TrendingCard[]> => [];
 
