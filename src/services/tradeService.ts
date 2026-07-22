@@ -262,6 +262,8 @@ export const uploadTradeImage = async (file: File): Promise<string> => {
   const path = `trade-images/${user.id}/${Date.now()}.${ext}`;
   const { error } = await supabase.storage.from("card-images").upload(path, file, { upsert: false });
   if (error) throw new Error(error.message);
-  const { data } = supabase.storage.from("card-images").getPublicUrl(path);
-  return data.publicUrl;
+  const { data, error: signErr } = await supabase.storage.from("card-images").createSignedUrl(path, 60 * 60 * 24 * 365);
+  if (signErr) throw new Error(signErr.message);
+  return data.signedUrl;
+
 };
