@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fixImageUrl } from "@/services/api/cardImageService";
 import { supabase } from "@/integrations/supabase/client";
+import { useUser } from "@/hooks/useUser";
 
 const SetDetail = () => {
   const { id } = useParams<{ id: string }>();
