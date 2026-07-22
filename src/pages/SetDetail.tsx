@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fixImageUrl } from "@/services/api/cardImageService";
 import { supabase } from "@/integrations/supabase/client";
+import { useUser } from "@/hooks/useUser";
 
 const SetDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,6 +26,7 @@ const SetDetail = () => {
   const { toast } = useToast();
   const [logoLoaded, setLogoLoaded] = React.useState(true);
   const [symbolLoaded, setSymbolLoaded] = React.useState(true);
+  const { isSignedIn } = useUser();
 
   // Fire local set + stored images in parallel — both only need `id`
   const { data: localSet } = useQuery({
@@ -91,7 +93,7 @@ const SetDetail = () => {
       }
       return imageMap;
     },
-    enabled: !!set?.name,
+    enabled: !!set?.name && isSignedIn,
     staleTime: 30 * 60 * 1000,
   });
 
