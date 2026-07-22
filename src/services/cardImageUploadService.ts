@@ -99,10 +99,13 @@ export const uploadUserCardImage = async (
 
   if (uploadError) throw uploadError;
 
-  // Get public URL
-  const { data: { publicUrl } } = supabase.storage
+  // Get signed URL (bucket is private)
+  const { data: signed, error: signErr } = await supabase.storage
     .from('card-images')
-    .getPublicUrl(uploadData.path);
+    .createSignedUrl(uploadData.path, 60 * 60 * 24 * 365);
+  if (signErr) throw signErr;
+  const publicUrl = signed.signedUrl;
+
 
   // Save image metadata to database
   const { error: dbError } = await supabase
