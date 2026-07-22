@@ -26,6 +26,7 @@ const SetDetail = () => {
   const { toast } = useToast();
   const [logoLoaded, setLogoLoaded] = React.useState(true);
   const [symbolLoaded, setSymbolLoaded] = React.useState(true);
+  const { isSignedIn } = useUser();
 
   // Fire local set + stored images in parallel — both only need `id`
   const { data: localSet } = useQuery({
