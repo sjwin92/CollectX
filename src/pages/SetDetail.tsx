@@ -93,7 +93,7 @@ const SetDetail = () => {
       }
       return imageMap;
     },
-    enabled: !!set?.name,
+    enabled: !!set?.name && isSignedIn,
     staleTime: 30 * 60 * 1000,
   });
 
