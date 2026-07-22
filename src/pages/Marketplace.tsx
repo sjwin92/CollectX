@@ -7,6 +7,7 @@ import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/hooks/useUser";
 import TradeListing from "@/components/marketplace/TradeListing";
 import { 
   Plus, 
@@ -48,9 +49,22 @@ interface ListingType {
   featured?: boolean;
 }
 
+const CONDITION_OPTIONS = [
+  { value: "mint", label: "Mint" },
+  { value: "near_mint", label: "Near Mint" },
+  { value: "excellent", label: "Excellent" },
+  { value: "good", label: "Good" },
+  { value: "played", label: "Played" },
+  { value: "poor", label: "Poor" },
+] as const;
+
+const normaliseCondition = (condition?: string) =>
+  (condition || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+
 const Marketplace = () => {
   const [isCreateListingOpen, setCreateListingOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { user } = useUser();
 
   const { data: dbListings = [], isLoading, error: listingsError } = useQuery({
     queryKey: ['marketplace_listings'],
@@ -110,7 +124,7 @@ const Marketplace = () => {
           listing.cardsWanted.some(card => card.toLowerCase().includes(searchQuery.toLowerCase()));
 
         const matchesCondition = selectedConditions.length === 0 ||
-          selectedConditions.includes(listing.cardOffered.condition);
+          selectedConditions.includes(normaliseCondition(listing.cardOffered.condition));
 
         return matchesSearch && matchesCondition;
       })
@@ -183,14 +197,18 @@ const Marketplace = () => {
                 <DropdownMenuLabel>Filter by Condition</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  {["Mint", "Near Mint", "Excellent", "Good", "Played", "Poor"].map((condition) => (
-                    <DropdownMenuItem key={condition} className="flex items-center gap-2">
-                      <Checkbox 
-                        id={`condition-${condition}`} 
-                        checked={selectedConditions.includes(condition)}
-                        onCheckedChange={() => toggleConditionFilter(condition)}
+                  {CONDITION_OPTIONS.map(({ value, label }) => (
+                    <DropdownMenuItem
+                      key={value}
+                      className="flex items-center gap-2"
+                      onSelect={(event) => event.preventDefault()}
+                    >
+                      <Checkbox
+                        id={`condition-${value}`}
+                        checked={selectedConditions.includes(value)}
+                        onCheckedChange={() => toggleConditionFilter(value)}
                       />
-                      <Label htmlFor={`condition-${condition}`}>{condition}</Label>
+                      <Label htmlFor={`condition-${value}`}>{label}</Label>
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuGroup>
@@ -219,7 +237,17 @@ const Marketplace = () => {
           </div>
         </div>
 
-        {listingsError ? (
+        {isLoading ? (
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-2" aria-label="Loading trade listings">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <GlassCard key={index} className="p-5 space-y-4">
+                <div className="h-5 w-2/3 rounded bg-muted animate-pulse" />
+                <div className="h-52 rounded bg-muted animate-pulse" />
+                <div className="h-9 rounded bg-muted animate-pulse" />
+              </GlassCard>
+            ))}
+          </div>
+        ) : listingsError ? (
           <GlassCard className="p-8 text-center">
             <PackageOpen className="h-12 w-12 mx-auto mb-4 text-destructive" />
             <h3 className="text-xl font-medium mb-2">Couldn't load listings</h3>
@@ -235,6 +263,7 @@ const Marketplace = () => {
                 listing={listing}
                 onProposeTrade={() => handleProposeTrade(listing.id)}
                 featured={!!listing.featured}
+                isOwnListing={listing.userId === user?.id}
               />
             ))}
           </div>
