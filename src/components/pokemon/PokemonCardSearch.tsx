@@ -83,12 +83,7 @@ const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = nu
     
     // Track the search activity
     try {
-      await trackSearch(
-        nameQuery.trim() || 'all cards',
-        'cards',
-        0, // Results count will be updated on the results page
-        { set_id: selectedSet }
-      );
+      await trackSearch(nameQuery.trim() || 'all cards', 'cards');
     } catch (error) {
       console.error('Error tracking search:', error);
     }

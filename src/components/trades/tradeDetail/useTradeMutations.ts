@@ -8,6 +8,7 @@ import {
   markTradeShipped,
   openTradeDispute,
 } from "@/services/tradeService";
+import { logUserActivity } from "@/services/supabaseAnalyticsService";
 
 /**
  * All state-changing trade actions. Each shows a consistent error toast
@@ -27,6 +28,7 @@ export function useTradeMutations(tradeId: string, refetch: () => void) {
     mutationFn: () => acceptTradeProposal(tradeId),
     onSuccess: () => {
       toast({ title: "Trade accepted", description: "You accepted the trade proposal." });
+      logUserActivity('trade_accept', { trade_id: tradeId });
       refetch();
     },
     onError: oops("Couldn't accept the trade."),
@@ -36,6 +38,7 @@ export function useTradeMutations(tradeId: string, refetch: () => void) {
     mutationFn: () => declineTradeProposal(tradeId),
     onSuccess: () => {
       toast({ title: "Trade declined" });
+      logUserActivity('trade_decline', { trade_id: tradeId });
       refetch();
     },
     onError: oops("Couldn't decline the trade."),

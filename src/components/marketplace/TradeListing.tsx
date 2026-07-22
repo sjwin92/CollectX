@@ -68,10 +68,11 @@ const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListin
         </div>
       </CardContent>
 
-      <TradeListingFooter 
+      <TradeListingFooter
         cardId={listing.cardOffered.id}
         onProposeTrade={handleProposeTrade}
         featured={featured}
+        sellerId={listing.userId}
       />
       
       <TradeListingProtection />

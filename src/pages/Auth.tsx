@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { lovable } from '@/integrations/lovable';
+import { logUserActivity } from '@/services/supabaseAnalyticsService';
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -92,6 +93,7 @@ const Auth = () => {
 
       if (error) throw error;
 
+      logUserActivity('login', {});
       navigate('/');
     } catch (error: any) {
       toast({

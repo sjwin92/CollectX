@@ -9,6 +9,7 @@ import { markPrefetched, markNavigationStart } from "@/lib/navAnalytics";
 const routePrefetchers: Record<string, () => Promise<unknown>> = {
   "/trades": () => import("@/pages/Trades"),
   "/trades/:id": () => import("@/pages/TradeDetail"),
+  "/messages": () => import("@/pages/Messages"),
   "/collection": () => import("@/pages/Collection"),
   "/collection-boxes": () => import("@/pages/CollectionBoxes"),
   "/marketplace": () => import("@/pages/Marketplace"),

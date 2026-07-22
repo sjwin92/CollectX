@@ -21,6 +21,7 @@ const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Trades = lazy(() => import("./pages/Trades"));
 const TradeDetail = lazy(() => import("./pages/TradeDetail"));
+const Messages = lazy(() => import("./pages/Messages"));
 const Collection = lazy(() => import("./pages/Collection"));
 const CollectionBoxes = lazy(() => import("./pages/CollectionBoxes"));
 const PokemonCards = lazy(() => import("./pages/PokemonCards"));
@@ -70,6 +71,7 @@ function App() {
                 {/* Protected routes */}
                 <Route path="/trades" element={<ProtectedRoute><Trades /></ProtectedRoute>} />
                 <Route path="/trades/:id" element={<ProtectedRoute><TradeDetail /></ProtectedRoute>} />
+                <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
                 <Route path="/collection" element={<ProtectedRoute><Collection /></ProtectedRoute>} />
                 <Route path="/collection-boxes" element={<ProtectedRoute><CollectionBoxes /></ProtectedRoute>} />
                 <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />

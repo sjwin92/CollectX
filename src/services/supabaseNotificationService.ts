@@ -293,7 +293,9 @@ export const subscribeToNotifications = (
     )
     .subscribe();
 
-  return () => supabase.removeChannel(channel);
+  return (): void => {
+    void supabase.removeChannel(channel);
+  };
 };
 
 export const subscribeToConversation = (
@@ -314,7 +316,9 @@ export const subscribeToConversation = (
     )
     .subscribe();
 
-  return () => supabase.removeChannel(channel);
+  return (): void => {
+    void supabase.removeChannel(channel);
+  };
 };
 
 export const subscribeToConversations = (
@@ -345,7 +349,9 @@ export const subscribeToConversations = (
     )
     .subscribe();
 
-  return () => supabase.removeChannel(channel);
+  return (): void => {
+    void supabase.removeChannel(channel);
+  };
 };
 
 // Helper functions for creating specific notification types

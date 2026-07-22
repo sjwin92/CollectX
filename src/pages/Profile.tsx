@@ -20,6 +20,13 @@ import { supabase } from "@/integrations/supabase/client";
 import UserDashboard from "@/components/analytics/UserDashboard";
 import { getUserReviews, type UserReview } from "@/services/reputationService";
 import {
+  getUserActivity,
+  getActivityIcon,
+  getActivityDescription,
+  type UserActivity,
+} from "@/services/supabaseAnalyticsService";
+import { Progress } from "@/components/ui/progress";
+import {
   Star,
   Mail,
   MapPin,
@@ -35,6 +42,14 @@ import {
 } from "lucide-react";
 
 const RARE_RARITIES_EXCLUDED = new Set(["common", "uncommon"]);
+
+interface SetCompletion {
+  setId: string;
+  setName: string;
+  owned: number;
+  total: number;
+  percentage: number;
+}
 
 // Empty user data for fresh spawn
 const userData = {
@@ -60,49 +75,92 @@ const Profile = () => {
   const [filteredCards, setFilteredCards] = useState<CardItemProps[]>([]);
   const [collectionStats, setCollectionStats] = useState({ tradableCount: 0, rareCount: 0, totalValue: 0 });
   const [reviews, setReviews] = useState<UserReview[]>([]);
+  const [setCompletions, setSetCompletions] = useState<SetCompletion[]>([]);
+  const [activity, setActivity] = useState<UserActivity[]>([]);
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from('user_cards')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('product_type', 'card')
-      .then(({ data }) => {
-        if (!data) return;
-        const cards: CardItemProps[] = data.map(c => ({
-          id: c.card_id,
-          name: c.card_name || 'Unknown Card',
-          imageUrl: c.card_image || '',
-          rarity: c.rarity || 'Unknown',
-          condition: c.condition || 'Near Mint',
-          estimatedValue: c.trade_value ? `£${Number(c.trade_value).toFixed(2)}` : 'N/A',
-          forTrade: c.for_trade,
-          quantity: c.quantity,
-          graded: c.is_graded,
-          gradingCompany: c.grading_company || undefined,
-          gradeScore: c.grade_score || undefined,
-          set: c.set_id ? { id: c.set_id, name: c.set_name || '' } : undefined,
-          number: c.card_number || undefined,
-          dbId: c.id,
-        }));
-        setUserCollection(cards);
-        setFilteredCards(cards);
 
-        const tradableCount = data.filter(c => c.for_trade).length;
-        const rareCount = data.filter(
-          c => c.rarity && !RARE_RARITIES_EXCLUDED.has(c.rarity.toLowerCase())
-        ).length;
-        const totalValue = data.reduce(
-          (sum, c) => sum + (Number(c.trade_value) || 0) * (c.quantity || 1),
-          0
-        );
-        setCollectionStats({ tradableCount, rareCount, totalValue });
+    (async () => {
+      const { data } = await supabase
+        .from('user_cards')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('product_type', 'card');
+
+      if (!data) return;
+
+      const cards: CardItemProps[] = data.map(c => ({
+        id: c.card_id,
+        name: c.card_name || 'Unknown Card',
+        imageUrl: c.card_image || '',
+        rarity: c.rarity || 'Unknown',
+        condition: c.condition || 'Near Mint',
+        estimatedValue: c.trade_value ? `£${Number(c.trade_value).toFixed(2)}` : 'N/A',
+        forTrade: c.for_trade,
+        quantity: c.quantity,
+        graded: c.is_graded,
+        gradingCompany: c.grading_company || undefined,
+        gradeScore: c.grade_score || undefined,
+        set: c.set_id ? { id: c.set_id, name: c.set_name || '' } : undefined,
+        number: c.card_number || undefined,
+        dbId: c.id,
+      }));
+      setUserCollection(cards);
+      setFilteredCards(cards);
+
+      const tradableCount = data.filter(c => c.for_trade).length;
+      const rareCount = data.filter(
+        c => c.rarity && !RARE_RARITIES_EXCLUDED.has(c.rarity.toLowerCase())
+      ).length;
+      const totalValue = data.reduce(
+        (sum, c) => sum + (Number(c.trade_value) || 0) * (c.quantity || 1),
+        0
+      );
+      setCollectionStats({ tradableCount, rareCount, totalValue });
+
+      const ownedBySet = new Map<string, { name: string; cardIds: Set<string> }>();
+      data.forEach(c => {
+        if (!c.set_id) return;
+        if (!ownedBySet.has(c.set_id)) {
+          ownedBySet.set(c.set_id, { name: c.set_name || c.set_id, cardIds: new Set() });
+        }
+        ownedBySet.get(c.set_id)!.cardIds.add(c.card_id);
       });
+
+      const setIds = [...ownedBySet.keys()];
+      if (setIds.length > 0) {
+        const { data: sets } = await supabase
+          .from('pokemon_sets')
+          .select('id, name, printed_total, total')
+          .in('id', setIds);
+
+        const completions: SetCompletion[] = setIds.map(setId => {
+          const owned = ownedBySet.get(setId)!;
+          const setInfo = sets?.find(s => s.id === setId);
+          const total = setInfo?.printed_total || setInfo?.total || 0;
+          return {
+            setId,
+            setName: setInfo?.name || owned.name,
+            owned: owned.cardIds.size,
+            total,
+            percentage: total > 0 ? Math.round((owned.cardIds.size / total) * 100) : 0,
+          };
+        }).sort((a, b) => b.percentage - a.percentage);
+
+        setSetCompletions(completions);
+      } else {
+        setSetCompletions([]);
+      }
+    })();
 
     getUserReviews(user.id)
       .then(setReviews)
       .catch((error) => console.error('Error loading reviews:', error));
+
+    getUserActivity(user.id, 20)
+      .then(setActivity)
+      .catch((error) => console.error('Error loading activity:', error));
   }, [user]);
   
   // Use actual user data when available
@@ -278,14 +336,30 @@ const Profile = () => {
                 <TabsContent value="activity">
                   <GlassCard className="p-6">
                     <h2 className="text-lg font-bold mb-4">Recent Activity</h2>
-                    <div className="text-center py-8">
-                      <h3 className="text-xl font-medium mb-2">No recent activity</h3>
-                      <p className="text-muted-foreground mb-4">Start trading to see your activity here</p>
-                      <Button onClick={() => window.location.href = '/marketplace'}>
-                        <ArrowLeftRight className="h-4 w-4 mr-2" />
-                        Browse Marketplace
-                      </Button>
-                    </div>
+                    {activity.length === 0 ? (
+                      <div className="text-center py-8">
+                        <h3 className="text-xl font-medium mb-2">No recent activity</h3>
+                        <p className="text-muted-foreground mb-4">Start trading to see your activity here</p>
+                        <Button onClick={() => window.location.href = '/marketplace'}>
+                          <ArrowLeftRight className="h-4 w-4 mr-2" />
+                          Browse Marketplace
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {activity.map((item) => (
+                          <div key={item.id} className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                            <div className="text-xl">{getActivityIcon(item.activity_type)}</div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">{getActivityDescription(item)}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(item.created_at).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </GlassCard>
                 </TabsContent>
                 
@@ -361,10 +435,26 @@ const Profile = () => {
                     
                     <GlassCard className="p-6">
                       <h3 className="text-lg font-medium mb-4">Set Completion</h3>
-                      <div className="text-center py-4">
-                        <p className="text-muted-foreground text-sm">No sets in collection yet</p>
-                        <p className="text-muted-foreground text-xs mt-1">Add cards to see set completion progress</p>
-                      </div>
+                      {setCompletions.length === 0 ? (
+                        <div className="text-center py-4">
+                          <p className="text-muted-foreground text-sm">No sets in collection yet</p>
+                          <p className="text-muted-foreground text-xs mt-1">Add cards to see set completion progress</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                          {setCompletions.map(set => (
+                            <div key={set.setId}>
+                              <div className="flex justify-between items-center mb-1 text-sm">
+                                <span className="truncate">{set.setName}</span>
+                                <span className="text-muted-foreground text-xs shrink-0 ml-2">
+                                  {set.owned}/{set.total || '?'}
+                                </span>
+                              </div>
+                              <Progress value={set.percentage} className="h-2" />
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </GlassCard>
                   </div>
                 </TabsContent>

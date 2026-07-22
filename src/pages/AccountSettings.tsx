@@ -11,6 +11,7 @@ import { useUser } from "@/hooks/useUser";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Camera, Save, User } from "lucide-react";
+import { logUserActivity } from "@/services/supabaseAnalyticsService";
 
 const AccountSettings = () => {
   const { user, profile } = useUser();
@@ -110,6 +111,7 @@ const AccountSettings = () => {
         throw error;
       }
 
+      logUserActivity('profile_update', {});
       toast.success('Profile updated successfully!');
     } catch (error) {
       console.error('Error updating profile:', error);

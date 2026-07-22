@@ -1,5 +1,6 @@
 import { supabase as supabaseTyped } from '@/integrations/supabase/client';
 import { ExtendedCardItemWithDB } from './supabaseCollectionService';
+import { logUserActivity } from '@/services/supabaseAnalyticsService';
 const supabase = supabaseTyped as any;
 
 export interface MarketplaceListing {
@@ -84,6 +85,7 @@ export const createMarketplaceListing = async (
     .single();
 
   if (error) throw error;
+  logUserActivity('listing_create', { card_name: card.name, listing_type: 'trade' });
   return data as MarketplaceListing;
 };
 

@@ -9,6 +9,7 @@ import { ArrowLeft, AlertTriangle, RefreshCw } from "lucide-react";
 import PokemonCardDetail from "@/components/pokemon/PokemonCardDetail";
 import { getCardById } from "@/services/api/pokemonCardsService";
 import { PokemonCard } from "@/services/api/pokemonTypes";
+import { logUserActivity } from "@/services/supabaseAnalyticsService";
 
 const CardDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +34,7 @@ const CardDetail = () => {
         const cardData = await getCardById(id);
         setCard(cardData);
         console.log(`Successfully loaded card: ${cardData.name}`);
+        logUserActivity('card_view', { card_name: cardData.name });
       } catch (err) {
         console.error("Error fetching card:", err);
         setError(err instanceof Error ? err.message : "Failed to load card");

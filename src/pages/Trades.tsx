@@ -10,6 +10,7 @@ import TradeProposalForm from "@/components/marketplace/TradeProposalForm";
 import { CardItemProps } from "@/components/cards/CardItem";
 import { supabase } from "@/integrations/supabase/client";
 import { proposeTrade } from "@/services/tradeService";
+import { logUserActivity } from "@/services/supabaseAnalyticsService";
 import { useUser } from "@/hooks/useUser";
 
 type TradeStatus = "proposed" | "accepted" | "shipped" | "completed" | "cancelled" | "disputed";
@@ -160,6 +161,7 @@ const Trades = () => {
     try {
       // selectedTargetCard.id here holds the listing id (see effect above)
       await proposeTrade(selectedTargetCard.id, selectedUserCardIds, message);
+      logUserActivity('trade_propose', { card_name: selectedTargetCard.name });
       toast.success('Trade proposal sent!');
       setIsTradeProposalOpen(false);
       window.history.replaceState({}, '', '/trades');

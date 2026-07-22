@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { ExtendedCardItemProps } from '@/types/cardTypes';
 import { UploadedCardImage } from '@/services/cardImageUploadService';
+import { logUserActivity } from '@/services/supabaseAnalyticsService';
 
 export type SupabaseUserCard = Tables<'user_cards'>;
 type SupabaseUserCardInsert = TablesInsert<'user_cards'>;
@@ -142,6 +143,8 @@ export const addCardToCollection = async (newCard: ExtendedCardItemProps): Promi
       .in('id', imageIds)
       .eq('user_id', user.id);
   }
+
+  logUserActivity('card_add', { card_name: newCard.name, quantity: newCard.quantity || 1 });
 
   return userCardId;
 };

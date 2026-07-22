@@ -36,6 +36,9 @@ import { useUser } from "@/hooks/useUser";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { PrefetchLink } from "@/components/common/PrefetchLink";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
+import { getUnreadMessageCount, subscribeToConversations } from "@/services/supabaseNotificationService";
 
 
 const Navbar = () => {
@@ -45,6 +48,22 @@ const Navbar = () => {
   const { toast } = useToast();
   const { user, profile, isSignedIn } = useUser();
   const [scrolled, setScrolled] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data: unreadMessageCount = 0 } = useQuery({
+    queryKey: ["unread-message-count"],
+    queryFn: getUnreadMessageCount,
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
+
+  useEffect(() => {
+    if (!user) return;
+    const unsubscribe = subscribeToConversations(user.id, () => {
+      queryClient.invalidateQueries({ queryKey: ["unread-message-count"] });
+    });
+    return unsubscribe;
+  }, [user, queryClient]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -137,9 +156,17 @@ const Navbar = () => {
                   variant="ghost"
                   size="icon"
                   className="relative"
-                  onClick={() => navigate('/trades')}
+                  onClick={() => navigate('/messages')}
                 >
                   <MessageSquare className="h-5 w-5" />
+                  {unreadMessageCount > 0 && (
+                    <Badge
+                      variant="destructive"
+                      className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                    >
+                      {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                    </Badge>
+                  )}
                 </Button>
 
                 <NotificationCenter />

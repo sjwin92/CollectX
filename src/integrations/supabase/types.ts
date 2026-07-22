@@ -754,6 +754,33 @@ export type Database = {
         }
         Relationships: []
       }
+      search_history: {
+        Row: {
+          created_at: string
+          id: string
+          results_count: number
+          search_query: string
+          search_type: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          results_count?: number
+          search_query: string
+          search_type?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          results_count?: number
+          search_query?: string
+          search_type?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       set_images: {
         Row: {
           created_at: string
@@ -1325,6 +1352,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity: {
+        Row: {
+          activity_data: Json
+          activity_type: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          activity_data?: Json
+          activity_type: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          activity_data?: Json
+          activity_type?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1480,6 +1531,10 @@ export type Database = {
         Args: { other_user_id: string }
         Returns: string
       }
+      get_popular_searches: {
+        Args: { _days?: number; _limit?: number; _search_type?: string }
+        Returns: { count: number; search_query: string }[]
+      }
       get_trade_destination_address: {
         Args: { _trade_id: string }
         Returns: Json
@@ -1496,6 +1551,10 @@ export type Database = {
           status: string
           tracking_number: string
         }[]
+      }
+      get_trending_cards: {
+        Args: { _days?: number; _limit?: number }
+        Returns: { card_name: string; search_count: number; view_count: number }[]
       }
       has_role: {
         Args: {

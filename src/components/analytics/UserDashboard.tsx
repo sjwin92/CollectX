@@ -9,6 +9,8 @@ import {
   getTrendingCards,
   getUserActivity,
   getPopularSearches,
+  getActivityIcon,
+  getActivityDescription,
   type UserStats,
   type TrendingCard,
   type UserActivity
@@ -29,14 +31,14 @@ const UserDashboard = () => {
   // Get trending cards
   const { data: trendingCards = [] } = useQuery({
     queryKey: ['trending-cards'],
-    queryFn: () => getTrendingCards(7),
+    queryFn: () => getTrendingCards(7, 7),
     enabled: !!user
   });
 
   // Get user activity
   const { data: userActivity = [] } = useQuery({
-    queryKey: ['user-activity'],
-    queryFn: () => getUserActivity(20),
+    queryKey: ['user-activity', user?.id],
+    queryFn: () => getUserActivity(user!.id, 20),
     enabled: !!user
   });
 
@@ -46,56 +48,6 @@ const UserDashboard = () => {
     queryFn: () => getPopularSearches('cards', 10, 7),
     enabled: !!user
   });
-
-  const getActivityIcon = (activityType: UserActivity['activity_type']) => {
-    switch (activityType) {
-      case 'card_view':
-      case 'card_add':
-        return '🃏';
-      case 'trade_propose':
-      case 'trade_accept':
-      case 'trade_decline':
-        return '🔄';
-      case 'listing_create':
-      case 'listing_view':
-        return '🏪';
-      case 'search':
-        return '🔍';
-      case 'profile_update':
-        return '👤';
-      default:
-        return '📊';
-    }
-  };
-
-  const getActivityDescription = (activity: UserActivity) => {
-    const data = activity.activity_data || {};
-    
-    switch (activity.activity_type) {
-      case 'card_view':
-        return `Viewed ${data.card_name || 'a card'}`;
-      case 'card_add':
-        return `Added ${data.quantity || 1}x ${data.card_name || 'card'} to collection`;
-      case 'trade_propose':
-        return 'Proposed a trade';
-      case 'trade_accept':
-        return 'Accepted a trade';
-      case 'trade_decline':
-        return 'Declined a trade';
-      case 'listing_create':
-        return `Listed ${data.card_name || 'a card'} for ${data.listing_type || 'trade'}`;
-      case 'listing_view':
-        return `Viewed listing for ${data.card_name || 'a card'}`;
-      case 'search':
-        return `Searched for "${data.query || 'cards'}"`;
-      case 'profile_update':
-        return 'Updated profile';
-      case 'collection_export':
-        return 'Exported collection data';
-      default:
-        return activity.activity_type.replace('_', ' ');
-    }
-  };
 
   if (!user) {
     return (
