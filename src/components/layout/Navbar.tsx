@@ -31,7 +31,6 @@ import {
   Box
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import SocialTradeHub from "@/components/trades/SocialTradeHub";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { useUser } from "@/hooks/useUser";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,7 +45,6 @@ const Navbar = () => {
   const { toast } = useToast();
   const { user, profile, isSignedIn } = useUser();
   const [scrolled, setScrolled] = useState(false);
-  const [isSocialHubOpen, setIsSocialHubOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -111,8 +109,7 @@ const Navbar = () => {
   );
 
   return (
-    <>
-      <header 
+      <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-card border-b border-white/5 ${
           scrolled ? "shadow-md" : ""
         }`}
@@ -136,11 +133,11 @@ const Navbar = () => {
           <div className="flex items-center gap-2">
             {isSignedIn ? (
               <>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
+                <Button
+                  variant="ghost"
+                  size="icon"
                   className="relative"
-                  onClick={() => setIsSocialHubOpen(true)}
+                  onClick={() => navigate('/trades')}
                 >
                   <MessageSquare className="h-5 w-5" />
                 </Button>
@@ -251,12 +248,6 @@ const Navbar = () => {
           </div>
         </div>
       </header>
-
-      <SocialTradeHub 
-        isOpen={isSocialHubOpen} 
-        onClose={() => setIsSocialHubOpen(false)} 
-      />
-    </>
   );
 };
 

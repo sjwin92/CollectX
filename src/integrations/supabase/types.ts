@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      card_box_items: {
+        Row: {
+          added_at: string
+          box_id: string
+          id: string
+          user_card_id: string
+        }
+        Insert: {
+          added_at?: string
+          box_id: string
+          id?: string
+          user_card_id: string
+        }
+        Update: {
+          added_at?: string
+          box_id?: string
+          id?: string
+          user_card_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_box_items_box_id_fkey"
+            columns: ["box_id"]
+            isOneToOne: false
+            referencedRelation: "card_boxes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_box_items_user_card_id_fkey"
+            columns: ["user_card_id"]
+            isOneToOne: false
+            referencedRelation: "user_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      card_boxes: {
+        Row: {
+          color: string
+          created_at: string
+          description: string | null
+          icon: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          icon?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          icon?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       card_images: {
         Row: {
           caption: string | null
