@@ -22,9 +22,10 @@ interface TradeListingProps {
   };
   onProposeTrade: () => void;
   featured?: boolean;
+  isOwnListing?: boolean;
 }
 
-const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListingProps) => {
+const TradeListing = ({ listing, onProposeTrade, featured = false, isOwnListing = false }: TradeListingProps) => {
   return (
     <Card className={`overflow-hidden transition-all hover:shadow-md ${featured ? 'border-amber-400 shadow-lg dark:border-amber-500 bg-gradient-to-br from-transparent to-amber-50/5' : ''}`}>
       {featured && <FeaturedBadge />}
@@ -34,6 +35,7 @@ const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListin
         username={listing.username}
         createdAt={listing.createdAt}
         featured={featured}
+        isOwnListing={isOwnListing}
       />
 
       <CardContent className="py-2">
