@@ -48,7 +48,6 @@ interface CardFormData {
   gradeScore?: string;
   gradingCompany?: string;
   forTrade: boolean;
-  forSale: boolean;
   estimatedValue: string;
 }
 
@@ -60,7 +59,6 @@ const formSchema = z.object({
   gradeScore: z.string().optional(),
   gradingCompany: z.string().optional(),
   forTrade: z.boolean().default(false),
-  forSale: z.boolean().default(false),
   estimatedValue: z.string().optional(),
 });
 
@@ -96,7 +94,6 @@ const CardCollectionForm = ({ card, onSubmit, onCancel, initialData }: CardColle
       gradeScore: initialData?.gradeScore || "",
       gradingCompany: initialData?.gradingCompany || "",
       forTrade: initialData?.forTrade || false,
-      forSale: (initialData as any)?.forSale || false,
       estimatedValue: initialData?.estimatedValue || "",
     },
   });
@@ -114,7 +111,6 @@ const CardCollectionForm = ({ card, onSubmit, onCancel, initialData }: CardColle
       gradeScore: values.gradeScore,
       gradingCompany: values.gradingCompany,
       forTrade: values.forTrade,
-      forSale: values.forSale,
       estimatedValue: values.estimatedValue,
       conditionImages: images,
     };
@@ -237,27 +233,6 @@ const CardCollectionForm = ({ card, onSubmit, onCancel, initialData }: CardColle
                   <FormLabel className="text-base">For Trade</FormLabel>
                   <FormDescription>
                     Are you willing to trade this card?
-                  </FormDescription>
-                </div>
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="forSale"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                <div className="space-y-0.5">
-                  <FormLabel className="text-base">For Sale</FormLabel>
-                  <FormDescription>
-                    Are you willing to sell this card?
                   </FormDescription>
                 </div>
                 <FormControl>

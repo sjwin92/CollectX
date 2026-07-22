@@ -40,7 +40,9 @@ const transformSetToProducts = async (set: ProductSet) => {
     description: `From the ${set.name} expansion in the ${set.series} series.`,
   };
 
-  // Create products with proper images
+  // Create products with proper images. No real MSRP data source is wired up
+  // for sealed products, so price is intentionally omitted rather than faked —
+  // ProductCard shows "Price not available" when msrp is absent.
   const products = [
     // Elite Trainer Box
     {
@@ -48,7 +50,6 @@ const transformSetToProducts = async (set: ProductSet) => {
       name: `${set.name} Elite Trainer Box`,
       productType: 'etb' as const,
       packCount: 9,
-      msrp: 49.99,
       ...baseProduct
     },
     // Booster Box
@@ -57,7 +58,6 @@ const transformSetToProducts = async (set: ProductSet) => {
       name: `${set.name} Booster Box`,
       productType: 'box' as const,
       packCount: 36,
-      msrp: 143.99,
       ...baseProduct
     },
     // 3-Pack Blister
@@ -66,7 +66,6 @@ const transformSetToProducts = async (set: ProductSet) => {
       name: `${set.name} 3-Pack Blister`,
       productType: 'blister-pack' as const,
       packCount: 3,
-      msrp: 14.99,
       ...baseProduct
     },
     // Single Pack Blister
@@ -75,7 +74,6 @@ const transformSetToProducts = async (set: ProductSet) => {
       name: `${set.name} Single Pack Blister`,
       productType: 'blister-pack' as const,
       packCount: 1,
-      msrp: 4.99,
       ...baseProduct
     },
     // Collector Tin
@@ -84,7 +82,6 @@ const transformSetToProducts = async (set: ProductSet) => {
       name: `${set.name} Collector Tin`,
       productType: 'tin' as const,
       packCount: 4,
-      msrp: 24.99,
       ...baseProduct
     },
     // Theme Deck
@@ -92,7 +89,6 @@ const transformSetToProducts = async (set: ProductSet) => {
       id: `${set.id}-deck`,
       name: `${set.name} Battle Deck`,
       productType: 'deck' as const,
-      msrp: 19.99,
       ...baseProduct
     }
   ];

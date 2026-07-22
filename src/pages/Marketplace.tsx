@@ -10,11 +10,10 @@ import GlassCard from "@/components/ui/custom/GlassCard";
 import { useToast } from "@/hooks/use-toast";
 import TradeListing from "@/components/marketplace/TradeListing";
 import { 
-  Plus, 
-  Search, 
+  Plus,
+  Search,
   Filter,
-  Star, 
-  Clock, 
+  Clock,
   TrendingUp,
   Heart,
   Check,
@@ -56,6 +55,8 @@ interface ListingType {
   description: string;
   createdAt: Date;
   featured?: boolean;
+  interestedCount: number;
+  viewsCount: number;
 }
 
 const Marketplace = () => {
@@ -104,9 +105,11 @@ const Marketplace = () => {
     description: row.description || '',
     createdAt: new Date(row.created_at),
     featured: row.featured,
+    interestedCount: row.interested_count || 0,
+    viewsCount: row.views_count || 0,
   }));
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState<'featured' | 'recent' | 'trending'>('recent');
+  const [activeCategory, setActiveCategory] = useState<'recent' | 'trending'>('recent');
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
   const [sortOrder, setSortOrder] = useState<string>("newest");
   const { toast } = useToast();
@@ -123,9 +126,8 @@ const Marketplace = () => {
           listing.cardsWanted.some(card => card.toLowerCase().includes(searchQuery.toLowerCase()));
 
         const matchesCategory =
-          (activeCategory === 'featured' && listing.featured) ||
-          (activeCategory === 'recent') ||
-          (activeCategory === 'trending');
+          activeCategory === 'recent' ||
+          (activeCategory === 'trending' && (listing.interestedCount > 0 || listing.viewsCount > 0));
 
         const matchesCondition = selectedConditions.length === 0 ||
           selectedConditions.includes(listing.cardOffered.condition);
@@ -133,6 +135,10 @@ const Marketplace = () => {
         return matchesSearch && matchesCategory && matchesCondition;
       })
       .sort((a, b) => {
+        if (activeCategory === 'trending') {
+          const engagementDiff = (b.interestedCount + b.viewsCount) - (a.interestedCount + a.viewsCount);
+          if (engagementDiff !== 0) return engagementDiff;
+        }
         switch (sortOrder) {
           case "oldest":
             return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
@@ -243,13 +249,6 @@ const Marketplace = () => {
 
         <div className="border rounded-lg p-1 bg-background/50 mb-6 overflow-hidden">
           <div className="flex space-x-2 items-center overflow-x-auto scrollbar-hide pb-1">
-            <button
-              className={`py-2 px-4 rounded-md font-medium flex items-center gap-1.5 transition-colors shrink-0 ${activeCategory === 'featured' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-              onClick={() => setActiveCategory('featured')}
-            >
-              <Star className="h-4 w-4" />
-              <span>Featured</span>
-            </button>
             <button
               className={`py-2 px-4 rounded-md font-medium flex items-center gap-1.5 transition-colors shrink-0 ${activeCategory === 'recent' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
               onClick={() => setActiveCategory('recent')}

@@ -10,7 +10,6 @@ export interface CardItemProps {
   gradingCompany?: string;
   gradeScore?: string;
   forTrade?: boolean;
-  forSale?: boolean;
   set?: {
     id: string;
     name: string;

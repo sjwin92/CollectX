@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchEbayRealSealedProducts, EbayRealSealedProduct } from "@/services/ebayRealSealedProductsService";
+import type { FreeSealedProduct } from "@/services/freeSealedProductsService";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,34 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, Filter, Package, Star, Calendar, DollarSign, Key, ExternalLink, ShoppingCart, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import EbaySealedProductsIntegration from "@/components/ebay/EbaySealedProductsIntegration";
+
+// EbayRealSealedProduct -> FreeSealedProduct: eBay listings don't carry a
+// setId/description/vendor or a real release date, so those are left as
+// honest "unknown" placeholders rather than fabricated values. Only
+// `releaseDate` is actually displayed by EbaySealedProductsIntegration, and
+// it's shown as "Unknown" rather than a fake date.
+const toFreeSealedProduct = (product: EbayRealSealedProduct): FreeSealedProduct => {
+  const availability: FreeSealedProduct['availability'] =
+    product.availability === 'buy-it-now' || product.availability === 'available' || product.availability === 'in-stock'
+      ? 'in-stock'
+      : product.availability === 'auction'
+        ? 'in-stock'
+        : 'out-of-stock';
+
+  return {
+    id: product.id,
+    name: product.name,
+    type: product.type,
+    setName: product.setName,
+    setId: '',
+    price: product.price,
+    imageUrl: product.imageUrl,
+    availability,
+    releaseDate: 'Unknown',
+    description: '',
+    vendor: product.seller.name,
+  };
+};
 
 // Product types for filtering
 const productTypes = [
@@ -277,31 +306,7 @@ const SealedProducts = () => {
 
             {/* eBay Integration for Selected Product */}
             {selectedProduct && (
-              <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle className="text-lg">More listings for "{selectedProduct.name}"</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center text-muted-foreground">
-                    <p>Additional listings and price comparisons for this product would appear here.</p>
-                    <Button 
-                      variant="outline" 
-                      className="mt-4"
-                      asChild
-                    >
-                      <a 
-                        href={`https://www.ebay.co.uk/sch/i.html?_nkw=${encodeURIComponent(selectedProduct.name)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                        Search eBay for more listings
-                      </a>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <EbaySealedProductsIntegration product={toFreeSealedProduct(selectedProduct)} />
             )}
           </div>
         )}

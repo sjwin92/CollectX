@@ -1,19 +1,10 @@
-// Analytics service stub — underlying tables are not yet provisioned.
-// All methods are no-ops so the app compiles and runs without errors.
-
-export interface UserActivity {
-  id: string;
-  user_id: string;
-  activity_type:
-    | 'login' | 'logout' | 'card_view' | 'card_add'
-    | 'trade_propose' | 'trade_accept' | 'trade_decline'
-    | 'listing_create' | 'listing_view' | 'search'
-    | 'profile_update' | 'collection_export';
-  activity_data: any;
-  ip_address?: string;
-  user_agent?: string;
-  created_at: string;
-}
+// Analytics service. getUserStats is backed by real data from existing
+// tables. Trending-card / activity-feed / popular-search style features are
+// intentionally not implemented (and not shown in the dashboard) — they'd
+// need dedicated tables that don't exist yet, and a permanently-empty tab is
+// worse UX than not having the tab at all. trackSearch stays a harmless no-op
+// instrumentation hook (not rendered anywhere, so it can't show fake data).
+import { supabase } from '@/integrations/supabase/client';
 
 export interface SearchHistory {
   id: string;
@@ -21,32 +12,9 @@ export interface SearchHistory {
   search_query: string;
   search_type: 'cards' | 'sets' | 'users' | 'marketplace';
   results_count: number;
-  filters_applied: any;
+  filters_applied: Record<string, unknown>;
   clicked_result_id?: string;
   session_id?: string;
-  created_at: string;
-}
-
-export interface UserPreferences {
-  id: string;
-  user_id: string;
-  favorite_sets: string[];
-  favorite_types: string[];
-  preferred_condition: string;
-  collection_privacy: string;
-  trade_preferences: any;
-  notification_settings: any;
-  display_settings: any;
-  search_filters: any;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AnalyticsSummary {
-  id: string;
-  user_id: string;
-  date: string;
-  metrics: any;
   created_at: string;
 }
 
@@ -59,55 +27,46 @@ export interface UserStats {
   join_date: string;
 }
 
-export interface TrendingCard {
-  card_name: string;
-  search_count: number;
-  view_count: number;
-}
-
-export const logUserActivity = async (
-  _activityType: UserActivity['activity_type'],
-  _activityData: any = {}
-): Promise<void> => {};
-
-export const recordSearch = async (
-  _query: string,
-  _type: SearchHistory['search_type'],
-  _resultsCount: number,
-  _filters: any = {},
-  _clickedResultId?: string
-): Promise<void> => {};
-
 export const trackSearch = async (
   _query: string,
   _type: SearchHistory['search_type'] = 'cards',
   _resultsCount: number = 0,
-  _filters: any = {}
+  _filters: Record<string, unknown> = {}
 ): Promise<void> => {};
 
-export const getUserPreferences = async (): Promise<UserPreferences | null> => null;
+export const getUserStats = async (): Promise<UserStats | null> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
 
-export const updateUserPreferences = async (
-  _updates: Partial<UserPreferences>
-): Promise<UserPreferences | null> => null;
+  const [{ data: profile }, { count: cardCount }, { data: cardRows }, { count: listingCount }] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('total_trades, successful_trades, reputation_score, created_at')
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('user_cards')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id),
+    supabase
+      .from('user_cards')
+      .select('quantity')
+      .eq('user_id', user.id),
+    supabase
+      .from('marketplace_listings')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('status', 'active'),
+  ]);
 
-export const getUserStats = async (): Promise<UserStats> => ({
-  total_cards: 0,
-  total_trades: 0,
-  completed_trades: 0,
-  total_listings: 0,
-  reputation_score: 0,
-  join_date: new Date().toISOString(),
-});
+  const totalCards = (cardRows || []).reduce((sum, row) => sum + (row.quantity || 1), 0) || cardCount || 0;
 
-export const getTrendingCards = async (_limit: number = 10): Promise<TrendingCard[]> => [];
-
-export const getUserActivity = async (_limit: number = 50): Promise<UserActivity[]> => [];
-
-export const getSearchHistory = async (_limit: number = 20): Promise<SearchHistory[]> => [];
-
-export const getPopularSearches = async (
-  _type: SearchHistory['search_type'] = 'cards',
-  _limit: number = 10,
-  _days: number = 7
-): Promise<Array<{ search_query: string; count: number }>> => [];
+  return {
+    total_cards: totalCards,
+    total_trades: profile?.total_trades ?? 0,
+    completed_trades: profile?.successful_trades ?? 0,
+    total_listings: listingCount || 0,
+    reputation_score: profile?.reputation_score ?? 0,
+    join_date: profile?.created_at ?? new Date().toISOString(),
+  };
+};

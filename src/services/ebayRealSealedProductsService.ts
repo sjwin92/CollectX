@@ -129,14 +129,9 @@ export const fetchEbayRealSealedProducts = async (): Promise<EbayRealSealedProdu
       await new Promise(resolve => setTimeout(resolve, 200));
     }
 
-    // If we have some products, supplement with fallbacks if needed
-    if (allProducts.length > 0 && allProducts.length < 15) {
-      console.log('Adding supplemental fallback products...');
-      const fallbackProducts = generateFallbackProducts(15 - allProducts.length);
-      allProducts.push(...fallbackProducts);
-    } else if (allProducts.length === 0) {
-      console.log('No real products found, using all fallback products...');
-      return generateFallbackProducts(20);
+    if (allProducts.length === 0) {
+      console.log('No real products found for any search query.');
+      return [];
     }
 
     // Remove duplicates and sort
@@ -153,53 +148,8 @@ export const fetchEbayRealSealedProducts = async (): Promise<EbayRealSealedProdu
 
   } catch (error) {
     console.error('Error fetching sealed products:', error);
-    return generateFallbackProducts(20);
+    return [];
   }
-};
-
-const generateFallbackProducts = (count: number): EbayRealSealedProduct[] => {
-  const fallbackProducts: EbayRealSealedProduct[] = [];
-  
-  const productTemplates = [
-    { type: 'elite trainer box', setName: 'Prismatic Evolutions', price: 45, image: 'https://images.pokemontcg.io/sv8pt5/logo.png' },
-    { type: 'booster box', setName: 'Stellar Crown', price: 120, image: 'https://images.pokemontcg.io/sv7/logo.png' },
-    { type: 'collection box', setName: 'Surging Sparks', price: 25, image: 'https://images.pokemontcg.io/sv6/logo.png' },
-    { type: 'elite trainer box', setName: 'Journey Together', price: 42, image: 'https://images.pokemontcg.io/sv5/logo.png' },
-    { type: 'booster box', setName: 'Temporal Forces', price: 115, image: 'https://images.pokemontcg.io/sv4/logo.png' },
-  ];
-  
-  for (let i = 0; i < count; i++) {
-    const template = productTemplates[i % productTemplates.length];
-
-    fallbackProducts.push({
-      id: `fallback-${i}`,
-      name: `${template.setName} ${template.type}`,
-      price: {
-        current: template.price,
-        currency: 'GBP',
-        source: 'Estimated'
-      },
-      imageUrl: template.image,
-      condition: 'New',
-      availability: 'in-stock',
-      type: template.type,
-      setName: template.setName,
-      seller: {
-        name: '',
-        feedback: 0,
-        location: 'UK'
-      },
-      shipping: {
-        cost: '',
-        location: 'UK'
-      },
-      url: '',
-      buyItNow: false,
-      auction: false
-    });
-  }
-  
-  return fallbackProducts;
 };
 
 const getProductPlaceholderImage = (productType: string): string => {

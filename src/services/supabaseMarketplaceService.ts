@@ -19,7 +19,7 @@ export interface MarketplaceListing {
   grade_company?: string;
   grade_score?: number;
   quantity: number;
-  listing_type: 'trade' | 'sale' | 'both';
+  listing_type: 'trade';
   asking_price?: number;
   trade_preferences?: string;
   description?: string;
@@ -89,13 +89,9 @@ export const createMarketplaceListing = async (
 
 // Get marketplace listings with filters
 export const getMarketplaceListings = async (filters?: {
-  listing_type?: 'trade' | 'sale' | 'both';
   search?: string;
   set_id?: string;
   condition?: string;
-  min_price?: number;
-  max_price?: number;
-  featured_only?: boolean;
   limit?: number;
   offset?: number;
 }): Promise<MarketplaceListing[]> => {
@@ -104,10 +100,6 @@ export const getMarketplaceListings = async (filters?: {
     .select('*')
     .eq('status', 'active')
     .order('created_at', { ascending: false });
-
-  if (filters?.listing_type) {
-    query = query.or(`listing_type.eq.${filters.listing_type},listing_type.eq.both`);
-  }
 
   if (filters?.search) {
     query = query.or(`card_name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
@@ -119,18 +111,6 @@ export const getMarketplaceListings = async (filters?: {
 
   if (filters?.condition) {
     query = query.eq('condition', filters.condition);
-  }
-
-  if (filters?.min_price && filters?.max_price) {
-    query = query.gte('asking_price', filters.min_price).lte('asking_price', filters.max_price);
-  } else if (filters?.min_price) {
-    query = query.gte('asking_price', filters.min_price);
-  } else if (filters?.max_price) {
-    query = query.lte('asking_price', filters.max_price);
-  }
-
-  if (filters?.featured_only) {
-    query = query.eq('featured', true);
   }
 
   if (filters?.limit) {
@@ -327,33 +307,6 @@ export const subscribeToListingUpdates = (
         schema: 'public',
         table: 'marketplace_listings',
         filter: `id=eq.${listingId}`
-      },
-      onUpdate
-    )
-    .subscribe();
-
-  return () => supabase.removeChannel(channel);
-};
-
-// Subscribe to marketplace updates
-export const subscribeToMarketplaceUpdates = (
-  filters: { listing_type?: string },
-  onUpdate: (payload: any) => void
-) => {
-  let filterString = 'status=eq.active';
-  if (filters.listing_type) {
-    filterString += ` AND (listing_type=eq.${filters.listing_type} OR listing_type=eq.both)`;
-  }
-
-  const channel = supabase
-    .channel('marketplace-updates')
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'marketplace_listings',
-        filter: filterString
       },
       onUpdate
     )

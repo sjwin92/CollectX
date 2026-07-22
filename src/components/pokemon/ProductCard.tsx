@@ -18,7 +18,7 @@ interface Product {
   packCount?: number;
   releaseDate: string;
   imageUrl?: string;
-  msrp: number;
+  msrp?: number;
   description: string;
 }
 
@@ -83,8 +83,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
               <Calendar className="h-4 w-4" />
               {format(new Date(product.releaseDate), 'MMM d, yyyy')}
             </div>
-            <span className="font-bold text-lg text-primary">
-              £{product.msrp.toFixed(2)}
+            <span className={product.msrp !== undefined ? "font-bold text-lg text-primary" : "text-xs text-muted-foreground italic"}>
+              {product.msrp !== undefined ? `£${product.msrp.toFixed(2)}` : "Price not available"}
             </span>
           </div>
         </CardContent>

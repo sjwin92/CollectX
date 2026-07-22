@@ -49,7 +49,6 @@ export const convertSupabaseCardToExtended = (
     gradingCompany: supabaseCard.grading_company || undefined,
     gradeScore: supabaseCard.grade_score || undefined,
     forTrade: supabaseCard.for_trade,
-    forSale: supabaseCard.for_sale,
     set: {
       id: supabaseCard.set_id || '',
       name: supabaseCard.set_name || '',
@@ -89,7 +88,6 @@ export const addCardToCollection = async (newCard: ExtendedCardItemProps): Promi
     grading_company: newCard.gradingCompany || null,
     grade_score: newCard.gradeScore || null,
     for_trade: newCard.forTrade || false,
-    for_sale: newCard.forSale || false,
     trade_value: parseOptionalNumber(newCard.estimatedValue),
     product_type: productType,
   };
@@ -113,7 +111,6 @@ export const addCardToCollection = async (newCard: ExtendedCardItemProps): Promi
     const updates: SupabaseUserCardUpdate = {
       quantity: existingCard.quantity + (newCard.quantity || 1),
       for_trade: newCard.forTrade || existingCard.for_trade,
-      for_sale: newCard.forSale || existingCard.for_sale,
     };
 
     const { error } = await supabase
@@ -235,7 +232,6 @@ export const updateCardInCollection = async (
   if (updates.gradingCompany !== undefined) supabaseUpdates.grading_company = updates.gradingCompany || null;
   if (updates.gradeScore !== undefined) supabaseUpdates.grade_score = updates.gradeScore || null;
   if (updates.forTrade !== undefined) supabaseUpdates.for_trade = updates.forTrade;
-  if (updates.forSale !== undefined) supabaseUpdates.for_sale = updates.forSale;
   if (updates.estimatedValue !== undefined) supabaseUpdates.trade_value = parseOptionalNumber(updates.estimatedValue);
 
   const { error } = await supabase
