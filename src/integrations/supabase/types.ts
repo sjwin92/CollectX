@@ -132,6 +132,39 @@ export type Database = {
           },
         ]
       }
+      collection_boxes: {
+        Row: {
+          color: string
+          created_at: string
+          description: string | null
+          icon: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          icon?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          icon?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       escrow_transactions: {
         Row: {
           completed_at: string | null
@@ -1180,6 +1213,7 @@ export type Database = {
       }
       user_cards: {
         Row: {
+          box_id: string | null
           card_id: string
           card_image: string | null
           card_name: string | null
@@ -1205,6 +1239,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          box_id?: string | null
           card_id: string
           card_image?: string | null
           card_name?: string | null
@@ -1230,6 +1265,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          box_id?: string | null
           card_id?: string
           card_image?: string | null
           card_name?: string | null
@@ -1254,7 +1290,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_cards_box_id_fkey"
+            columns: ["box_id"]
+            isOneToOne: false
+            referencedRelation: "collection_boxes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
