@@ -1,77 +1,69 @@
-# CollectX deployment checklist
+# CollectX deployment
 
-This checklist moves the frontend from Lovable to a GitHub-connected Vercel deployment while keeping `collectx-prod` as the backend. Do not change the existing public site until the new deployment passes the two-account journey.
+CollectX is currently hosted by Lovable. GitHub is the source of truth and
+`collectx-prod` in Supabase is the owned backend.
 
-## 1. Import the GitHub repository
+## Production components
 
-In Vercel, create a project by importing `sjwin92/CollectX`.
+- Frontend host: Lovable
+- Source repository: `sjwin92/CollectX`
+- Synced branch: `main`
+- Supabase project: `collectx-prod` (`yfzfyeoaisspqlziaufx`)
+- Build: `npm run build`
+- Output: `dist`
 
-- Framework preset: Vite
-- Install command: `npm ci`
-- Build command: `npm run build`
-- Output directory: `dist`
-- Production branch: `main`
+## Public build variables
 
-The committed `vercel.json` makes browser routes such as `/reset-password` and `/trades/:id` resolve to the React application instead of returning a host-level 404.
+Lovable requires browser-visible `VITE_*` variables in the committed `.env`
+file. The file may contain only public values:
 
-## 2. Add frontend environment variables
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `VITE_ENABLE_GOOGLE_AUTH`
 
-Add these values to both Preview and Production environments:
+Never put a Supabase secret key, service-role key, Stripe secret, or webhook
+secret in `.env`. Backend credentials belong in Supabase Edge Function
+secrets.
 
-```text
-VITE_SUPABASE_URL=https://yfzfyeoaisspqlziaufx.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=<active publishable key from Supabase API settings>
-VITE_ENABLE_GOOGLE_AUTH=false
-```
+## Release process
 
-The publishable key is intended for frontend use. Never add a Supabase secret key, legacy service-role key, database password, Pokémon TCG API key, or eBay credential to Vercel's `VITE_*` variables.
+1. Open or update a feature branch and draft pull request.
+2. Require GitHub Actions to pass typecheck and the production build.
+3. Review database migrations and apply them to `collectx-prod` before merging
+   frontend code that depends on them.
+4. Run the two-account trade journey against a preview or controlled test.
+5. Merge the verified pull request into `main`.
+6. Confirm Lovable has synced `main` in **Project settings → Git → GitHub**.
+7. In Lovable, open **Publish** and choose **Update**.
+8. Verify sign-up, sign-in, catalogue browsing, collection management, listing,
+   proposal, messaging, shipping, receipt, rating, and billing on the published
+   URL.
 
-## 3. Configure Supabase Auth URLs
+Lovable publishes snapshots; merging to `main` does not automatically update
+the public site.
 
-After Vercel assigns the production URL, open Supabase Dashboard → Authentication → URL Configuration for project `yfzfyeoaisspqlziaufx`.
+## Supabase Auth URLs
 
-1. Set **Site URL** to the final HTTPS production origin, with no path.
-2. Add `<production-origin>/**` to **Redirect URLs**.
-3. Keep `http://localhost:8080/**` while local development is needed.
-4. For branch previews, add the narrow Vercel wildcard shown by Supabase for the account/team slug, or add only the exact preview URL being tested.
+Before public release, set the Supabase Auth **Site URL** to the published
+Lovable URL and add redirect URLs for:
 
-Email confirmation, password recovery, and optional OAuth redirects must all match this allow-list. Keep Google sign-in disabled until its provider credentials and redirect URLs are configured and tested.
+- the published Lovable URL
+- the Lovable preview URL used for testing
+- `http://localhost:8080` for local development
 
-## 4. Verify the preview before release
+Keep Google sign-in disabled until its OAuth provider and all redirect URLs have
+been tested.
 
-Run the following checks against a Vercel preview:
+## Stripe
 
-- `/`, `/pokemon-sets`, `/pokemon-cards`, and a card detail load directly.
-- Refreshing a nested URL does not return a Vercel 404.
-- Sign-up sends a confirmation email to a real inbox.
-- Confirmation returns to the preview and creates one profile.
-- Sign-in, sign-out, forgotten-password, and reset-password work.
-- Card images upload and display.
-- Browser developer tools show requests only to the new Supabase project reference.
+Subscription checkout, customer-portal, and webhook handlers run as Supabase
+Edge Functions. Store `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and the
+Stripe price identifier in Supabase secrets. Use Stripe test mode until the
+billing journey and webhook replay tests pass.
 
-Then complete the real two-account journey in one normal browser window and one private/incognito window:
+## Rollback
 
-1. Each account adds a different card and marks it for trade.
-2. Account B creates a listing.
-3. Account A proposes its card.
-4. Account B accepts.
-5. Both accounts submit delivery addresses.
-6. Each side records a carrier and tracking number.
-7. Each side confirms receipt.
-8. Both sides leave a rating.
-9. Confirm the collection cards changed owners and the listing is completed.
-
-Use non-sensitive test addresses and clearly synthetic tracking strings. Delete the two accounts after the test if they are not intended to remain as beta accounts.
-
-## 5. Production cutover
-
-Only after the preview and two-account checks pass:
-
-1. Merge the reviewed pull request to `main`.
-2. Let Vercel build the exact merged commit.
-3. Re-run the smoke checks on the production Vercel URL.
-4. Point any custom domain at Vercel.
-5. Make that custom domain the Supabase Site URL and retain the Vercel URL as an allowed redirect during rollback coverage.
-6. Retire the Lovable-hosted frontend only after the new production URL has been observed working.
-
-Database migrations and frontend deployment remain separate release steps. Apply and verify a database migration before deploying frontend code that depends on it.
+Lovable retains the previously published snapshot until **Publish → Update** is
+confirmed. If a new release fails verification, do not publish it. Database
+migrations must be backwards-compatible with the currently published frontend
+during the release window.
