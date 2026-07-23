@@ -18,6 +18,7 @@ import Index from "./pages/Index";
 
 // Lazy-loaded routes — code-split for faster initial load
 const Auth = lazy(() => import("./pages/Auth"));
+const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Trades = lazy(() => import("./pages/Trades"));
 const TradeDetail = lazy(() => import("./pages/TradeDetail"));
@@ -57,6 +58,8 @@ function App() {
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
+
 
                 {/* Public routes */}
                 <Route path="/pokemon-sets" element={<Sets />} />
