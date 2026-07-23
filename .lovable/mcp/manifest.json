@@ -1,0 +1,149 @@
+{
+  "version": 1,
+  "sdk_version": "0.24.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://vnyhkqaxkhmbpzfhhztu.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "collectx-mcp",
+      "version": "0.1.0",
+      "title": "CollectX MCP"
+    },
+    "tools": [
+      {
+        "name": "search_pokemon_cards",
+        "title": "Search Pokémon cards",
+        "description": "Search the CollectX Pokémon card catalog by name and/or set ID. Returns up to `limit` cards (default 20, max 50).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "name": {
+              "description": "Card name (partial match).",
+              "type": "string",
+              "minLength": 1
+            },
+            "setId": {
+              "description": "Set ID to filter by.",
+              "type": "string",
+              "minLength": 1
+            },
+            "limit": {
+              "description": "Max results, default 20.",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_my_collection",
+        "title": "List my collection",
+        "description": "List the signed-in user's collected cards. Optionally filter by name or for_trade flag.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "name": {
+              "description": "Filter by card name (partial match).",
+              "type": "string",
+              "minLength": 1
+            },
+            "forTradeOnly": {
+              "description": "If true, only return cards marked for trade.",
+              "type": "boolean"
+            },
+            "limit": {
+              "description": "Max results, default 50.",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_my_trades",
+        "title": "List my trades",
+        "description": "List trades where the signed-in user is a participant (initiator or recipient). Optionally filter by status.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "status": {
+              "description": "Filter by trade status.",
+              "type": "string",
+              "enum": [
+                "proposed",
+                "accepted",
+                "shipped",
+                "completed",
+                "disputed",
+                "cancelled"
+              ]
+            },
+            "limit": {
+              "description": "Max results, default 25.",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_marketplace_listings",
+        "title": "List marketplace listings",
+        "description": "Browse active card-for-card marketplace listings. Optionally filter by card name.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "name": {
+              "description": "Filter by card name (partial match).",
+              "type": "string",
+              "minLength": 1
+            },
+            "limit": {
+              "description": "Max results, default 20.",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
