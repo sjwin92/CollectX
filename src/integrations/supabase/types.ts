@@ -1439,6 +1439,10 @@ export type Database = {
         }
       }
       get_nav_metrics_summary: { Args: { _days?: number }; Returns: Json }
+      get_or_create_conversation: {
+        Args: { other_user_id: string }
+        Returns: string
+      }
       get_trade_destination_address: {
         Args: { _trade_id: string }
         Returns: Json
@@ -1465,6 +1469,15 @@ export type Database = {
       }
       increment_listing_views: {
         Args: { listing_id: string }
+        Returns: undefined
+      }
+      mark_all_notifications_read: { Args: never; Returns: undefined }
+      mark_conversation_messages_read: {
+        Args: { _conversation_id: string }
+        Returns: undefined
+      }
+      mark_notifications_read: {
+        Args: { notification_ids: string[] }
         Returns: undefined
       }
       mark_trade_shipped: {
