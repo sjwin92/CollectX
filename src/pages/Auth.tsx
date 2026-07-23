@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,13 @@ import { Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { lovable } from '@/integrations/lovable';
 
+// Same-origin relative path only, otherwise fall back to home.
+function safeNext(raw: string | null): string {
+  if (!raw) return '/';
+  if (!raw.startsWith('/') || raw.startsWith('//')) return '/';
+  return raw;
+}
+
 const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
@@ -18,6 +25,8 @@ const Auth = () => {
   const [username, setUsername] = useState('');
   const [resetting, setResetting] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const next = safeNext(searchParams.get('next'));
   const { toast } = useToast();
 
   const handleForgotPassword = async () => {
@@ -41,10 +50,10 @@ const Auth = () => {
     // Check if user is already authenticated
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
-        navigate('/');
+        navigate(next);
       }
     });
-  }, [navigate]);
+  }, [navigate, next]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +64,7 @@ const Auth = () => {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: `${window.location.origin}${next}`,
           data: {
             username,
             display_name: username,
@@ -92,7 +101,7 @@ const Auth = () => {
 
       if (error) throw error;
 
-      navigate('/');
+      navigate(next);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -107,14 +116,18 @@ const Auth = () => {
   const handleSocialAuth = async (provider: 'google') => {
     setLoading(true);
     try {
+      // Preserve `next` through the social round-trip. The provider comes back
+      // to `redirect_uri`, so encode the intended destination in the URL and
+      // read it back on load.
+      const redirectUri = `${window.location.origin}/auth?next=${encodeURIComponent(next)}`;
       const result = await lovable.auth.signInWithOAuth(provider, {
-        redirect_uri: window.location.origin,
+        redirect_uri: redirectUri,
       });
 
       if (result.error) throw result.error;
       if (result.redirected) return;
 
-      navigate('/');
+      navigate(next);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -124,6 +137,7 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20 p-4">
