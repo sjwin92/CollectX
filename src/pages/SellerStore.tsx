@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Star, PackageOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import TradeListing from "@/components/marketplace/TradeListing";
+import TraderTrustBadge from "@/components/common/TraderTrustBadge";
 import { CardItemProps } from "@/components/cards/CardItem";
 
 interface ListingType {
@@ -24,6 +25,8 @@ interface ListingType {
   listingType: "trade" | "sale";
   askingPrice?: number;
   currency: string;
+  sellerTotalTrades: number;
+  sellerReputationScore: number;
 }
 
 const SellerStore = () => {
@@ -73,6 +76,8 @@ const SellerStore = () => {
     listingType: row.listing_type === "sale" ? "sale" : "trade",
     askingPrice: row.asking_price != null ? Number(row.asking_price) : undefined,
     currency: row.currency || "gbp",
+    sellerTotalTrades: data?.profile?.total_trades || 0,
+    sellerReputationScore: Number(data?.profile?.reputation_score || 0),
   }));
 
   const profile = data?.profile;
@@ -105,6 +110,10 @@ const SellerStore = () => {
                   </span>
                   <span>{profile.total_trades || 0} trades</span>
                   <span>{listings.length} listing{listings.length === 1 ? "" : "s"}</span>
+                  <TraderTrustBadge
+                    totalTrades={profile.total_trades || 0}
+                    reputationScore={Number(profile.reputation_score || 0)}
+                  />
                 </div>
               </div>
             </div>

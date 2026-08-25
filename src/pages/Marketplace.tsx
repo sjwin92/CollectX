@@ -61,6 +61,8 @@ interface ListingType {
   listingType: 'trade' | 'sale';
   askingPrice?: number;
   currency: string;
+  sellerTotalTrades: number;
+  sellerReputationScore: number;
 }
 
 const Marketplace = () => {
@@ -85,7 +87,7 @@ const Marketplace = () => {
       if (ownerIds.length) {
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('user_id, display_name, username')
+          .select('user_id, display_name, username, total_trades, reputation_score')
           .in('user_id', ownerIds);
         profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
       }
@@ -114,6 +116,8 @@ const Marketplace = () => {
     listingType: row.listing_type === 'sale' ? 'sale' : 'trade',
     askingPrice: row.asking_price != null ? Number(row.asking_price) : undefined,
     currency: row.currency || 'gbp',
+    sellerTotalTrades: row._profile?.total_trades || 0,
+    sellerReputationScore: Number(row._profile?.reputation_score || 0),
   }));
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<'recent' | 'trending' | 'sellers'>('recent');

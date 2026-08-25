@@ -23,6 +23,8 @@ interface TradeListingProps {
     listingType?: 'trade' | 'sale';
     askingPrice?: number;
     currency?: string;
+    sellerTotalTrades?: number;
+    sellerReputationScore?: number;
   };
   onProposeTrade: () => void;
   featured?: boolean;
@@ -52,6 +54,8 @@ const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListin
         createdAt={listing.createdAt}
         estimatedValue={listing.cardOffered.estimatedValue}
         featured={featured}
+        sellerTotalTrades={listing.sellerTotalTrades}
+        sellerReputationScore={listing.sellerReputationScore}
       />
 
       <CardContent className="py-2">
