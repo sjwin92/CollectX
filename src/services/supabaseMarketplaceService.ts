@@ -1,5 +1,6 @@
 import { supabase as supabaseTyped } from '@/integrations/supabase/client';
 import { ExtendedCardItemWithDB } from './supabaseCollectionService';
+import { uniqueChannelSuffix } from '@/lib/utils';
 const supabase = supabaseTyped as any;
 
 export interface MarketplaceListing {
@@ -333,7 +334,7 @@ export const subscribeToListingUpdates = (
   onUpdate: (payload: any) => void
 ) => {
   const channel = supabase
-    .channel(`listing-${listingId}`)
+    .channel(`listing-${listingId}-${uniqueChannelSuffix()}`)
     .on(
       'postgres_changes',
       {

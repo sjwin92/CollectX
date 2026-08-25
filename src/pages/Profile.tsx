@@ -16,6 +16,7 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { useUser } from "@/hooks/useUser";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import UserDashboard from "@/components/analytics/UserDashboard";
 import { getSellerStripeStatus, startSellerOnboarding, type SellerStripeStatus } from "@/services/supabaseMarketplaceService";
@@ -53,6 +54,7 @@ const userData = {
 
 const Profile = () => {
   const { user, profile } = useUser();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [userCollection, setUserCollection] = useState<CardItemProps[]>([]);
   const [filteredCards, setFilteredCards] = useState<CardItemProps[]>([]);
@@ -69,8 +71,13 @@ const Profile = () => {
     try {
       const url = await startSellerOnboarding();
       window.location.href = url;
-    } catch {
+    } catch (error) {
       setIsConnectingPayouts(false);
+      toast({
+        title: "Couldn't start payout setup",
+        description: error instanceof Error ? error.message : "Please try again in a moment.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -80,7 +87,7 @@ const Profile = () => {
       .from('user_cards')
       .select('*')
       .eq('user_id', user.id)
-      .eq('product_type', 'card')
+      .eq('product_type', 'single')
       .then(({ data }) => {
         if (!data) return;
         const cards: CardItemProps[] = data.map(c => ({

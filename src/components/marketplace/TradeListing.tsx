@@ -82,7 +82,7 @@ const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListin
         currency={listing.currency}
       />
       
-      <TradeListingProtection />
+      <TradeListingProtection listingType={listing.listingType ?? 'trade'} />
     </Card>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -24,6 +24,20 @@ const AccountSettings = () => {
     location: profile?.location || "",
     avatar_url: profile?.avatar_url || ""
   });
+
+  // `profile` loads asynchronously after mount — the useState initializer above
+  // only runs once, so without this the form silently stays blank and saving
+  // would overwrite a real username/bio with empty strings.
+  useEffect(() => {
+    if (!profile) return;
+    setFormData({
+      display_name: profile.display_name || "",
+      username: profile.username || "",
+      bio: profile.bio || "",
+      location: profile.location || "",
+      avatar_url: profile.avatar_url || "",
+    });
+  }, [profile]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));

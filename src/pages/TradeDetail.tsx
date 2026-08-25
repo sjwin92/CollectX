@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle, Loader2, Shield, Star, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Navbar from "@/components/layout/Navbar";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/hooks/useUser";
@@ -16,6 +17,7 @@ import { TradeChat } from "@/components/trades/tradeDetail/TradeChat";
 import { ImageLightbox } from "@/components/trades/tradeDetail/ImageLightbox";
 import { useTradeMutations } from "@/components/trades/tradeDetail/useTradeMutations";
 import TradeRatingModal from "@/components/trades/TradeRatingModal";
+import { uniqueChannelSuffix } from "@/lib/utils";
 
 const TradeDetail: React.FC = () => {
   const { tradeId } = useParams<{ tradeId: string }>();
@@ -41,7 +43,7 @@ const TradeDetail: React.FC = () => {
   useEffect(() => {
     if (!tradeId) return;
     const channel = (supabase as any)
-      .channel(`trade-${tradeId}`)
+      .channel(`trade-${tradeId}-${uniqueChannelSuffix()}`)
       .on("postgres_changes",
         { event: "*", schema: "public", table: "trade_messages", filter: `trade_id=eq.${tradeId}` },
         () => refetch())
@@ -56,19 +58,25 @@ const TradeDetail: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="container py-12 flex flex-col items-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-muted-foreground">Loading trade details...</p>
+      <div>
+        <Navbar />
+        <div className="container py-12 flex flex-col items-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+          <p className="text-muted-foreground">Loading trade details...</p>
+        </div>
       </div>
     );
   }
 
   if (isError || !trade) {
     return (
-      <div className="container py-12 text-center">
-        <XCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-        <h2 className="text-xl font-semibold mb-2">Trade Not Found</h2>
-        <Button asChild><Link to="/trades">Back to Trades</Link></Button>
+      <div>
+        <Navbar />
+        <div className="container py-12 text-center">
+          <XCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Trade Not Found</h2>
+          <Button asChild><Link to="/trades">Back to Trades</Link></Button>
+        </div>
       </div>
     );
   }
@@ -77,10 +85,13 @@ const TradeDetail: React.FC = () => {
   const isRecipient = trade.recipient.userId === user?.id;
   if (user && !isInitiator && !isRecipient) {
     return (
-      <div className="container py-12 text-center">
-        <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
-        <Button asChild><Link to="/trades">Back to Trades</Link></Button>
+      <div>
+        <Navbar />
+        <div className="container py-12 text-center">
+          <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
+          <Button asChild><Link to="/trades">Back to Trades</Link></Button>
+        </div>
       </div>
     );
   }
@@ -98,7 +109,9 @@ const TradeDetail: React.FC = () => {
   const canRate = trade.status === "completed" && !!user && !alreadyRated;
 
   return (
-    <div className="container py-12">
+    <div>
+      <Navbar />
+      <div className="container py-12">
       <ImageLightbox src={lightbox} onClose={() => setLightbox(null)} />
 
       <TradeDetailHeader status={trade.status} />
@@ -188,6 +201,7 @@ const TradeDetail: React.FC = () => {
         onMessageSent={refetch}
         onOpenLightbox={setLightbox}
       />
+      </div>
     </div>
   );
 };

@@ -38,7 +38,6 @@ const Marketplace = lazy(() => import("./pages/Marketplace"));
 const Sets = lazy(() => import("./pages/Sets"));
 const SetDetail = lazy(() => import("./pages/SetDetail"));
 const Products = lazy(() => import("./pages/Products"));
-const SealedProducts = lazy(() => import("./pages/SealedProducts"));
 const NavMetricsAdmin = lazy(() => import("./pages/admin/NavMetrics"));
 const SeedDatabase = lazy(() => import("./pages/admin/SeedDatabase"));
 
@@ -72,11 +71,10 @@ function App() {
                 <Route path="/card/:id" element={<CardDetail />} />
                 <Route path="/pokemons" element={<Pokemons />} />
                 <Route path="/products" element={<Products />} />
-                <Route path="/sealed-products" element={<SealedProducts />} />
 
                 {/* Protected routes */}
                 <Route path="/trades" element={<ProtectedRoute><Trades /></ProtectedRoute>} />
-                <Route path="/trades/:id" element={<ProtectedRoute><TradeDetail /></ProtectedRoute>} />
+                <Route path="/trades/:tradeId" element={<ProtectedRoute><TradeDetail /></ProtectedRoute>} />
                 <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
                 <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
                 <Route path="/seller/onboarding-complete" element={<ProtectedRoute><SellerOnboardingComplete /></ProtectedRoute>} />

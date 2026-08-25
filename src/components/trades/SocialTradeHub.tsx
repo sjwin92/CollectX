@@ -1,5 +1,5 @@
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -38,6 +38,14 @@ const SocialTradeHub = ({ isOpen, onClose, otherUserId }: SocialTradeHubProps) =
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState('');
+  // SocialTradeHub is rendered unconditionally inside Navbar, and every page
+  // renders its own <Navbar/>, so this component remounts on every client-side
+  // navigation. supabase-js's realtime client caches channels by name, and if
+  // the previous mount's async unsubscribe hasn't finished before the new
+  // mount subscribes under the same name, adding .on() to the reused,
+  // already-subscribed channel throws and crashes the whole page. A random
+  // per-mount suffix guarantees no name collision regardless of teardown timing.
+  const instanceIdRef = useRef(Math.random().toString(36).slice(2));
 
   // When opened targeting a specific user (e.g. "Message seller"), get-or-create
   // that conversation and select it.
@@ -91,7 +99,7 @@ const SocialTradeHub = ({ isOpen, onClose, otherUserId }: SocialTradeHubProps) =
   useEffect(() => {
     if (!selectedConversationId) return;
     const channel = supabase
-      .channel(`chat-messages-${selectedConversationId}`)
+      .channel(`chat-messages-${selectedConversationId}-${instanceIdRef.current}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'chat_messages', filter: `conversation_id=eq.${selectedConversationId}` },
@@ -107,7 +115,7 @@ const SocialTradeHub = ({ isOpen, onClose, otherUserId }: SocialTradeHubProps) =
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel(`chat-conversations-${user.id}`)
+      .channel(`chat-conversations-${user.id}-${instanceIdRef.current}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'chat_conversations', filter: `user1_id=eq.${user.id}` },

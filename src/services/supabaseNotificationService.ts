@@ -1,4 +1,5 @@
 import { supabase as supabaseTyped } from '@/integrations/supabase/client';
+import { uniqueChannelSuffix } from '@/lib/utils';
 const supabase = supabaseTyped as any;
 
 export interface Notification {
@@ -239,7 +240,7 @@ export const subscribeToNotifications = (
   onNotification: (payload: any) => void
 ) => {
   const channel = supabase
-    .channel(`notifications-${userId}`)
+    .channel(`notifications-${userId}-${uniqueChannelSuffix()}`)
     .on(
       'postgres_changes',
       {
@@ -260,7 +261,7 @@ export const subscribeToConversation = (
   onMessage: (payload: any) => void
 ) => {
   const channel = supabase
-    .channel(`conversation-${conversationId}`)
+    .channel(`conversation-${conversationId}-${uniqueChannelSuffix()}`)
     .on(
       'postgres_changes',
       {
@@ -281,7 +282,7 @@ export const subscribeToConversations = (
   onUpdate: (payload: any) => void
 ) => {
   const channel = supabase
-    .channel(`conversations-${userId}`)
+    .channel(`conversations-${userId}-${uniqueChannelSuffix()}`)
     .on(
       'postgres_changes',
       {
