@@ -41,6 +41,29 @@ serve(async (req) => {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
+
+        if (session.metadata?.type === 'scan_credits') {
+          if (session.payment_status !== 'paid') break;
+          const userId = session.metadata.user_id;
+          const credits = parseInt(session.metadata.credits ?? '0', 10);
+          if (!userId || !credits) {
+            console.error('scan_credits checkout with missing user_id/credits', session.id);
+            break;
+          }
+          const { data: profile, error: profileError } = await serviceClient
+            .from('profiles')
+            .select('purchased_scan_credits')
+            .eq('id', userId)
+            .maybeSingle();
+          if (profileError) throw profileError;
+          const { error } = await serviceClient
+            .from('profiles')
+            .update({ purchased_scan_credits: (profile?.purchased_scan_credits ?? 0) + credits })
+            .eq('id', userId);
+          if (error) throw error;
+          break;
+        }
+
         const orderId = session.metadata?.order_id;
         if (!orderId) {
           console.error('checkout.session.completed with no order_id in metadata', session.id);

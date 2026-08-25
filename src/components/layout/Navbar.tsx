@@ -205,6 +205,12 @@ const Navbar = () => {
                       </PrefetchLink>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
+                      <PrefetchLink to="/grade">
+                        <Camera className="mr-2 h-4 w-4" />
+                        <span>Grade a Card</span>
+                      </PrefetchLink>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
                       <PrefetchLink to="/marketplace">
                         <ShoppingCart className="mr-2 h-4 w-4" />
                         <span>Marketplace</span>

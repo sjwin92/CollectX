@@ -110,7 +110,81 @@ const Profile = () => {
         setFilteredCards(cards);
       });
   }, [user]);
-  
+
+  // Official card counts per set, needed to compute completion % below.
+  // Fetched only for the sets the user actually owns cards from.
+  const [setTotals, setSetTotals] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const setIds = Array.from(
+      new Set(userCollection.map((c) => c.set?.id).filter((id): id is string => !!id))
+    );
+    if (setIds.length === 0) return;
+
+    supabase
+      .from('pokemon_sets')
+      .select('id, printed_total, total')
+      .in('id', setIds)
+      .then(({ data }) => {
+        if (!data) return;
+        const totals: Record<string, number> = {};
+        for (const row of data) {
+          totals[row.id] = row.printed_total ?? row.total ?? 0;
+        }
+        setSetTotals(totals);
+      });
+  }, [userCollection]);
+
+  const NON_RARE = new Set(['common', 'uncommon']);
+
+  const collectionStats = React.useMemo(() => {
+    const tradableCards = userCollection.filter((c) => c.forTrade).length;
+    const rareCards = userCollection.filter(
+      (c) => c.rarity && !NON_RARE.has(c.rarity.toLowerCase())
+    ).length;
+    const estValue = userCollection.reduce((sum, c) => {
+      const parsed = parseFloat((c.estimatedValue || '').replace(/[^0-9.]/g, ''));
+      return sum + (Number.isFinite(parsed) ? parsed : 0);
+    }, 0);
+    return { tradableCards, rareCards, estValue };
+  }, [userCollection]);
+
+  const setCompletion = React.useMemo(() => {
+    const bySet = new Map<string, { name: string; owned: Set<string> }>();
+    for (const card of userCollection) {
+      if (!card.set?.id) continue;
+      const entry = bySet.get(card.set.id) ?? { name: card.set.name || card.set.id, owned: new Set<string>() };
+      entry.owned.add(card.id);
+      bySet.set(card.set.id, entry);
+    }
+    return Array.from(bySet.entries())
+      .map(([setId, { name, owned }]) => {
+        const total = setTotals[setId];
+        return {
+          setId,
+          name,
+          owned: owned.size,
+          total: total || null,
+          pct: total ? Math.min(100, Math.round((owned.size / total) * 100)) : null,
+        };
+      })
+      .sort((a, b) => (b.pct ?? 0) - (a.pct ?? 0));
+  }, [userCollection, setTotals]);
+
+  const badges = React.useMemo(() => {
+    const list: string[] = [];
+    const trades = profile?.total_trades || 0;
+    if (trades >= 1) list.push('First Trade');
+    if (trades >= 5) list.push('Active Trader');
+    if (trades >= 20) list.push('Veteran Trader');
+    if (userCollection.length >= 10) list.push('Collector');
+    if (userCollection.length >= 50) list.push('Master Collector');
+    if (collectionStats.rareCards >= 5) list.push('Rare Hunter');
+    if ((profile?.reputation_score || 0) >= 4.5 && (profile?.total_trades || 0) >= 3) list.push('Highly Rated');
+    if (setCompletion.some((s) => s.pct === 100)) list.push('Set Completionist');
+    return list;
+  }, [profile, userCollection, collectionStats, setCompletion]);
+
   // Use actual user data when available
   const displayData = {
     name: profile?.display_name || user?.email?.split('@')[0] || "New User",
@@ -125,7 +199,7 @@ const Profile = () => {
       reputationScore: profile?.reputation_score || 0,
       reviewCount: 0
     },
-    badges: [] as string[]
+    badges,
   };
   
   // Function to render reputation stars
@@ -366,25 +440,46 @@ const Profile = () => {
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Tradable Cards</span>
-                          <span className="font-medium">0</span>
+                          <span className="font-medium">{collectionStats.tradableCards}</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Rare Cards</span>
-                          <span className="font-medium">0</span>
+                          <span className="font-medium">{collectionStats.rareCards}</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Est. Collection Value</span>
-                          <span className="font-medium">$0</span>
+                          <span className="font-medium">£{collectionStats.estValue.toFixed(2)}</span>
                         </div>
                       </div>
                     </GlassCard>
                     
                     <GlassCard className="p-6">
                       <h3 className="text-lg font-medium mb-4">Set Completion</h3>
-                      <div className="text-center py-4">
-                        <p className="text-muted-foreground text-sm">No sets in collection yet</p>
-                        <p className="text-muted-foreground text-xs mt-1">Add cards to see set completion progress</p>
-                      </div>
+                      {setCompletion.length > 0 ? (
+                        <div className="space-y-4">
+                          {setCompletion.slice(0, 5).map((s) => (
+                            <div key={s.setId}>
+                              <div className="flex justify-between items-center mb-1 text-sm">
+                                <span className="truncate mr-2">{s.name}</span>
+                                <span className="text-muted-foreground shrink-0">
+                                  {s.total ? `${s.owned}/${s.total} · ${s.pct}%` : `${s.owned} owned`}
+                                </span>
+                              </div>
+                              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                                <div
+                                  className="h-full rounded-full bg-primary transition-all"
+                                  style={{ width: `${s.pct ?? 0}%` }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-4">
+                          <p className="text-muted-foreground text-sm">No sets in collection yet</p>
+                          <p className="text-muted-foreground text-xs mt-1">Add cards to see set completion progress</p>
+                        </div>
+                      )}
                     </GlassCard>
                   </div>
                 </TabsContent>
