@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
@@ -19,7 +19,8 @@ import {
   Check,
   ArrowRightLeft,
   ShoppingBag,
-  PackageOpen
+  PackageOpen,
+  Store
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { CardItemProps } from "@/components/cards/CardItem";
@@ -57,6 +58,9 @@ interface ListingType {
   featured?: boolean;
   interestedCount: number;
   viewsCount: number;
+  listingType: 'trade' | 'sale';
+  askingPrice?: number;
+  currency: string;
 }
 
 const Marketplace = () => {
@@ -107,14 +111,33 @@ const Marketplace = () => {
     featured: row.featured,
     interestedCount: row.interested_count || 0,
     viewsCount: row.views_count || 0,
+    listingType: row.listing_type === 'sale' ? 'sale' : 'trade',
+    askingPrice: row.asking_price != null ? Number(row.asking_price) : undefined,
+    currency: row.currency || 'gbp',
   }));
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState<'recent' | 'trending'>('recent');
+  const [activeCategory, setActiveCategory] = useState<'recent' | 'trending' | 'sellers'>('recent');
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
   const [sortOrder, setSortOrder] = useState<string>("newest");
   const { toast } = useToast();
   const { user } = useUser();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('checkout') === 'cancelled') {
+      toast({
+        title: "Checkout cancelled",
+        description: "No payment was taken. The listing is available again.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['marketplace_listings'] });
+      setSearchParams((prev) => {
+        prev.delete('checkout');
+        return prev;
+      }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const filteredListings = React.useMemo(() => {
     return listings
@@ -127,6 +150,7 @@ const Marketplace = () => {
 
         const matchesCategory =
           activeCategory === 'recent' ||
+          activeCategory === 'sellers' ||
           (activeCategory === 'trending' && (listing.interestedCount > 0 || listing.viewsCount > 0));
 
         const matchesCondition = selectedConditions.length === 0 ||
@@ -149,6 +173,19 @@ const Marketplace = () => {
       });
   }, [listings, searchQuery, activeCategory, selectedConditions, sortOrder]);
 
+
+  const sellerGroups = React.useMemo(() => {
+    const groups = new Map<string, { userId: string; username: string; listings: ListingType[] }>();
+    for (const listing of filteredListings) {
+      const existing = groups.get(listing.userId);
+      if (existing) {
+        existing.listings.push(listing);
+      } else {
+        groups.set(listing.userId, { userId: listing.userId, username: listing.username, listings: [listing] });
+      }
+    }
+    return Array.from(groups.values()).sort((a, b) => b.listings.length - a.listings.length);
+  }, [filteredListings]);
 
   const toggleConditionFilter = (condition: string) => {
     setSelectedConditions(prev => 
@@ -263,6 +300,13 @@ const Marketplace = () => {
               <TrendingUp className="h-4 w-4" />
               <span>Hot Trades</span>
             </button>
+            <button
+              className={`py-2 px-4 rounded-md font-medium flex items-center gap-1.5 transition-colors shrink-0 ${activeCategory === 'sellers' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+              onClick={() => setActiveCategory('sellers')}
+            >
+              <Store className="h-4 w-4" />
+              <span>Browse Sellers</span>
+            </button>
           </div>
         </div>
 
@@ -274,10 +318,37 @@ const Marketplace = () => {
               {(listingsError as any)?.message || "Please try again in a moment."}
             </p>
           </GlassCard>
+        ) : activeCategory === 'sellers' ? (
+          sellerGroups.length > 0 ? (
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              {sellerGroups.map(group => (
+                <button
+                  key={group.userId}
+                  onClick={() => navigate(`/sellers/${group.userId}`)}
+                  className="text-left"
+                >
+                  <GlassCard className="p-5 hover:border-primary transition-colors h-full">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Store className="h-5 w-5 text-primary shrink-0" />
+                      <h3 className="font-semibold truncate">{group.username}'s Stall</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {group.listings.length} listing{group.listings.length === 1 ? "" : "s"}
+                    </p>
+                  </GlassCard>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <GlassCard className="p-8 text-center">
+              <PackageOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-xl font-medium mb-2">No sellers yet</h3>
+            </GlassCard>
+          )
         ) : filteredListings.length > 0 ? (
           <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
             {filteredListings.map(listing => (
-              <TradeListing 
+              <TradeListing
                 key={listing.id}
                 listing={listing}
                 onProposeTrade={() => handleProposeTrade(listing.id)}

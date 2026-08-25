@@ -73,6 +73,7 @@ const Navbar = () => {
     { name: "Trades", path: "/trades", icon: <ArrowLeftRight className="mr-2 h-4 w-4" /> },
     { name: "Browse", path: "/pokemon-sets", icon: <Layers className="mr-2 h-4 w-4" /> },
     { name: "Marketplace", path: "/marketplace", icon: <ShoppingCart className="mr-2 h-4 w-4" /> },
+    { name: "Orders", path: "/orders", icon: <Package className="mr-2 h-4 w-4" /> },
   ];
 
   const navigationItems = isSignedIn ? protectedNavigationItems : publicNavigationItems;
@@ -126,7 +127,7 @@ const Navbar = () => {
             
             {!isMobile && (
               <nav className="hidden md:flex items-center">
-                <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide max-w-2xl">
+                <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
                   <NavLinks />
                 </div>
               </nav>
@@ -213,6 +214,12 @@ const Navbar = () => {
                       <PrefetchLink to="/marketplace">
                         <ShoppingCart className="mr-2 h-4 w-4" />
                         <span>Marketplace</span>
+                      </PrefetchLink>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <PrefetchLink to="/orders">
+                        <Package className="mr-2 h-4 w-4" />
+                        <span>Orders</span>
                       </PrefetchLink>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />

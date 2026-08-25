@@ -8,6 +8,58 @@ import {
 } from './cardImageService';
 import { getFeaturedCardImageUrl } from './featuredCardsService';
 import { usdToGbp } from '../currencyService';
+import { supabase } from '@/integrations/supabase/client';
+
+// Maps a row from the local `pokemon_cards` mirror table to the shape the UI
+// expects from the external TCG API. The mirror doesn't store every field
+// (attacks/weaknesses/resistances/legalities/etc. aren't imported), so those
+// are left undefined — PokemonCardDetail already guards those as optional.
+// card.set is NOT optional-chained in PokemonCardDetail, so it must always
+// be a real object here.
+function mirrorRowToPokemonCard(row: any): PokemonCard {
+  return {
+    id: row.id,
+    name: row.name ?? 'Unknown Card',
+    supertype: row.supertype ?? '',
+    subtypes: row.subtypes ?? [],
+    hp: row.hp ?? undefined,
+    types: row.types ?? undefined,
+    set: {
+      id: row.set_id ?? '',
+      name: row.set_name ?? '',
+      series: '',
+      printedTotal: 0,
+      total: 0,
+      legalities: {},
+      ptcgoCode: '',
+      releaseDate: '',
+      updatedAt: '',
+      images: { symbol: '', logo: '' },
+    },
+    number: row.number ?? '',
+    artist: row.artist ?? '',
+    rarity: row.rarity ?? 'Unknown',
+    legalities: {},
+    images: {
+      small: row.small_image_url ?? '',
+      large: row.large_image_url ?? row.small_image_url ?? '',
+    },
+    tcgplayer: row.tcgplayer_prices ? { url: '', updatedAt: '', prices: row.tcgplayer_prices } : undefined,
+  };
+}
+
+// Reads a single card from the local mirror first (fast, no external rate
+// limits) before ever touching the external TCG API — mirrors the same
+// mirror-first pattern useSetCards.ts uses for set-scoped browsing.
+async function getCardFromMirror(id: string): Promise<PokemonCard | null> {
+  const { data, error } = await (supabase as any)
+    .from('pokemon_cards')
+    .select('id,name,set_id,set_name,number,rarity,supertype,subtypes,hp,types,artist,small_image_url,large_image_url,tcgplayer_prices')
+    .eq('id', id)
+    .maybeSingle();
+  if (error || !data) return null;
+  return mirrorRowToPokemonCard(data);
+}
 
 /**
  * Get cards with optional filtering
@@ -59,7 +111,13 @@ export const getCardById = async (id: string): Promise<PokemonCard> => {
   if (!id) {
     throw new Error('Card ID is required');
   }
-  
+
+  const mirrored = await getCardFromMirror(id);
+  if (mirrored) {
+    console.log(`Serving card ${id} from local mirror`);
+    return mirrored;
+  }
+
   try {
     console.log(`Fetching card with ID: ${id}`);
     const response = await fetchFromApi(`${BASE_URL}/cards/${id}`);

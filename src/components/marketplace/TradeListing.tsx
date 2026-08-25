@@ -20,6 +20,9 @@ interface TradeListingProps {
     description: string;
     createdAt: Date;
     featured?: boolean;
+    listingType?: 'trade' | 'sale';
+    askingPrice?: number;
+    currency?: string;
   };
   onProposeTrade: () => void;
   featured?: boolean;
@@ -74,6 +77,9 @@ const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListin
         listingOwnerId={listing.userId}
         onProposeTrade={handleProposeTrade}
         featured={featured}
+        listingType={listing.listingType ?? 'trade'}
+        askingPrice={listing.askingPrice}
+        currency={listing.currency}
       />
       
       <TradeListingProtection />

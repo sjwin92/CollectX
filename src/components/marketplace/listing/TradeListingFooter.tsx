@@ -2,11 +2,11 @@
 import React, { useState } from "react";
 import { CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRightLeft, Eye, Star, Heart, MessageCircle } from "lucide-react";
+import { ArrowRightLeft, Eye, Star, Heart, MessageCircle, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/useUser";
-import { expressInterest } from "@/services/supabaseMarketplaceService";
+import { expressInterest, createCheckoutSession } from "@/services/supabaseMarketplaceService";
 import SocialTradeHub from "@/components/trades/SocialTradeHub";
 
 interface TradeListingFooterProps {
@@ -15,14 +15,51 @@ interface TradeListingFooterProps {
   listingOwnerId: string;
   onProposeTrade: () => void;
   featured?: boolean;
+  listingType?: 'trade' | 'sale';
+  askingPrice?: number;
+  currency?: string;
 }
 
-const TradeListingFooter = ({ cardId, listingId, listingOwnerId, onProposeTrade, featured = false }: TradeListingFooterProps) => {
+const TradeListingFooter = ({
+  cardId,
+  listingId,
+  listingOwnerId,
+  onProposeTrade,
+  featured = false,
+  listingType = 'trade',
+  askingPrice,
+  currency = 'gbp',
+}: TradeListingFooterProps) => {
   const { toast } = useToast();
   const { user } = useUser();
   const [interestSubmitting, setInterestSubmitting] = useState(false);
   const [interestSent, setInterestSent] = useState(false);
   const [isMessageOpen, setIsMessageOpen] = useState(false);
+  const [isBuying, setIsBuying] = useState(false);
+
+  const handleBuyNow = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to buy this card",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsBuying(true);
+    try {
+      const url = await createCheckoutSession(listingId);
+      window.location.href = url;
+    } catch (error) {
+      toast({
+        title: "Couldn't start checkout",
+        description: (error as { message?: string })?.message || "This listing may no longer be available. Please try again.",
+        variant: "destructive"
+      });
+      setIsBuying(false);
+    }
+  };
 
   const handleMessageSeller = () => {
     if (!user) {
@@ -101,15 +138,30 @@ const TradeListingFooter = ({ cardId, listingId, listingOwnerId, onProposeTrade,
           View Card
         </Link>
       </Button>
-      <Button
-        size="sm"
-        onClick={handleProposeTrade}
-        className={`w-full ${featured ? "bg-amber-600 hover:bg-amber-700" : ""}`}
-      >
-        <ArrowRightLeft className="h-4 w-4 mr-2" />
-        Propose Trade
-        {featured && <Star className="h-3 w-3 ml-1 text-amber-200" />}
-      </Button>
+      {listingType === 'sale' ? (
+        !isOwnListing && (
+          <Button
+            size="sm"
+            onClick={handleBuyNow}
+            disabled={isBuying}
+            className={`w-full ${featured ? "bg-amber-600 hover:bg-amber-700" : ""}`}
+          >
+            <ShoppingBag className="h-4 w-4 mr-2" />
+            {isBuying ? "Redirecting..." : `Buy Now — ${currency.toUpperCase()} ${askingPrice?.toFixed(2)}`}
+            {featured && <Star className="h-3 w-3 ml-1 text-amber-200" />}
+          </Button>
+        )
+      ) : (
+        <Button
+          size="sm"
+          onClick={handleProposeTrade}
+          className={`w-full ${featured ? "bg-amber-600 hover:bg-amber-700" : ""}`}
+        >
+          <ArrowRightLeft className="h-4 w-4 mr-2" />
+          Propose Trade
+          {featured && <Star className="h-3 w-3 ml-1 text-amber-200" />}
+        </Button>
+      )}
       {!isOwnListing && (
         <>
           <Button

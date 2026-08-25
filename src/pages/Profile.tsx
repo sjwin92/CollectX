@@ -18,6 +18,7 @@ import {
 import { useUser } from "@/hooks/useUser";
 import { supabase } from "@/integrations/supabase/client";
 import UserDashboard from "@/components/analytics/UserDashboard";
+import { getSellerStripeStatus, startSellerOnboarding, type SellerStripeStatus } from "@/services/supabaseMarketplaceService";
 import { 
   Star, 
   Mail, 
@@ -55,6 +56,23 @@ const Profile = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [userCollection, setUserCollection] = useState<CardItemProps[]>([]);
   const [filteredCards, setFilteredCards] = useState<CardItemProps[]>([]);
+  const [sellerStatus, setSellerStatus] = useState<SellerStripeStatus | null>(null);
+  const [isConnectingPayouts, setIsConnectingPayouts] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    getSellerStripeStatus().then(setSellerStatus).catch(() => setSellerStatus(null));
+  }, [user]);
+
+  const handleConnectPayouts = async () => {
+    setIsConnectingPayouts(true);
+    try {
+      const url = await startSellerOnboarding();
+      window.location.href = url;
+    } catch {
+      setIsConnectingPayouts(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -244,8 +262,24 @@ const Profile = () => {
                   )}
                 </div>
               </GlassCard>
+
+              <GlassCard className="p-6">
+                <h2 className="text-lg font-bold mb-2">Get paid for card sales</h2>
+                {sellerStatus?.onboarding_status === 'complete' ? (
+                  <p className="text-sm text-muted-foreground">Payouts connected — you can list cards for sale in the marketplace.</p>
+                ) : (
+                  <>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Connect a payout account to start selling cards for cash on the marketplace.
+                    </p>
+                    <Button size="sm" onClick={handleConnectPayouts} disabled={isConnectingPayouts}>
+                      {isConnectingPayouts ? "Redirecting..." : sellerStatus?.onboarding_status === 'pending' || sellerStatus?.onboarding_status === 'restricted' ? "Finish setup" : "Connect payouts"}
+                    </Button>
+                  </>
+                )}
+              </GlassCard>
             </div>
-            
+
             {/* Profile main content */}
             <div className="md:col-span-2">
               <Tabs defaultValue="collection">

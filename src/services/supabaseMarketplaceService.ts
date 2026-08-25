@@ -19,8 +19,9 @@ export interface MarketplaceListing {
   grade_company?: string;
   grade_score?: number;
   quantity: number;
-  listing_type: 'trade';
+  listing_type: 'trade' | 'sale';
   asking_price?: number;
+  currency: string;
   trade_preferences?: string;
   description?: string;
   featured: boolean;
@@ -30,6 +31,12 @@ export interface MarketplaceListing {
   interested_count: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface SellerStripeStatus {
+  onboarding_status: 'not_started' | 'pending' | 'complete' | 'restricted';
+  charges_enabled: boolean;
+  payouts_enabled: boolean;
 }
 
 export interface MarketplaceInterest {
@@ -51,7 +58,8 @@ export interface MarketplaceFavorite {
 export const createMarketplaceListing = async (
   card: ExtendedCardItemWithDB,
   listingData: {
-    listing_type?: 'trade';
+    listing_type?: 'trade' | 'sale';
+    asking_price?: number;
     trade_preferences?: string;
     description?: string;
     expires_at?: string;
@@ -63,8 +71,11 @@ export const createMarketplaceListing = async (
     throw new Error('This card must exist in your collection (marked for trade) before you can list it.');
   }
 
+  const listingType = listingData.listing_type ?? 'trade';
+
   // The DB trigger snapshots card identity from user_card_id; we only submit the reference
-  // and the trade-specific fields.
+  // and the trade/sale-specific fields. For 'sale' listings the trigger also enforces that
+  // asking_price is set and that the seller has a Stripe account with charges enabled.
   const { data, error } = await supabase
     .from('marketplace_listings')
     .insert([{
@@ -74,8 +85,8 @@ export const createMarketplaceListing = async (
       card_name: card.name,
       set_id: card.set?.id || '',
       set_name: card.set?.name || '',
-      listing_type: 'trade',
-      asking_price: null,
+      listing_type: listingType,
+      asking_price: listingType === 'sale' ? listingData.asking_price : null,
       trade_preferences: listingData.trade_preferences,
       description: listingData.description,
       expires_at: listingData.expires_at,
@@ -85,6 +96,29 @@ export const createMarketplaceListing = async (
 
   if (error) throw error;
   return data as MarketplaceListing;
+};
+
+// Get the caller's Stripe Connect status (used to gate creating 'sale' listings)
+export const getSellerStripeStatus = async (): Promise<SellerStripeStatus> => {
+  const { data, error } = await supabase.functions.invoke('stripe-account-status');
+  if (error) throw error;
+  return data as SellerStripeStatus;
+};
+
+// Kick off Stripe Express onboarding; returns a URL to redirect the seller to.
+export const startSellerOnboarding = async (): Promise<string> => {
+  const { data, error } = await supabase.functions.invoke('stripe-connect-onboarding');
+  if (error) throw error;
+  return (data as { url: string }).url;
+};
+
+// Create a Stripe Checkout session for a 'sale' listing; returns a URL to redirect the buyer to.
+export const createCheckoutSession = async (listingId: string): Promise<string> => {
+  const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+    body: { listing_id: listingId },
+  });
+  if (error) throw error;
+  return (data as { url: string }).url;
 };
 
 // Get marketplace listings with filters

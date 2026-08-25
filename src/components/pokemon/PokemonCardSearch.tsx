@@ -102,6 +102,14 @@ const PokemonCardSearch: React.FC<PokemonCardSearchProps> = ({ initialSetId = nu
   };
   
   const handleSetChange = (value: string) => {
+    // Radix's Select can call onValueChange with "" when the controlled `value`
+    // doesn't match any currently-registered SelectItem yet (e.g. we set
+    // selectedSet from a URL/prop setId before the async `sets` list has
+    // loaded). No real SelectItem in this list has an empty value, so this is
+    // never a genuine user choice — ignore it rather than navigating the
+    // setId out of the URL.
+    if (!value) return;
+
     console.log(`Set selection changed to: ${value}`);
     setSelectedSet(value);
     

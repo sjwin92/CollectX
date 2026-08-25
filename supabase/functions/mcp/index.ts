@@ -143,7 +143,7 @@ var list_marketplace_listings_default = defineTool4({
 });
 
 // src/lib/mcp/index.ts
-var projectRef = "vnyhkqaxkhmbpzfhhztu";
+var projectRef = "yfzfyeoaisspqlziaufx";
 var mcp_default = defineMcp({
   name: "collectx-mcp",
   title: "CollectX MCP",

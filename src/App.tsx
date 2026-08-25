@@ -22,6 +22,10 @@ const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Trades = lazy(() => import("./pages/Trades"));
 const TradeDetail = lazy(() => import("./pages/TradeDetail"));
+const Orders = lazy(() => import("./pages/Orders"));
+const OrderDetail = lazy(() => import("./pages/OrderDetail"));
+const SellerOnboardingComplete = lazy(() => import("./pages/SellerOnboardingComplete"));
+const SellerStore = lazy(() => import("./pages/SellerStore"));
 const Collection = lazy(() => import("./pages/Collection"));
 const CollectionBoxes = lazy(() => import("./pages/CollectionBoxes"));
 const PokemonCards = lazy(() => import("./pages/PokemonCards"));
@@ -73,9 +77,13 @@ function App() {
                 {/* Protected routes */}
                 <Route path="/trades" element={<ProtectedRoute><Trades /></ProtectedRoute>} />
                 <Route path="/trades/:id" element={<ProtectedRoute><TradeDetail /></ProtectedRoute>} />
+                <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+                <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
+                <Route path="/seller/onboarding-complete" element={<ProtectedRoute><SellerOnboardingComplete /></ProtectedRoute>} />
                 <Route path="/collection" element={<ProtectedRoute><Collection /></ProtectedRoute>} />
                 <Route path="/collection-boxes" element={<ProtectedRoute><CollectionBoxes /></ProtectedRoute>} />
                 <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+                <Route path="/sellers/:userId" element={<ProtectedRoute><SellerStore /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
 

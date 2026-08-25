@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/useUser";
-import { createMarketplaceListing } from "@/services/supabaseMarketplaceService";
+import { createMarketplaceListing, getSellerStripeStatus, startSellerOnboarding } from "@/services/supabaseMarketplaceService";
 import { ExtendedCardItemWithDB, getTradableCards } from "@/services/supabaseCollectionService";
 import { useQuery } from "@tanstack/react-query";
 import { SmartImage } from "@/components/common/SmartImage";
@@ -26,10 +27,13 @@ const CreateListingModal = ({
   onListingCreated
 }: CreateListingModalProps) => {
   const [internalSelectedCard, setInternalSelectedCard] = useState<ExtendedCardItemWithDB | null>(selectedCard);
+  const [listingType, setListingType] = useState<'trade' | 'sale'>('trade');
+  const [askingPrice, setAskingPrice] = useState<string>("");
   const [tradePreferences, setTradePreferences] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [expiresAt, setExpiresAt] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isConnectingPayouts, setIsConnectingPayouts] = useState(false);
   const { toast } = useToast();
   const { user } = useUser();
 
@@ -39,6 +43,31 @@ const CreateListingModal = ({
     queryFn: getTradableCards,
     enabled: !!user && !selectedCard
   });
+
+  // Only needed once the user picks "Sell for cash" — checks whether they can
+  // actually receive a payout yet.
+  const { data: stripeStatus, isLoading: isLoadingStripeStatus } = useQuery({
+    queryKey: ['seller-stripe-status'],
+    queryFn: getSellerStripeStatus,
+    enabled: !!user && listingType === 'sale',
+  });
+  const canSell = stripeStatus?.charges_enabled === true;
+
+  const handleConnectPayouts = async () => {
+    setIsConnectingPayouts(true);
+    try {
+      const url = await startSellerOnboarding();
+      window.location.href = url;
+    } catch (error) {
+      console.error('Error starting seller onboarding:', error);
+      toast({
+        title: "Error",
+        description: "Failed to start payout setup. Please try again.",
+        variant: "destructive"
+      });
+      setIsConnectingPayouts(false);
+    }
+  };
 
   const currentCard = internalSelectedCard || selectedCard;
 
@@ -61,10 +90,29 @@ const CreateListingModal = ({
       return;
     }
 
-    if (!tradePreferences) {
+    if (listingType === 'trade' && !tradePreferences) {
       toast({
         title: "Error",
         description: "Please specify what you're looking for in trade",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const priceValue = Number(askingPrice);
+    if (listingType === 'sale' && (!askingPrice || !(priceValue > 0))) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid asking price",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (listingType === 'sale' && !canSell) {
+      toast({
+        title: "Payouts not connected",
+        description: "Connect a payout account before listing a card for sale",
         variant: "destructive"
       });
       return;
@@ -74,7 +122,8 @@ const CreateListingModal = ({
 
     try {
       await createMarketplaceListing(currentCard, {
-        listing_type: 'trade',
+        listing_type: listingType,
+        asking_price: listingType === 'sale' ? priceValue : undefined,
         trade_preferences: tradePreferences,
         description,
         expires_at: expiresAt || undefined
@@ -82,10 +131,14 @@ const CreateListingModal = ({
 
       toast({
         title: "Listing created",
-        description: "Your card has been listed in the marketplace",
+        description: listingType === 'sale'
+          ? "Your card is now listed for sale in the marketplace"
+          : "Your card has been listed in the marketplace",
       });
 
       // Reset form
+      setListingType('trade');
+      setAskingPrice("");
       setTradePreferences("");
       setDescription("");
       setExpiresAt("");
@@ -207,15 +260,59 @@ const CreateListingModal = ({
             {/* Listing Details Form */}
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="tradePreferences">Trade Preferences</Label>
-                <Textarea
-                  id="tradePreferences"
-                  placeholder="What cards are you looking for? (e.g., Charizard cards, specific sets, etc.)"
-                  value={tradePreferences}
-                  onChange={(e) => setTradePreferences(e.target.value)}
-                />
+                <Label>Listing Type</Label>
+                <ToggleGroup
+                  type="single"
+                  value={listingType}
+                  onValueChange={(value) => value && setListingType(value as 'trade' | 'sale')}
+                  className="justify-start"
+                >
+                  <ToggleGroupItem value="trade" aria-label="Trade">Trade</ToggleGroupItem>
+                  <ToggleGroupItem value="sale" aria-label="Sell for cash">Sell for cash</ToggleGroupItem>
+                </ToggleGroup>
               </div>
 
+              {listingType === 'sale' ? (
+                <>
+                  {!isLoadingStripeStatus && !canSell && (
+                    <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 space-y-2">
+                      <p className="text-sm text-amber-200">
+                        Connect a payout account before you can list cards for sale. This is a one-time setup with our payment provider.
+                      </p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleConnectPayouts}
+                        disabled={isConnectingPayouts}
+                      >
+                        {isConnectingPayouts ? "Redirecting..." : "Connect payouts"}
+                      </Button>
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="askingPrice">Asking Price (GBP)</Label>
+                    <Input
+                      id="askingPrice"
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      placeholder="e.g. 25.00"
+                      value={askingPrice}
+                      onChange={(e) => setAskingPrice(e.target.value)}
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="tradePreferences">Trade Preferences</Label>
+                  <Textarea
+                    id="tradePreferences"
+                    placeholder="What cards are you looking for? (e.g., Charizard cards, specific sets, etc.)"
+                    value={tradePreferences}
+                    onChange={(e) => setTradePreferences(e.target.value)}
+                  />
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="description">Additional Description</Label>
@@ -244,7 +341,10 @@ const CreateListingModal = ({
           <Button variant="outline" onClick={handleClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={!currentCard || isLoading}>
+          <Button
+            onClick={handleSubmit}
+            disabled={!currentCard || isLoading || (listingType === 'sale' && !canSell)}
+          >
             {isLoading ? "Creating..." : "Create Listing"}
           </Button>
         </DialogFooter>

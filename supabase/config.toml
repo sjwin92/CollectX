@@ -1,1 +1,18 @@
 project_id = "yfzfyeoaisspqlziaufx"
+
+[functions.stripe-webhook]
+# Stripe calls this endpoint directly with no Supabase JWT — authenticity is
+# verified via the Stripe-Signature header instead (see index.ts).
+verify_jwt = false
+
+[functions.auto-confirm-orders]
+# Invoked by pg_cron/pg_net on a schedule, not from a browser — authenticity
+# is verified via the x-cron-secret header instead (see index.ts).
+verify_jwt = false
+
+[functions.release-order-payout]
+# Called either by an authenticated buyer (JWT checked manually in index.ts,
+# since it also needs to accept the cron's x-cron-secret path) or the cron
+# sweep above — verify_jwt is disabled so the cron path isn't rejected before
+# the function's own auth logic runs.
+verify_jwt = false
