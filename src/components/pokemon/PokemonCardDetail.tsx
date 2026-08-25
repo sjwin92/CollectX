@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Button } from "@/components/ui/button";
 import { getAllPossibleImageUrlsFromCardObject } from "@/services/api/cardImageService";
 import QuickAddToCollection from "./QuickAddToCollection";
+import WishlistToggleButton from "./WishlistToggleButton";
 import { SmartImage } from "@/components/common/SmartImage";
 
 interface PokemonCardDetailProps {
@@ -242,8 +243,9 @@ const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
              </div>
            )}
            
-           <div className="pt-4">
+           <div className="pt-4 space-y-2">
              <QuickAddToCollection card={card} />
+             <WishlistToggleButton card={card} />
            </div>
          </div>
        </div>

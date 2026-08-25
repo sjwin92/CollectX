@@ -28,7 +28,8 @@ import {
   Home,
   Camera,
   Settings,
-  Box
+  Box,
+  Heart
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import SocialTradeHub from "@/components/trades/SocialTradeHub";
@@ -208,6 +209,12 @@ const Navbar = () => {
                       <PrefetchLink to="/grade">
                         <Camera className="mr-2 h-4 w-4" />
                         <span>Grade a Card</span>
+                      </PrefetchLink>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <PrefetchLink to="/wishlist">
+                        <Heart className="mr-2 h-4 w-4" />
+                        <span>Want List</span>
                       </PrefetchLink>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
