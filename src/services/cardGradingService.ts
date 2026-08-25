@@ -78,7 +78,21 @@ export const createScanCreditCheckout = async (): Promise<string> => {
   return (data as { url: string }).url;
 };
 
-export const getMyScanHistory = async () => {
+export interface CardGradingScan {
+  id: string;
+  card_name: string | null;
+  overall_grade: number | null;
+  condition_label: string | null;
+  centering_grade: number | null;
+  corners_grade: number | null;
+  edges_grade: number | null;
+  surface_grade: number | null;
+  front_image_path: string | null;
+  back_image_path: string | null;
+  created_at: string;
+}
+
+export const getMyScanHistory = async (): Promise<CardGradingScan[]> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
   const { data, error } = await supabase
@@ -87,5 +101,13 @@ export const getMyScanHistory = async () => {
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return data;
+  return data as CardGradingScan[];
+};
+
+export const getScanImageUrl = async (path: string): Promise<string | null> => {
+  const { data, error } = await supabase.storage
+    .from('card-grading-scans')
+    .createSignedUrl(path, 3600);
+  if (error) return null;
+  return data.signedUrl;
 };

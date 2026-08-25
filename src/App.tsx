@@ -39,6 +39,7 @@ const Sets = lazy(() => import("./pages/Sets"));
 const SetDetail = lazy(() => import("./pages/SetDetail"));
 const Products = lazy(() => import("./pages/Products"));
 const GradeCard = lazy(() => import("./pages/GradeCard"));
+const MyScans = lazy(() => import("./pages/MyScans"));
 const NavMetricsAdmin = lazy(() => import("./pages/admin/NavMetrics"));
 const SeedDatabase = lazy(() => import("./pages/admin/SeedDatabase"));
 
@@ -81,6 +82,7 @@ function App() {
                 <Route path="/seller/onboarding-complete" element={<ProtectedRoute><SellerOnboardingComplete /></ProtectedRoute>} />
                 <Route path="/collection" element={<ProtectedRoute><Collection /></ProtectedRoute>} />
                 <Route path="/grade" element={<ProtectedRoute><GradeCard /></ProtectedRoute>} />
+                <Route path="/my-scans" element={<ProtectedRoute><MyScans /></ProtectedRoute>} />
                 <Route path="/collection-boxes" element={<ProtectedRoute><CollectionBoxes /></ProtectedRoute>} />
                 <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
                 <Route path="/sellers/:userId" element={<ProtectedRoute><SellerStore /></ProtectedRoute>} />

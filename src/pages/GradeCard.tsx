@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -119,9 +119,12 @@ const GradeCard: React.FC = () => {
       <main className="flex-1 pt-24 pb-16">
         <div className="container max-w-lg space-y-6">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Sparkles className="h-6 w-6 text-primary" /> Grade My Card
-            </h1>
+            <div className="flex items-center justify-between gap-2">
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <Sparkles className="h-6 w-6 text-primary" /> Grade My Card
+              </h1>
+              <Link to="/my-scans" className="text-sm text-muted-foreground hover:underline shrink-0">My Scans</Link>
+            </div>
             <p className="text-sm text-muted-foreground mt-1">
               AI pre-grading estimate — centering, corners, edges &amp; surface, mapped to a rough 1–10 scale.
             </p>
