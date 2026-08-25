@@ -28,8 +28,10 @@ Assess these four factors independently, each on a 1-10 scale (10 = flawless):
 
 If only a front photo is provided, assess surface/corners/edges from the front only and note that in "notes". If a back photo is provided too, weigh it in as well (a real grade considers both sides).
 
+Also rate your own confidence in this assessment from 0-100. Be honest and conservative here, not reassuring — collectors specifically distrust AI grading tools that report a single confident-looking number with no sense of uncertainty attached. Lower your confidence for: a front-only submission (no back photo), poor lighting or glare obscuring part of the card, a blurry or low-resolution image, or a borderline case between two grades.
+
 Respond with ONLY a single JSON object, no markdown formatting, no other text, matching exactly this shape:
-{"centering": number, "centering_ratio_lr": string, "centering_ratio_tb": string, "corners": number, "edges": number, "surface": number, "notes": string}`;
+{"centering": number, "centering_ratio_lr": string, "centering_ratio_tb": string, "corners": number, "edges": number, "surface": number, "confidence": number, "notes": string}`;
 
 // Rough PSA-style condition labels, bucketed off the computed overall grade.
 // Not an official standard — a reasonable approximation for a "pre-grade" estimate.
@@ -185,6 +187,12 @@ serve(async (req) => {
       geomean([grade.centering, grade.corners, grade.edges, grade.surface]) * 10
     ) / 10;
 
+    // Don't fully trust the model to self-regulate confidence — a front-only
+    // submission is structurally less reliable than front+back regardless of
+    // how sure the model sounds, so cap it in code rather than prompt-only.
+    const rawConfidence = typeof grade.confidence === 'number' ? grade.confidence : 50;
+    const confidence = Math.max(0, Math.min(back ? 100 : 70, rawConfidence));
+
     // Persist the photos themselves — this is the training set for an
     // eventual in-house model, not just a record of the result.
     const scanId = crypto.randomUUID();
@@ -221,6 +229,7 @@ serve(async (req) => {
       surface_grade: grade.surface ?? null,
       centering_ratio_lr: grade.centering_ratio_lr ?? null,
       centering_ratio_tb: grade.centering_ratio_tb ?? null,
+      confidence,
       front_image_path: frontPath,
       back_image_path: backPath,
       raw_result: rawResult,

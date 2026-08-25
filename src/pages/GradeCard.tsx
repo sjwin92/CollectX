@@ -186,6 +186,12 @@ const GradeCard: React.FC = () => {
                     <span className="text-lg text-muted-foreground">/10</span>
                   </div>
                   <p className="text-lg font-medium mt-1">{result.condition_label ?? 'Unknown condition'}</p>
+                  {result.confidence != null && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {Math.round(result.confidence)}% confidence
+                      {result.confidence < 60 ? ' — add a back photo or better lighting for a more reliable read' : ''}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
 

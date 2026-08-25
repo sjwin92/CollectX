@@ -84,6 +84,9 @@ const MyScans: React.FC = () => {
                         <span className="text-xs text-muted-foreground">/10</span>
                       </div>
                       <p className="text-xs text-muted-foreground">{scan.condition_label ?? 'Unknown'}</p>
+                      {scan.confidence != null && (
+                        <p className="text-xs text-muted-foreground">{Math.round(scan.confidence)}% confidence</p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

@@ -10,6 +10,7 @@ export interface CardGradeResult {
   surface_grade: number | null;
   centering_ratio_lr: string | null;
   centering_ratio_tb: string | null;
+  confidence: number | null;
   was_free: boolean;
   freeScansRemaining: number;
   purchasedCreditsRemaining: number;
@@ -87,6 +88,7 @@ export interface CardGradingScan {
   corners_grade: number | null;
   edges_grade: number | null;
   surface_grade: number | null;
+  confidence: number | null;
   front_image_path: string | null;
   back_image_path: string | null;
   created_at: string;
