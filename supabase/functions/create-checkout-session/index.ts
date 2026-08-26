@@ -104,11 +104,22 @@ serve(async (req) => {
       .single();
     if (feeCfgError) throw feeCfgError;
 
+    // Per-account fee override (e.g. a store's seller commission). NULL columns
+    // fall back to the global marketplace_fee_config. Keyed on the SELLER.
+    const { data: feeOverride } = await serviceClient
+      .from('account_fee_overrides')
+      .select('seller_fee_bps, buyer_protection_fee_bps')
+      .eq('user_id', listing.user_id)
+      .maybeSingle();
+
+    const sellerFeeBps = feeOverride?.seller_fee_bps ?? feeCfg.seller_fee_bps;
+    const buyerFeeBps = feeOverride?.buyer_protection_fee_bps ?? feeCfg.buyer_protection_fee_bps;
+
     const itemAmount = Number(listing.asking_price);
     const buyerFeeAmount = Math.round(
-      (itemAmount * feeCfg.buyer_protection_fee_bps / 10000 + Number(feeCfg.buyer_protection_fee_fixed)) * 100
+      (itemAmount * buyerFeeBps / 10000 + Number(feeCfg.buyer_protection_fee_fixed)) * 100
     ) / 100;
-    const sellerFeeAmount = Math.round((itemAmount * feeCfg.seller_fee_bps / 10000) * 100) / 100;
+    const sellerFeeAmount = Math.round((itemAmount * sellerFeeBps / 10000) * 100) / 100;
     const totalChargedAmount = Math.round((itemAmount + buyerFeeAmount) * 100) / 100;
     const sellerPayoutAmount = Math.round((itemAmount - sellerFeeAmount) * 100) / 100;
 

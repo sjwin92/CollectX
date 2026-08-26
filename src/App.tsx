@@ -44,6 +44,11 @@ const MyScans = lazy(() => import("./pages/MyScans"));
 const Wishlist = lazy(() => import("./pages/Wishlist"));
 const NavMetricsAdmin = lazy(() => import("./pages/admin/NavMetrics"));
 const SeedDatabase = lazy(() => import("./pages/admin/SeedDatabase"));
+const StoreApplicationsAdmin = lazy(() => import("./pages/admin/StoreApplications"));
+const ForStores = lazy(() => import("./pages/ForStores"));
+const StoreApply = lazy(() => import("./pages/StoreApply"));
+const StoreSetup = lazy(() => import("./pages/StoreSetup"));
+const StorePublic = lazy(() => import("./pages/StorePublic"));
 
 const RouteFallback = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -75,6 +80,8 @@ function App() {
                 <Route path="/card/:id" element={<CardDetail />} />
                 <Route path="/pokemons" element={<Pokemons />} />
                 <Route path="/products" element={<Products />} />
+                <Route path="/for-stores" element={<ForStores />} />
+                <Route path="/store/:slug" element={<StorePublic />} />
 
                 {/* Protected routes */}
                 <Route path="/trades" element={<ProtectedRoute><Trades /></ProtectedRoute>} />
@@ -89,6 +96,8 @@ function App() {
                 <Route path="/collection-boxes" element={<ProtectedRoute><CollectionBoxes /></ProtectedRoute>} />
                 <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
                 <Route path="/listings/:id" element={<ProtectedRoute><ListingDetail /></ProtectedRoute>} />
+                <Route path="/store/apply" element={<ProtectedRoute><StoreApply /></ProtectedRoute>} />
+                <Route path="/store/setup" element={<ProtectedRoute><StoreSetup /></ProtectedRoute>} />
                 <Route path="/sellers/:userId" element={<ProtectedRoute><SellerStore /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
@@ -96,6 +105,7 @@ function App() {
                 {/* Admin routes — role-gated */}
                 <Route path="/admin/nav-metrics" element={<AdminRoute><NavMetricsAdmin /></AdminRoute>} />
                 <Route path="/admin/seed-database" element={<AdminRoute><SeedDatabase /></AdminRoute>} />
+                <Route path="/admin/store-applications" element={<AdminRoute><StoreApplicationsAdmin /></AdminRoute>} />
 
                 {/* 404 Page */}
                 <Route path="*" element={<NotFound />} />

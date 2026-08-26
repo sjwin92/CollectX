@@ -1,0 +1,618 @@
+<title>CollectX for Business</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+  :root {
+    --ground: #f6f7f8;
+    --surface: #ffffff;
+    --surface-2: #eef0f2;
+    --border: #e0e3e5;
+    --hairline: #ebedee;
+    --text: #16181a;
+    --muted: #5b6167;
+    --faint: #8b9198;
+    --accent: #0b8ea6;
+    --accent-soft: #e2f5f9;
+    --money: #8a6410;
+    --money-soft: #f7efd9;
+    --ok: #2f8f5b;
+    --shadow: 0 1px 2px rgba(16,18,20,.04), 0 8px 24px -12px rgba(16,18,20,.10);
+
+    --measure: 66ch;
+    --wide: 1040px;
+    --step--1: .82rem;
+    --step-0: .975rem;
+    --step-1: 1.15rem;
+    --step-2: 1.42rem;
+    --step-3: 2.15rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0f1012;
+      --surface: #16171a;
+      --surface-2: #1c1e21;
+      --border: #292c31;
+      --hairline: #202226;
+      --text: #e9ebed;
+      --muted: #9aa0a6;
+      --faint: #6a7076;
+      --accent: #00d4f5;
+      --accent-soft: #0c2a30;
+      --money: #e9bd4e;
+      --money-soft: #2a2415;
+      --ok: #4ec98a;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 32px -16px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0f1012;
+    --surface: #16171a;
+    --surface-2: #1c1e21;
+    --border: #292c31;
+    --hairline: #202226;
+    --text: #e9ebed;
+    --muted: #9aa0a6;
+    --faint: #6a7076;
+    --accent: #00d4f5;
+    --accent-soft: #0c2a30;
+    --money: #e9bd4e;
+    --money-soft: #2a2415;
+    --ok: #4ec98a;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 32px -16px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--text);
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    font-size: var(--step-0);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: var(--wide);
+    margin: 0 auto;
+    padding: clamp(2.5rem, 6vw, 5rem) clamp(1.15rem, 5vw, 3rem) 6rem;
+  }
+  .col { max-width: var(--measure); }
+
+  /* ---------- header ---------- */
+  header { border-bottom: 1px solid var(--border); padding-bottom: 2.25rem; margin-bottom: 3rem; }
+  .eyebrow {
+    font-size: var(--step--1);
+    font-weight: 600;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 1rem;
+  }
+  h1 {
+    font-family: "Manrope", sans-serif;
+    font-weight: 800;
+    font-size: var(--step-3);
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+    margin: 0 0 .9rem;
+  }
+  .lede { color: var(--muted); font-size: var(--step-1); max-width: 60ch; margin: 0; }
+
+  /* ---------- revenue strip ---------- */
+  .rev {
+    margin-top: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .rev div { background: var(--surface); padding: 1rem 1.15rem; }
+  .rev dt {
+    font-size: var(--step--1);
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 0 0 .35rem;
+  }
+  .rev dd { margin: 0; font-weight: 600; font-size: .96rem; }
+  .rev .rate { color: var(--money); font-family: "Manrope", sans-serif; font-weight: 800; }
+
+  /* ---------- sections ---------- */
+  section { margin-top: 3.5rem; }
+  h2 {
+    font-family: "Manrope", sans-serif;
+    font-weight: 800;
+    font-size: var(--step-2);
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    margin: 0 0 1.1rem;
+    padding-bottom: .55rem;
+    border-bottom: 1px solid var(--hairline);
+  }
+  h3 {
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    font-size: var(--step-1);
+    letter-spacing: -0.015em;
+    margin: 2rem 0 .6rem;
+  }
+  p { margin: 0 0 1rem; }
+  p.col, ul.col, ol.col { max-width: var(--measure); }
+  strong { font-weight: 600; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  ul, ol { margin: 0 0 1rem; padding-left: 1.3rem; }
+  li { margin: .3rem 0; }
+  li::marker { color: var(--faint); }
+
+  .lead-in { color: var(--muted); }
+
+  /* ---------- worked example ---------- */
+  .flow {
+    display: grid;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 1.5rem 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .flow div {
+    background: var(--surface);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding: .85rem 1.15rem;
+  }
+  .flow .k { color: var(--muted); }
+  .flow .v { font-family: "Manrope", sans-serif; font-weight: 700; white-space: nowrap; }
+  .flow .net { background: var(--money-soft); }
+  .flow .net .k { color: var(--text); font-weight: 600; }
+  .flow .net .v { color: var(--money); }
+
+  /* ---------- phases ---------- */
+  .phase {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    padding: 1.6rem 1.7rem 1.75rem;
+    margin: 1.5rem 0;
+  }
+  .phase-head { display: flex; align-items: baseline; gap: 1rem; margin-bottom: .35rem; }
+  .pnum {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 1.35rem;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .phase h3 { margin: 0; font-size: 1.22rem; }
+  .phase .goal { color: var(--muted); margin: .5rem 0 1.15rem; }
+  .phase h4 {
+    font-size: var(--step--1);
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 1.25rem 0 .5rem;
+  }
+  .phase ul { margin-bottom: 0; }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin-top: 1.3rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--hairline);
+  }
+  .tag {
+    font-size: var(--step--1);
+    padding: .28rem .6rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    background: var(--surface-2);
+  }
+  .tag b { color: var(--text); font-weight: 600; }
+
+  .econ {
+    margin-top: 1.3rem;
+    border-left: 3px solid var(--money);
+    background: var(--money-soft);
+    border-radius: 0 10px 10px 0;
+    padding: .95rem 1.15rem;
+  }
+  .econ .lbl {
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--money);
+    display: block;
+    margin-bottom: .3rem;
+  }
+  .econ p { margin: 0; font-size: .93rem; }
+
+  /* ---------- code ---------- */
+  pre, code { font-family: "JetBrains Mono", ui-monospace, monospace; }
+  code {
+    font-size: .86em;
+    background: var(--surface-2);
+    border: 1px solid var(--hairline);
+    border-radius: 5px;
+    padding: .08em .38em;
+  }
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.1rem 1.25rem;
+    overflow-x: auto;
+    font-size: var(--step--1);
+    line-height: 1.6;
+    margin: 1rem 0 1.5rem;
+  }
+  pre code { background: none; border: 0; padding: 0; font-size: inherit; }
+  .cmt { color: var(--faint); }
+
+  /* ---------- guardrails ---------- */
+  dl.rails { margin: 1rem 0 0; }
+  dl.rails > div { padding: 1rem 0; border-top: 1px solid var(--hairline); }
+  dl.rails > div:first-child { border-top: 0; }
+  dl.rails dt { font-family: "Manrope", sans-serif; font-weight: 700; margin-bottom: .25rem; }
+  dl.rails dd { margin: 0; color: var(--muted); max-width: var(--measure); }
+
+  /* ---------- table ---------- */
+  .tbl-scroll { overflow-x: auto; margin: 1rem 0 1.5rem; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: .6rem .9rem; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+  th { font-size: var(--step--1); text-transform: uppercase; letter-spacing: .05em; color: var(--faint); font-weight: 600; }
+  td:first-child { font-weight: 600; }
+
+  .done { color: var(--ok); font-weight: 600; }
+  footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--faint); font-size: var(--step--1); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    a { transition: color .15s ease; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">CollectX · Product plan</p>
+    <h1>CollectX for Business</h1>
+    <p class="lede">A store tier alongside the collector app: verified Pokémon retailers list, price and sell through CollectX &mdash; and buy singles back from collectors through the same rails.</p>
+
+    <dl class="rev">
+      <div><dt>Live today</dt><dd>Buyer protection fee <span class="rate">5%</span><br><span class="lead-in">on every sale, incl. store sales</span></dd></div>
+      <div><dt>Phase&nbsp;1</dt><dd>Store seller commission <span class="rate">3&rarr;8%</span><br><span class="lead-in">founder rate, then standard</span></dd></div>
+      <div><dt>Phase&nbsp;3</dt><dd>Buylist spread <span class="rate">~2%</span><br><span class="lead-in">store buys a single from a collector</span></dd></div>
+      <div><dt>Phase&nbsp;4</dt><dd>Business subscription <span class="rate">£19&ndash;99</span><br><span class="lead-in">/mo &mdash; tools + reduced commission</span></dd></div>
+    </dl>
+  </header>
+
+  <section>
+    <h2>The money model</h2>
+    <p class="col">CollectX already runs as a <strong>managed-escrow marketplace</strong>. A buyer pays the platform balance through Stripe Checkout; funds are held until delivery is confirmed (or 14 days pass); a Stripe Transfer then pays the seller&rsquo;s connected account. The platform keeps the fee spread. Grading scans are a separate line (£2.99 / 10, 3 free).</p>
+    <p class="col">Today the spread is <strong>5% from the buyer, 0% from the seller</strong> &mdash; deliberately soft to seed peer-to-peer supply. Stores are a different animal: a business channel with daily volume. They earn a badge, qualified demand and tooling; in exchange they pay a <strong>seller commission</strong> collectors don&rsquo;t. Every fee stays in one tunable place (<code>marketplace_fee_config</code>), now with a per-account override so a store&rsquo;s rate can differ without a redeploy.</p>
+
+    <h3>Five revenue lines, in the order they switch on</h3>
+    <ol class="col">
+      <li><strong>Buyer protection fee (live).</strong> 5% on top of item price &mdash; applies to store sales too, so a store sale earns <em>buyer&nbsp;5% + seller commission</em>.</li>
+      <li><strong>Store seller commission (Phase&nbsp;1).</strong> Per-sale, configurable in bps, per-account override. Founder rate 3% to onboard the first cohort; 8% standard after. Charged out of the seller payout &mdash; no change to how buyers pay.</li>
+      <li><strong>Promoted listings &amp; storefronts (Phase&nbsp;2).</strong> A store pays to feature SKUs or pin its storefront in the marketplace. Flat fee, platform charge.</li>
+      <li><strong>Buylist spread (Phase&nbsp;3).</strong> When a store buys a single <em>from</em> a collector through CollectX, the platform takes a small spread on the payout. This is the loop nothing else runs.</li>
+      <li><strong>CollectX for Business subscription (Phase&nbsp;4).</strong> £19 / £49 / £99 tiers bundling the repricer, analytics, team seats and featured slots &mdash; each tier also <em>lowers or waives</em> the seller commission. The &ldquo;pay us monthly, or pay per sale&rdquo; lever.</li>
+    </ol>
+
+    <h3>Worked example &mdash; a collector buys a £100 card from a store</h3>
+    <div class="flow col">
+      <div><span class="k">Item price</span><span class="v">£100.00</span></div>
+      <div><span class="k">Buyer pays (item + 5% protection)</span><span class="v">£105.00</span></div>
+      <div><span class="k">Store receives (item &minus; 8% commission)</span><span class="v">£92.00</span></div>
+      <div><span class="k">Stripe processing (~1.5% + 20p on £105)</span><span class="v">&minus;£1.78</span></div>
+      <div class="net"><span class="k">CollectX net per sale</span><span class="v">£11.22</span></div>
+    </div>
+    <p class="col"><span class="lead-in">For comparison: on eBay the same seller nets roughly £87 after ~13% fees. A CollectX store nets <strong>£92</strong> and reaches buyers who have told us exactly what they&rsquo;re hunting. The buyer pays about the same either way. That gap &mdash; better seller economics <em>and</em> qualified demand &mdash; is the pitch.</span></p>
+  </section>
+
+  <section>
+    <h2>Build sequence</h2>
+    <p class="col">Five phases, lightest first. Each ends on a metric that has to move before the next one starts &mdash; this is a validation ladder, not a feature list. Economics is called out per phase so no phase ships without a way to pay for itself.</p>
+
+    <div class="phase">
+      <div class="phase-head"><span class="pnum">00</span><h3>Foundations</h3></div>
+      <p class="goal">The primitives every later phase leans on &mdash; a store identity, an application funnel, and a per-account fee hook &mdash; even before a single store exists.</p>
+
+      <h4>Ships</h4>
+      <ul>
+        <li>Add <code>'store'</code> to the <code>app_role</code> enum; gate store features with the existing <code>has_role(uid,'store')</code> + <code>user_roles</code> RLS pattern.</li>
+        <li><code>store_profiles</code> &mdash; slug, name, bio, logo, banner, website, location, policies, <code>status</code>, <code>verified_at</code>, <code>commission_bps</code>, <code>subscription_tier</code>.</li>
+        <li><code>store_applications</code> &mdash; business name, registration number, country, volume estimate, message, review status.</li>
+        <li><code>account_fee_overrides(user_id, seller_fee_bps, buyer_protection_fee_bps, note)</code>; <code>create-checkout-session</code> reads it before falling back to <code>marketplace_fee_config</code>.</li>
+        <li><code>/for-stores</code> pitch page · <code>/store/apply</code> form · <code>/admin/store-applications</code> review queue (reuses <code>AdminRoute</code>).</li>
+      </ul>
+
+      <div class="econ">
+        <span class="lbl">Economics</span>
+        <p>Nothing to sell yet &mdash; but the fee-override table is the mechanism the entire model runs on. Ship it here so Phase&nbsp;1 is a config change, not a migration. Applications also become the pipeline metric.</p>
+      </div>
+      <div class="meta">
+        <span class="tag"><b>Effort</b> ~1 session</span>
+        <span class="tag"><b>Risk</b> low</span>
+        <span class="tag"><b>Metric</b> 10 store applications</span>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-head"><span class="pnum">01</span><h3>Verified storefront + bulk listing</h3></div>
+      <p class="goal">Prove the demand side: will approved stores actually onboard and list, and does anything sell? Deliberately built on the existing listing model &mdash; ship fast, learn, then invest.</p>
+
+      <h4>Ships</h4>
+      <ul>
+        <li>Branded <code>/store/:slug</code> &mdash; logo, banner, policies, shipping tiers, location; extends the existing <code>/sellers/:userId</code> page rather than replacing it.</li>
+        <li>&ldquo;Verified store&rdquo; badge on listings + a <strong>Stores</strong> filter in the marketplace. Distinct from collector reputation tiers.</li>
+        <li><strong>CSV bulk importer</strong>: one upload creates the collection cards <em>and</em> the sale listings in a single pass. Runs on today&rsquo;s ownership-transfer model &mdash; hacky, but it means a store can list 200 cards in a minute.</li>
+        <li>Store onboarding reuses the current Stripe Connect Express flow untouched.</li>
+      </ul>
+
+      <div class="econ">
+        <span class="lbl">Economics</span>
+        <p>Seller commission goes live via the fee-override table: <strong>3% founder rate</strong> for the first cohort (hand-set per account), <strong>8%</strong> default afterward. Buyer protection fee unchanged. First real store GMV lands here.</p>
+      </div>
+      <div class="meta">
+        <span class="tag"><b>Effort</b> ~2&ndash;3 sessions</span>
+        <span class="tag"><b>Risk</b> med &mdash; ownership model strains at volume</span>
+        <span class="tag"><b>Metric</b> 3 stores live · first store sale</span>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-head"><span class="pnum">02</span><h3>Inventory engine + repricer</h3></div>
+      <p class="goal">Replace the hack with the real thing. A store&rsquo;s stock is a SKU ledger with quantities and price rules, not a pile of individual collection rows &mdash; and it re-prices itself nightly.</p>
+
+      <h4>Ships</h4>
+      <ul>
+        <li><code>store_inventory</code> (SKU = card&nbsp;+&nbsp;condition&nbsp;+&nbsp;grade, qty, cost basis, bin) and <code>store_listings</code> &mdash; a parallel path to <code>marketplace_listings</code>, the way <code>orders</code> parallels <code>trades</code>. Sale <em>decrements quantity</em>; no physical-row transfer.</li>
+        <li><code>store_price_rules</code> + a <strong>nightly repricer</strong> (same cron shape as <code>refresh-card-prices</code>): &ldquo;price at X% of TCGplayer market, floor £Y, never below cost&rdquo;.</li>
+        <li>Store dashboard: sell-through rate, aged inventory, &ldquo;12 SKUs priced below market&rdquo; alerts, revenue by set.</li>
+        <li>Oversell guard: reserve-on-checkout + generous auto-cancel, since in-store sales won&rsquo;t sync in real time yet.</li>
+      </ul>
+
+      <div class="econ">
+        <span class="lbl">Economics</span>
+        <p>The repricer and dashboard are free here to drive adoption &mdash; they become the headline benefit of the Phase&nbsp;4 subscription. <strong>Promoted listings</strong> switch on: a flat fee to feature a SKU or pin the storefront. Commission unchanged.</p>
+      </div>
+      <div class="meta">
+        <span class="tag"><b>Effort</b> ~4&ndash;6 sessions</span>
+        <span class="tag"><b>Risk</b> med-high &mdash; oversell &amp; feed dependency</span>
+        <span class="tag"><b>Metric</b> a store lists 500+ SKUs · repricer runs nightly</span>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-head"><span class="pnum">03</span><h3>Buylist &mdash; the differentiator</h3></div>
+      <p class="goal">Close the loop. Stores post what they&rsquo;ll pay for singles; the collector&rsquo;s own portfolio and want-list surface those offers. This is the thing eBay and TCGplayer don&rsquo;t do, and it&rsquo;s why a store picks CollectX.</p>
+
+      <h4>Ships</h4>
+      <ul>
+        <li><code>store_buylist</code> &mdash; a store sets buy prices as a % of market by set / rarity / condition, or per-card overrides, with a daily spend cap.</li>
+        <li>On a collector&rsquo;s collection and want-list: <em>&ldquo;3 stores want this card &mdash; best offer £48. Sell now.&rdquo;</em> One tap creates a purchase order; collector ships; payout on receipt, same escrow rails as orders.</li>
+        <li>Reuses the want-list auto-match engine already in the app, pointed the other direction.</li>
+      </ul>
+
+      <div class="econ">
+        <span class="lbl">Economics</span>
+        <p><strong>Buylist spread</strong>: the platform takes ~2% of the payout on a store&rsquo;s buy. Low rate on purpose &mdash; the volume and the collector&rsquo;s reason to keep the app open are the point. Also feeds store inventory, which feeds Phase&nbsp;2 GMV.</p>
+      </div>
+      <div class="meta">
+        <span class="tag"><b>Effort</b> ~3&ndash;5 sessions</span>
+        <span class="tag"><b>Risk</b> med &mdash; pricing abuse, condition disputes</span>
+        <span class="tag"><b>Metric</b> first collector&rarr;store buylist sale · repeat sellers</span>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-head"><span class="pnum">04</span><h3>CollectX for Business</h3></div>
+      <p class="goal">Turn the tooling into recurring revenue and let real shops run their whole operation here.</p>
+
+      <h4>Ships</h4>
+      <ul>
+        <li>Subscription tiers (£19 / £49 / £99) &mdash; repricer + analytics + team seats + featured slots, each tier lowering or waiving the seller commission.</li>
+        <li>Team accounts: <code>store_members</code> with owner / lister / shipper roles under one <code>store_id</code>.</li>
+        <li>Shopify / TCGplayer inventory sync (near-real-time oversell protection).</li>
+        <li>LGS discovery: a map of verified physical stores, local pickup option. UK-first &mdash; matches the GBP / Royal Mail rails already in place.</li>
+      </ul>
+
+      <div class="econ">
+        <span class="lbl">Economics</span>
+        <p>MRR becomes the primary line. The pitch to a store: <em>&ldquo;pay 8% per sale, or £49/mo and pay 3%.&rdquo;</em> High-volume stores self-select into the subscription; the platform trades variable take for predictable revenue and stickier accounts.</p>
+      </div>
+      <div class="meta">
+        <span class="tag"><b>Effort</b> ongoing</span>
+        <span class="tag"><b>Risk</b> med &mdash; support load, KYC for businesses</span>
+        <span class="tag"><b>Metric</b> first paying subscriber · MRR growth</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Guardrails &amp; risks</h2>
+    <dl class="rails">
+      <div>
+        <dt>Don&rsquo;t dilute the trading identity</dt>
+        <dd>CollectX&rsquo;s pull is card-for-card trading and the collector tools. Store listings live behind a clearly-labelled <strong>Stores</strong> surface and never outrank peer trade listings by default. The two marketplaces stay visually and structurally separate.</dd>
+      </div>
+      <div>
+        <dt>Verification is the value exchange</dt>
+        <dd>A store gets the badge, the storefront and qualified demand only after a human checks business documents / resale certificate. Fake storefronts are a fraud vector &mdash; manual review in Phase 0&ndash;1, semi-automated later. Store sales never inflate a user&rsquo;s peer trade count.</dd>
+      </div>
+      <div>
+        <dt>Oversell is what kills LGS marketplaces</dt>
+        <dd>Until POS sync exists (Phase 4), lean on reserve-on-checkout plus a generous auto-cancel-and-refund flow. Set the expectation with stores up front rather than letting a buyer pay for a card that sold at the counter an hour ago.</dd>
+      </div>
+      <div>
+        <dt>The pricing feed becomes load-bearing</dt>
+        <dd>The repricer and buylist both key off TCGplayer market data pulled via pokemontcg.io / tcgcsv.com &mdash; currently free and occasionally flaky. Once a store&rsquo;s revenue depends on it, that dependency needs a fallback and, eventually, CollectX&rsquo;s own sold-price feed built from store transactions.</dd>
+      </div>
+      <div>
+        <dt>Chargebacks land on the platform balance</dt>
+        <dd>Separate charges &amp; transfers means a disputed store sale is a debit against CollectX, not the store. Hold a reserve on new stores; only release the commission-net payout after the escrow window; require Connect KYC for the business entity.</dd>
+      </div>
+    </dl>
+  </section>
+
+  <section>
+    <h2>Two open calls before Phase 1</h2>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Question</th><th>Option A</th><th>Option B</th><th>Lean</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Which store first?</td>
+            <td><strong>UK LGS</strong> &mdash; local pickup, map discovery, matches GBP / Royal Mail rails. Slower, higher trust.</td>
+            <td><strong>Online store</strong> &mdash; one partner, deep catalogue, thousands of listings overnight. Faster liquidity.</td>
+            <td>One online store for supply <em>and</em> 2&ndash;3 friendly local shops for the map story.</td>
+          </tr>
+          <tr>
+            <td>Lead with revenue or supply?</td>
+            <td><strong>Revenue</strong> &mdash; subscription pitch early, fewer but paying stores.</td>
+            <td><strong>Supply</strong> &mdash; zero-fee onboarding so the collector marketplace stops feeling empty, monetise later.</td>
+            <td>Supply first. Founder 3% commission is nominal; the collector-side density is what makes the whole app worth using.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Schema appendix</h2>
+    <p class="col">Additive throughout. New store tables sit parallel to the collector ones &mdash; the same discipline that kept <code>orders</code> from destabilising <code>trades</code>. Nothing here changes an existing table&rsquo;s shape except two enum values and one nullable column.</p>
+<pre><code><span class="cmt">-- Phase 0 --------------------------------------------------------</span>
+ALTER TYPE public.app_role ADD VALUE 'store';
+
+CREATE TABLE public.store_profiles (
+  user_id          uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  slug             text UNIQUE NOT NULL,
+  name             text NOT NULL,
+  bio              text,
+  logo_url         text,
+  banner_url       text,
+  website          text,
+  location         jsonb,          <span class="cmt">-- {city,country,lat,lng} for LGS map</span>
+  policies         jsonb,          <span class="cmt">-- shipping tiers, returns</span>
+  status           text NOT NULL DEFAULT 'pending'
+                     CHECK (status IN ('pending','active','suspended')),
+  verified_at      timestamptz,
+  commission_bps   int  NOT NULL DEFAULT 800,   <span class="cmt">-- 8%; founder rows set 300</span>
+  subscription_tier text NOT NULL DEFAULT 'none'
+                     CHECK (subscription_tier IN ('none','starter','growth','pro')),
+  created_at       timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE public.store_applications (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id       uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  business_name text NOT NULL,
+  registration_no text,
+  country       text NOT NULL,
+  website       text,
+  volume_estimate text,          <span class="cmt">-- '<50/mo' | '50-500' | '500+'</span>
+  message       text,
+  status        text NOT NULL DEFAULT 'submitted'
+                  CHECK (status IN ('submitted','approved','rejected','needs_info')),
+  reviewed_by   uuid,
+  reviewed_at   timestamptz,
+  created_at    timestamptz NOT NULL DEFAULT now()
+);
+
+<span class="cmt">-- the fee hook the whole model runs on. checkout reads this,</span>
+<span class="cmt">-- then falls back to marketplace_fee_config.</span>
+CREATE TABLE public.account_fee_overrides (
+  user_id                 uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  seller_fee_bps          int,
+  buyer_protection_fee_bps int,
+  note                    text,
+  updated_at              timestamptz NOT NULL DEFAULT now()
+);
+
+<span class="cmt">-- Phase 2 --------------------------------------------------------</span>
+CREATE TABLE public.store_inventory (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id    uuid NOT NULL REFERENCES public.store_profiles(user_id),
+  card_id     text NOT NULL,
+  condition   text NOT NULL,
+  is_graded   boolean NOT NULL DEFAULT false,
+  grade_company text, grade_score numeric,
+  quantity    int  NOT NULL DEFAULT 0,
+  cost_basis  numeric(12,2),
+  bin         text,
+  price_rule_id uuid,
+  updated_at  timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (store_id, card_id, condition, is_graded, grade_company, grade_score)
+);
+
+CREATE TABLE public.store_price_rules (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id     uuid NOT NULL REFERENCES public.store_profiles(user_id),
+  name         text NOT NULL,
+  pct_of_market int NOT NULL DEFAULT 95,   <span class="cmt">-- 95 = list at 95% of market</span>
+  floor_gbp    numeric(12,2) DEFAULT 0.50,
+  never_below_cost boolean NOT NULL DEFAULT true
+);
+
+<span class="cmt">-- store_listings mirrors marketplace_listings but is inventory-backed:</span>
+<span class="cmt">-- a sale decrements store_inventory.quantity, no user_cards transfer.</span>
+
+<span class="cmt">-- Phase 3 --------------------------------------------------------</span>
+CREATE TABLE public.store_buylist (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id     uuid NOT NULL REFERENCES public.store_profiles(user_id),
+  scope        jsonb NOT NULL,     <span class="cmt">-- {set_id?, rarity?, condition?, card_id?}</span>
+  pct_of_market int NOT NULL,      <span class="cmt">-- e.g. 60 = pay 60% of market</span>
+  min_gbp      numeric(12,2),
+  daily_cap_gbp numeric(12,2),
+  active       boolean NOT NULL DEFAULT true
+);
+<span class="cmt">-- buylist_orders reuses the orders escrow rails, direction reversed.</span>
+
+<span class="cmt">-- Phase 4 --------------------------------------------------------</span>
+CREATE TABLE public.store_members (
+  store_id  uuid NOT NULL REFERENCES public.store_profiles(user_id),
+  user_id   uuid NOT NULL REFERENCES auth.users(id),
+  role      text NOT NULL CHECK (role IN ('owner','lister','shipper')),
+  PRIMARY KEY (store_id, user_id)
+);</code></pre>
+  </section>
+
+  <section>
+    <h2>Starting now &mdash; Phase 0</h2>
+    <p class="col">Implementation begins this session with the Phase 0 slice:</p>
+    <ol class="col">
+      <li>Migration: <code>'store'</code> role, <code>store_profiles</code>, <code>store_applications</code>, <code>account_fee_overrides</code>.</li>
+      <li>Wire <code>create-checkout-session</code> to read <code>account_fee_overrides</code> before <code>marketplace_fee_config</code>, then redeploy.</li>
+      <li><code>/for-stores</code> pitch page and <code>/store/apply</code> form + service.</li>
+      <li><code>/admin/store-applications</code> review queue &mdash; approve grants the <code>store</code> role and creates the <code>store_profiles</code> row.</li>
+    </ol>
+    <p class="col lead-in">Everything after Phase 0 is gated on the application count moving. If stores don&rsquo;t apply, the plan is wrong and cheap to have learned that.</p>
+  </section>
+
+  <footer>
+    CollectX for Business &mdash; product plan. Built on the existing escrow-marketplace and Stripe Connect rails. Revenue lines and fee rates are starting positions, tunable in <code>marketplace_fee_config</code> and <code>account_fee_overrides</code> without a redeploy.
+  </footer>
+
+</div>
