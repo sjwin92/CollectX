@@ -41,6 +41,21 @@ function json(body: unknown, status = 200) {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// pokemontcg.io's /cards endpoint is intermittently 5xx — retry a few times
+// with backoff before giving up on a set.
+async function fetchWithRetry(url: string, tries = 4): Promise<Response> {
+  let last: Response | null = null;
+  for (let i = 0; i < tries; i++) {
+    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    if (res.ok) return res;
+    last = res;
+    await res.body?.cancel().catch(() => undefined);
+    if (res.status < 500 && res.status !== 429) break; // only retry 5xx / rate-limit
+    await sleep(600 * (i + 1) + Math.random() * 400);
+  }
+  return last as Response;
+}
+
 async function refreshSet(
   supabase: ReturnType<typeof createClient>,
   setId: string,
@@ -53,7 +68,7 @@ async function refreshSet(
     const url = `${TCG_API_BASE}/cards?page=${page}&pageSize=${PAGE_SIZE}&select=id,name,tcgplayer&q=${encodeURIComponent(
       `set.id:${setId}`,
     )}`;
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    const res = await fetchWithRetry(url);
     if (!res.ok) throw new Error(`TCG /cards ${res.status}: ${(await res.text()).slice(0, 200)}`);
 
     const batch = ((await res.json()) as { data?: TcgCard[] }).data ?? [];
