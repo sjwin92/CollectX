@@ -4,9 +4,11 @@
 // marketplace / trade / collection surfaces current without re-importing every
 // card field. Safe to run on a schedule (pg_cron) or by hand.
 //
-//   POST {}                      -> sweep every set in pokemon_sets
-//   POST { setId: "sv3pt5" }     -> just that set
-//   POST { limit: 20 }           -> only the first N sets (newest first)
+//   POST {}                          -> sweep every set in pokemon_sets
+//   POST { setId: "sv3pt5" }         -> just that set
+//   POST { limit: 15 }               -> the 15 newest sets
+//   POST { limit: 15, offset: 15 }   -> the next 15 (paginate a full sweep;
+//                                       a single big run hits the 150s wall-clock)
 //
 // Public endpoint — it only ever writes the price column onto rows that
 // already exist, so there is nothing to protect.
@@ -111,6 +113,7 @@ Deno.serve(async (req) => {
   }
   const oneSet = typeof body.setId === "string" ? body.setId.trim() : "";
   const limit = Number.isFinite(Number(body.limit)) ? Math.max(1, Number(body.limit)) : 0;
+  const offset = Number.isFinite(Number(body.offset)) ? Math.max(0, Number(body.offset)) : 0;
 
   if (oneSet && !/^[a-z0-9._-]{1,32}$/i.test(oneSet)) {
     return json({ error: "setId must be ≤32 alphanumeric chars" }, 400);
@@ -130,7 +133,7 @@ Deno.serve(async (req) => {
       .from("pokemon_sets")
       .select("id, release_date")
       .order("release_date", { ascending: false, nullsFirst: false });
-    if (limit) q = q.limit(limit);
+    if (limit || offset) q = q.range(offset, offset + (limit || 1000) - 1);
     const { data, error } = await q;
     if (error) return json({ error: `list sets: ${error.message}` }, 500);
     setIds = (data ?? []).map((r: { id: string }) => r.id);
@@ -151,6 +154,8 @@ Deno.serve(async (req) => {
   const totalPriced = results.reduce((s, r) => s + r.priced, 0);
   return json({
     ok: true,
+    offset,
+    limit: limit || null,
     sets: setIds.length,
     setsPriced: results.length,
     cardsPriced: totalPriced,
