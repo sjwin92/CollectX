@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,8 @@ import {
   type ParsedRow,
   type ImportSummary,
 } from "@/services/bulkImportService";
+import { getMyStore } from "@/services/storeService";
+import { getPriceRules } from "@/services/storeInventoryService";
 
 const StoreImport: React.FC = () => {
   const { toast } = useToast();
@@ -22,6 +25,11 @@ const StoreImport: React.FC = () => {
   const [listForSale, setListForSale] = useState(true);
   const [running, setRunning] = useState(false);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
+
+  const { data: store } = useQuery({ queryKey: ["my-store"], queryFn: getMyStore });
+  const { data: rules } = useQuery({ queryKey: ["store-price-rules"], queryFn: getPriceRules, enabled: !!store });
+  const [target, setTarget] = useState<"inventory" | "collection">("inventory");
+  const effectiveTarget = store ? target : "collection";
 
   const parsed = useMemo(() => (text.trim() ? parseImportCsv(text) : { rows: [] as ParsedRow[], errors: [] }), [text]);
 
@@ -40,11 +48,15 @@ const StoreImport: React.FC = () => {
     setRunning(true);
     setSummary(null);
     try {
-      const res = await runBulkImport(parsed.rows, { listForSale });
+      const res = await runBulkImport(parsed.rows, {
+        listForSale,
+        target: effectiveTarget,
+        priceRuleId: rules?.find((r) => r.is_default)?.id ?? rules?.[0]?.id ?? null,
+      });
       setSummary(res);
       toast({
         title: "Import finished",
-        description: `${res.added} added${res.listed ? `, ${res.listed} listed` : ""}${res.errors ? `, ${res.errors} failed` : ""}.`,
+        description: `${res.added} ${effectiveTarget === "inventory" ? "in inventory" : "added"}${res.listed ? `, ${res.listed} listed` : ""}${res.errors ? `, ${res.errors} failed` : ""}.`,
       });
     } catch (err) {
       toast({ variant: "destructive", title: "Import failed", description: err instanceof Error ? err.message : "Try again." });
@@ -73,10 +85,25 @@ const StoreImport: React.FC = () => {
           </Link>
           <h1 className="font-display text-2xl font-extrabold">Bulk import</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Paste or upload a CSV to add cards to your collection — and list the priced ones for
-            sale in one pass. Columns: <code className="text-xs">name, set_id, number, condition,
-            quantity, price, graded, grade_company, grade, for_trade</code>. Only <b>name</b> is required.
+            Paste or upload a CSV. Columns: <code className="text-xs">name, set_id, number, condition,
+            quantity, cost, price, graded, grade_company, grade, for_trade</code>. Only <b>name</b> is required.
           </p>
+
+          {store && (
+            <div className="mt-4 inline-flex rounded-full border border-border bg-secondary p-1 text-xs font-semibold">
+              {(["inventory", "collection"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTarget(t)}
+                  className={`rounded-full px-3 py-1 transition-colors ${
+                    target === t ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                  }`}
+                >
+                  {t === "inventory" ? "Store inventory" : "My collection"}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="mt-4 flex flex-wrap gap-2">
             <Button variant="outline" size="sm" className="rounded-full" onClick={() => fileRef.current?.click()}>
@@ -114,16 +141,19 @@ const StoreImport: React.FC = () => {
                 <div className="text-sm">
                   <b>{parsed.rows.length}</b> card{parsed.rows.length === 1 ? "" : "s"} ready
                   {priced > 0 && <span className="text-muted-foreground"> · {priced} priced</span>}
+                  <span className="ml-2 text-xs text-muted-foreground">→ {effectiveTarget === "inventory" ? "store inventory" : "collection"}</span>
                 </div>
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={listForSale}
-                    onChange={(e) => setListForSale(e.target.checked)}
-                    className="h-4 w-4 accent-primary"
-                  />
-                  List priced rows for sale
-                </label>
+                {effectiveTarget === "collection" && (
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={listForSale}
+                      onChange={(e) => setListForSale(e.target.checked)}
+                      className="h-4 w-4 accent-primary"
+                    />
+                    List priced rows for sale
+                  </label>
+                )}
               </div>
               <div className="mt-3 max-h-56 overflow-y-auto rounded-md border border-border">
                 <table className="w-full text-xs">
@@ -133,6 +163,7 @@ const StoreImport: React.FC = () => {
                       <th className="px-2 py-1.5 text-left">Set · #</th>
                       <th className="px-2 py-1.5 text-left">Cond.</th>
                       <th className="px-2 py-1.5 text-right">Qty</th>
+                      <th className="px-2 py-1.5 text-right">Cost</th>
                       <th className="px-2 py-1.5 text-right">Price</th>
                     </tr>
                   </thead>
@@ -143,6 +174,7 @@ const StoreImport: React.FC = () => {
                         <td className="px-2 py-1.5 text-muted-foreground">{r.set_id || "—"} {r.number && `· ${r.number}`}</td>
                         <td className="px-2 py-1.5 text-muted-foreground">{r.condition}</td>
                         <td className="px-2 py-1.5 text-right tabular-nums">{r.quantity}</td>
+                        <td className="px-2 py-1.5 text-right tabular-nums text-muted-foreground">{r.cost != null ? `£${r.cost.toFixed(2)}` : "—"}</td>
                         <td className="px-2 py-1.5 text-right tabular-nums">{r.price != null ? `£${r.price.toFixed(2)}` : "—"}</td>
                       </tr>
                     ))}
@@ -180,7 +212,9 @@ const StoreImport: React.FC = () => {
               )}
               <div className="mt-3 flex gap-2">
                 <Button asChild variant="outline" size="sm" className="rounded-full">
-                  <Link to="/collection">View collection</Link>
+                  <Link to={effectiveTarget === "inventory" ? "/store/inventory" : "/collection"}>
+                    {effectiveTarget === "inventory" ? "View inventory" : "View collection"}
+                  </Link>
                 </Button>
                 <Button variant="ghost" size="sm" className="rounded-full" onClick={() => { setText(""); setSummary(null); }}>
                   Import more

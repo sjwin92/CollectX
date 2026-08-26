@@ -152,6 +152,9 @@ const StoreSetup: React.FC = () => {
             </Button>
           )}
           <Button asChild variant="ghost" className="rounded-full">
+            <Link to="/store/inventory">Inventory</Link>
+          </Button>
+          <Button asChild variant="ghost" className="rounded-full">
             <Link to="/store/import">Bulk import</Link>
           </Button>
           <span className="ml-auto text-xs text-muted-foreground">

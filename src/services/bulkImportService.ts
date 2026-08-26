@@ -5,6 +5,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { addCardToCollection, type ExtendedCardItemWithDB } from "@/services/supabaseCollectionService";
 import { createMarketplaceListing } from "@/services/supabaseMarketplaceService";
+import { upsertSku } from "@/services/storeInventoryService";
 
 export interface ParsedRow {
   line: number;
@@ -13,6 +14,7 @@ export interface ParsedRow {
   number: string;
   condition: string;
   quantity: number;
+  cost?: number;
   price?: number;
   graded: boolean;
   grade_company?: string;
@@ -36,13 +38,13 @@ export interface ImportSummary {
   rows: ImportRowResult[];
 }
 
-const HEADERS = ["name", "set_id", "number", "condition", "quantity", "price", "graded", "grade_company", "grade", "for_trade"];
+const HEADERS = ["name", "set_id", "number", "condition", "quantity", "cost", "price", "graded", "grade_company", "grade", "for_trade"];
 
 export const CSV_TEMPLATE =
-  "name,set_id,number,condition,quantity,price,graded,grade_company,grade,for_trade\n" +
-  "Charizard ex,sv3pt5,199,near_mint,1,220.00,,,,false\n" +
-  "Pikachu,base1,58,lightly_played,3,,,,,true\n" +
-  "Blastoise,base1,2,near_mint,1,45,yes,PSA,9,false\n";
+  "name,set_id,number,condition,quantity,cost,price,graded,grade_company,grade,for_trade\n" +
+  "Charizard ex,sv3pt5,199,near_mint,1,140.00,220.00,,,,false\n" +
+  "Pikachu,base1,58,lightly_played,3,,,,,,true\n" +
+  "Blastoise,base1,2,near_mint,1,20,45,yes,PSA,9,false\n";
 
 const truthy = (v?: string) => /^(y|yes|true|1|graded)$/i.test((v ?? "").trim());
 
@@ -90,8 +92,11 @@ export function parseImportCsv(text: string): { rows: ParsedRow[]; errors: strin
       continue;
     }
     const qty = Math.max(1, parseInt(get("quantity") || "1", 10) || 1);
-    const priceRaw = get("price").replace(/[^0-9.]/g, "");
-    const price = priceRaw ? Number(priceRaw) : undefined;
+    const num = (h: string) => {
+      const raw = get(h).replace(/[^0-9.]/g, "");
+      const n = raw ? Number(raw) : undefined;
+      return n && n > 0 ? n : undefined;
+    };
     rows.push({
       line: i + 1,
       name,
@@ -99,7 +104,8 @@ export function parseImportCsv(text: string): { rows: ParsedRow[]; errors: strin
       number: get("number"),
       condition: get("condition") || "near_mint",
       quantity: qty,
-      price: price && price > 0 ? price : undefined,
+      cost: num("cost"),
+      price: num("price"),
       graded: truthy(get("graded")) || !!get("grade"),
       grade_company: get("grade_company") || undefined,
       grade: get("grade") || undefined,
@@ -140,17 +146,53 @@ async function resolveCards(rows: ParsedRow[]): Promise<Map<string, { id: string
 }
 
 /**
- * Run the import. `listForSale` gates whether priced rows also become sale
- * listings (requires connected payouts — a per-row error is reported if not).
+ * Run the import.
+ *  - target 'collection': add to the personal collection; `listForSale` also
+ *    creates sale listings for priced rows (needs connected payouts).
+ *  - target 'inventory': upsert into the store's SKU ledger (quantity, cost,
+ *    price all carried; the repricer takes over once a rule is set).
  */
-export async function runBulkImport(rows: ParsedRow[], opts: { listForSale: boolean }): Promise<ImportSummary> {
+export async function runBulkImport(
+  rows: ParsedRow[],
+  opts: { listForSale: boolean; target?: "collection" | "inventory"; priceRuleId?: string | null },
+): Promise<ImportSummary> {
   const resolved = await resolveCards(rows);
   const out: ImportRowResult[] = [];
   let added = 0, listed = 0, skipped = 0, errors = 0;
+  const target = opts.target ?? "collection";
 
   for (const r of rows) {
     const match = r.set_id && r.number ? resolved.get(`${r.set_id}::${r.number}`) : undefined;
     const cardId = match?.id ?? (r.set_id && r.number ? `${r.set_id}-${r.number}` : r.name.toLowerCase().replace(/\s+/g, "-"));
+
+    if (target === "inventory") {
+      try {
+        await upsertSku({
+          card_id: cardId,
+          card_name: match?.name || r.name,
+          set_id: r.set_id || null,
+          set_name: match?.name ? r.set_id : null,
+          card_number: r.number || null,
+          rarity: match?.rarity ?? null,
+          image_url: match?.imageUrl ?? null,
+          condition: r.condition,
+          is_graded: r.graded,
+          grade_company: r.grade_company ?? null,
+          grade_score: r.grade ? Number(r.grade) || null : null,
+          quantity: r.quantity,
+          cost_gbp: r.cost ?? null,
+          price_gbp: r.price ?? null,
+          price_rule_id: opts.priceRuleId ?? null,
+        });
+        added += 1;
+        out.push({ line: r.line, name: r.name, status: "added", message: r.price != null ? `£${r.price.toFixed(2)}` : undefined });
+      } catch (e) {
+        errors += 1;
+        out.push({ line: r.line, name: r.name, status: "error", message: e instanceof Error ? e.message : (e as { message?: string })?.message ?? "error" });
+      }
+      continue;
+    }
+
     try {
       const dbId = await addCardToCollection({
         id: cardId,
