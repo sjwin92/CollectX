@@ -2,7 +2,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import TraderTrustBadge from "@/components/common/TraderTrustBadge";
 import CardTypeBadge from "@/components/pokemon/CardTypeBadge";
+import CardPrice from "@/components/pokemon/CardPrice";
 import { useCardTypeMeta } from "@/hooks/useCardTypeMeta";
+import { useCardPrices } from "@/hooks/useCardPrices";
+import { formatGbp } from "@/lib/cardPrice";
 import { conditionTone } from "@/components/marketplace/listing/conditionTone";
 import { SmartImage } from "@/components/common/SmartImage";
 import { ArrowUp, ArrowDown } from "lucide-react";
@@ -17,14 +20,20 @@ const SidePanel = ({
   side,
   ownerCaption,
   metaFor,
+  priceFor,
 }: {
   label: string;
   direction: "send" | "receive";
   side: Side;
   ownerCaption: string;
   metaFor: (id: string) => CardTypeMeta | undefined;
+  priceFor: (id: string) => number | undefined;
 }) => {
   const cards = side.offeringCards;
+  const sideTotal = cards.reduce(
+    (sum, card) => sum + (priceFor(card.id) ?? 0) * (card.quantity ?? 1),
+    0,
+  );
   return (
     <div className="rounded-2xl border border-border bg-secondary/30 p-4">
       <div className="flex items-center justify-between">
@@ -56,7 +65,10 @@ const SidePanel = ({
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="font-display text-sm font-bold leading-tight">{card.name}</div>
+              <div className="flex items-start justify-between gap-2">
+                <div className="font-display text-sm font-bold leading-tight">{card.name}</div>
+                <CardPrice priceGbp={priceFor(card.id) ?? null} />
+              </div>
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                 <CardTypeBadge meta={metaFor(card.id) ?? null} />
                 {card.condition && (
@@ -74,6 +86,15 @@ const SidePanel = ({
           </div>
         ))}
       </div>
+
+      {sideTotal > 0 && (
+        <div className="mt-3 flex items-center justify-between border-t border-border/60 pt-3 text-xs">
+          <span className="uppercase tracking-wider text-muted-foreground/70">Market value</span>
+          <span className="font-display text-sm font-extrabold text-gold tabular-nums">
+            ≈ {formatGbp(sideTotal)}
+          </span>
+        </div>
+      )}
 
       <div className="mt-4 flex items-center gap-2.5 border-t border-border/60 pt-3">
         <Avatar className="h-8 w-8">
@@ -98,11 +119,14 @@ export const TradeParticipantsCard = ({
   const mySide = iAmRecipient ? trade.recipient : trade.initiator;
   const theirSide = iAmRecipient ? trade.initiator : trade.recipient;
 
-  const cardMeta = useCardTypeMeta([
+  const allCardIds = [
     ...mySide.offeringCards.map((c) => c.id),
     ...theirSide.offeringCards.map((c) => c.id),
-  ]);
+  ];
+  const cardMeta = useCardTypeMeta(allCardIds);
+  const cardPrices = useCardPrices(allCardIds);
   const metaFor = (id: string) => cardMeta.get(id);
+  const priceFor = (id: string) => cardPrices.get(id);
 
   const [giveLabel, getLabel] = currentUserId
     ? ["You send", "You receive"]
@@ -117,6 +141,7 @@ export const TradeParticipantsCard = ({
           side={mySide}
           ownerCaption={currentUserId ? "from your collection" : `from ${mySide.username}`}
           metaFor={metaFor}
+          priceFor={priceFor}
         />
         <SidePanel
           label={getLabel}
@@ -124,6 +149,7 @@ export const TradeParticipantsCard = ({
           side={theirSide}
           ownerCaption={`from ${theirSide.username}`}
           metaFor={metaFor}
+          priceFor={priceFor}
         />
       </div>
     </GlassCard>

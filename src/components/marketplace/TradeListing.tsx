@@ -28,9 +28,11 @@ interface TradeListingProps {
   onProposeTrade: () => void;
   featured?: boolean;
   cardMeta?: CardTypeMeta | null;
+  /** Live TCGplayer market price (GBP) for the offered card, if known. */
+  marketPriceGbp?: number | null;
 }
 
-const TradeListing = ({ listing, onProposeTrade, featured = false, cardMeta }: TradeListingProps) => {
+const TradeListing = ({ listing, onProposeTrade, featured = false, cardMeta, marketPriceGbp }: TradeListingProps) => {
   const navigate = useNavigate();
   const isSale = (listing.listingType ?? 'trade') === 'sale';
 
@@ -134,6 +136,7 @@ const TradeListing = ({ listing, onProposeTrade, featured = false, cardMeta }: T
         askingPrice={listing.askingPrice}
         currency={listing.currency}
         estimatedValue={listing.cardOffered.estimatedValue}
+        marketPriceGbp={marketPriceGbp}
       />
     </article>
   );

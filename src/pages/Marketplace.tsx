@@ -10,6 +10,7 @@ import GlassCard from "@/components/ui/custom/GlassCard";
 import { useToast } from "@/hooks/use-toast";
 import TradeListing from "@/components/marketplace/TradeListing";
 import { useCardTypeMeta } from "@/hooks/useCardTypeMeta";
+import { useCardPrices } from "@/hooks/useCardPrices";
 import {
   Plus,
   Search,
@@ -397,7 +398,7 @@ const Marketplace = () => {
   );
 };
 
-/** Renders the listings grid; loads card type metadata for every visible card in one query. */
+/** Renders the listings grid; loads card type metadata + live prices for every visible card in one query each. */
 const ListingsGrid = ({
   listings,
   onPropose,
@@ -405,7 +406,9 @@ const ListingsGrid = ({
   listings: ListingType[];
   onPropose: (id: string) => void;
 }) => {
-  const cardMeta = useCardTypeMeta(listings.map((l) => l.cardOffered.id));
+  const cardIds = listings.map((l) => l.cardOffered.id);
+  const cardMeta = useCardTypeMeta(cardIds);
+  const cardPrices = useCardPrices(cardIds);
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       {listings.map((listing, i) => (
@@ -415,6 +418,7 @@ const ListingsGrid = ({
             onProposeTrade={() => onPropose(listing.id)}
             featured={!!listing.featured}
             cardMeta={cardMeta.get(listing.cardOffered.id) ?? null}
+            marketPriceGbp={cardPrices.get(listing.cardOffered.id) ?? null}
           />
         </div>
       ))}

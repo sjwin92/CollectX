@@ -17,6 +17,8 @@ interface TradeListingFooterProps {
   askingPrice?: number;
   currency?: string;
   estimatedValue?: string;
+  /** Live TCGplayer market price (GBP) for the offered card, if known. */
+  marketPriceGbp?: number | null;
 }
 
 const iconBtnClass =
@@ -43,6 +45,7 @@ const TradeListingFooter = ({
   askingPrice,
   currency = 'gbp',
   estimatedValue,
+  marketPriceGbp,
 }: TradeListingFooterProps) => {
   const { toast } = useToast();
   const { user } = useUser();
@@ -103,17 +106,24 @@ const TradeListingFooter = ({
 
   const isOwnListing = !!user && user.id === listingOwnerId;
   const isSale = listingType === 'sale';
+  const hasMarketPrice = !isSale && marketPriceGbp != null && marketPriceGbp > 0;
+  const priceCaption = isSale ? "Price" : hasMarketPrice ? "Market price" : "Est. value";
   const priceLabel = isSale
     ? `${currency.toUpperCase()} ${askingPrice != null ? askingPrice.toFixed(2) : "—"}`
-    : (estimatedValue && estimatedValue.toLowerCase() !== "unknown" ? estimatedValue : "—");
+    : hasMarketPrice
+      ? `£${marketPriceGbp!.toFixed(2)}`
+      : (estimatedValue && estimatedValue.toLowerCase() !== "unknown" ? estimatedValue : "—");
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-border bg-muted/40 px-5 py-3.5">
       <div className="flex flex-col">
         <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70">
-          {isSale ? "Price" : "Est. value"}
+          {priceCaption}
         </span>
         <span className="font-display text-lg font-extrabold text-gold tabular-nums">{priceLabel}</span>
+        {hasMarketPrice && (
+          <span className="text-[9px] text-muted-foreground/60">TCGplayer, live</span>
+        )}
       </div>
 
       <div className="flex flex-1 items-center justify-end gap-2">
