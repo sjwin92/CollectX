@@ -8,13 +8,8 @@ export const APP_CONFIG = {
   // URLs
   baseUrl: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173',
   apiUrl: 'https://api.pokemontcg.io/v2',
-  
-  // Supabase — reads from Lovable Cloud env vars, falls back to local dev values
-  supabase: {
-    url: import.meta.env.VITE_SUPABASE_URL ?? 'https://kitejduabjzmhraiyzre.supabase.co',
-    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtpdGVqZHVhYmp6bWhyYWl5enJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NjczNjcsImV4cCI6MjA2OTU0MzM2N30.CYRsGXRWi3EKXaK8bG6WpeWKM8M8R__l0TcrrBwaCWc'
-  },
-  
+  // Supabase config lives in src/integrations/supabase/client.ts — not duplicated here.
+
   // Features
   features: {
     realTimeUpdates: true,
@@ -85,26 +80,11 @@ export const APP_CONFIG = {
     siteName: 'CollectX',
     siteDescription: 'Trade Pokemon cards, manage your collection, and connect with fellow collectors.',
     keywords: ['pokemon', 'cards', 'trading', 'collection', 'marketplace', 'tcg'],
-    author: 'CollectX Team',
-    twitterSite: '@poketradehub',
+    author: 'CollectX',
+    // No official CollectX social account yet — leave empty so no twitter:site meta tag is emitted.
+    twitterSite: '',
     ogImage: '/og-image.png',
     favicon: '/favicon.ico'
-  },
-  
-  // Social Links
-  social: {
-    twitter: 'https://twitter.com/poketradehub',
-    discord: 'https://discord.gg/poketradehub',
-    reddit: 'https://reddit.com/r/poketradehub',
-    github: 'https://github.com/poketradehub'
-  },
-  
-  // Support
-  support: {
-    email: 'support@poketradehub.com',
-    helpUrl: '/help',
-    contactUrl: '/contact',
-    statusUrl: 'https://status.poketradehub.com'
   }
 } as const;
 

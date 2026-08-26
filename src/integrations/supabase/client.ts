@@ -4,8 +4,8 @@ import type { Database } from './types';
 
 // Lovable Cloud injects VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.
 // The hardcoded values are fallbacks for local dev without a .env file.
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? "https://kitejduabjzmhraiyzre.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? import.meta.env.VITE_SUPABASE_ANON_KEY ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtpdGVqZHVhYmp6bWhyYWl5enJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NjczNjcsImV4cCI6MjA2OTU0MzM2N30.CYRsGXRWi3EKXaK8bG6WpeWKM8M8R__l0TcrrBwaCWc";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? "https://yfzfyeoaisspqlziaufx.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? import.meta.env.VITE_SUPABASE_ANON_KEY ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlmemZ5ZW9haXNzcHFsemlhdWZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NTUyNTgsImV4cCI6MjEwMDIzMTI1OH0.YxzxC7FiGVkR9TLQ6JlocKenoB5hMnHyZSQws6ream0";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
