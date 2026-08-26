@@ -22,10 +22,9 @@ import { supabase } from "@/integrations/supabase/client";
 import UserDashboard from "@/components/analytics/UserDashboard";
 import { getSellerStripeStatus, startSellerOnboarding, type SellerStripeStatus } from "@/services/supabaseMarketplaceService";
 import { 
-  Star, 
-  Mail, 
-  MapPin, 
-  Calendar, 
+  Star,
+  Mail,
+  Calendar,
   Package, 
   ArrowLeftRight, 
   ShieldCheck,
@@ -204,25 +203,6 @@ const Profile = () => {
 
   const tierProgress = getTierProgress(displayData.stats.trades, displayData.stats.reputationScore);
 
-  // Function to render reputation stars
-  const renderReputationStars = (score: number) => {
-    const stars = [];
-    const fullStars = Math.floor(score);
-    const hasHalfStar = score % 1 >= 0.5;
-    
-    for (let i = 0; i < 5; i++) {
-      if (i < fullStars) {
-        stars.push(<Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />);
-      } else if (i === fullStars && hasHalfStar) {
-        stars.push(<Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400 half-filled" />);
-      } else {
-        stars.push(<Star key={i} className="h-4 w-4 text-muted" />);
-      }
-    }
-    
-    return stars;
-  };
-  
   // Filter cards based on search query
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase();
@@ -251,84 +231,140 @@ const Profile = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <main className="flex-1 pt-24 pb-16">
-        <div className="container">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Profile sidebar */}
-            <div className="md:col-span-1 space-y-6">
-              <GlassCard className="p-6 text-center">
-                <div className="mx-auto mb-4">
-                  <Avatar className="h-24 w-24 mx-auto">
-                    <AvatarImage src={profile?.avatar_url} alt={displayData.name} />
-                    <AvatarFallback className="text-2xl">
-                      {displayData.name.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                </div>
-                
-                <h1 className="text-2xl font-bold mb-1">{displayData.name}</h1>
-                <div className="flex flex-col items-center gap-1 mb-3">
+      <main className="relative flex-1 pb-16 pt-24">
+        <div className="aura pointer-events-none absolute inset-x-0 top-10 mx-auto h-[360px] max-w-5xl" aria-hidden />
+        <div className="container relative">
+          {/* Hero header */}
+          <div className="anim-rise relative overflow-hidden rounded-3xl border border-border bg-card shadow-[0_26px_54px_-24px_rgba(0,0,0,0.8)]">
+            <div
+              className="pointer-events-none absolute inset-0"
+              style={{
+                background:
+                  "radial-gradient(640px 260px at 10% -12%, hsl(var(--primary) / 0.16), transparent 65%), radial-gradient(540px 240px at 92% 128%, hsl(var(--gold) / 0.10), transparent 65%)",
+              }}
+            />
+            <div className="relative flex flex-col gap-6 p-6 sm:flex-row sm:p-8">
+              <Avatar className="h-24 w-24 shrink-0 rounded-3xl sm:h-28 sm:w-28">
+                <AvatarImage src={profile?.avatar_url} alt={displayData.name} className="rounded-3xl" />
+                <AvatarFallback className="rounded-3xl font-display text-2xl">
+                  {displayData.name.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-3">
+                  <h1 className="font-display text-2xl font-extrabold sm:text-3xl">{displayData.name}</h1>
                   <TraderTrustBadge
                     totalTrades={displayData.stats.trades}
                     reputationScore={displayData.stats.reputationScore}
                   />
-                  {tierProgress && (
-                    <span className="text-xs text-muted-foreground">
-                      {tierProgress.tradesToNext} more {tierProgress.tradesToNext === 1 ? "trade" : "trades"} to {tierProgress.nextLabel}
-                    </span>
-                  )}
                 </div>
-                
-                <div className="flex items-center justify-center mb-4">
-                  <div className="flex">
-                    {renderReputationStars(displayData.stats.reputationScore)}
-                  </div>
-                  <span className="ml-2 text-sm font-medium">
-                    {displayData.stats.reputationScore} ({displayData.stats.reviewCount})
-                  </span>
+                <div className="mt-1 text-sm text-muted-foreground">
+                  @{displayData.username}
+                  {displayData.location ? ` · ${displayData.location}` : ""}
                 </div>
-                
-                <div className="space-y-2 text-sm mb-4">
-                  {displayData.location && (
-                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
-                      <span>{displayData.location}</span>
+
+                {tierProgress && (
+                  <div className="mt-4 max-w-sm">
+                    <div className="mb-1.5 flex justify-between text-[11px] text-muted-foreground">
+                      <span>Progress to {tierProgress.nextLabel}</span>
+                      <span className="tabular-nums">
+                        {displayData.stats.trades} / {displayData.stats.trades + tierProgress.tradesToNext} trades
+                      </span>
                     </div>
-                  )}
-                  <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span>Joined {displayData.joined}</span>
-                  </div>
-                </div>
-                
-                <div className="flex justify-center gap-2 mb-4">
-                  <Button>
-                    <Mail className="h-4 w-4 mr-2" />
-                    Message
-                  </Button>
-                  <Button variant="outline" onClick={() => window.location.href = '/account-settings'}>
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                </div>
-                
-                <div className="border-t border-border pt-4 mt-4">
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div>
-                      <div className="text-xl font-bold">{displayData.stats.trades}</div>
-                      <div className="text-xs text-muted-foreground">Trades</div>
-                    </div>
-                    <div>
-                      <div className="text-xl font-bold">{displayData.stats.collectionSize}</div>
-                      <div className="text-xs text-muted-foreground">Cards</div>
-                    </div>
-                    <div>
-                      <div className="text-xl font-bold">{displayData.stats.reviewCount}</div>
-                      <div className="text-xs text-muted-foreground">Reviews</div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-secondary">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-300 transition-[width] duration-700 ease-out"
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            Math.round(
+                              (displayData.stats.trades / (displayData.stats.trades + tierProgress.tradesToNext)) * 100
+                            )
+                          )}%`,
+                        }}
+                      />
                     </div>
                   </div>
+                )}
+
+                {displayData.badges.length > 0 && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {displayData.badges.map((badge, i) => (
+                      <span
+                        key={i}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-3 py-1 text-[11px] text-muted-foreground"
+                      >
+                        <Award className="h-3 w-3" />
+                        {badge}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
+                <Button className="rounded-full">
+                  <Mail className="mr-2 h-4 w-4" />
+                  Message
+                </Button>
+                <Button
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={() => (window.location.href = "/account-settings")}
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  Edit profile
+                </Button>
+                <span className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <Calendar className="h-3.5 w-3.5" />
+                  Joined {displayData.joined}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Stat cards */}
+          <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
+            {[
+              { k: "Completed trades", v: String(displayData.stats.trades), icon: ArrowLeftRight, gold: false, sub: "" },
+              {
+                k: "Rating",
+                v: `${displayData.stats.reputationScore || "—"}`,
+                icon: Star,
+                gold: true,
+                sub: `(${displayData.stats.reviewCount})`,
+              },
+              { k: "Cards in collection", v: String(displayData.stats.collectionSize), icon: Package, gold: false, sub: "" },
+              {
+                k: "Sets completed",
+                v: String(setCompletion.filter((s) => s.pct === 100).length),
+                icon: ListChecks,
+                gold: false,
+                sub: "",
+              },
+            ].map((s, i) => (
+              <div
+                key={s.k}
+                className="anim-rise hover-lift rounded-2xl border border-border bg-card p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                style={{ animationDelay: `${120 + i * 70}ms` }}
+              >
+                <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <s.icon className="h-3.5 w-3.5" />
+                  {s.k}
                 </div>
-              </GlassCard>
-              
+                <div className={`mt-2 font-display text-2xl font-extrabold tabular-nums ${s.gold ? "text-gold" : ""}`}>
+                  {s.v}
+                  {s.sub && <span className="ml-1 text-sm font-semibold text-muted-foreground">{s.sub}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
+            {/* Profile sidebar */}
+            <div className="space-y-6 md:col-span-1">
+
               <GlassCard className="p-6">
                 <h2 className="text-lg font-bold mb-4">About Me</h2>
                 {displayData.bio ? (
@@ -372,11 +408,16 @@ const Profile = () => {
             {/* Profile main content */}
             <div className="md:col-span-2">
               <Tabs defaultValue="collection">
-                <TabsList className="mb-6">
-                  <TabsTrigger value="activity">Activity</TabsTrigger>
-                  <TabsTrigger value="collection">Collection</TabsTrigger>
-                  <TabsTrigger value="analytics">Analytics</TabsTrigger>
-                  <TabsTrigger value="reviews">Reviews</TabsTrigger>
+                <TabsList className="mb-6 h-auto w-full justify-start gap-1 rounded-none border-b border-border bg-transparent p-0">
+                  {["collection", "activity", "analytics", "reviews"].map((v) => (
+                    <TabsTrigger
+                      key={v}
+                      value={v}
+                      className="rounded-none border-b-2 border-transparent bg-transparent px-4 py-2.5 text-[13px] font-semibold capitalize text-muted-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
+                    >
+                      {v}
+                    </TabsTrigger>
+                  ))}
                 </TabsList>
                 
                 <TabsContent value="activity">
