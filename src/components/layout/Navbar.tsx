@@ -27,6 +27,7 @@ import {
   Archive,
   Home,
   Camera,
+  History,
   Settings,
   Box,
   Heart
@@ -209,6 +210,12 @@ const Navbar = () => {
                       <PrefetchLink to="/grade">
                         <Camera className="mr-2 h-4 w-4" />
                         <span>Grade a Card</span>
+                      </PrefetchLink>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <PrefetchLink to="/my-scans">
+                        <History className="mr-2 h-4 w-4" />
+                        <span>My Scans</span>
                       </PrefetchLink>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>

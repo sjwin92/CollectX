@@ -10,7 +10,7 @@ import Footer from "@/components/layout/Footer";
 import ProductCard from "@/components/pokemon/ProductCard";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Package, Layers3, Heart, ArrowRight } from "lucide-react";
+import { ArrowLeft, Package, Layers3, Heart, ArrowRight, Check, Grid2x2 } from "lucide-react";
 import { format } from "date-fns";
 import { SmartImage } from "@/components/common/SmartImage";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,6 +18,7 @@ import { fixImageUrl } from "@/services/api/cardImageService";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/hooks/useUser";
 import { useCollection } from "@/hooks/useCollection";
+import { useSetCards } from "@/hooks/useSetCards";
 
 const SetDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -114,15 +115,28 @@ const SetDetail = () => {
   }, [set, storedImages]);
 
   const { collection } = useCollection();
-  const ownedInSet = React.useMemo(() => {
-    if (!set?.id) return 0;
+  const ownedIds = React.useMemo(() => {
     const ids = new Set<string>();
+    if (!set?.id) return ids;
     for (const c of collection) if (c.set?.id === set.id) ids.add(c.id);
-    return ids.size;
+    return ids;
   }, [collection, set?.id]);
+  const ownedInSet = ownedIds.size;
   const totalCards = Number((set as any)?.printedTotal) || 0;
   const stillNeeded = Math.max(0, totalCards - ownedInSet);
   const completionPct = totalCards > 0 ? Math.min(100, Math.round((ownedInSet / totalCards) * 100)) : 0;
+
+  // Per-card checklist — served from the local mirror + on-demand import.
+  const setCardsQuery = useSetCards(id ?? null);
+  const setCards = React.useMemo(() => {
+    const list = setCardsQuery.data ?? [];
+    return [...list].sort((a, b) => {
+      const na = parseInt(String(a.number ?? "").replace(/\D/g, ""), 10);
+      const nb = parseInt(String(b.number ?? "").replace(/\D/g, ""), 10);
+      if (Number.isNaN(na) || Number.isNaN(nb)) return String(a.number).localeCompare(String(b.number));
+      return na - nb;
+    });
+  }, [setCardsQuery.data]);
 
   const handleBack = () => {
     navigate('/pokemon-sets');
@@ -305,9 +319,61 @@ const SetDetail = () => {
           </Button>
         </div>
 
+        {/* Per-card checklist */}
+        {setCards.length > 0 && (
+          <section className="anim-rise mt-12" style={{ animationDelay: '240ms' }}>
+            <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <div className="flex items-center gap-2">
+                <Grid2x2 className="h-5 w-5 text-primary" />
+                <h2 className="font-display text-xl font-extrabold">Set checklist</h2>
+              </div>
+              <span className="text-sm text-muted-foreground tabular-nums">
+                {setCards.filter((c) => ownedIds.has(c.id)).length} / {setCards.length} owned
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8">
+              {setCards.map((card) => {
+                const owned = ownedIds.has(card.id);
+                return (
+                  <button
+                    key={card.id}
+                    type="button"
+                    onClick={() => navigate(`/card/${card.id}`)}
+                    title={`${card.name}${card.number ? ` · #${card.number}` : ""}${owned ? " · owned" : " · missing"}`}
+                    className={`group relative aspect-[2/3] overflow-hidden rounded-lg border transition-all hover:-translate-y-0.5 ${
+                      owned
+                        ? "border-primary/50 shadow-[0_0_0_1px_hsl(var(--primary)/0.35)]"
+                        : "border-border opacity-45 grayscale hover:opacity-80 hover:grayscale-0"
+                    }`}
+                  >
+                    {card.imageUrl ? (
+                      <SmartImage src={card.imageUrl} alt={card.name} className="h-full w-full object-cover" fallback={null} />
+                    ) : (
+                      <span className="flex h-full items-center justify-center bg-muted p-1 text-center text-[9px] text-muted-foreground">
+                        {card.name}
+                      </span>
+                    )}
+                    {owned && (
+                      <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                        <Check className="h-2.5 w-2.5" />
+                      </span>
+                    )}
+                    {card.number && (
+                      <span className="absolute bottom-0 left-0 right-0 bg-black/60 px-1 py-0.5 text-center text-[9px] font-semibold tabular-nums text-white">
+                        #{card.number}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         {/* Products Section */}
         {enrichedProducts.length > 0 && (
-          <section className="anim-rise mt-12" style={{ animationDelay: '240ms' }}>
+          <section className="anim-rise mt-12" style={{ animationDelay: '300ms' }}>
             <div className="mb-5 flex items-center gap-2">
               <Package className="h-5 w-5 text-primary" />
               <h2 className="font-display text-xl font-extrabold">Sealed products</h2>

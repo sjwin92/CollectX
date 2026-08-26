@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ArrowRightLeft, ShoppingBag, Star, Shield } from "lucide-react";
 import { CardItemProps } from "@/components/cards/CardItem";
@@ -38,7 +38,7 @@ const TradeListing = ({ listing, onProposeTrade, featured = false, cardMeta, mar
 
   const handleProposeTrade = () => {
     onProposeTrade();
-    navigate({ pathname: '/trades', search: `?propose=true&listingId=${listing.id}` });
+    navigate(`/listings/${listing.id}`);
   };
 
   return (
@@ -68,7 +68,12 @@ const TradeListing = ({ listing, onProposeTrade, featured = false, cardMeta, mar
 
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-display text-lg font-bold leading-tight">{listing.cardOffered.name}</h3>
+            <Link
+              to={`/listings/${listing.id}`}
+              className="font-display text-lg font-bold leading-tight transition-colors hover:text-primary"
+            >
+              {listing.cardOffered.name}
+            </Link>
             <CardTypeBadge meta={cardMeta} />
           </div>
 

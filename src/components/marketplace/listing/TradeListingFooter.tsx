@@ -81,7 +81,6 @@ const TradeListingFooter = ({
 
   const handleProposeTrade = () => {
     if (!user) return requireAuth("propose trades");
-    toast({ title: "Preparing trade proposal", description: "Opening trade proposal form…" });
     onProposeTrade();
   };
 

@@ -35,6 +35,7 @@ const AccountSettings = lazy(() => import("./pages/AccountSettings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Pokemons = lazy(() => import("./pages/Pokemons"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
+const ListingDetail = lazy(() => import("./pages/ListingDetail"));
 const Sets = lazy(() => import("./pages/Sets"));
 const SetDetail = lazy(() => import("./pages/SetDetail"));
 const Products = lazy(() => import("./pages/Products"));
@@ -87,6 +88,7 @@ function App() {
                 <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
                 <Route path="/collection-boxes" element={<ProtectedRoute><CollectionBoxes /></ProtectedRoute>} />
                 <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+                <Route path="/listings/:id" element={<ProtectedRoute><ListingDetail /></ProtectedRoute>} />
                 <Route path="/sellers/:userId" element={<ProtectedRoute><SellerStore /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />

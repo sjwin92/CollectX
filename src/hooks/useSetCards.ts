@@ -1,22 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeSetId } from "@/services/setIdMappingService";
-import { usdToGbp } from "@/services/currencyService";
+import { marketPriceGbpLabel } from "@/lib/cardPrice";
 import type { CardItemProps } from "@/components/cards/CardItem";
 import { CACHE_TTL } from "@/lib/cacheConfig";
 
 const FRESHNESS_MS = CACHE_TTL.SET_CARDS;
-
-function extractGbpPrice(tcgplayerPrices: any): string {
-  const p = tcgplayerPrices;
-  const usd =
-    p?.holofoil?.market ?? p?.holofoil?.mid ??
-    p?.normal?.market ?? p?.normal?.mid ??
-    p?.reverseHolofoil?.market ?? p?.reverseHolofoil?.mid ??
-    p?.["1stEditionHolofoil"]?.market ??
-    p?.unlimitedHolofoil?.market ?? 0;
-  return usd > 0 ? `£${usdToGbp(usd).toFixed(2)}` : "N/A";
-}
 
 interface CardRow {
   id: string;
@@ -37,7 +26,7 @@ function toCardItems(rows: CardRow[]): CardItemProps[] {
     imageUrl: row.small_image_url ?? row.large_image_url ?? undefined,
     rarity: row.rarity ?? "Unknown",
     condition: "Near Mint",
-    estimatedValue: extractGbpPrice(row.tcgplayer_prices),
+    estimatedValue: marketPriceGbpLabel(row.tcgplayer_prices),
     number: row.number ?? undefined,
     set: { id: row.set_id ?? undefined, name: row.set_name ?? undefined },
   }));

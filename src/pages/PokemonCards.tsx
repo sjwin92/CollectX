@@ -11,19 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { getSetById } from "@/services/api/pokemonSetsService";
 import { searchCards } from "@/services/api/pokemonCardsService";
 import { CardItemProps } from "@/components/cards/CardItem";
-import { usdToGbp } from "@/services/currencyService";
+import { marketPriceGbpLabel } from "@/lib/cardPrice";
 import { useSetCards } from "@/hooks/useSetCards";
-
-const extractGbpPrice = (tcgplayer_prices: any): string => {
-  const p = tcgplayer_prices;
-  const usd =
-    p?.holofoil?.market ?? p?.holofoil?.mid ??
-    p?.normal?.market ?? p?.normal?.mid ??
-    p?.reverseHolofoil?.market ?? p?.reverseHolofoil?.mid ??
-    p?.["1stEditionHolofoil"]?.market ??
-    p?.unlimitedHolofoil?.market ?? 0;
-  return usd > 0 ? `£${usdToGbp(usd).toFixed(2)}` : "N/A";
-};
 
 const PokemonCards = () => {
   const [searchParams] = useSearchParams();
@@ -56,9 +45,7 @@ const PokemonCards = () => {
           `https://images.pokemontcg.io/${card.id.replace("-", "/")}.png`,
         rarity: card.rarity || "Unknown",
         condition: "Near Mint",
-        estimatedValue: card.tcgplayer?.prices
-          ? extractGbpPrice(card.tcgplayer.prices)
-          : "N/A",
+        estimatedValue: marketPriceGbpLabel(card.tcgplayer?.prices),
         number: card.number,
         set: { id: card.set?.id, name: card.set?.name },
       }));

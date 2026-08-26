@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { Info, AlertTriangle, Check, RefreshCw, BadgeCheck, Repeat, Star, BookHeart, CircleDollarSign, Camera, Edit3 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import CardImageGallery from "@/components/pokemon/collection/CardImageGallery";
+import CardTypeBadge from "@/components/pokemon/CardTypeBadge";
+import type { CardTypeMeta } from "@/lib/cardTypeLabel";
 import { Button } from "@/components/ui/button";
 // Temporarily removing enhanced service to debug image issues
 // import { enhancedImageService } from "@/services/enhancedImageService";
@@ -36,6 +38,7 @@ export interface CardItemProps {
   quantity?: number;
   dbId?: string; // For collection cards with user-uploaded images
   onEdit?: () => void; // For editing collection cards
+  typeMeta?: CardTypeMeta | null; // Pre-fetched type metadata (batch from CardGrid)
 }
 
 const CardItem = ({
@@ -58,7 +61,8 @@ const CardItem = ({
   number,
   quantity = 1,
   dbId, // For showing user-uploaded images
-  onEdit // For editing collection cards
+  onEdit, // For editing collection cards
+  typeMeta
 }: CardItemProps) => {
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
   const [imageSrc, setImageSrc] = useState<string>("");
@@ -226,7 +230,8 @@ const CardItem = ({
           {name}
         </h3>
         
-        <div className="flex items-center justify-center">
+        <div className="flex flex-wrap items-center justify-center gap-1">
+          {typeMeta && <CardTypeBadge meta={typeMeta} />}
           <Badge variant="outline" size="sm" className="shrink-0">
             {rarity}
           </Badge>

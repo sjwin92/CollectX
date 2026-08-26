@@ -49,3 +49,13 @@ export function marketPriceGbp(tcgplayerPrices: unknown): number {
 export function formatGbp(value: number | null | undefined): string {
   return value && value > 0 ? `£${value.toFixed(2)}` : "—";
 }
+
+/**
+ * Formatted GBP market-price label straight from a raw `tcgplayer.prices` blob
+ * (the shape pokemontcg.io returns / we mirror). Returns `fallback` when the
+ * card has no usable price. This is the one helper card grids should call.
+ */
+export function marketPriceGbpLabel(tcgplayerPrices: unknown, fallback = "N/A"): string {
+  const gbp = marketPriceGbp(tcgplayerPrices);
+  return gbp > 0 ? `£${gbp.toFixed(2)}` : fallback;
+}

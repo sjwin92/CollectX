@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { PokemonCard } from "@/services/pokemonTcgApi";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
-import { formatCurrency } from "@/utils/formatCurrency";
+import { marketPriceGbpLabel } from "@/lib/cardPrice";
 import { Flame, Zap, Shield, TrendingUp, AlertTriangle, Check, Info, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -37,11 +37,8 @@ const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
 
   const getMarketPrice = () => {
     if (!card?.tcgplayer?.prices) return null;
-
-    const price = card.tcgplayer.prices.holofoil?.market || 
-                 card.tcgplayer.prices.normal?.market || 
-                 card.tcgplayer.prices.reverseHolofoil?.market;
-    return price ? formatCurrency(price) : null;
+    const label = marketPriceGbpLabel(card.tcgplayer.prices, "");
+    return label || null;
   };
 
   const handleImageLoad = () => {
@@ -236,7 +233,8 @@ const PokemonCardDetail = ({ card }: PokemonCardDetailProps) => {
                  </div>
                  <span className="text-lg font-bold">{getMarketPrice() || "N/A"}</span>
                </div>
-               
+               <div className="text-xs text-muted-foreground mt-0.5">GBP · live from TCGplayer</div>
+
                <a href={card.tcgplayer.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 inline-block">
                  View on TCGPlayer
                </a>

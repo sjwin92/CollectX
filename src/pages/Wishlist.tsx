@@ -7,11 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Heart, Trash2, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getMyWishlist, removeFromWishlist, type WishlistItem } from "@/services/wishlistService";
+import CardTypeBadge from "@/components/pokemon/CardTypeBadge";
+import CardPrice from "@/components/pokemon/CardPrice";
+import { useCardTypeMeta } from "@/hooks/useCardTypeMeta";
+import { useCardPrices } from "@/hooks/useCardPrices";
 
 const Wishlist: React.FC = () => {
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+
+  const cardIds = items.map((i) => i.card_id);
+  const typeMeta = useCardTypeMeta(cardIds);
+  const prices = useCardPrices(cardIds);
 
   useEffect(() => {
     getMyWishlist().then(setItems).finally(() => setIsLoading(false));
@@ -79,9 +87,16 @@ const Wishlist: React.FC = () => {
                         {item.card_name}
                       </Link>
                       <p className="text-xs text-muted-foreground">{item.set_name}</p>
-                      {item.max_price != null && (
-                        <p className="text-xs text-muted-foreground">Up to £{Number(item.max_price).toFixed(2)}</p>
-                      )}
+                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <CardTypeBadge meta={typeMeta.get(item.card_id) ?? null} />
+                        <CardPrice priceGbp={prices.get(item.card_id) ?? null} label />
+                        {item.max_price != null && (
+                          <span className="flex flex-col leading-none">
+                            <span className="text-[9px] uppercase tracking-wider text-muted-foreground/70">Your cap</span>
+                            <span className="text-sm font-semibold tabular-nums">£{Number(item.max_price).toFixed(2)}</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => handleRemove(item.card_id)}>
                       <Trash2 className="h-4 w-4 text-muted-foreground" />
