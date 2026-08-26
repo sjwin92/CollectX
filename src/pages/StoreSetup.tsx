@@ -180,6 +180,9 @@ const StoreSetup: React.FC = () => {
             <Link to="/store/inventory">Inventory</Link>
           </Button>
           <Button asChild variant="ghost" className="rounded-full">
+            <Link to="/store/buylist">Buylist</Link>
+          </Button>
+          <Button asChild variant="ghost" className="rounded-full">
             <Link to="/store/import">Bulk import</Link>
           </Button>
           {store.status === "active" && (

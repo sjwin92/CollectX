@@ -7,9 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import GlassCard from "@/components/ui/custom/GlassCard";
-import { PackageOpen, BadgeCheck } from "lucide-react";
+import { PackageOpen, BadgeCheck, Tag } from "lucide-react";
 import { getMyOrders, OrderSummary, OrderStatus } from "@/services/orderService";
 import { getMyStoreOrders, StoreOrderSummary } from "@/services/storeOrderService";
+import { getMyBuylistOrders, BuylistOrderSummary } from "@/services/storeBuylistService";
 
 const statusLabel: Record<OrderStatus, string> = {
   pending_payment: "Awaiting payment",
@@ -31,6 +32,7 @@ const statusVariant: Record<OrderStatus, "default" | "secondary" | "destructive"
   disputed: "destructive",
 };
 
+type Kind = "personal" | "store" | "buylist";
 type Row = {
   key: string;
   to: string;
@@ -40,7 +42,7 @@ type Row = {
   total: number;
   created_at: string;
   status: OrderStatus;
-  isStore: boolean;
+  kind: Kind;
 };
 
 const toRow = (o: OrderSummary): Row => ({
@@ -52,7 +54,7 @@ const toRow = (o: OrderSummary): Row => ({
   total: o.total_charged_amount,
   created_at: o.created_at,
   status: o.status,
-  isStore: false,
+  kind: "personal",
 });
 
 const toStoreRow = (o: StoreOrderSummary): Row => ({
@@ -64,7 +66,19 @@ const toStoreRow = (o: StoreOrderSummary): Row => ({
   total: o.total_charged_amount,
   created_at: o.created_at,
   status: o.status,
-  isStore: true,
+  kind: "store",
+});
+
+const toBuylistRow = (o: BuylistOrderSummary, side: "seller" | "store"): Row => ({
+  key: `bo-${o.id}`,
+  to: `/buylist-orders/${o.id}`,
+  card_name: o.card_name,
+  image_url: o.image_url,
+  currency: o.currency,
+  total: side === "store" ? o.quote_amount : o.seller_payout_amount,
+  created_at: o.created_at,
+  status: o.status,
+  kind: "buylist",
 });
 
 const OrderRow = ({ row }: { row: Row }) => (
@@ -79,7 +93,8 @@ const OrderRow = ({ row }: { row: Row }) => (
         <div className="flex-1 min-w-0">
           <h3 className="font-medium truncate flex items-center gap-1.5">
             {row.card_name}
-            {row.isStore && <BadgeCheck className="h-4 w-4 text-primary shrink-0" aria-label="Store order" />}
+            {row.kind === "store" && <BadgeCheck className="h-4 w-4 text-primary shrink-0" aria-label="Store order" />}
+            {row.kind === "buylist" && <Tag className="h-4 w-4 text-gold shrink-0" aria-label="Buylist order" />}
           </h3>
           <p className="text-sm text-muted-foreground">
             {row.currency.toUpperCase()} {row.total.toFixed(2)} · {new Date(row.created_at).toLocaleDateString()}
@@ -103,14 +118,19 @@ const byNewest = (a: Row, b: Row) => +new Date(b.created_at) - +new Date(a.creat
 const Orders = () => {
   const { data, isLoading } = useQuery({ queryKey: ["my-orders"], queryFn: getMyOrders });
   const { data: storeData } = useQuery({ queryKey: ["my-store-orders"], queryFn: getMyStoreOrders });
+  const { data: buylistData } = useQuery({ queryKey: ["my-buylist-orders"], queryFn: getMyBuylistOrders });
 
+  // Buylist: the collector is parting with a card (→ Selling); the store is
+  // acquiring it (→ Buying).
   const buying: Row[] = [
     ...(data?.asBuyer ?? []).map(toRow),
     ...(storeData?.asBuyer ?? []).map(toStoreRow),
+    ...(buylistData?.asStore ?? []).map((o) => toBuylistRow(o, "store")),
   ].sort(byNewest);
   const selling: Row[] = [
     ...(data?.asSeller ?? []).map(toRow),
     ...(storeData?.asSeller ?? []).map(toStoreRow),
+    ...(buylistData?.asSeller ?? []).map((o) => toBuylistRow(o, "seller")),
   ].sort(byNewest);
 
   return (

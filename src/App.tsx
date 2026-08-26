@@ -25,6 +25,8 @@ const TradeDetail = lazy(() => import("./pages/TradeDetail"));
 const Orders = lazy(() => import("./pages/Orders"));
 const OrderDetail = lazy(() => import("./pages/OrderDetail"));
 const StoreOrderDetail = lazy(() => import("./pages/StoreOrderDetail"));
+const BuylistOrderDetail = lazy(() => import("./pages/BuylistOrderDetail"));
+const Sell = lazy(() => import("./pages/Sell"));
 const SellerOnboardingComplete = lazy(() => import("./pages/SellerOnboardingComplete"));
 const SellerStore = lazy(() => import("./pages/SellerStore"));
 const Collection = lazy(() => import("./pages/Collection"));
@@ -51,6 +53,7 @@ const StoreApply = lazy(() => import("./pages/StoreApply"));
 const StoreSetup = lazy(() => import("./pages/StoreSetup"));
 const StoreImport = lazy(() => import("./pages/StoreImport"));
 const StoreInventory = lazy(() => import("./pages/StoreInventory"));
+const StoreBuylist = lazy(() => import("./pages/StoreBuylist"));
 const StorePublic = lazy(() => import("./pages/StorePublic"));
 
 const RouteFallback = () => (
@@ -92,6 +95,8 @@ function App() {
                 <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
                 <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
                 <Route path="/store-orders/:id" element={<ProtectedRoute><StoreOrderDetail /></ProtectedRoute>} />
+                <Route path="/buylist-orders/:id" element={<ProtectedRoute><BuylistOrderDetail /></ProtectedRoute>} />
+                <Route path="/sell" element={<ProtectedRoute><Sell /></ProtectedRoute>} />
                 <Route path="/seller/onboarding-complete" element={<ProtectedRoute><SellerOnboardingComplete /></ProtectedRoute>} />
                 <Route path="/collection" element={<ProtectedRoute><Collection /></ProtectedRoute>} />
                 <Route path="/grade" element={<ProtectedRoute><GradeCard /></ProtectedRoute>} />
@@ -104,6 +109,7 @@ function App() {
                 <Route path="/store/setup" element={<ProtectedRoute><StoreSetup /></ProtectedRoute>} />
                 <Route path="/store/import" element={<ProtectedRoute><StoreImport /></ProtectedRoute>} />
                 <Route path="/store/inventory" element={<ProtectedRoute><StoreInventory /></ProtectedRoute>} />
+                <Route path="/store/buylist" element={<ProtectedRoute><StoreBuylist /></ProtectedRoute>} />
                 <Route path="/sellers/:userId" element={<ProtectedRoute><SellerStore /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />

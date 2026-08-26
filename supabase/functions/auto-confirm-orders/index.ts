@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { releaseOrderPayout, releaseStoreOrderPayout, serviceClient } from "../_shared/orderPayout.ts";
+import { releaseOrderPayout, releaseStoreOrderPayout, releaseBuylistOrderPayout, serviceClient } from "../_shared/orderPayout.ts";
 
 // Invoked on a schedule by pg_cron/pg_net (see the migration that sets up
 // cron.schedule) via the x-cron-secret header — never called from a browser.
@@ -12,13 +12,14 @@ serve(async (req) => {
   }
 
   const nowIso = new Date().toISOString();
-  const [personalRes, storeRes] = await Promise.all([
+  const [personalRes, storeRes, buylistRes] = await Promise.all([
     serviceClient.from('orders').select('id').eq('status', 'shipped').lt('auto_confirm_at', nowIso),
     serviceClient.from('store_orders').select('id').eq('status', 'shipped').lt('auto_confirm_at', nowIso),
+    serviceClient.from('buylist_orders').select('id').eq('status', 'shipped').lt('auto_confirm_at', nowIso),
   ]);
 
-  if (personalRes.error || storeRes.error) {
-    const error = personalRes.error ?? storeRes.error;
+  if (personalRes.error || storeRes.error || buylistRes.error) {
+    const error = personalRes.error ?? storeRes.error ?? buylistRes.error;
     console.error('Error querying due orders:', error);
     return new Response(JSON.stringify({ error: error!.message }), {
       status: 500,
@@ -29,6 +30,7 @@ serve(async (req) => {
   const results = await Promise.allSettled([
     ...(personalRes.data ?? []).map((o) => releaseOrderPayout(o.id)),
     ...(storeRes.data ?? []).map((o) => releaseStoreOrderPayout(o.id)),
+    ...(buylistRes.data ?? []).map((o) => releaseBuylistOrderPayout(o.id)),
   ]);
 
   const succeeded = results.filter((r) => r.status === 'fulfilled' && r.value.ok).length;

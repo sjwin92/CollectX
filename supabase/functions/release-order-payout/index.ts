@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { releaseOrderPayout, releaseStoreOrderPayout, serviceClient } from "../_shared/orderPayout.ts";
+import { releaseOrderPayout, releaseStoreOrderPayout, releaseBuylistOrderPayout, serviceClient } from "../_shared/orderPayout.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,19 +13,25 @@ serve(async (req) => {
   }
 
   try {
-    const { order_id, store_order_id } = await req.json();
-    if (!order_id && !store_order_id) {
-      return new Response(JSON.stringify({ error: 'order_id or store_order_id is required' }), {
+    const { order_id, store_order_id, buylist_order_id } = await req.json();
+    if (!order_id && !store_order_id && !buylist_order_id) {
+      return new Response(JSON.stringify({ error: 'order_id, store_order_id or buylist_order_id is required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const isStore = !!store_order_id;
-    const targetId: string = store_order_id ?? order_id;
+    // Which flow, and who is allowed to confirm receipt:
+    //   personal/store order → the buyer (buyer_user_id)
+    //   buylist order        → the store  (store_id), since the store is the recipient
+    const kind: 'personal' | 'store' | 'buylist' =
+      buylist_order_id ? 'buylist' : store_order_id ? 'store' : 'personal';
+    const targetId: string = buylist_order_id ?? store_order_id ?? order_id;
+    const table = kind === 'buylist' ? 'buylist_orders' : kind === 'store' ? 'store_orders' : 'orders';
+    const confirmerCol = kind === 'buylist' ? 'store_id' : 'buyer_user_id';
 
-    // Two legitimate callers: the buyer confirming receipt (verified via JWT
+    // Two legitimate callers: the recipient confirming receipt (verified via JWT
     // below), or the auto-confirm-orders cron sweep (verified via a shared
-    // secret header rather than impersonating the buyer).
+    // secret header rather than impersonating the recipient).
     const cronSecretHeader = req.headers.get('x-cron-secret');
     const isCron = !!cronSecretHeader && cronSecretHeader === Deno.env.get('CRON_SECRET');
 
@@ -51,22 +57,24 @@ serve(async (req) => {
       }
 
       const { data: order, error: orderError } = await serviceClient
-        .from(isStore ? 'store_orders' : 'orders')
-        .select('buyer_user_id')
+        .from(table)
+        .select(confirmerCol)
         .eq('id', targetId)
         .maybeSingle();
       if (orderError) throw orderError;
-      if (!order || order.buyer_user_id !== userData.user.id) {
-        return new Response(JSON.stringify({ error: 'Only the buyer can confirm receipt' }), {
+      if (!order || (order as Record<string, string>)[confirmerCol] !== userData.user.id) {
+        return new Response(JSON.stringify({ error: 'Only the recipient can confirm receipt' }), {
           status: 403,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
     }
 
-    const result = isStore
-      ? await releaseStoreOrderPayout(targetId)
-      : await releaseOrderPayout(targetId);
+    const result = kind === 'buylist'
+      ? await releaseBuylistOrderPayout(targetId)
+      : kind === 'store'
+        ? await releaseStoreOrderPayout(targetId)
+        : await releaseOrderPayout(targetId);
     if (!result.ok) {
       return new Response(JSON.stringify({ error: result.error }), {
         status: result.status,

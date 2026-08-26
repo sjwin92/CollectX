@@ -30,7 +30,8 @@ import {
   History,
   Settings,
   Box,
-  Heart
+  Heart,
+  Tag
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import SocialTradeHub from "@/components/trades/SocialTradeHub";
@@ -228,6 +229,12 @@ const Navbar = () => {
                       <PrefetchLink to="/marketplace">
                         <ShoppingCart className="mr-2 h-4 w-4" />
                         <span>Marketplace</span>
+                      </PrefetchLink>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <PrefetchLink to="/sell">
+                        <Tag className="mr-2 h-4 w-4" />
+                        <span>Sell to a store</span>
                       </PrefetchLink>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>

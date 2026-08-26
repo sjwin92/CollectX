@@ -64,6 +64,26 @@ serve(async (req) => {
           break;
         }
 
+        // Buylist order — the store paid the quote into escrow (Phase 3).
+        if (session.metadata?.type === 'buylist_order') {
+          const buylistOrderId = session.metadata.buylist_order_id;
+          if (!buylistOrderId) {
+            console.error('buylist_order checkout.session.completed with no buylist_order_id', session.id);
+            break;
+          }
+          if (session.payment_status === 'paid') {
+            const paymentIntentId = typeof session.payment_intent === 'string'
+              ? session.payment_intent
+              : session.payment_intent?.id ?? null;
+            const { error } = await serviceClient.rpc('mark_buylist_order_paid', {
+              _order_id: buylistOrderId,
+              _stripe_payment_intent_id: paymentIntentId,
+            });
+            if (error) throw error;
+          }
+          break;
+        }
+
         // Promoted listing / storefront pin (CollectX for Business — Phase 2c).
         if (session.metadata?.type === 'promotion') {
           const promotionId = session.metadata.promotion_id;
@@ -124,6 +144,13 @@ serve(async (req) => {
 
       case 'checkout.session.expired': {
         const session = event.data.object as Stripe.Checkout.Session;
+        if (session.metadata?.type === 'buylist_order') {
+          const id = session.metadata.buylist_order_id;
+          if (!id) break;
+          const { error } = await serviceClient.rpc('mark_buylist_order_payment_failed', { _order_id: id });
+          if (error) throw error;
+          break;
+        }
         if (session.metadata?.type === 'promotion') {
           const promotionId = session.metadata.promotion_id;
           if (!promotionId) break;
@@ -147,6 +174,13 @@ serve(async (req) => {
 
       case 'payment_intent.payment_failed': {
         const intent = event.data.object as Stripe.PaymentIntent;
+        if (intent.metadata?.type === 'buylist_order') {
+          const id = intent.metadata.buylist_order_id;
+          if (!id) break;
+          const { error } = await serviceClient.rpc('mark_buylist_order_payment_failed', { _order_id: id });
+          if (error) throw error;
+          break;
+        }
         if (intent.metadata?.type === 'promotion') {
           const promotionId = intent.metadata.promotion_id;
           if (!promotionId) break;
