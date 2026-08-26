@@ -20,7 +20,7 @@ const ANTHROPIC_MODEL = 'claude-sonnet-5';
 // grading model, rather than depending on an LLM call per scan forever.
 const GRADING_PROMPT = `You are assessing the physical condition of a trading card from photos, the same way a professional grading company (PSA/BGS/CGC) would.
 
-Assess these four factors independently, each on a 1-10 scale (10 = flawless):
+Assess these factors independently, each on a 1-10 scale (10 = flawless):
 - centering: how well-centered the artwork is within the card border. Also estimate the left/right and top/bottom border ratios (e.g. "55/45").
 - corners: sharpness of the four corners — look for whitening, fraying, rounding.
 - edges: condition of the card's edges — look for whitening, nicks, roughness.
@@ -28,10 +28,18 @@ Assess these four factors independently, each on a 1-10 scale (10 = flawless):
 
 If only a front photo is provided, assess surface/corners/edges from the front only and note that in "notes". If a back photo is provided too, weigh it in as well (a real grade considers both sides).
 
+Then give your best estimate of the numeric grade each major company would most likely assign this card overall: predicted_psa (1-10, whole or .5), predicted_bgs (1-10, .5 steps), predicted_cgc (1-10, .5 steps). Use null for any you genuinely cannot estimate. Remember PSA gives one overall number, BGS is typically the lowest subgrade with some leeway, CGC sits between.
+
 Also rate your own confidence in this assessment from 0-100. Be honest and conservative here, not reassuring — collectors specifically distrust AI grading tools that report a single confident-looking number with no sense of uncertainty attached. Lower your confidence for: a front-only submission (no back photo), poor lighting or glare obscuring part of the card, a blurry or low-resolution image, or a borderline case between two grades.
 
 Respond with ONLY a single JSON object, no markdown formatting, no other text, matching exactly this shape:
-{"centering": number, "centering_ratio_lr": string, "centering_ratio_tb": string, "corners": number, "edges": number, "surface": number, "confidence": number, "notes": string}`;
+{"centering": number, "centering_ratio_lr": string, "centering_ratio_tb": string, "corners": number, "edges": number, "surface": number, "predicted_psa": number, "predicted_bgs": number, "predicted_cgc": number, "confidence": number, "notes": string}`;
+
+// Appended when the client sent a geometric centering measurement from the
+// on-device scanner — that number is ground truth, not something to re-guess.
+function measuredCenteringNote(m: { lr: string; tb: string; grade: number }): string {
+  return `\n\nIMPORTANT: Centering has already been measured geometrically from this photo (outer card edge vs. inner border): left/right ${m.lr}, top/bottom ${m.tb}, centering sub-grade ${m.grade}/10. Do NOT re-score centering — echo those exact values in "centering", "centering_ratio_lr", "centering_ratio_tb". Only mention centering in "notes" if the card looks genuinely miscut or off-register in a way the ratios wouldn't capture. Score corners, edges and surface independently as normal.`;
+}
 
 // Rough PSA-style condition labels, bucketed off the computed overall grade.
 // Not an official standard — a reasonable approximation for a "pre-grade" estimate.
@@ -54,6 +62,32 @@ function geomean(values: number[]): number {
   return Math.pow(product, 1 / values.length);
 }
 
+// Coerce a model-supplied predicted grade to a sane 1-10 in 0.5 steps, or null.
+function clampGrade(v: unknown): number | null {
+  const n = typeof v === 'number' ? v : Number(v);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.max(1, Math.min(10, Math.round(n * 2) / 2));
+}
+
+interface MeasuredCentering {
+  lr: string;
+  tb: string;
+  grade: number;
+  worstOffset?: number;
+}
+
+// Only trust a client centering measurement that's structurally well-formed.
+function validMeasuredCentering(raw: unknown): MeasuredCentering | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const m = raw as Record<string, unknown>;
+  const ratio = /^\d{1,3}\/\d{1,3}$/;
+  if (typeof m.lr !== 'string' || !ratio.test(m.lr)) return null;
+  if (typeof m.tb !== 'string' || !ratio.test(m.tb)) return null;
+  const grade = typeof m.grade === 'number' ? m.grade : Number(m.grade);
+  if (!Number.isFinite(grade) || grade < 1 || grade > 10) return null;
+  return { lr: m.lr, tb: m.tb, grade: Math.round(grade * 2) / 2 };
+}
+
 interface ParsedDataUrl {
   mediaType: string;
   base64: string;
@@ -65,9 +99,14 @@ function parseDataUrl(dataUrl: string): ParsedDataUrl {
   return { mediaType: 'image/jpeg', base64: dataUrl };
 }
 
-async function callClaudeVision(apiKey: string, front: ParsedDataUrl, back: ParsedDataUrl | null) {
+async function callClaudeVision(
+  apiKey: string,
+  front: ParsedDataUrl,
+  back: ParsedDataUrl | null,
+  promptSuffix = '',
+) {
   const content: Record<string, unknown>[] = [
-    { type: 'text', text: GRADING_PROMPT },
+    { type: 'text', text: GRADING_PROMPT + promptSuffix },
     { type: 'text', text: 'Front of card:' },
     { type: 'image', source: { type: 'base64', media_type: front.mediaType, data: front.base64 } },
   ];
@@ -127,7 +166,8 @@ serve(async (req) => {
     }
     const user = userData.user;
 
-    const { frontImageBase64, backImageBase64, userCardId, cardName } = await req.json();
+    const { frontImageBase64, backImageBase64, userCardId, cardName, measuredCentering, frontQuality } = await req.json();
+    const measured = validMeasuredCentering(measuredCentering);
     if (!frontImageBase64) {
       return new Response(JSON.stringify({ error: 'frontImageBase64 is required' }), {
         status: 400,
@@ -181,17 +221,43 @@ serve(async (req) => {
     const front = parseDataUrl(frontImageBase64);
     const back = backImageBase64 ? parseDataUrl(backImageBase64) : null;
 
-    const { parsed: grade, raw: rawResult } = await callClaudeVision(anthropicApiKey, front, back);
+    const { parsed: grade, raw: rawResult } = await callClaudeVision(
+      anthropicApiKey,
+      front,
+      back,
+      measured ? measuredCenteringNote(measured) : '',
+    );
+
+    // On-device geometry wins for centering when we have it — it's a real
+    // measurement, not an eyeballed guess (the whole point collectors distrust).
+    const centeringSource = measured ? 'measured' : 'ai';
+    const centeringGrade = measured ? measured.grade : (grade.centering ?? null);
+    const centeringLR = measured ? measured.lr : (grade.centering_ratio_lr ?? null);
+    const centeringTB = measured ? measured.tb : (grade.centering_ratio_tb ?? null);
 
     const overallGrade = Math.round(
-      geomean([grade.centering, grade.corners, grade.edges, grade.surface]) * 10
+      geomean([
+        centeringGrade ?? grade.centering,
+        grade.corners,
+        grade.edges,
+        grade.surface,
+      ]) * 10
     ) / 10;
+
+    const predicted = {
+      psa: clampGrade(grade.predicted_psa),
+      bgs: clampGrade(grade.predicted_bgs),
+      cgc: clampGrade(grade.predicted_cgc),
+    };
 
     // Don't fully trust the model to self-regulate confidence — a front-only
     // submission is structurally less reliable than front+back regardless of
     // how sure the model sounds, so cap it in code rather than prompt-only.
+    // A geometric centering measurement removes uncertainty on one axis, so
+    // nudge the ceiling up a little when we have one.
     const rawConfidence = typeof grade.confidence === 'number' ? grade.confidence : 50;
-    const confidence = Math.max(0, Math.min(back ? 100 : 70, rawConfidence));
+    const ceiling = (back ? 100 : 70) + (measured ? 8 : 0);
+    const confidence = Math.max(0, Math.min(Math.min(100, ceiling), rawConfidence + (measured ? 5 : 0)));
 
     // Persist the photos themselves — this is the training set for an
     // eventual in-house model, not just a record of the result.
@@ -223,16 +289,31 @@ serve(async (req) => {
       card_name: cardName ?? null,
       overall_grade: overallGrade,
       condition_label: conditionLabel(overallGrade),
-      centering_grade: grade.centering ?? null,
+      centering_grade: centeringGrade,
       corners_grade: grade.corners ?? null,
       edges_grade: grade.edges ?? null,
       surface_grade: grade.surface ?? null,
-      centering_ratio_lr: grade.centering_ratio_lr ?? null,
-      centering_ratio_tb: grade.centering_ratio_tb ?? null,
+      centering_ratio_lr: centeringLR,
+      centering_ratio_tb: centeringTB,
       confidence,
       front_image_path: frontPath,
       back_image_path: backPath,
-      raw_result: rawResult,
+      // raw_result also carries the on-device metadata — this table doubles as
+      // the training set for an eventual in-house model, so keep the geometry.
+      raw_result: {
+        claude: rawResult,
+        meta: {
+          centering_source: centeringSource,
+          measured_centering: measured ?? null,
+          front_quality: frontQuality ?? null,
+          predicted,
+          ai_centering: {
+            grade: grade.centering ?? null,
+            lr: grade.centering_ratio_lr ?? null,
+            tb: grade.centering_ratio_tb ?? null,
+          },
+        },
+      },
       was_free: isFree,
     };
 
@@ -250,6 +331,9 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       ...scanRow,
       raw_result: undefined, // don't ship the full Claude payload back to the client
+      centering_source: centeringSource,
+      predicted,
+      notes: typeof grade.notes === 'string' ? grade.notes : null,
       freeScansRemaining: Math.max(0, FREE_SCAN_LIMIT - ((freeUsed ?? 0) + (isFree ? 1 : 0))),
       purchasedCreditsRemaining: isFree ? (profile?.purchased_scan_credits ?? 0) : (profile?.purchased_scan_credits ?? 1) - 1,
     }), {

@@ -1,6 +1,12 @@
 import { supabase as supabaseTyped } from '@/integrations/supabase/client';
 const supabase = supabaseTyped as any;
 
+export interface PredictedGrades {
+  psa: number | null;
+  bgs: number | null;
+  cgc: number | null;
+}
+
 export interface CardGradeResult {
   overall_grade: number | null;
   condition_label: string | null;
@@ -10,10 +16,36 @@ export interface CardGradeResult {
   surface_grade: number | null;
   centering_ratio_lr: string | null;
   centering_ratio_tb: string | null;
+  /** "measured" = geometry from the on-device scanner, "ai" = vision estimate. */
+  centering_source: "measured" | "ai" | null;
+  predicted: PredictedGrades | null;
   confidence: number | null;
+  notes: string | null;
   was_free: boolean;
   freeScansRemaining: number;
   purchasedCreditsRemaining: number;
+}
+
+/** On-device centering measurement passed to the grader as ground truth. */
+export interface MeasuredCenteringInput {
+  lr: string;
+  tb: string;
+  grade: number;
+  worstOffset: number;
+}
+
+export interface CaptureQualityInput {
+  glare: number;
+  sharpness: number;
+  skew: number;
+  flags: string[];
+}
+
+export interface GradeCardOptions {
+  userCardId?: string;
+  cardName?: string;
+  measuredCentering?: MeasuredCenteringInput | null;
+  frontQuality?: CaptureQualityInput | null;
 }
 
 export interface ScanQuota {
@@ -51,11 +83,17 @@ export class GradeCardError extends Error {
 export const gradeCard = async (
   frontImageBase64: string,
   backImageBase64?: string,
-  userCardId?: string,
-  cardName?: string,
+  options: GradeCardOptions = {},
 ): Promise<CardGradeResult> => {
   const { data, error } = await supabase.functions.invoke('grade-card', {
-    body: { frontImageBase64, backImageBase64, userCardId, cardName },
+    body: {
+      frontImageBase64,
+      backImageBase64,
+      userCardId: options.userCardId,
+      cardName: options.cardName,
+      measuredCentering: options.measuredCentering ?? null,
+      frontQuality: options.frontQuality ?? null,
+    },
   });
   if (error) {
     const context = (error as { context?: { json?: () => Promise<any> } }).context;
@@ -88,9 +126,12 @@ export interface CardGradingScan {
   corners_grade: number | null;
   edges_grade: number | null;
   surface_grade: number | null;
+  centering_ratio_lr: string | null;
+  centering_ratio_tb: string | null;
   confidence: number | null;
   front_image_path: string | null;
   back_image_path: string | null;
+  raw_result: { meta?: { centering_source?: string; predicted?: PredictedGrades } } | null;
   created_at: string;
 }
 

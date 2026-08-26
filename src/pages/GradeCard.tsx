@@ -16,7 +16,10 @@ import {
   GradeCardError,
   type CardGradeResult,
   type ScanQuota,
+  type MeasuredCenteringInput,
+  type CaptureQualityInput,
 } from "@/services/cardGradingService";
+import type { StillMeasurement } from "@/lib/grading/scanTypes";
 
 type Step = 'front' | 'back' | 'analyzing' | 'result';
 
@@ -28,6 +31,7 @@ const GradeCard: React.FC = () => {
   const [step, setStep] = useState<Step>('front');
   const [frontImage, setFrontImage] = useState<string | null>(null);
   const [backImage, setBackImage] = useState<string | null>(null);
+  const [frontMeasurement, setFrontMeasurement] = useState<StillMeasurement | null>(null);
   const [result, setResult] = useState<CardGradeResult | null>(null);
   const [quota, setQuota] = useState<ScanQuota | null>(null);
   const [noCredits, setNoCredits] = useState(false);
@@ -50,11 +54,27 @@ const GradeCard: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  const analyze = async (front: string, back: string | null) => {
+  const analyze = async (front: string, back: string | null, measurement: StillMeasurement | null) => {
     setStep('analyzing');
     setNoCredits(false);
     try {
-      const gradeResult = await gradeCard(front, back ?? undefined);
+      const measuredCentering: MeasuredCenteringInput | null = measurement?.centering
+        ? {
+            lr: measurement.centering.lr,
+            tb: measurement.centering.tb,
+            grade: measurement.centering.grade,
+            worstOffset: measurement.centering.worstOffset,
+          }
+        : null;
+      const frontQuality: CaptureQualityInput | null = measurement?.quality
+        ? {
+            glare: measurement.quality.glare,
+            sharpness: measurement.quality.sharpness,
+            skew: measurement.quality.skew,
+            flags: measurement.quality.flags,
+          }
+        : null;
+      const gradeResult = await gradeCard(front, back ?? undefined, { measuredCentering, frontQuality });
       setResult(gradeResult);
       setStep('result');
       loadQuota();
@@ -75,23 +95,25 @@ const GradeCard: React.FC = () => {
     }
   };
 
-  const handleFrontCaptured = (base64: string) => {
+  const handleFrontCaptured = (base64: string, measurement: StillMeasurement | null) => {
     setFrontImage(base64);
+    setFrontMeasurement(measurement);
     setStep('back');
   };
 
   const handleBackCaptured = (base64: string) => {
     setBackImage(base64);
-    analyze(frontImage!, base64);
+    analyze(frontImage!, base64, frontMeasurement);
   };
 
   const handleSkipBack = () => {
-    analyze(frontImage!, null);
+    analyze(frontImage!, null, frontMeasurement);
   };
 
   const startOver = () => {
     setFrontImage(null);
     setBackImage(null);
+    setFrontMeasurement(null);
     setResult(null);
     setStep('front');
   };
@@ -192,21 +214,46 @@ const GradeCard: React.FC = () => {
                       {result.confidence < 60 ? ' — add a back photo or better lighting for a more reliable read' : ''}
                     </p>
                   )}
+                  {result.predicted && (result.predicted.psa || result.predicted.bgs || result.predicted.cgc) && (
+                    <div className="mt-4 flex flex-wrap justify-center gap-2">
+                      {([['PSA', result.predicted.psa], ['BGS', result.predicted.bgs], ['CGC', result.predicted.cgc]] as const)
+                        .filter(([, v]) => v != null)
+                        .map(([co, v]) => (
+                          <span key={co} className="rounded-full border border-border bg-secondary px-3 py-1 text-xs font-semibold">
+                            {co} <span className="text-primary">{(v as number) % 1 === 0 ? v : (v as number).toFixed(1)}</span>
+                          </span>
+                        ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
+
+              {result.notes && (
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className="text-xs">{result.notes}</AlertDescription>
+                </Alert>
+              )}
 
               <Card>
                 <CardHeader><CardTitle className="text-base">Breakdown</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                  {[
-                    ['Centering', result.centering_grade, result.centering_ratio_lr && result.centering_ratio_tb ? `${result.centering_ratio_lr} · ${result.centering_ratio_tb}` : null],
-                    ['Corners', result.corners_grade, null],
-                    ['Edges', result.edges_grade, null],
-                    ['Surface', result.surface_grade, null],
-                  ].map(([label, grade, note]) => (
-                    <div key={label as string}>
+                  {([
+                    ['Centering', result.centering_grade, result.centering_ratio_lr && result.centering_ratio_tb ? `${result.centering_ratio_lr} · ${result.centering_ratio_tb}` : null, result.centering_source === 'measured'],
+                    ['Corners', result.corners_grade, null, false],
+                    ['Edges', result.edges_grade, null, false],
+                    ['Surface', result.surface_grade, null, false],
+                  ] as const).map(([label, grade, note, measured]) => (
+                    <div key={label}>
                       <div className="flex justify-between text-sm mb-1">
-                        <span>{label}</span>
+                        <span className="flex items-center gap-1.5">
+                          {label}
+                          {measured && (
+                            <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                              measured on device
+                            </span>
+                          )}
+                        </span>
                         <span className="text-muted-foreground">
                           {grade != null ? `${(grade as number).toFixed(1)}/10` : 'N/A'}{note ? ` (${note})` : ''}
                         </span>
@@ -220,9 +267,10 @@ const GradeCard: React.FC = () => {
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  This is an AI estimate, not an official grade. Different grading companies score the same
-                  card differently — a card that lands here as roughly a PSA 9 might come back a BGS 8.5 or
-                  9.5 depending on how strictly each corner/surface subgrade is scored. Use this as a rough
+                  {result.centering_source === 'measured'
+                    ? 'Centering is measured from the card geometry in your photo (outer edge vs. inner border, PSA thresholds). Corners, edges and surface are an AI estimate. '
+                    : 'This is an AI estimate, not an official grade. '}
+                  Different grading companies score the same card differently — treat this as a pre-grade
                   guide before submitting to a professional grader, not a substitute for one.
                 </AlertDescription>
               </Alert>
