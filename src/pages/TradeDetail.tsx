@@ -2,8 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle, Loader2, Shield, Star, XCircle } from "lucide-react";
+import { CheckCircle, Loader2, Shield, Star, XCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import Navbar from "@/components/layout/Navbar";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +27,8 @@ const TradeDetail: React.FC = () => {
   const queryClient = useQueryClient();
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [ratingOpen, setRatingOpen] = useState(false);
+  const [disputeOpen, setDisputeOpen] = useState(false);
+  const [disputeReason, setDisputeReason] = useState("");
 
   const { data: trade, isLoading, isError, refetch } = useQuery({
     queryKey: ["trade", tradeId],
@@ -111,7 +115,7 @@ const TradeDetail: React.FC = () => {
   return (
     <div>
       <Navbar />
-      <div className="container py-12">
+      <div className="container pb-16 pt-24">
       <ImageLightbox src={lightbox} onClose={() => setLightbox(null)} />
 
       <TradeDetailHeader status={trade.status} />
@@ -127,58 +131,112 @@ const TradeDetail: React.FC = () => {
 
       {/* Actions */}
       <GlassCard className="mb-6">
-        <div className="flex items-center justify-around p-4 gap-2 flex-wrap">
-          {canAccept && (
-            <Button onClick={() => m.accept.mutate()} disabled={m.accept.isPending}>
-              {m.accept.isPending ? <>Accepting...<Loader2 className="ml-2 h-4 w-4 animate-spin" /></> : "Accept Trade"}
-            </Button>
-          )}
-          {canDecline && (
-            <Button variant="destructive" onClick={() => m.decline.mutate()} disabled={m.decline.isPending}>
-              {m.decline.isPending ? <>Declining...<Loader2 className="ml-2 h-4 w-4 animate-spin" /></> : "Decline"}
-            </Button>
-          )}
-          {canCancel && (
-            <Button variant="outline" onClick={() => m.cancel.mutate()} disabled={m.cancel.isPending}>
-              {m.cancel.isPending ? <>Cancelling...<Loader2 className="ml-2 h-4 w-4 animate-spin" /></> : "Cancel"}
-            </Button>
-          )}
-          {canConfirm && (
-            <Button onClick={() => m.confirmReceipt.mutate()} disabled={m.confirmReceipt.isPending}>
-              {m.confirmReceipt.isPending ? <>Confirming...<Loader2 className="ml-2 h-4 w-4 animate-spin" /></> : "Confirm Receipt"}
-            </Button>
-          )}
-          {canDispute && (
-            <Button
-              variant="destructive"
-              onClick={() => {
-                const reason = window.prompt("Describe the issue:");
-                if (reason?.trim()) m.dispute.mutate(reason.trim());
-              }}
-              disabled={m.dispute.isPending}
-            >
-              Report Issue
-            </Button>
-          )}
-          {trade.status === "completed" && (
-            <div className="flex items-center gap-2 text-green-600">
-              <CheckCircle className="h-5 w-5" />
-              <span className="font-medium">Trade Complete</span>
-            </div>
-          )}
-          {canRate && (
-            <Button variant="outline" onClick={() => setRatingOpen(true)}>
-              <Star className="h-4 w-4 mr-2" /> Rate trade
-            </Button>
-          )}
-          {trade.status === "completed" && alreadyRated && (
-            <span className="text-sm text-muted-foreground">You’ve rated this trade.</span>
-          )}
-          {trade.status === "shipped" && iConfirmed && !canConfirm && (
-            <p className="text-sm text-muted-foreground">You confirmed receipt. Waiting for the other side.</p>
-          )}
+        <div className="flex flex-wrap items-center gap-3 p-5">
+          <div className="min-w-[10rem] flex-1 text-sm text-muted-foreground">
+            {canAccept && "This trade is waiting for your response."}
+            {canConfirm && "Confirm receipt once your card is in hand — both sides must confirm to complete."}
+            {trade.status === "completed" && (
+              <span className="inline-flex items-center gap-2 font-medium text-emerald-400">
+                <CheckCircle className="h-5 w-5" /> Trade complete{alreadyRated ? " — you’ve rated this trade." : "."}
+              </span>
+            )}
+            {trade.status === "shipped" && iConfirmed && !canConfirm && "You confirmed receipt. Waiting for the other side."}
+            {trade.status === "disputed" && "An issue was reported on this trade."}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {canDecline && (
+              <Button
+                variant="outline"
+                className="rounded-full border-red-500/40 text-red-300 hover:bg-red-500/10 hover:text-red-200"
+                onClick={() => m.decline.mutate()}
+                disabled={m.decline.isPending}
+              >
+                {m.decline.isPending ? <>Declining…<Loader2 className="ml-2 h-4 w-4 animate-spin" /></> : "Decline"}
+              </Button>
+            )}
+            {canCancel && (
+              <Button variant="outline" className="rounded-full" onClick={() => m.cancel.mutate()} disabled={m.cancel.isPending}>
+                {m.cancel.isPending ? <>Cancelling…<Loader2 className="ml-2 h-4 w-4 animate-spin" /></> : "Cancel"}
+              </Button>
+            )}
+            {canDispute && (
+              <Button
+                variant="outline"
+                className="rounded-full border-red-500/40 text-red-300 hover:bg-red-500/10 hover:text-red-200"
+                onClick={() => setDisputeOpen(true)}
+                disabled={m.dispute.isPending}
+              >
+                <AlertTriangle className="mr-2 h-4 w-4" />
+                Report an issue
+              </Button>
+            )}
+            {canRate && (
+              <Button variant="outline" className="rounded-full" onClick={() => setRatingOpen(true)}>
+                <Star className="mr-2 h-4 w-4" /> Rate trade
+              </Button>
+            )}
+            {canAccept && (
+              <Button
+                className="rounded-full px-5 shadow-[0_12px_30px_-12px_hsl(var(--primary)/0.6)]"
+                onClick={() => m.accept.mutate()}
+                disabled={m.accept.isPending}
+              >
+                {m.accept.isPending ? <>Accepting…<Loader2 className="ml-2 h-4 w-4 animate-spin" /></> : "Accept trade"}
+              </Button>
+            )}
+            {canConfirm && (
+              <Button
+                className="rounded-full px-5 shadow-[0_12px_30px_-12px_hsl(var(--primary)/0.6)]"
+                onClick={() => m.confirmReceipt.mutate()}
+                disabled={m.confirmReceipt.isPending}
+              >
+                {m.confirmReceipt.isPending ? <>Confirming…<Loader2 className="ml-2 h-4 w-4 animate-spin" /></> : (<><CheckCircle className="mr-2 h-4 w-4" />Confirm receipt</>)}
+              </Button>
+            )}
+          </div>
         </div>
       </GlassCard>
+
+      <Dialog open={disputeOpen} onOpenChange={setDisputeOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-400" />
+              Report an issue
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Describe what went wrong. This pauses the trade and flags it for review — try to resolve it with the other
+            trader in chat first where you can.
+          </p>
+          <Textarea
+            autoFocus
+            rows={4}
+            maxLength={2000}
+            value={disputeReason}
+            onChange={(e) => setDisputeReason(e.target.value)}
+            placeholder="e.g. The card arrived with a bent corner that wasn't in the photos."
+          />
+          <DialogFooter>
+            <Button variant="outline" className="rounded-full" onClick={() => setDisputeOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              className="rounded-full"
+              disabled={!disputeReason.trim() || m.dispute.isPending}
+              onClick={() => {
+                m.dispute.mutate(disputeReason.trim());
+                setDisputeOpen(false);
+                setDisputeReason("");
+              }}
+            >
+              {m.dispute.isPending ? <>Reporting…<Loader2 className="ml-2 h-4 w-4 animate-spin" /></> : "Submit report"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {tradeId && user && (
         <TradeRatingModal
