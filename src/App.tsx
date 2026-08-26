@@ -54,6 +54,7 @@ const StoreSetup = lazy(() => import("./pages/StoreSetup"));
 const StoreImport = lazy(() => import("./pages/StoreImport"));
 const StoreInventory = lazy(() => import("./pages/StoreInventory"));
 const StoreBuylist = lazy(() => import("./pages/StoreBuylist"));
+const StorePlan = lazy(() => import("./pages/StorePlan"));
 const StorePublic = lazy(() => import("./pages/StorePublic"));
 
 const RouteFallback = () => (
@@ -110,6 +111,7 @@ function App() {
                 <Route path="/store/import" element={<ProtectedRoute><StoreImport /></ProtectedRoute>} />
                 <Route path="/store/inventory" element={<ProtectedRoute><StoreInventory /></ProtectedRoute>} />
                 <Route path="/store/buylist" element={<ProtectedRoute><StoreBuylist /></ProtectedRoute>} />
+                <Route path="/store/plan" element={<ProtectedRoute><StorePlan /></ProtectedRoute>} />
                 <Route path="/sellers/:userId" element={<ProtectedRoute><SellerStore /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />

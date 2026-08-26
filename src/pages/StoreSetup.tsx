@@ -185,6 +185,9 @@ const StoreSetup: React.FC = () => {
           <Button asChild variant="ghost" className="rounded-full">
             <Link to="/store/import">Bulk import</Link>
           </Button>
+          <Button asChild variant="ghost" className="rounded-full">
+            <Link to="/store/plan">Plan{store.subscription_tier !== "none" ? ` · ${store.subscription_tier}` : ""}</Link>
+          </Button>
           {store.status === "active" && (
             promos?.storefrontPin ? (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-semibold text-gold">

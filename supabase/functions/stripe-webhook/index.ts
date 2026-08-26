@@ -64,6 +64,39 @@ serve(async (req) => {
           break;
         }
 
+        // Business subscription — a store started a monthly plan (Phase 4).
+        if (session.metadata?.type === 'business_subscription') {
+          const storeId = session.metadata.store_id;
+          const planId = session.metadata.plan_id;
+          const subId = typeof session.subscription === 'string'
+            ? session.subscription
+            : session.subscription?.id ?? null;
+          const customerId = typeof session.customer === 'string'
+            ? session.customer
+            : session.customer?.id ?? null;
+          if (!storeId || !planId || !subId) {
+            console.error('business_subscription checkout with missing metadata/subscription', session.id);
+            break;
+          }
+          let periodEnd: string | null = null;
+          try {
+            const stripe = getStripeClient();
+            const sub = await stripe.subscriptions.retrieve(subId);
+            if (sub.current_period_end) periodEnd = new Date(sub.current_period_end * 1000).toISOString();
+          } catch (e) {
+            console.error('Could not retrieve subscription for period end', subId, e);
+          }
+          const { error } = await serviceClient.rpc('activate_business_subscription', {
+            _store_id: storeId,
+            _plan_id: planId,
+            _stripe_customer_id: customerId,
+            _stripe_subscription_id: subId,
+            _current_period_end: periodEnd,
+          });
+          if (error) throw error;
+          break;
+        }
+
         // Buylist order — the store paid the quote into escrow (Phase 3).
         if (session.metadata?.type === 'buylist_order') {
           const buylistOrderId = session.metadata.buylist_order_id;
@@ -236,6 +269,34 @@ serve(async (req) => {
             });
           }
         }
+        break;
+      }
+
+      case 'customer.subscription.updated':
+      case 'customer.subscription.deleted': {
+        const sub = event.data.object as Stripe.Subscription;
+        const canceled = event.type === 'customer.subscription.deleted';
+        const { error } = await serviceClient.rpc('sync_business_subscription', {
+          _stripe_subscription_id: sub.id,
+          _status: canceled ? 'canceled' : sub.status,
+          _current_period_end: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+          _cancel_at_period_end: canceled ? false : !!sub.cancel_at_period_end,
+        });
+        if (error) throw error;
+        break;
+      }
+
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as Stripe.Invoice;
+        const subId = typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id ?? null;
+        if (!subId) break;
+        const { error } = await serviceClient.rpc('sync_business_subscription', {
+          _stripe_subscription_id: subId,
+          _status: 'past_due',
+          _current_period_end: null,
+          _cancel_at_period_end: null,
+        });
+        if (error) throw error;
         break;
       }
 

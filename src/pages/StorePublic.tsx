@@ -99,6 +99,11 @@ const StorePublic: React.FC = () => {
                       <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
                         <BadgeCheck className="h-3.5 w-3.5" /> Verified store
                       </span>
+                      {(store.subscription_tier === "growth" || store.subscription_tier === "pro") && (
+                        <span className="inline-flex items-center rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-[11px] font-semibold capitalize text-gold">
+                          {store.subscription_tier}
+                        </span>
+                      )}
                     </div>
                     {store.bio && <p className="mt-1.5 text-sm text-muted-foreground">{store.bio}</p>}
                     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
