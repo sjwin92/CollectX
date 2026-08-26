@@ -10,15 +10,14 @@ import Footer from "@/components/layout/Footer";
 import ProductCard from "@/components/pokemon/ProductCard";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Calendar, Trophy, Bookmark, Check, ImageOff, Package } from "lucide-react";
+import { ArrowLeft, Package, Layers3, Heart, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
-import { Card, CardContent } from "@/components/ui/card";
 import { SmartImage } from "@/components/common/SmartImage";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fixImageUrl } from "@/services/api/cardImageService";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/hooks/useUser";
+import { useCollection } from "@/hooks/useCollection";
 
 const SetDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -114,6 +113,17 @@ const SetDetail = () => {
     return set ? fixImageUrl(set.images?.symbol, set.id, 'symbol') : undefined;
   }, [set, storedImages]);
 
+  const { collection } = useCollection();
+  const ownedInSet = React.useMemo(() => {
+    if (!set?.id) return 0;
+    const ids = new Set<string>();
+    for (const c of collection) if (c.set?.id === set.id) ids.add(c.id);
+    return ids.size;
+  }, [collection, set?.id]);
+  const totalCards = Number((set as any)?.printedTotal) || 0;
+  const stillNeeded = Math.max(0, totalCards - ownedInSet);
+  const completionPct = totalCards > 0 ? Math.min(100, Math.round((ownedInSet / totalCards) * 100)) : 0;
+
   const handleBack = () => {
     navigate('/pokemon-sets');
   };
@@ -179,151 +189,131 @@ const SetDetail = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <main className="container py-8 flex-1">
-        <Button variant="ghost" onClick={handleBack} className="mb-6">
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back to Sets
-        </Button>
-        
-        <div className="w-full flex flex-col md:flex-row gap-8">
-          {/* Set Logo and Symbol */}
-          <div className="md:w-1/3 space-y-6">
-            {logoUrl && logoLoaded ? (
-              <div className="bg-card border rounded-lg p-4 flex items-center justify-center">
+      <main className="relative container flex-1 pb-16 pt-24">
+        <div className="aura pointer-events-none absolute inset-x-0 top-8 mx-auto h-[360px] max-w-5xl" aria-hidden />
+
+        <button
+          onClick={handleBack}
+          className="anim-rise mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back to sets
+        </button>
+
+        {/* Banner */}
+        <div className="anim-rise relative overflow-hidden rounded-3xl border border-border bg-card shadow-[0_26px_54px_-24px_rgba(0,0,0,0.8)]">
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(540px 240px at 14% -12%, hsl(var(--primary) / 0.18), transparent 65%), radial-gradient(480px 220px at 92% 128%, hsl(var(--gold) / 0.10), transparent 65%)",
+            }}
+          />
+          <div className="relative flex flex-col items-center gap-7 p-6 sm:flex-row sm:p-8">
+            <div className="flex h-32 w-full max-w-[240px] shrink-0 items-center justify-center rounded-2xl border border-white/5 bg-gradient-to-b from-white/[0.03] to-transparent p-4">
+              {logoUrl && logoLoaded ? (
                 <SmartImage
                   src={logoUrl}
                   alt={`${set.name} logo`}
-                  className="max-w-full max-h-40 object-contain"
+                  className="max-h-full max-w-full object-contain"
                   onError={() => setLogoLoaded(false)}
                 />
-              </div>
-            ) : (
-              <div className="bg-card border rounded-lg p-4">
-                <h2 className="text-2xl font-bold text-center">{set.name}</h2>
-                {!logoLoaded && logoUrl && (
-                  <div className="flex justify-center mt-2">
-                    <ImageOff className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                )}
-              </div>
-            )}
-            
-            {symbolUrl && symbolLoaded ? (
-              <Card>
-                <CardContent className="p-4 flex items-center gap-3">
-                  <SmartImage
-                    src={symbolUrl}
-                    alt={`${set.name} symbol`}
-                    className="w-10 h-10 object-contain"
-                    onError={() => setSymbolLoaded(false)}
-                  />
-                  <div>
-                    <h3 className="font-medium">Set Symbol</h3>
-                    <p className="text-sm text-muted-foreground">Official symbol used on cards</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : symbolLoaded === false && (
-              <Card>
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 flex items-center justify-center text-muted-foreground">
-                    <ImageOff className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium">Set Symbol</h3>
-                    <p className="text-sm text-muted-foreground">Image not available</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+              ) : (
+                <span className="text-center font-display text-xl font-extrabold">{set.name}</span>
+              )}
+            </div>
 
-            <div className="bg-muted/50 p-4 rounded-lg border">
-              <h3 className="font-medium mb-2 flex items-center">
-                <Calendar className="h-4 w-4 mr-2" /> Release Information
-              </h3>
-              <p className="text-sm mb-1">
-                <span className="text-muted-foreground">Released:</span>{" "}
-                {format(new Date(set.releaseDate), 'MMMM d, yyyy')}
-              </p>
-              <p className="text-sm">
-                <span className="text-muted-foreground">Series:</span>{" "}
-                {set.series}
-              </p>
-            </div>
-          </div>
-          
-          {/* Set Details */}
-          <div className="md:w-2/3 space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">{set.name}</h1>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {set.legalities.standard === 'Legal' && (
-                  <Badge variant="default">Standard Legal</Badge>
+            <div className="min-w-0 flex-1 text-center sm:text-left">
+              <h1 className="font-display text-3xl font-extrabold leading-[1.03] sm:text-[36px]">{set.name}</h1>
+              <div className="mt-2.5 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[13px] text-muted-foreground sm:justify-start">
+                <span>{set.series} series</span>
+                <span aria-hidden>·</span>
+                <span>Released {format(new Date(set.releaseDate), 'MMM d, yyyy')}</span>
+                <span aria-hidden>·</span>
+                <span>{totalCards} cards</span>
+              </div>
+              <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
+                {set.legalities?.standard === 'Legal' && (
+                  <span className="rounded-full border border-border bg-secondary px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">Standard legal</span>
                 )}
-                {set.legalities.expanded === 'Legal' && (
-                  <Badge variant="secondary">Expanded Legal</Badge>
+                {set.legalities?.expanded === 'Legal' && (
+                  <span className="rounded-full border border-border bg-secondary px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">Expanded legal</span>
                 )}
-                {set.legalities.unlimited === 'Legal' && (
-                  <Badge variant="outline">Unlimited Legal</Badge>
-                )}
+                <span className="rounded-full border border-border bg-secondary px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">{set.id}</span>
               </div>
             </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Card>
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className="bg-primary/10 p-2 rounded-full">
-                    <Trophy className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Cards</p>
-                    <p className="font-semibold text-lg">{set.printedTotal}</p>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className="bg-primary/10 p-2 rounded-full">
-                    <Bookmark className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Set ID</p>
-                    <p className="font-semibold text-lg">{set.id}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-            
-            <div className="bg-card p-6 border rounded-lg">
-              <h2 className="text-xl font-semibold mb-4">About this Set</h2>
-              <p className="text-muted-foreground mb-4">
-                {set.name} is part of the {set.series} series and contains {set.printedTotal} cards.
-                Released on {format(new Date(set.releaseDate), 'MMMM d, yyyy')}.
-              </p>
-              
-              <Button className="w-full sm:w-auto" onClick={handleViewCards}>
-                <Check className="h-4 w-4 mr-2" /> View Cards in this Set
-              </Button>
+
+            <div className="flex shrink-0 flex-col items-center gap-2">
+              <div className="relative h-[104px] w-[104px]">
+                <svg width="104" height="104" className="-rotate-90">
+                  <circle cx="52" cy="52" r="40" fill="none" stroke="hsl(var(--secondary))" strokeWidth="7" />
+                  {completionPct > 0 && (
+                    <circle
+                      cx="52"
+                      cy="52"
+                      r="40"
+                      fill="none"
+                      stroke={completionPct >= 100 ? "hsl(var(--gold))" : "hsl(var(--primary))"}
+                      strokeWidth="7"
+                      strokeLinecap="round"
+                      strokeDasharray={`${(completionPct / 100) * (2 * Math.PI * 40)} ${2 * Math.PI * 40}`}
+                      style={
+                        {
+                          animation: "ring-draw 1.2s cubic-bezier(0.19,1,0.22,1) both",
+                          "--ring-circumference": `${(completionPct / 100) * (2 * Math.PI * 40)}`,
+                        } as React.CSSProperties
+                      }
+                    />
+                  )}
+                </svg>
+                <span className="absolute inset-0 flex flex-col items-center justify-center">
+                  <b className={`font-display text-xl font-extrabold ${completionPct >= 100 ? "text-gold" : "text-primary"}`}>{completionPct}%</b>
+                  <span className="text-[10px] text-muted-foreground tabular-nums">{ownedInSet} / {totalCards || "?"}</span>
+                </span>
+              </div>
+              <span className="text-[11px] text-muted-foreground">Your completion</span>
             </div>
           </div>
         </div>
 
+        {/* KPI strip */}
+        <div className="anim-rise mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3" style={{ animationDelay: '120ms' }}>
+          {[
+            { k: "Owned", v: String(ownedInSet), icon: Layers3, gold: false },
+            { k: "Still needed", v: String(stillNeeded), icon: Heart, gold: true },
+            { k: "Total in set", v: String(totalCards), icon: Package, gold: false },
+          ].map((s) => (
+            <div key={s.k} className="hover-lift rounded-2xl border border-border bg-card p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+              <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+                <s.icon className="h-3.5 w-3.5" />
+                {s.k}
+              </div>
+              <div className={`mt-2 font-display text-2xl font-extrabold tabular-nums ${s.gold ? "text-gold" : ""}`}>{s.v}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* About + CTA */}
+        <div className="anim-rise mt-6 rounded-2xl border border-border bg-card p-6" style={{ animationDelay: '180ms' }}>
+          <h2 className="font-display text-lg font-extrabold">About this set</h2>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            {set.name} is part of the {set.series} series and contains {totalCards} cards, released{" "}
+            {format(new Date(set.releaseDate), 'MMMM d, yyyy')}.
+          </p>
+          <Button className="mt-4 rounded-full" onClick={handleViewCards}>
+            View cards in this set
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+
         {/* Products Section */}
         {enrichedProducts.length > 0 && (
-          <section className="mt-12">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold mb-2 flex items-center">
-                  <Package className="h-5 w-5 text-primary mr-2" />
-                  Available Products
-                </h2>
-                <p className="text-muted-foreground">
-                  All product types available for {set.name}
-                </p>
-              </div>
+          <section className="anim-rise mt-12" style={{ animationDelay: '240ms' }}>
+            <div className="mb-5 flex items-center gap-2">
+              <Package className="h-5 w-5 text-primary" />
+              <h2 className="font-display text-xl font-extrabold">Sealed products</h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {enrichedProducts.map(product => (
                 <ProductCard key={product.id} product={product} />
               ))}
