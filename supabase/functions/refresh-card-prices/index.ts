@@ -44,16 +44,15 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // pokemontcg.io's /cards endpoint is intermittently 5xx — retry a few times
 // with backoff before giving up on a set.
 async function fetchWithRetry(url: string, tries = 4): Promise<Response> {
-  let last: Response | null = null;
-  for (let i = 0; i < tries; i++) {
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
+  let res = await fetch(url, { headers: { Accept: "application/json" } });
+  for (let i = 1; i < tries; i++) {
     if (res.ok) return res;
-    last = res;
-    await res.body?.cancel().catch(() => undefined);
-    if (res.status < 500 && res.status !== 429) break; // only retry 5xx / rate-limit
-    await sleep(600 * (i + 1) + Math.random() * 400);
+    if (res.status < 500 && res.status !== 429) return res; // only retry 5xx / rate-limit
+    await res.body?.cancel().catch(() => undefined); // drain the one we're discarding
+    await sleep(600 * i + Math.random() * 400);
+    res = await fetch(url, { headers: { Accept: "application/json" } });
   }
-  return last as Response;
+  return res;
 }
 
 async function refreshSet(
