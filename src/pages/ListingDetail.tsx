@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { SmartImage } from "@/components/common/SmartImage";
 import { Skeleton } from "@/components/ui/skeleton";
 import TraderTrustBadge from "@/components/common/TraderTrustBadge";
+import VerifiedStoreBadge from "@/components/marketplace/VerifiedStoreBadge";
+import { getActiveStoreMap } from "@/services/storeService";
 import CardTypeBadge from "@/components/pokemon/CardTypeBadge";
 import CardPrice from "@/components/pokemon/CardPrice";
 import { conditionTone } from "@/components/marketplace/listing/conditionTone";
@@ -50,6 +52,13 @@ const ListingDetail = () => {
     },
     enabled: !!listing?.user_id,
   });
+
+  const { data: storeMap } = useQuery({
+    queryKey: ["listing-seller-store", listing?.user_id],
+    queryFn: () => getActiveStoreMap([listing!.user_id]),
+    enabled: !!listing?.user_id,
+  });
+  const store = listing ? storeMap?.get(listing.user_id) ?? null : null;
 
   const cardId = listing?.card_id as string | undefined;
   const priceMap = useCardPrices(cardId ? [cardId] : []);
@@ -171,12 +180,16 @@ const ListingDetail = () => {
 
               <div className="mt-3 flex items-center gap-2 text-sm">
                 <span className="text-muted-foreground">
-                  @{seller?.display_name || seller?.username || "seller"}
+                  {store ? store.name : `@${seller?.display_name || seller?.username || "seller"}`}
                 </span>
-                <TraderTrustBadge
-                  totalTrades={seller?.total_trades ?? 0}
-                  reputationScore={Number(seller?.reputation_score ?? 0)}
-                />
+                {store ? (
+                  <VerifiedStoreBadge store={store} />
+                ) : (
+                  <TraderTrustBadge
+                    totalTrades={seller?.total_trades ?? 0}
+                    reputationScore={Number(seller?.reputation_score ?? 0)}
+                  />
+                )}
               </div>
 
               <div className="mt-4 flex items-end justify-between rounded-xl border border-border bg-secondary/30 p-3">

@@ -151,6 +151,9 @@ const StoreSetup: React.FC = () => {
               </Link>
             </Button>
           )}
+          <Button asChild variant="ghost" className="rounded-full">
+            <Link to="/store/import">Bulk import</Link>
+          </Button>
           <span className="ml-auto text-xs text-muted-foreground">
             Selling fee: <span className="font-semibold text-gold">{(store.commission_bps / 100).toFixed(1)}%</span>
           </span>

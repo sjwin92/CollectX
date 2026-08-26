@@ -11,12 +11,14 @@ import { useToast } from "@/hooks/use-toast";
 import TradeListing from "@/components/marketplace/TradeListing";
 import { useCardTypeMeta } from "@/hooks/useCardTypeMeta";
 import { useCardPrices } from "@/hooks/useCardPrices";
+import { useActiveStores } from "@/hooks/useActiveStores";
 import {
   Plus,
   Search,
   Filter,
   Clock,
   TrendingUp,
+  BadgeCheck,
   ArrowRightLeft,
   PackageOpen,
   Store
@@ -119,7 +121,7 @@ const Marketplace = () => {
     sellerReputationScore: Number(row._profile?.reputation_score || 0),
   }));
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState<'recent' | 'trending' | 'sellers'>('recent');
+  const [activeCategory, setActiveCategory] = useState<'recent' | 'trending' | 'stores' | 'sellers'>('recent');
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
   const [sortOrder, setSortOrder] = useState<string>("newest");
   const { toast } = useToast();
@@ -142,6 +144,9 @@ const Marketplace = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
+  const storeMap = useActiveStores(listings.map((l) => l.userId));
+  const storeSellerIds = React.useMemo(() => new Set(storeMap.keys()), [storeMap]);
+
   const filteredListings = React.useMemo(() => {
     return listings
       .filter(listing => {
@@ -154,6 +159,7 @@ const Marketplace = () => {
         const matchesCategory =
           activeCategory === 'recent' ||
           activeCategory === 'sellers' ||
+          (activeCategory === 'stores' && storeSellerIds.has(listing.userId)) ||
           (activeCategory === 'trending' && (listing.interestedCount > 0 || listing.viewsCount > 0));
 
         const matchesCondition = selectedConditions.length === 0 ||
@@ -174,7 +180,7 @@ const Marketplace = () => {
             return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         }
       });
-  }, [listings, searchQuery, activeCategory, selectedConditions, sortOrder]);
+  }, [listings, searchQuery, activeCategory, selectedConditions, sortOrder, storeSellerIds]);
 
 
   const sellerGroups = React.useMemo(() => {
@@ -299,6 +305,7 @@ const Marketplace = () => {
             {([
               { key: 'recent', label: 'New listings', icon: Clock },
               { key: 'trending', label: 'Hot trades', icon: TrendingUp },
+              { key: 'stores', label: 'Stores', icon: BadgeCheck },
               { key: 'sellers', label: 'Browse sellers', icon: Store },
             ] as const).map(({ key, label, icon: Icon }) => (
               <button
@@ -409,6 +416,7 @@ const ListingsGrid = ({
   const cardIds = listings.map((l) => l.cardOffered.id);
   const cardMeta = useCardTypeMeta(cardIds);
   const cardPrices = useCardPrices(cardIds);
+  const stores = useActiveStores(listings.map((l) => l.userId));
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       {listings.map((listing, i) => (
@@ -419,6 +427,7 @@ const ListingsGrid = ({
             featured={!!listing.featured}
             cardMeta={cardMeta.get(listing.cardOffered.id) ?? null}
             marketPriceGbp={cardPrices.get(listing.cardOffered.id) ?? null}
+            store={stores.get(listing.userId) ?? null}
           />
         </div>
       ))}

@@ -48,6 +48,7 @@ const StoreApplicationsAdmin = lazy(() => import("./pages/admin/StoreApplication
 const ForStores = lazy(() => import("./pages/ForStores"));
 const StoreApply = lazy(() => import("./pages/StoreApply"));
 const StoreSetup = lazy(() => import("./pages/StoreSetup"));
+const StoreImport = lazy(() => import("./pages/StoreImport"));
 const StorePublic = lazy(() => import("./pages/StorePublic"));
 
 const RouteFallback = () => (
@@ -98,6 +99,7 @@ function App() {
                 <Route path="/listings/:id" element={<ProtectedRoute><ListingDetail /></ProtectedRoute>} />
                 <Route path="/store/apply" element={<ProtectedRoute><StoreApply /></ProtectedRoute>} />
                 <Route path="/store/setup" element={<ProtectedRoute><StoreSetup /></ProtectedRoute>} />
+                <Route path="/store/import" element={<ProtectedRoute><StoreImport /></ProtectedRoute>} />
                 <Route path="/sellers/:userId" element={<ProtectedRoute><SellerStore /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />

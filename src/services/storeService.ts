@@ -118,6 +118,21 @@ export async function activateStore(): Promise<StoreProfile> {
   return data as StoreProfile;
 }
 
+/** Which of these user ids are active verified stores → { slug, name }. */
+export async function getActiveStoreMap(userIds: string[]): Promise<Map<string, { slug: string; name: string }>> {
+  const ids = Array.from(new Set(userIds.filter(Boolean)));
+  const map = new Map<string, { slug: string; name: string }>();
+  if (ids.length === 0) return map;
+  const { data, error } = await supabase
+    .from("store_profiles")
+    .select("user_id, slug, name")
+    .eq("status", "active")
+    .in("user_id", ids);
+  if (error) return map;
+  for (const row of data ?? []) map.set(row.user_id, { slug: row.slug, name: row.name });
+  return map;
+}
+
 // ── Admin ────────────────────────────────────────────────────────────────
 export async function listStoreApplications(status?: ApplicationStatus): Promise<StoreApplication[]> {
   let q = supabase.from("store_applications").select("*").order("created_at", { ascending: false });

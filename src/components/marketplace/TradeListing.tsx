@@ -6,6 +6,7 @@ import { CardItemProps } from "@/components/cards/CardItem";
 import TradeListingImage from "./listing/TradeListingImage";
 import TradeListingFooter from "./listing/TradeListingFooter";
 import TraderTrustBadge from "@/components/common/TraderTrustBadge";
+import VerifiedStoreBadge from "@/components/marketplace/VerifiedStoreBadge";
 import CardTypeBadge from "@/components/pokemon/CardTypeBadge";
 import type { CardTypeMeta } from "@/lib/cardTypeLabel";
 
@@ -30,9 +31,11 @@ interface TradeListingProps {
   cardMeta?: CardTypeMeta | null;
   /** Live TCGplayer market price (GBP) for the offered card, if known. */
   marketPriceGbp?: number | null;
+  /** Set when the seller is an active verified store. */
+  store?: { slug: string; name: string } | null;
 }
 
-const TradeListing = ({ listing, onProposeTrade, featured = false, cardMeta, marketPriceGbp }: TradeListingProps) => {
+const TradeListing = ({ listing, onProposeTrade, featured = false, cardMeta, marketPriceGbp, store }: TradeListingProps) => {
   const navigate = useNavigate();
   const isSale = (listing.listingType ?? 'trade') === 'sale';
 
@@ -78,13 +81,17 @@ const TradeListing = ({ listing, onProposeTrade, featured = false, cardMeta, mar
           </div>
 
           <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-            <span>@{listing.username}</span>
+            <span>{store ? store.name : `@${listing.username}`}</span>
             <span aria-hidden>·</span>
             <span>{format(listing.createdAt, 'MMM d')}</span>
-            <TraderTrustBadge
-              totalTrades={listing.sellerTotalTrades ?? 0}
-              reputationScore={listing.sellerReputationScore ?? 0}
-            />
+            {store ? (
+              <VerifiedStoreBadge store={store} />
+            ) : (
+              <TraderTrustBadge
+                totalTrades={listing.sellerTotalTrades ?? 0}
+                reputationScore={listing.sellerReputationScore ?? 0}
+              />
+            )}
           </div>
 
           {isSale ? (
