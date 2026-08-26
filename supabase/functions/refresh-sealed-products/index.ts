@@ -86,6 +86,11 @@ function isSingle(p: TcgProduct): boolean {
   return keys.has("Number") && keys.has("Rarity");
 }
 
+/** Digital redemption codes for Pokémon TCG Live — worthless, excluded. */
+function isCodeCard(name: string): boolean {
+  return /\bcode card\b/i.test(name) || /online code/i.test(name);
+}
+
 function classify(name: string): string {
   const n = name.toLowerCase();
   if (n.includes("case")) return "case";
@@ -119,7 +124,7 @@ async function refreshGroup(
 
   const released = group.publishedOn ? group.publishedOn.slice(0, 10) : null;
   const rows = (prodResp.results ?? [])
-    .filter((p) => !isSingle(p))
+    .filter((p) => !isSingle(p) && !isCodeCard(p.name))
     .map((p) => {
       const pr = priceFor.get(p.productId);
       return {

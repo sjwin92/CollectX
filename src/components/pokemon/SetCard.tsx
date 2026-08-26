@@ -149,12 +149,21 @@ const SetCard = ({ set, storedImages, completionPct }: SetCardProps) => {
                 {set.releaseDate ? format(new Date(set.releaseDate), 'MMM d, yyyy') : 'Date unknown'}
               </span>
               <span className="flex gap-1.5">
-                {standard && (
-                  <span className="rounded-full bg-primary px-2 py-[2px] text-[9.5px] font-semibold text-primary-foreground">Std</span>
-                )}
-                {expanded && (
-                  <span className="rounded-full border border-border bg-secondary px-2 py-[2px] text-[9.5px] font-semibold text-muted-foreground">Exp</span>
-                )}
+                {standard ? (
+                  <span
+                    title="Legal to play in the current Standard tournament format"
+                    className="rounded-full bg-primary px-2 py-[2px] text-[9.5px] font-semibold text-primary-foreground"
+                  >
+                    Standard
+                  </span>
+                ) : expanded ? (
+                  <span
+                    title="Legal to play in the Expanded tournament format (older sets)"
+                    className="rounded-full border border-border bg-secondary px-2 py-[2px] text-[9.5px] font-semibold text-muted-foreground"
+                  >
+                    Expanded
+                  </span>
+                ) : null}
               </span>
             </div>
 

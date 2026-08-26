@@ -89,9 +89,16 @@ export const toProductCard = (p: SealedProduct): SealedProductCard => ({
 const SELECT =
   "id, set_id, group_name, name, product_type, image_url, tcgplayer_url, market_price_usd, released_on";
 
+// Digital redemption codes are excluded server-side too, but guard here as well.
+const NO_CODE_CARDS = "Code Card%";
+
 /** All sealed products for one set (by our pokemon_sets id). */
 export async function getSealedProductsForSet(setId: string): Promise<SealedProduct[]> {
-  const { data, error } = await supabase.from("sealed_products").select(SELECT).eq("set_id", setId);
+  const { data, error } = await supabase
+    .from("sealed_products")
+    .select(SELECT)
+    .eq("set_id", setId)
+    .not("name", "ilike", NO_CODE_CARDS);
   if (error) throw error;
   return (data ?? []).map((r) => toProduct(r as SealedRow)).sort(sortProducts);
 }
@@ -102,6 +109,7 @@ export async function getSealedProducts(page = 1, pageSize = 24): Promise<Sealed
   const { data, error } = await supabase
     .from("sealed_products")
     .select(SELECT)
+    .not("name", "ilike", NO_CODE_CARDS)
     .order("released_on", { ascending: false, nullsFirst: false })
     .order("market_price_usd", { ascending: false, nullsFirst: false })
     .range(from, from + pageSize - 1);

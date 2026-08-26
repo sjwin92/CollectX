@@ -5,23 +5,22 @@ import { useQuery } from "@tanstack/react-query";
 import { getSetById } from "@/services/api/pokemonSetsService";
 import { supabasePokemonService } from "@/services/supabasePokemonService";
 import { getSealedProductsForSet, toProductCard } from "@/services/api/sealedProductsService";
+import SetChecklistTile from "@/components/pokemon/collection/SetChecklistTile";
+import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import ProductCard from "@/components/pokemon/ProductCard";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Package, Layers3, Heart, ArrowRight, Check, Grid2x2 } from "lucide-react";
+import { ArrowLeft, Package, Layers3, Heart, Grid2x2 } from "lucide-react";
 import { format } from "date-fns";
 import { SmartImage } from "@/components/common/SmartImage";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fixImageUrl } from "@/services/api/cardImageService";
 import { useCollection } from "@/hooks/useCollection";
-import { useSetCards } from "@/hooks/useSetCards";
 
 const SetDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [logoLoaded, setLogoLoaded] = React.useState(true);
   const [symbolLoaded, setSymbolLoaded] = React.useState(true);
 
@@ -83,42 +82,62 @@ const SetDetail = () => {
     return set ? fixImageUrl(set.images?.symbol, set.id, 'symbol') : undefined;
   }, [set, storedImages]);
 
-  const { collection } = useCollection();
-  const ownedIds = React.useMemo(() => {
-    const ids = new Set<string>();
-    if (!set?.id) return ids;
-    for (const c of collection) if (c.set?.id === set.id) ids.add(c.id);
-    return ids;
+  const { collection, loadCollectionFromStorage } = useCollection();
+  /** cardId -> { dbId, quantity } for cards from this set already in the collection. */
+  const ownedBySet = React.useMemo(() => {
+    const m = new Map<string, { dbId: string; quantity: number }>();
+    if (!set?.id || !Array.isArray(collection)) return m;
+    for (const c of collection) {
+      if (c.set?.id !== set.id) continue;
+      const dbId = (c as { dbId?: string }).dbId;
+      if (!dbId) continue;
+      const prev = m.get(c.id);
+      m.set(c.id, { dbId, quantity: (prev?.quantity ?? 0) + (c.quantity ?? 1) });
+    }
+    return m;
   }, [collection, set?.id]);
+  const ownedIds = React.useMemo(() => new Set(ownedBySet.keys()), [ownedBySet]);
   const ownedInSet = ownedIds.size;
   const totalCards = Number((set as any)?.printedTotal) || 0;
   const stillNeeded = Math.max(0, totalCards - ownedInSet);
   const completionPct = totalCards > 0 ? Math.min(100, Math.round((ownedInSet / totalCards) * 100)) : 0;
 
-  // Per-card checklist — served from the local mirror + on-demand import.
-  const setCardsQuery = useSetCards(id ?? null);
+  // Per-card checklist — read straight from the pokemon_cards mirror.
+  const { data: checklistRows = [] } = useQuery({
+    queryKey: ["set-checklist", id],
+    enabled: !!id,
+    staleTime: 60 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("pokemon_cards")
+        .select("id, name, number, rarity, small_image_url, large_image_url")
+        .eq("set_id", id!)
+        .order("number");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
   const setCards = React.useMemo(() => {
-    const list = setCardsQuery.data ?? [];
-    return [...list].sort((a, b) => {
-      const na = parseInt(String(a.number ?? "").replace(/\D/g, ""), 10);
-      const nb = parseInt(String(b.number ?? "").replace(/\D/g, ""), 10);
-      if (Number.isNaN(na) || Number.isNaN(nb)) return String(a.number).localeCompare(String(b.number));
-      return na - nb;
-    });
-  }, [setCardsQuery.data]);
+    const list = Array.isArray(checklistRows) ? checklistRows : [];
+    return [...list]
+      .map((r) => ({
+        id: r.id as string,
+        name: (r.name as string) ?? "Unknown Card",
+        number: (r.number as string) ?? undefined,
+        rarity: (r.rarity as string) ?? undefined,
+        imageUrl: (r.small_image_url as string) ?? (r.large_image_url as string) ?? undefined,
+        set: { id: id, name: set?.name },
+      }))
+      .sort((a, b) => {
+        const na = parseInt(String(a.number ?? "").replace(/\D/g, ""), 10);
+        const nb = parseInt(String(b.number ?? "").replace(/\D/g, ""), 10);
+        if (Number.isNaN(na) || Number.isNaN(nb)) return String(a.number).localeCompare(String(b.number));
+        return na - nb;
+      });
+  }, [checklistRows, id, set?.name]);
 
   const handleBack = () => {
     navigate('/pokemon-sets');
-  };
-
-  const handleViewCards = () => {
-    if (id) {
-      navigate(`/pokemon-cards?setId=${encodeURIComponent(id)}`);
-      toast({
-        title: "Loading cards",
-        description: `Loading cards from ${set?.name || 'set'}...`
-      });
-    }
   };
 
   if (isLoading && !localSet) {
@@ -275,17 +294,13 @@ const SetDetail = () => {
           ))}
         </div>
 
-        {/* About + CTA */}
+        {/* About */}
         <div className="anim-rise mt-6 rounded-2xl border border-border bg-card p-6" style={{ animationDelay: '180ms' }}>
           <h2 className="font-display text-lg font-extrabold">About this set</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             {set.name} is part of the {set.series} series and contains {totalCards} cards, released{" "}
             {format(new Date(set.releaseDate), 'MMMM d, yyyy')}.
           </p>
-          <Button className="mt-4 rounded-full" onClick={handleViewCards}>
-            View cards in this set
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
         </div>
 
         {/* Per-card checklist */}
@@ -301,39 +316,21 @@ const SetDetail = () => {
               </span>
             </div>
 
+            <p className="mb-4 text-xs text-muted-foreground">
+              Tap a card to open it · use − / + to add or remove it from your collection.
+            </p>
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8">
               {setCards.map((card) => {
-                const owned = ownedIds.has(card.id);
+                const owned = ownedBySet.get(card.id);
                 return (
-                  <button
+                  <SetChecklistTile
                     key={card.id}
-                    type="button"
-                    onClick={() => navigate(`/card/${card.id}`)}
-                    title={`${card.name}${card.number ? ` · #${card.number}` : ""}${owned ? " · owned" : " · missing"}`}
-                    className={`group relative aspect-[2/3] overflow-hidden rounded-lg border transition-all hover:-translate-y-0.5 ${
-                      owned
-                        ? "border-primary/50 shadow-[0_0_0_1px_hsl(var(--primary)/0.35)]"
-                        : "border-border opacity-45 grayscale hover:opacity-80 hover:grayscale-0"
-                    }`}
-                  >
-                    {card.imageUrl ? (
-                      <SmartImage src={card.imageUrl} alt={card.name} className="h-full w-full object-cover" fallback={null} />
-                    ) : (
-                      <span className="flex h-full items-center justify-center bg-muted p-1 text-center text-[9px] text-muted-foreground">
-                        {card.name}
-                      </span>
-                    )}
-                    {owned && (
-                      <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                        <Check className="h-2.5 w-2.5" />
-                      </span>
-                    )}
-                    {card.number && (
-                      <span className="absolute bottom-0 left-0 right-0 bg-black/60 px-1 py-0.5 text-center text-[9px] font-semibold tabular-nums text-white">
-                        #{card.number}
-                      </span>
-                    )}
-                  </button>
+                    card={card}
+                    owned={!!owned}
+                    quantity={owned?.quantity ?? 0}
+                    dbId={owned?.dbId}
+                    onChanged={loadCollectionFromStorage}
+                  />
                 );
               })}
             </div>
