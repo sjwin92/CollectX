@@ -5,7 +5,7 @@ const supabase = supabaseTyped as any;
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'trade_proposal' | 'trade_accepted' | 'trade_declined' | 'trade_completed' | 'trade_message' | 'listing_interest' | 'listing_favorite' | 'profile_update' | 'system';
+  type: 'trade_proposal' | 'trade_accepted' | 'trade_declined' | 'trade_cancelled' | 'trade_shipped' | 'trade_received' | 'trade_completed' | 'trade_disputed' | 'trade_message' | 'listing_interest' | 'listing_favorite' | 'wishlist_match' | 'profile_update' | 'system';
   title: string;
   message: string;
   data: any;
