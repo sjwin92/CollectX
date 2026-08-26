@@ -9,6 +9,8 @@ import { BadgeCheck, Globe, MapPin, PackageOpen } from "lucide-react";
 import { SmartImage } from "@/components/common/SmartImage";
 import { supabase } from "@/integrations/supabase/client";
 import { getStoreBySlug } from "@/services/storeService";
+import { getStoreShelf } from "@/services/storeOrderService";
+import StoreShelfCard from "@/components/store/StoreShelfCard";
 import TradeListing from "@/components/marketplace/TradeListing";
 import type { CardItemProps } from "@/components/cards/CardItem";
 
@@ -19,6 +21,12 @@ const StorePublic: React.FC = () => {
     queryKey: ["store-public", slug],
     queryFn: () => (slug ? getStoreBySlug(slug) : null),
     enabled: !!slug,
+  });
+
+  const { data: shelf = [] } = useQuery({
+    queryKey: ["store-public-shelf", store?.user_id],
+    enabled: !!store?.user_id,
+    queryFn: () => getStoreShelf(store!.user_id),
   });
 
   const { data: listings = [] } = useQuery({
@@ -113,16 +121,29 @@ const StorePublic: React.FC = () => {
               </div>
 
               <h2 className="mt-8 font-display text-lg font-extrabold">
-                For sale <span className="text-sm font-semibold text-muted-foreground">({listings.length})</span>
+                In stock <span className="text-sm font-semibold text-muted-foreground">({shelf.length})</span>
               </h2>
-              {listings.length === 0 ? (
-                <p className="mt-3 text-sm text-muted-foreground">No active listings right now.</p>
+              {shelf.length === 0 ? (
+                <p className="mt-3 text-sm text-muted-foreground">No stock listed right now.</p>
               ) : (
-                <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
-                  {listings.map((l) => (
-                    <TradeListing key={l.id} listing={l} onProposeTrade={() => undefined} featured={!!l.featured} />
+                <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                  {shelf.map((item) => (
+                    <StoreShelfCard key={item.id} item={item} />
                   ))}
                 </div>
+              )}
+
+              {listings.length > 0 && (
+                <>
+                  <h2 className="mt-10 font-display text-lg font-extrabold">
+                    Also from this seller <span className="text-sm font-semibold text-muted-foreground">({listings.length})</span>
+                  </h2>
+                  <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    {listings.map((l) => (
+                      <TradeListing key={l.id} listing={l} onProposeTrade={() => undefined} featured={!!l.featured} />
+                    ))}
+                  </div>
+                </>
               )}
             </>
           )}

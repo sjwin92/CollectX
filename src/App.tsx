@@ -24,6 +24,7 @@ const Trades = lazy(() => import("./pages/Trades"));
 const TradeDetail = lazy(() => import("./pages/TradeDetail"));
 const Orders = lazy(() => import("./pages/Orders"));
 const OrderDetail = lazy(() => import("./pages/OrderDetail"));
+const StoreOrderDetail = lazy(() => import("./pages/StoreOrderDetail"));
 const SellerOnboardingComplete = lazy(() => import("./pages/SellerOnboardingComplete"));
 const SellerStore = lazy(() => import("./pages/SellerStore"));
 const Collection = lazy(() => import("./pages/Collection"));
@@ -90,6 +91,7 @@ function App() {
                 <Route path="/trades/:tradeId" element={<ProtectedRoute><TradeDetail /></ProtectedRoute>} />
                 <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
                 <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
+                <Route path="/store-orders/:id" element={<ProtectedRoute><StoreOrderDetail /></ProtectedRoute>} />
                 <Route path="/seller/onboarding-complete" element={<ProtectedRoute><SellerOnboardingComplete /></ProtectedRoute>} />
                 <Route path="/collection" element={<ProtectedRoute><Collection /></ProtectedRoute>} />
                 <Route path="/grade" element={<ProtectedRoute><GradeCard /></ProtectedRoute>} />

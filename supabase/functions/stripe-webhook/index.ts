@@ -64,6 +64,26 @@ serve(async (req) => {
           break;
         }
 
+        // Store-SKU order (CollectX for Business — Phase 2b).
+        if (session.metadata?.type === 'store_order') {
+          const storeOrderId = session.metadata.store_order_id;
+          if (!storeOrderId) {
+            console.error('store_order checkout.session.completed with no store_order_id', session.id);
+            break;
+          }
+          if (session.payment_status === 'paid') {
+            const paymentIntentId = typeof session.payment_intent === 'string'
+              ? session.payment_intent
+              : session.payment_intent?.id ?? null;
+            const { error } = await serviceClient.rpc('mark_store_order_paid', {
+              _order_id: storeOrderId,
+              _stripe_payment_intent_id: paymentIntentId,
+            });
+            if (error) throw error;
+          }
+          break;
+        }
+
         const orderId = session.metadata?.order_id;
         if (!orderId) {
           console.error('checkout.session.completed with no order_id in metadata', session.id);
@@ -84,6 +104,13 @@ serve(async (req) => {
 
       case 'checkout.session.expired': {
         const session = event.data.object as Stripe.Checkout.Session;
+        if (session.metadata?.type === 'store_order') {
+          const storeOrderId = session.metadata.store_order_id;
+          if (!storeOrderId) break;
+          const { error } = await serviceClient.rpc('mark_store_order_payment_failed', { _order_id: storeOrderId });
+          if (error) throw error;
+          break;
+        }
         const orderId = session.metadata?.order_id;
         if (!orderId) break;
         const { error } = await serviceClient.rpc('mark_order_payment_failed', { _order_id: orderId });
@@ -93,6 +120,13 @@ serve(async (req) => {
 
       case 'payment_intent.payment_failed': {
         const intent = event.data.object as Stripe.PaymentIntent;
+        if (intent.metadata?.type === 'store_order') {
+          const storeOrderId = intent.metadata.store_order_id;
+          if (!storeOrderId) break;
+          const { error } = await serviceClient.rpc('mark_store_order_payment_failed', { _order_id: storeOrderId });
+          if (error) throw error;
+          break;
+        }
         const orderId = intent.metadata?.order_id;
         if (!orderId) break;
         const { error } = await serviceClient.rpc('mark_order_payment_failed', { _order_id: orderId });

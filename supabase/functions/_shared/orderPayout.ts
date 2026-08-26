@@ -67,4 +67,56 @@ export async function releaseOrderPayout(orderId: string): Promise<ReleaseResult
   return { ok: true };
 }
 
+// Store-SKU version (CollectX for Business — Phase 2b). Same shape as
+// releaseOrderPayout: create the Stripe Transfer to the store's connected
+// account FIRST, then call complete_store_order (which decrements
+// store_inventory.quantity) only after Stripe confirms the transfer.
+export async function releaseStoreOrderPayout(storeOrderId: string): Promise<ReleaseResult> {
+  const { data: order, error: orderError } = await serviceClient
+    .from('store_orders')
+    .select('*')
+    .eq('id', storeOrderId)
+    .maybeSingle();
+  if (orderError) return { ok: false, error: orderError.message, status: 500 };
+  if (!order) return { ok: false, error: 'Order not found', status: 404 };
+  if (order.status !== 'shipped') {
+    return { ok: false, error: 'Order must be shipped (and not disputed) to release payout', status: 400 };
+  }
+  if (order.stripe_transfer_id) {
+    return { ok: false, error: 'Payout already released', status: 409 };
+  }
+
+  const { data: sellerAccount, error: sellerAccountError } = await serviceClient
+    .from('seller_stripe_accounts')
+    .select('stripe_account_id')
+    .eq('user_id', order.store_id)
+    .maybeSingle();
+  if (sellerAccountError) return { ok: false, error: sellerAccountError.message, status: 500 };
+  if (!sellerAccount) return { ok: false, error: 'Store has no connected payout account', status: 400 };
+
+  let transfer;
+  try {
+    const stripe = getStripeClient();
+    transfer = await stripe.transfers.create({
+      amount: toMinorUnits(Number(order.seller_payout_amount), order.currency),
+      currency: order.currency,
+      destination: sellerAccount.stripe_account_id,
+      transfer_group: order.id,
+    });
+  } catch (stripeError) {
+    return { ok: false, error: stripeError instanceof Error ? stripeError.message : String(stripeError), status: 500 };
+  }
+
+  const { error: completeError } = await serviceClient.rpc('complete_store_order', {
+    _order_id: order.id,
+    _stripe_transfer_id: transfer.id,
+  });
+  if (completeError) {
+    console.error('Stripe transfer succeeded but complete_store_order failed — needs manual reconciliation:', order.id, completeError);
+    return { ok: false, error: 'Payout sent but order completion failed; contact support.', status: 500 };
+  }
+
+  return { ok: true };
+}
+
 export { serviceClient };

@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { releaseOrderPayout, serviceClient } from "../_shared/orderPayout.ts";
+import { releaseOrderPayout, releaseStoreOrderPayout, serviceClient } from "../_shared/orderPayout.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,13 +13,15 @@ serve(async (req) => {
   }
 
   try {
-    const { order_id } = await req.json();
-    if (!order_id) {
-      return new Response(JSON.stringify({ error: 'order_id is required' }), {
+    const { order_id, store_order_id } = await req.json();
+    if (!order_id && !store_order_id) {
+      return new Response(JSON.stringify({ error: 'order_id or store_order_id is required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    const isStore = !!store_order_id;
+    const targetId: string = store_order_id ?? order_id;
 
     // Two legitimate callers: the buyer confirming receipt (verified via JWT
     // below), or the auto-confirm-orders cron sweep (verified via a shared
@@ -49,9 +51,9 @@ serve(async (req) => {
       }
 
       const { data: order, error: orderError } = await serviceClient
-        .from('orders')
+        .from(isStore ? 'store_orders' : 'orders')
         .select('buyer_user_id')
-        .eq('id', order_id)
+        .eq('id', targetId)
         .maybeSingle();
       if (orderError) throw orderError;
       if (!order || order.buyer_user_id !== userData.user.id) {
@@ -62,7 +64,9 @@ serve(async (req) => {
       }
     }
 
-    const result = await releaseOrderPayout(order_id);
+    const result = isStore
+      ? await releaseStoreOrderPayout(targetId)
+      : await releaseOrderPayout(targetId);
     if (!result.ok) {
       return new Response(JSON.stringify({ error: result.error }), {
         status: result.status,
