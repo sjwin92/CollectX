@@ -9,16 +9,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import { useToast } from "@/hooks/use-toast";
 import TradeListing from "@/components/marketplace/TradeListing";
-import { 
+import {
   Plus,
   Search,
   Filter,
   Clock,
   TrendingUp,
-  Heart,
-  Check,
   ArrowRightLeft,
-  ShoppingBag,
   PackageOpen,
   Store
 } from "lucide-react";
@@ -212,30 +209,38 @@ const Marketplace = () => {
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background to-background/95">
       <Navbar />
 
-      <main className="container py-8 flex-1">
-        <div className="mb-8 flex justify-between items-start">
+      <main className="relative container flex-1 pb-16 pt-24">
+        <div className="aura pointer-events-none absolute left-1/2 top-8 h-[380px] w-[760px] -translate-x-1/2" aria-hidden />
+
+        <div className="anim-rise mb-8 flex items-end justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <ArrowRightLeft className="h-6 w-6 text-primary" />
-              <h1 className="text-3xl font-bold">Trading Marketplace</h1>
+            <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-primary">
+              <ArrowRightLeft className="h-3.5 w-3.5" />
+              Marketplace
             </div>
-            <p className="text-muted-foreground mt-2">
-              Browse cards offered for trade, propose deals, or list your own cards for trade
+            <h1 className="font-display text-4xl font-extrabold leading-[1.02] md:text-[46px]">
+              Trade &amp; buy singles
+            </h1>
+            <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
+              Browse cards offered by collectors. Propose a card-for-card swap, buy outright, or list your own.
             </p>
           </div>
-          <Button className="hidden md:flex" onClick={() => setCreateListingOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Listing
+          <Button
+            className="hidden shrink-0 rounded-full px-5 shadow-[0_12px_30px_-12px_hsl(var(--primary)/0.65)] md:flex"
+            onClick={() => setCreateListingOpen(true)}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Create listing
           </Button>
         </div>
 
-        <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="anim-rise mb-6 flex flex-col justify-between gap-4 md:flex-row" style={{ animationDelay: '80ms' }}>
+          <div className="relative max-w-md flex-1">
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search for cards, traders, or descriptions..."
-              className="pl-9"
+              placeholder="Search cards, sets, or traders"
+              className="h-10 rounded-full pl-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -243,7 +248,7 @@ const Marketplace = () => {
           <div className="flex gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline">
+                <Button variant="outline" className="rounded-full">
                   <Filter className="h-4 w-4 mr-2" />
                   Filters
                 </Button>
@@ -271,46 +276,42 @@ const Marketplace = () => {
               value={sortOrder}
               onValueChange={(value) => setSortOrder(value)}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[170px] rounded-full">
                 <SelectValue placeholder="Sort by..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="newest">Newest First</SelectItem>
-                <SelectItem value="oldest">Oldest First</SelectItem>
+                <SelectItem value="newest">Newest first</SelectItem>
+                <SelectItem value="oldest">Oldest first</SelectItem>
               </SelectContent>
-
             </Select>
 
-            <Button className="md:hidden" onClick={() => setCreateListingOpen(true)}>
+            <Button className="rounded-full md:hidden" onClick={() => setCreateListingOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Create
             </Button>
           </div>
         </div>
 
-        <div className="border rounded-lg p-1 bg-background/50 mb-6 overflow-hidden">
-          <div className="flex space-x-2 items-center overflow-x-auto scrollbar-hide pb-1">
-            <button
-              className={`py-2 px-4 rounded-md font-medium flex items-center gap-1.5 transition-colors shrink-0 ${activeCategory === 'recent' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-              onClick={() => setActiveCategory('recent')}
-            >
-              <Clock className="h-4 w-4" />
-              <span>New Listings</span>
-            </button>
-            <button
-              className={`py-2 px-4 rounded-md font-medium flex items-center gap-1.5 transition-colors shrink-0 ${activeCategory === 'trending' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-              onClick={() => setActiveCategory('trending')}
-            >
-              <TrendingUp className="h-4 w-4" />
-              <span>Hot Trades</span>
-            </button>
-            <button
-              className={`py-2 px-4 rounded-md font-medium flex items-center gap-1.5 transition-colors shrink-0 ${activeCategory === 'sellers' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-              onClick={() => setActiveCategory('sellers')}
-            >
-              <Store className="h-4 w-4" />
-              <span>Browse Sellers</span>
-            </button>
+        <div className="anim-rise mb-6 w-max max-w-full overflow-x-auto scrollbar-hide rounded-full border border-white/5 bg-card p-1.5" style={{ animationDelay: '140ms' }}>
+          <div className="flex items-center gap-1.5">
+            {([
+              { key: 'recent', label: 'New listings', icon: Clock },
+              { key: 'trending', label: 'Hot trades', icon: TrendingUp },
+              { key: 'sellers', label: 'Browse sellers', icon: Store },
+            ] as const).map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium transition-colors ${
+                  activeCategory === key
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-muted'
+                }`}
+                onClick={() => setActiveCategory(key)}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -350,14 +351,19 @@ const Marketplace = () => {
             </GlassCard>
           )
         ) : filteredListings.length > 0 ? (
-          <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
-            {filteredListings.map(listing => (
-              <TradeListing
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {filteredListings.map((listing, i) => (
+              <div
                 key={listing.id}
-                listing={listing}
-                onProposeTrade={() => handleProposeTrade(listing.id)}
-                featured={!!listing.featured}
-              />
+                className="anim-rise"
+                style={{ animationDelay: `${Math.min(i, 8) * 60 + 180}ms` }}
+              >
+                <TradeListing
+                  listing={listing}
+                  onProposeTrade={() => handleProposeTrade(listing.id)}
+                  featured={!!listing.featured}
+                />
+              </div>
             ))}
           </div>
         ) : (

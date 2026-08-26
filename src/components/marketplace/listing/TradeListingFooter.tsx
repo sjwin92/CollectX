@@ -1,8 +1,6 @@
-
 import React, { useState } from "react";
-import { CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRightLeft, Eye, Star, Heart, MessageCircle, ShoppingBag } from "lucide-react";
+import { ArrowRightLeft, Eye, Heart, MessageCircle, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/useUser";
@@ -18,7 +16,22 @@ interface TradeListingFooterProps {
   listingType?: 'trade' | 'sale';
   askingPrice?: number;
   currency?: string;
+  estimatedValue?: string;
 }
+
+const iconBtnClass =
+  "flex h-9 w-9 items-center justify-center rounded-full border border-border bg-secondary text-muted-foreground transition-all hover:-translate-y-0.5 hover:border-white/20 hover:text-foreground disabled:opacity-50 disabled:hover:translate-y-0";
+
+const IconButton = ({ label, onClick, children, disabled }: {
+  label: string;
+  onClick?: () => void;
+  children: React.ReactNode;
+  disabled?: boolean;
+}) => (
+  <button type="button" title={label} aria-label={label} onClick={onClick} disabled={disabled} className={iconBtnClass}>
+    {children}
+  </button>
+);
 
 const TradeListingFooter = ({
   cardId,
@@ -29,6 +42,7 @@ const TradeListingFooter = ({
   listingType = 'trade',
   askingPrice,
   currency = 'gbp',
+  estimatedValue,
 }: TradeListingFooterProps) => {
   const { toast } = useToast();
   const { user } = useUser();
@@ -37,16 +51,12 @@ const TradeListingFooter = ({
   const [isMessageOpen, setIsMessageOpen] = useState(false);
   const [isBuying, setIsBuying] = useState(false);
 
-  const handleBuyNow = async () => {
-    if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to buy this card",
-        variant: "destructive"
-      });
-      return;
-    }
+  const requireAuth = (action: string) => {
+    toast({ title: "Sign in required", description: `Please sign in to ${action}.`, variant: "destructive" });
+  };
 
+  const handleBuyNow = async () => {
+    if (!user) return requireAuth("buy this card");
     setIsBuying(true);
     try {
       const url = await createCheckoutSession(listingId);
@@ -55,73 +65,36 @@ const TradeListingFooter = ({
       toast({
         title: "Couldn't start checkout",
         description: (error as { message?: string })?.message || "This listing may no longer be available. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
       setIsBuying(false);
     }
   };
 
   const handleMessageSeller = () => {
-    if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to message the seller",
-        variant: "destructive"
-      });
-      return;
-    }
+    if (!user) return requireAuth("message the seller");
     setIsMessageOpen(true);
   };
 
   const handleProposeTrade = () => {
-    if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to propose trades",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    toast({
-      title: "Preparing trade proposal",
-      description: "Opening trade proposal form..."
-    });
-
+    if (!user) return requireAuth("propose trades");
+    toast({ title: "Preparing trade proposal", description: "Opening trade proposal form…" });
     onProposeTrade();
   };
 
   const handleExpressInterest = async () => {
-    if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to express interest",
-        variant: "destructive"
-      });
-      return;
-    }
-
+    if (!user) return requireAuth("express interest");
     setInterestSubmitting(true);
     try {
       await expressInterest(listingId, 'trade');
       setInterestSent(true);
-      toast({
-        title: "Interest sent",
-        description: "The listing owner has been notified."
-      });
+      toast({ title: "Interest sent", description: "The listing owner has been notified." });
     } catch (error) {
       if ((error as { code?: string })?.code === '23505') {
         setInterestSent(true);
-        toast({
-          title: "Already sent",
-          description: "You've already expressed interest in this listing."
-        });
+        toast({ title: "Already sent", description: "You've already expressed interest in this listing." });
       } else {
-        toast({
-          title: "Something went wrong",
-          description: "Could not send your interest. Please try again.",
-          variant: "destructive"
-        });
+        toast({ title: "Something went wrong", description: "Could not send your interest. Please try again.", variant: "destructive" });
       }
     } finally {
       setInterestSubmitting(false);
@@ -129,63 +102,70 @@ const TradeListingFooter = ({
   };
 
   const isOwnListing = !!user && user.id === listingOwnerId;
+  const isSale = listingType === 'sale';
+  const priceLabel = isSale
+    ? `${currency.toUpperCase()} ${askingPrice != null ? askingPrice.toFixed(2) : "—"}`
+    : (estimatedValue && estimatedValue.toLowerCase() !== "unknown" ? estimatedValue : "—");
 
   return (
-    <CardFooter className="pt-3 pb-2 flex flex-col gap-2 border-t mt-2">
-      <Button variant="outline" size="sm" asChild className="w-full">
-        <Link to={`/card/${cardId}`}>
-          <Eye className="h-4 w-4 mr-2" />
-          View Card
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-border bg-muted/40 px-5 py-3.5">
+      <div className="flex flex-col">
+        <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70">
+          {isSale ? "Price" : "Est. value"}
+        </span>
+        <span className="font-display text-lg font-extrabold text-gold tabular-nums">{priceLabel}</span>
+      </div>
+
+      <div className="flex flex-1 items-center justify-end gap-2">
+        <Link to={`/card/${cardId}`} title="View card" aria-label="View card" className={iconBtnClass}>
+          <Eye className="h-4 w-4" />
         </Link>
-      </Button>
-      {listingType === 'sale' ? (
-        !isOwnListing && (
+
+        {!isOwnListing && (
+          <>
+            <IconButton
+              label={interestSent ? "Interest sent" : "I'm interested"}
+              onClick={handleExpressInterest}
+              disabled={interestSubmitting || interestSent}
+            >
+              <Heart className={`h-4 w-4 ${interestSent ? "fill-current text-primary" : ""}`} />
+            </IconButton>
+            <IconButton label="Message seller" onClick={handleMessageSeller}>
+              <MessageCircle className="h-4 w-4" />
+            </IconButton>
+          </>
+        )}
+
+        {isSale ? (
+          !isOwnListing && (
+            <Button
+              size="sm"
+              onClick={handleBuyNow}
+              disabled={isBuying}
+              className="rounded-full bg-gold px-4 font-semibold text-black shadow-[0_12px_30px_-12px_hsl(var(--gold)/0.6)] hover:bg-gold/90"
+            >
+              <ShoppingBag className="mr-1.5 h-4 w-4" />
+              {isBuying ? "Redirecting…" : "Buy now"}
+            </Button>
+          )
+        ) : (
           <Button
             size="sm"
-            onClick={handleBuyNow}
-            disabled={isBuying}
-            className={`w-full ${featured ? "bg-amber-600 hover:bg-amber-700" : ""}`}
+            onClick={handleProposeTrade}
+            className="rounded-full px-4 font-semibold shadow-[0_12px_30px_-12px_hsl(var(--primary)/0.6)]"
           >
-            <ShoppingBag className="h-4 w-4 mr-2" />
-            {isBuying ? "Redirecting..." : `Buy Now — ${currency.toUpperCase()} ${askingPrice?.toFixed(2)}`}
-            {featured && <Star className="h-3 w-3 ml-1 text-amber-200" />}
+            <ArrowRightLeft className="mr-1.5 h-4 w-4" />
+            Propose trade
           </Button>
-        )
-      ) : (
-        <Button
-          size="sm"
-          onClick={handleProposeTrade}
-          className={`w-full ${featured ? "bg-amber-600 hover:bg-amber-700" : ""}`}
-        >
-          <ArrowRightLeft className="h-4 w-4 mr-2" />
-          Propose Trade
-          {featured && <Star className="h-3 w-3 ml-1 text-amber-200" />}
-        </Button>
-      )}
-      {!isOwnListing && (
-        <>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
-            disabled={interestSubmitting || interestSent}
-            onClick={handleExpressInterest}
-          >
-            <Heart className="h-4 w-4 mr-2" />
-            {interestSent ? "Interest Sent" : "I'm Interested"}
-          </Button>
-          <Button variant="outline" size="sm" className="w-full" onClick={handleMessageSeller}>
-            <MessageCircle className="h-4 w-4 mr-2" />
-            Message Seller
-          </Button>
-          <SocialTradeHub
-            isOpen={isMessageOpen}
-            onClose={() => setIsMessageOpen(false)}
-            otherUserId={listingOwnerId}
-          />
-        </>
-      )}
-    </CardFooter>
+        )}
+      </div>
+
+      <SocialTradeHub
+        isOpen={isMessageOpen}
+        onClose={() => setIsMessageOpen(false)}
+        otherUserId={listingOwnerId}
+      />
+    </div>
   );
 };
 

@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { getAllPossibleCardImageUrls } from "@/services/api/cardImageService";
 import { getFeaturedCardImageUrl } from "@/services/api/featuredCardsService";
 import { SmartImage } from "@/components/common/SmartImage";
+import { conditionTone } from "./conditionTone";
 
 interface TradeListingImageProps {
   cardId?: string;
@@ -110,45 +110,45 @@ const TradeListingImage = ({
   };
 
   return (
-    <div className="w-full md:w-1/3 relative group">
-      {!imageError ? (
-        <div className="relative w-full h-full">
-          {imageSrc && (
-            <SmartImage
-              src={imageSrc}
-              alt={cardName}
-              className={`w-full h-auto rounded-md transition-transform duration-300 group-hover:scale-105 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
-              onLoad={handleImageLoad}
-              onError={handleImageError}
-            />
-          )}
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-md">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="w-full aspect-[2/3] bg-muted flex flex-col items-center justify-center rounded-md">
-          <AlertTriangle className="h-5 w-5 text-amber-500 mb-1" />
-          <span className="text-xs text-muted-foreground mb-2">Image unavailable</span>
-          <Button 
-            size="sm" 
-            variant="outline" 
-            className="text-xs" 
-            onClick={(e) => {
-              e.stopPropagation();
-              retryImage();
-            }}
-          >
-            <RefreshCw className="h-3 w-3 mr-1" /> Retry
-          </Button>
-        </div>
-      )}
-      <div className="absolute top-2 right-2">
-        <Badge variant="secondary" className="text-xs">
-          {condition}
-        </Badge>
+    <div className="pedestal relative w-32 shrink-0 sm:w-36">
+      <div className="relative overflow-hidden rounded-xl border border-white/[0.13] shadow-[0_26px_46px_-22px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.06)]">
+        {!imageError ? (
+          <div className="relative w-full">
+            {imageSrc && (
+              <SmartImage
+                src={imageSrc}
+                alt={cardName}
+                className={`block w-full h-auto transition-transform duration-500 ease-out group-hover:-translate-y-0.5 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+                onLoad={handleImageLoad}
+                onError={handleImageError}
+              />
+            )}
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                <div className="h-7 w-7 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+              </div>
+            )}
+            <span className="holo" aria-hidden />
+          </div>
+        ) : (
+          <div className="flex aspect-[2/3] w-full flex-col items-center justify-center bg-muted">
+            <AlertTriangle className="mb-1 h-5 w-5 text-amber-500" />
+            <span className="mb-2 text-xs text-muted-foreground">Image unavailable</span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs"
+              onClick={(e) => { e.stopPropagation(); retryImage(); }}
+            >
+              <RefreshCw className="mr-1 h-3 w-3" /> Retry
+            </Button>
+          </div>
+        )}
+        {condition && (
+          <span className={`absolute right-1.5 top-1.5 rounded-full border px-2 py-[3px] text-[10px] font-semibold backdrop-blur-sm ${conditionTone(condition)}`}>
+            {condition}
+          </span>
+        )}
       </div>
     </div>
   );

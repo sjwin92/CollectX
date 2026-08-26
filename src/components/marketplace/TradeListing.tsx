@@ -1,14 +1,11 @@
-
 import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { CardItemProps } from "@/components/cards/CardItem";
-import TradeListingHeader from "./listing/TradeListingHeader";
-import TradeListingImage from "./listing/TradeListingImage";
-import TradeListingDetails from "./listing/TradeListingDetails";
-import TradeListingFooter from "./listing/TradeListingFooter";
-import TradeListingProtection from "./listing/TradeListingProtection";
-import FeaturedBadge from "./listing/FeaturedBadge";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { ArrowRightLeft, ShoppingBag, Star, Shield } from "lucide-react";
+import { CardItemProps } from "@/components/cards/CardItem";
+import TradeListingImage from "./listing/TradeListingImage";
+import TradeListingFooter from "./listing/TradeListingFooter";
+import TraderTrustBadge from "@/components/common/TraderTrustBadge";
 
 interface TradeListingProps {
   listing: {
@@ -32,48 +29,94 @@ interface TradeListingProps {
 
 const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListingProps) => {
   const navigate = useNavigate();
+  const isSale = (listing.listingType ?? 'trade') === 'sale';
 
   const handleProposeTrade = () => {
-    // Call the parent component's handler first
     onProposeTrade();
-    
-    // Navigate to the trades page with the correct query parameters
-    navigate({
-      pathname: '/trades',
-      search: `?propose=true&listingId=${listing.id}`
-    });
+    navigate({ pathname: '/trades', search: `?propose=true&listingId=${listing.id}` });
   };
 
   return (
-    <Card className={`overflow-hidden transition-all hover:shadow-md ${featured ? 'border-amber-400 shadow-lg dark:border-amber-500 bg-gradient-to-br from-transparent to-amber-50/5' : ''}`}>
-      {featured && <FeaturedBadge />}
-      
-      <TradeListingHeader 
-        cardName={listing.cardOffered.name}
-        username={listing.username}
-        createdAt={listing.createdAt}
-        estimatedValue={listing.cardOffered.estimatedValue}
-        featured={featured}
-        sellerTotalTrades={listing.sellerTotalTrades}
-        sellerReputationScore={listing.sellerReputationScore}
-      />
-
-      <CardContent className="py-2">
-        <div className="flex flex-col gap-4 md:flex-row md:gap-6 md:items-center">
-          <TradeListingImage 
-            cardId={listing.cardOffered.id}
-            imageUrl={listing.cardOffered.imageUrl}
-            cardName={listing.cardOffered.name}
-            condition={listing.cardOffered.condition}
-            isFeatured={featured}
-          />
-          
-          <TradeListingDetails 
-            cardsWanted={listing.cardsWanted}
-            description={listing.description}
-          />
+    <article
+      className={`group relative overflow-hidden rounded-2xl border bg-card shadow-[0_26px_54px_-24px_rgba(0,0,0,0.8)] hover-lift ${
+        featured ? 'border-gold/40' : 'border-border'
+      }`}
+    >
+      {featured && (
+        <div
+          className="flex items-center gap-1.5 px-4 py-2 font-display text-[11px] font-semibold uppercase tracking-wide text-gold"
+          style={{ background: 'linear-gradient(90deg, hsl(var(--gold) / 0.16), hsl(var(--gold) / 0.02))' }}
+        >
+          <Star className="h-3 w-3 fill-current" />
+          Featured listing
         </div>
-      </CardContent>
+      )}
+
+      <div className="flex gap-5 p-5">
+        <TradeListingImage
+          cardId={listing.cardOffered.id}
+          imageUrl={listing.cardOffered.imageUrl}
+          cardName={listing.cardOffered.name}
+          condition={listing.cardOffered.condition}
+          isFeatured={featured}
+        />
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          <h3 className="font-display text-lg font-bold leading-tight">{listing.cardOffered.name}</h3>
+
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+            <span>@{listing.username}</span>
+            <span aria-hidden>·</span>
+            <span>{format(listing.createdAt, 'MMM d')}</span>
+            <TraderTrustBadge
+              totalTrades={listing.sellerTotalTrades ?? 0}
+              reputationScore={listing.sellerReputationScore ?? 0}
+            />
+          </div>
+
+          {isSale ? (
+            <div className="mt-4 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+              <ShoppingBag className="h-3.5 w-3.5 text-gold" />
+              For sale
+            </div>
+          ) : (
+            listing.cardsWanted.length > 0 && (
+              <div className="mt-4">
+                <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                  <ArrowRightLeft className="h-3.5 w-3.5 text-primary" />
+                  Wants in trade
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {listing.cardsWanted.slice(0, 4).map((card, i) => (
+                    <span
+                      key={i}
+                      className="rounded-full border border-border bg-secondary px-2.5 py-1 text-[11px] text-foreground"
+                    >
+                      {card}
+                    </span>
+                  ))}
+                  {listing.cardsWanted.length > 4 && (
+                    <span className="rounded-full border border-border bg-secondary px-2.5 py-1 text-[11px] text-muted-foreground">
+                      +{listing.cardsWanted.length - 4}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )
+          )}
+
+          {listing.description && (
+            <p className="mt-3 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+              {listing.description}
+            </p>
+          )}
+
+          <div className="mt-auto flex items-center gap-1.5 pt-3 text-[11px] text-muted-foreground/70">
+            <Shield className="h-3 w-3" />
+            {isSale ? 'Payment held until delivery is confirmed' : 'Both sides confirm receipt'}
+          </div>
+        </div>
+      </div>
 
       <TradeListingFooter
         cardId={listing.cardOffered.id}
@@ -84,10 +127,9 @@ const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListin
         listingType={listing.listingType ?? 'trade'}
         askingPrice={listing.askingPrice}
         currency={listing.currency}
+        estimatedValue={listing.cardOffered.estimatedValue}
       />
-      
-      <TradeListingProtection listingType={listing.listingType ?? 'trade'} />
-    </Card>
+    </article>
   );
 };
 
