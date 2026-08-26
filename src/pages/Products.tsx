@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
-import { getProducts, getFeaturedProducts } from "@/services/api/pokemonProductsService";
+import { getSealedProductCards } from "@/services/api/sealedProductsService";
 import { getSetById } from "@/services/api/pokemonSetsService";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -34,8 +34,8 @@ const Products = () => {
 
   // Fetch products with React Query
   const { data: products = [], isLoading, isError } = useQuery({
-    queryKey: ['products', currentPage, itemsPerPage],
-    queryFn: () => getProducts(currentPage, itemsPerPage),
+    queryKey: ['sealedProductCards', currentPage, itemsPerPage],
+    queryFn: () => getSealedProductCards(currentPage, itemsPerPage),
     meta: {
       onError: (error: Error) => {
         toast({
@@ -47,10 +47,10 @@ const Products = () => {
     }
   });
 
-  // Fetch featured products (only if not filtering by set)
+  // "Featured" = the priciest sealed products (Booster Boxes, Cases) up top.
   const { data: featuredProducts = [] } = useQuery({
-    queryKey: ['featuredProducts'],
-    queryFn: getFeaturedProducts,
+    queryKey: ['featuredSealedProducts'],
+    queryFn: () => getSealedProductCards(1, 8),
     enabled: !setIdFilter,
     meta: {
       onError: (error: Error) => {

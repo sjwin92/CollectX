@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getSetById } from "@/services/api/pokemonSetsService";
 import { supabasePokemonService } from "@/services/supabasePokemonService";
-import { getProductsForSet } from "@/services/api/pokemonProductsService";
+import { getSealedProductsForSet, toProductCard } from "@/services/api/sealedProductsService";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import ProductCard from "@/components/pokemon/ProductCard";
@@ -15,8 +15,6 @@ import { format } from "date-fns";
 import { SmartImage } from "@/components/common/SmartImage";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fixImageUrl } from "@/services/api/cardImageService";
-import { supabase } from "@/integrations/supabase/client";
-import { useUser } from "@/hooks/useUser";
 import { useCollection } from "@/hooks/useCollection";
 import { useSetCards } from "@/hooks/useSetCards";
 
@@ -26,7 +24,6 @@ const SetDetail = () => {
   const { toast } = useToast();
   const [logoLoaded, setLogoLoaded] = React.useState(true);
   const [symbolLoaded, setSymbolLoaded] = React.useState(true);
-  const { isSignedIn } = useUser();
 
   // Fire local set + stored images in parallel — both only need `id`
   const { data: localSet } = useQuery({
@@ -65,42 +62,14 @@ const SetDetail = () => {
     return apiSet;
   }, [localSet, apiSet]);
 
-  // Derive products from the set already in memory — no extra API call
-  const { data: setProducts = [] } = useQuery({
-    queryKey: ['setProducts', id],
-    queryFn: () => getProductsForSet(set as any),
-    enabled: !!set,
+  // Real sealed products (Booster Box, ETB, Bundle, Tins…) with TCGplayer
+  // images + market prices, from the sealed_products mirror.
+  const { data: sealedProducts = [] } = useQuery({
+    queryKey: ['sealedProducts', id],
+    queryFn: () => getSealedProductsForSet(id!),
+    enabled: !!id,
     staleTime: 60 * 60 * 1000,
   });
-
-  // eBay image enrichment — fires as soon as set name is available, parallel to products
-  const { data: ebayImageMap = {} } = useQuery({
-    queryKey: ['ebayProductImages', set?.name],
-    queryFn: async () => {
-      const { data } = await (supabase as any).functions.invoke('ebay-integration', {
-        body: { action: 'search', query: `pokemon ${set!.name}`, itemType: 'sealed_product', limit: 10 }
-      });
-      const imageMap: Record<string, string> = {};
-      for (const listing of (data?.listings || [])) {
-        if (!listing.imageUrl) continue;
-        const title = (listing.title || '').toLowerCase();
-        if (!imageMap['etb'] && (title.includes('elite trainer') || title.includes('etb'))) imageMap['etb'] = listing.imageUrl;
-        if (!imageMap['box'] && title.includes('booster box')) imageMap['box'] = listing.imageUrl;
-        if (!imageMap['tin'] && title.includes('tin')) imageMap['tin'] = listing.imageUrl;
-        if (!imageMap['blister-pack'] && title.includes('blister')) imageMap['blister-pack'] = listing.imageUrl;
-        if (!imageMap['deck'] && title.includes('deck')) imageMap['deck'] = listing.imageUrl;
-        if (!imageMap['booster-pack'] && title.includes('booster pack') && !title.includes('box')) imageMap['booster-pack'] = listing.imageUrl;
-      }
-      return imageMap;
-    },
-    enabled: !!set?.name && isSignedIn,
-    staleTime: 30 * 60 * 1000,
-  });
-
-  const enrichedProducts = React.useMemo(() => {
-    const list = Array.isArray(setProducts) ? setProducts : [];
-    return list.map((p: any) => ({ ...p, imageUrl: ebayImageMap[p.productType] || p.imageUrl }));
-  }, [setProducts, ebayImageMap]);
 
 
   // Process image URLs — storedImages already loaded in parallel above
@@ -371,17 +340,21 @@ const SetDetail = () => {
           </section>
         )}
 
-        {/* Products Section */}
-        {enrichedProducts.length > 0 && (
+        {/* Sealed products — real TCGplayer catalogue + market prices */}
+        {sealedProducts.length > 0 && (
           <section className="anim-rise mt-12" style={{ animationDelay: '300ms' }}>
             <div className="mb-5 flex items-center gap-2">
               <Package className="h-5 w-5 text-primary" />
               <h2 className="font-display text-xl font-extrabold">Sealed products</h2>
+              <span className="text-xs text-muted-foreground">market prices via TCGplayer</span>
             </div>
 
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {enrichedProducts.map(product => (
-                <ProductCard key={product.id} product={product} />
+              {sealedProducts.map((p) => (
+                <ProductCard
+                  key={p.id}
+                  product={{ ...toProductCard(p), productType: p.productType as never, series: set.name }}
+                />
               ))}
             </div>
           </section>

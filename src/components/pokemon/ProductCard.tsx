@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Package, Calendar } from "lucide-react";
+import { Plus, Package, Calendar, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { getProductTypeIcon, getProductTypeLabel } from "@/types/cardTypes";
 import AddToCollectionModal from "./AddToCollectionModal";
@@ -12,14 +12,17 @@ import { SmartImage } from "@/components/common/SmartImage";
 interface Product {
   id: string;
   name: string;
-  series: string;
+  series?: string;
   setId: string;
-  productType: 'booster-pack' | 'blister-pack' | 'etb' | 'tin' | 'box' | 'deck' | 'other';
+  productType: 'booster-pack' | 'blister-pack' | 'etb' | 'bundle' | 'tin' | 'box' | 'case' | 'deck' | 'other';
   packCount?: number;
-  releaseDate: string;
+  releaseDate?: string;
   imageUrl?: string;
+  /** TCGplayer market price (GBP). */
   msrp?: number;
-  description: string;
+  /** Deep link to the TCGplayer product page. */
+  tcgplayerUrl?: string;
+  description?: string;
 }
 
 interface ProductCardProps {
@@ -77,16 +80,34 @@ const ProductCard = ({ product }: ProductCardProps) => {
           </div>
         </CardHeader>
 
-        <CardContent className="pb-4 px-4">
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <Calendar className="h-4 w-4" />
-              {format(new Date(product.releaseDate), 'MMM d, yyyy')}
-            </div>
-            <span className={product.msrp !== undefined ? "font-bold text-lg text-primary" : "text-xs text-muted-foreground italic"}>
-              {product.msrp !== undefined ? `£${product.msrp.toFixed(2)}` : "Price not available"}
+        <CardContent className="pb-4 px-4 space-y-2">
+          <div className="flex items-end justify-between text-sm">
+            {product.releaseDate ? (
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+                {format(new Date(product.releaseDate), 'MMM yyyy')}
+              </div>
+            ) : <span />}
+            <span className="flex flex-col items-end leading-none">
+              {product.msrp !== undefined && (
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70">Market</span>
+              )}
+              <span className={product.msrp !== undefined ? "font-bold text-lg text-primary tabular-nums" : "text-xs text-muted-foreground italic"}>
+                {product.msrp !== undefined ? `£${product.msrp.toFixed(2)}` : "Price not available"}
+              </span>
             </span>
           </div>
+          {product.tcgplayerUrl && (
+            <a
+              href={product.tcgplayerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              View on TCGplayer <ExternalLink className="h-3 w-3" />
+            </a>
+          )}
         </CardContent>
 
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">

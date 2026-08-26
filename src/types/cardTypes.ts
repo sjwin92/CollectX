@@ -15,7 +15,7 @@ export interface CardItemProps {
     name: string;
   };
   number: string;
-  productType?: 'card' | 'booster-pack' | 'blister-pack' | 'etb' | 'tin' | 'box' | 'deck' | 'other';
+  productType?: 'card' | 'booster-pack' | 'blister-pack' | 'etb' | 'bundle' | 'tin' | 'box' | 'case' | 'deck' | 'other';
 }
 
 export interface UploadedCardImage {
@@ -30,7 +30,7 @@ export interface ExtendedCardItemProps extends CardItemProps {
   quantity?: number;
   conditionImages?: UploadedCardImage[];
   tradePreferences?: string;
-  productType?: 'card' | 'booster-pack' | 'blister-pack' | 'etb' | 'tin' | 'box' | 'deck' | 'other';
+  productType?: 'card' | 'booster-pack' | 'blister-pack' | 'etb' | 'bundle' | 'tin' | 'box' | 'case' | 'deck' | 'other';
   isSealed?: boolean;
   packCount?: number; // For blister packs, ETBs, etc.
   setCode?: string;
@@ -42,9 +42,11 @@ export const productTypes = [
   { value: 'booster-pack', label: 'Booster Pack', icon: '📦' },
   { value: 'blister-pack', label: 'Blister Pack', icon: '🎁' },
   { value: 'etb', label: 'Elite Trainer Box', icon: '📦' },
+  { value: 'bundle', label: 'Booster Bundle', icon: '📦' },
   { value: 'tin', label: 'Tin', icon: '🥫' },
   { value: 'box', label: 'Booster Box', icon: '📦' },
-  { value: 'deck', label: 'Theme/Battle Deck', icon: '🎴' },
+  { value: 'case', label: 'Case', icon: '🗄️' },
+  { value: 'deck', label: 'Deck', icon: '🎴' },
   { value: 'other', label: 'Other Product', icon: '❓' }
 ];
 
