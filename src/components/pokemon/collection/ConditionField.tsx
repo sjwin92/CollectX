@@ -1,7 +1,7 @@
 
 import React from "react";
 import { UseFormReturn } from "react-hook-form";
-import { CardFormValues, cardConditions } from "./cardFormSchema";
+import { cardConditions } from "./cardFormSchema";
 import {
   Select,
   SelectContent,
@@ -12,7 +12,7 @@ import {
 import FormFieldWrapper from "./FormFieldWrapper";
 
 interface ConditionFieldProps {
-  form: UseFormReturn<CardFormValues>;
+  form: UseFormReturn<any>;
 }
 
 const ConditionField = ({ form }: ConditionFieldProps) => {

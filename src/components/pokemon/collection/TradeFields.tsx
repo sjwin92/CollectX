@@ -1,7 +1,6 @@
 
 import React, { useState } from "react";
 import { UseFormReturn } from "react-hook-form";
-import { CardFormValues } from "./cardFormSchema";
 import { Input } from "@/components/ui/input";
 import FormFieldWrapper from "./FormFieldWrapper";
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,7 @@ import {
 } from "@/components/ui/select";
 
 interface TradeFieldsProps {
-  form: UseFormReturn<CardFormValues>;
+  form: UseFormReturn<any>;
 }
 
 // Common Pokemon card types/categories for trading

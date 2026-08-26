@@ -58,10 +58,10 @@ const enrichOrders = async (rows: any[]): Promise<OrderSummary[]> => {
     supabase.from("profiles").select("user_id, display_name, username").in("user_id", userIds),
   ]);
 
-  const listingMap = new Map((listings || []).map((l: any) => [l.id, l]));
-  const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+  const listingMap = new Map(((listings || []) as any[]).map((l) => [l.id, l]));
+  const profileMap = new Map(((profiles || []) as any[]).map((p) => [p.user_id, p]));
   const nameOf = (uid: string) => {
-    const p = profileMap.get(uid);
+    const p = profileMap.get(uid) as any;
     return p?.display_name || p?.username || "Unknown";
   };
 

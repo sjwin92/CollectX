@@ -1,14 +1,13 @@
 
 import React from "react";
 import { UseFormReturn } from "react-hook-form";
-import { CardFormValues } from "./cardFormSchema";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus } from "lucide-react";
 import FormFieldWrapper from "./FormFieldWrapper";
 
 interface QuantityFieldProps {
-  form: UseFormReturn<CardFormValues>;
+  form: UseFormReturn<any>;
 }
 
 const QuantityField = ({ form }: QuantityFieldProps) => {
