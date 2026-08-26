@@ -53,12 +53,17 @@ const Sets = () => {
 
   const combinedData = React.useMemo(() => {
     if (!localSets) return [] as any[];
-    const processed = localSets.map((set: any) => ({
-      ...set,
-      images: set.images || { logo: set.logo_url, symbol: set.symbol_url },
-      printedTotal: set.printed_total ?? set.printedTotal,
-      releaseDate: set.release_date ?? set.releaseDate,
-    }));
+    const processed = localSets
+      // Drop Trainer Gallery / Galarian Gallery sub-sets — they share a
+      // parent set's name and release date, so they read as duplicates in
+      // the browse grid. Their cards still resolve via the set-detail page.
+      .filter((set: any) => !/\b(?:Trainer|Galarian) Gallery$/i.test(set.name || ''))
+      .map((set: any) => ({
+        ...set,
+        images: set.images || { logo: set.logo_url, symbol: set.symbol_url },
+        printedTotal: set.printed_total ?? set.printedTotal,
+        releaseDate: set.release_date ?? set.releaseDate,
+      }));
     // Newest → oldest by release date
     return processed.sort((a: any, b: any) => {
       const dateA = new Date(a.releaseDate || '1900-01-01');
