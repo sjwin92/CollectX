@@ -3,7 +3,8 @@ import React, { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import GlassCard from "@/components/ui/custom/GlassCard";
-import Badge from "@/components/ui/custom/Badge";
+import TraderTrustBadge from "@/components/common/TraderTrustBadge";
+import { getTierProgress } from "@/lib/traderTrust";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import CardGrid from "@/components/cards/CardGrid";
@@ -191,7 +192,6 @@ const Profile = () => {
     username: profile?.username || "newuser",
     joined: profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : "Just now",
     location: profile?.location || "",
-    reputation: "new" as const,
     bio: profile?.bio || "",
     stats: {
       trades: profile?.total_trades || 0,
@@ -201,7 +201,9 @@ const Profile = () => {
     },
     badges,
   };
-  
+
+  const tierProgress = getTierProgress(displayData.stats.trades, displayData.stats.reputationScore);
+
   // Function to render reputation stars
   const renderReputationStars = (score: number) => {
     const stars = [];
@@ -265,10 +267,16 @@ const Profile = () => {
                 </div>
                 
                 <h1 className="text-2xl font-bold mb-1">{displayData.name}</h1>
-                <div className="flex items-center justify-center mb-3">
-                  <Badge variant="reputation" reputation={displayData.reputation} size="md">
-                    {displayData.reputation.charAt(0).toUpperCase() + displayData.reputation.slice(1)} Trader
-                  </Badge>
+                <div className="flex flex-col items-center gap-1 mb-3">
+                  <TraderTrustBadge
+                    totalTrades={displayData.stats.trades}
+                    reputationScore={displayData.stats.reputationScore}
+                  />
+                  {tierProgress && (
+                    <span className="text-xs text-muted-foreground">
+                      {tierProgress.tradesToNext} more {tierProgress.tradesToNext === 1 ? "trade" : "trades"} to {tierProgress.nextLabel}
+                    </span>
+                  )}
                 </div>
                 
                 <div className="flex items-center justify-center mb-4">

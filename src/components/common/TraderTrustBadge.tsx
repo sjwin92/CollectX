@@ -1,5 +1,5 @@
 import React from "react";
-import { ShieldCheck, ShieldQuestion, Award, ShieldAlert } from "lucide-react";
+import { ShieldCheck, ShieldQuestion, Award, ShieldAlert, Crown } from "lucide-react";
 import { getTraderTrust } from "@/lib/traderTrust";
 
 interface TraderTrustBadgeProps {
@@ -12,6 +12,7 @@ const TIER_STYLES: Record<string, string> = {
   new: "text-muted-foreground bg-muted/50",
   trusted: "text-emerald-400 bg-emerald-500/10",
   veteran: "text-amber-300 bg-amber-500/10",
+  elite: "text-amber-200 bg-amber-500/20 ring-1 ring-amber-400/40",
   mixed: "text-red-400 bg-red-500/10",
 };
 
@@ -19,6 +20,7 @@ const TIER_ICONS: Record<string, React.ElementType> = {
   new: ShieldQuestion,
   trusted: ShieldCheck,
   veteran: Award,
+  elite: Crown,
   mixed: ShieldAlert,
 };
 
