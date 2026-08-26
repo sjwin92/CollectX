@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import { useToast } from "@/hooks/use-toast";
 import TradeListing from "@/components/marketplace/TradeListing";
+import StoreShelfCard from "@/components/store/StoreShelfCard";
+import { getMarketplaceStoreShelf } from "@/services/storeOrderService";
 import { useCardTypeMeta } from "@/hooks/useCardTypeMeta";
 import { useCardPrices } from "@/hooks/useCardPrices";
 import { useActiveStores } from "@/hooks/useActiveStores";
@@ -146,6 +148,12 @@ const Marketplace = () => {
 
   const storeMap = useActiveStores(listings.map((l) => l.userId));
   const storeSellerIds = React.useMemo(() => new Set(storeMap.keys()), [storeMap]);
+
+  const { data: storeShelf = [], isLoading: shelfLoading } = useQuery({
+    queryKey: ['marketplace-store-shelf', searchQuery],
+    queryFn: () => getMarketplaceStoreShelf(searchQuery),
+    enabled: activeCategory === 'stores',
+  });
 
   const filteredListings = React.useMemo(() => {
     return listings
@@ -332,6 +340,26 @@ const Marketplace = () => {
               {(listingsError as any)?.message || "Please try again in a moment."}
             </p>
           </GlassCard>
+        ) : activeCategory === 'stores' ? (
+          shelfLoading ? (
+            <div className="py-16 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+            </div>
+          ) : storeShelf.length > 0 ? (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+              {storeShelf.map((item, i) => (
+                <div key={item.id} className="anim-rise" style={{ animationDelay: `${Math.min(i, 8) * 50 + 120}ms` }}>
+                  <StoreShelfCard item={item} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <GlassCard className="p-8 text-center">
+              <BadgeCheck className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-xl font-medium mb-2">No store stock yet</h3>
+              <p className="text-muted-foreground">Verified stores list priced inventory here — check back soon.</p>
+            </GlassCard>
+          )
         ) : activeCategory === 'sellers' ? (
           sellerGroups.length > 0 ? (
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">

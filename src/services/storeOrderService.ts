@@ -191,33 +191,103 @@ export interface StoreShelfItem {
   grade_score: number | null;
   price_gbp: number;
   available: number;
+  /** set on the marketplace shelf (cross-store) */
+  store_name?: string;
+  store_slug?: string;
+  featured?: boolean;
+  updated_at?: string;
 }
+
+const SHELF_COLS =
+  "id, store_id, card_id, card_name, set_name, card_number, rarity, image_url, condition, is_graded, grade_company, grade_score, quantity, reserved, price_gbp, updated_at";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const toShelfItem = (r: any): StoreShelfItem => ({
+  id: r.id,
+  card_id: r.card_id,
+  card_name: r.card_name,
+  set_name: r.set_name,
+  card_number: r.card_number,
+  rarity: r.rarity,
+  image_url: r.image_url,
+  condition: r.condition,
+  is_graded: r.is_graded,
+  grade_company: r.grade_company,
+  grade_score: r.grade_score != null ? Number(r.grade_score) : null,
+  price_gbp: Number(r.price_gbp),
+  available: Number(r.quantity) - Number(r.reserved),
+  updated_at: r.updated_at,
+});
 
 export const getStoreShelf = async (storeUserId: string): Promise<StoreShelfItem[]> => {
   const { data, error } = await supabase
     .from("store_inventory")
-    .select("id, card_id, card_name, set_name, card_number, rarity, image_url, condition, is_graded, grade_company, grade_score, quantity, reserved, price_gbp")
+    .select(SHELF_COLS)
     .eq("store_id", storeUserId)
     .eq("listed", true)
     .not("price_gbp", "is", null)
     .order("updated_at", { ascending: false });
   if (error) throw error;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return ((data ?? []) as any[])
-    .map((r) => ({
-      id: r.id,
-      card_id: r.card_id,
-      card_name: r.card_name,
-      set_name: r.set_name,
-      card_number: r.card_number,
-      rarity: r.rarity,
-      image_url: r.image_url,
-      condition: r.condition,
-      is_graded: r.is_graded,
-      grade_company: r.grade_company,
-      grade_score: r.grade_score != null ? Number(r.grade_score) : null,
-      price_gbp: Number(r.price_gbp),
-      available: Number(r.quantity) - Number(r.reserved),
-    }))
+  return ((data ?? []) as any[]).map(toShelfItem).filter((r) => r.available > 0);
+};
+
+// Cross-store buyable SKUs for the marketplace "Stores" tab. Promoted SKUs
+// (an active sku_feature, or any SKU of a store with an active storefront_pin)
+// sort first and carry `featured: true`.
+export const getMarketplaceStoreShelf = async (search = ""): Promise<StoreShelfItem[]> => {
+  let q = supabase
+    .from("store_inventory")
+    .select(SHELF_COLS)
+    .eq("listed", true)
+    .not("price_gbp", "is", null)
+    .order("updated_at", { ascending: false })
+    .limit(120);
+  if (search.trim()) q = q.ilike("card_name", `%${search.trim()}%`);
+  const { data, error } = await q;
+  if (error) throw error;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows = ((data ?? []) as any[]);
+  if (rows.length === 0) return [];
+
+  const storeIds = Array.from(new Set(rows.map((r) => r.store_id)));
+  const invIds = rows.map((r) => r.id);
+
+  const [{ data: stores }, { data: promos }] = await Promise.all([
+    supabase.from("store_profiles").select("user_id, name, slug").eq("status", "active").in("user_id", storeIds),
+    supabase
+      .from("store_promotions")
+      .select("inventory_id, store_id, kind")
+      .eq("status", "active")
+      .gt("ends_at", new Date().toISOString())
+      .or(`inventory_id.in.(${invIds.join(",")}),store_id.in.(${storeIds.join(",")})`),
+  ]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const storeMap = new Map(((stores ?? []) as any[]).map((s) => [s.user_id, s]));
+  const featuredSku = new Set<string>();
+  const pinnedStore = new Set<string>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const p of (promos ?? []) as any[]) {
+    if (p.kind === "storefront_pin") pinnedStore.add(p.store_id);
+    else if (p.inventory_id) featuredSku.add(p.inventory_id);
+  }
+
+  const items = rows
+    .filter((r) => storeMap.has(r.store_id)) // active store only (RLS already enforces, belt-and-braces)
+    .map((r) => {
+      const it = toShelfItem(r);
+      const store = storeMap.get(r.store_id);
+      it.store_name = store?.name;
+      it.store_slug = store?.slug;
+      it.featured = featuredSku.has(r.id) || pinnedStore.has(r.store_id);
+      return it;
+    })
     .filter((r) => r.available > 0);
+
+  items.sort((a, b) => {
+    if (!!a.featured !== !!b.featured) return a.featured ? -1 : 1;
+    return +new Date(b.updated_at ?? 0) - +new Date(a.updated_at ?? 0);
+  });
+  return items;
 };

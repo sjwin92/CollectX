@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -7,17 +7,42 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Store, ExternalLink } from "lucide-react";
+import { Loader2, Store, ExternalLink, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getMyStore, updateMyStore, activateStore } from "@/services/storeService";
+import { createPromotionCheckout, getMyPromotions, getPromotionPrices } from "@/services/storePromotionService";
 
 const StoreSetup: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
+  const [pinning, setPinning] = useState(false);
   const [form, setForm] = useState({ name: "", bio: "", logo_url: "", website: "", city: "" });
+  const [params, setParams] = useSearchParams();
 
   const { data: store, isLoading, refetch } = useQuery({ queryKey: ["my-store"], queryFn: getMyStore });
+  const { data: promos } = useQuery({ queryKey: ["my-promotions"], queryFn: getMyPromotions, enabled: !!store });
+  const { data: promoPrices } = useQuery({ queryKey: ["promotion-prices"], queryFn: getPromotionPrices, enabled: !!store });
+
+  useEffect(() => {
+    const p = params.get("promoted");
+    if (!p) return;
+    if (p === "1") toast({ title: "Storefront pinned", description: "Your store now sorts to the top of the marketplace." });
+    else if (p === "cancelled") toast({ title: "Checkout cancelled", description: "No payment was taken." });
+    setParams((prev) => { prev.delete("promoted"); return prev; }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
+
+  const pinStorefront = async () => {
+    setPinning(true);
+    try {
+      const url = await createPromotionCheckout("storefront_pin");
+      window.location.href = url;
+    } catch (err) {
+      toast({ variant: "destructive", title: "Couldn't start checkout", description: err instanceof Error ? err.message : "Try again." });
+      setPinning(false);
+    }
+  };
 
   useEffect(() => {
     if (store) {
@@ -157,6 +182,19 @@ const StoreSetup: React.FC = () => {
           <Button asChild variant="ghost" className="rounded-full">
             <Link to="/store/import">Bulk import</Link>
           </Button>
+          {store.status === "active" && (
+            promos?.storefrontPin ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-semibold text-gold">
+                <Sparkles className="h-3.5 w-3.5" /> Pinned · ends {new Date(promos.storefrontPin).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+              </span>
+            ) : promos?.pendingStorefront ? (
+              <span className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-muted-foreground">Pin checkout pending</span>
+            ) : (
+              <Button variant="outline" className="rounded-full" onClick={pinStorefront} disabled={pinning}>
+                {pinning ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Sparkles className="mr-1.5 h-4 w-4" /> Feature storefront · £{(promoPrices?.storefront_pin_gbp ?? 9.99).toFixed(2)}</>}
+              </Button>
+            )
+          )}
           <span className="ml-auto text-xs text-muted-foreground">
             Selling fee: <span className="font-semibold text-gold">{(store.commission_bps / 100).toFixed(1)}%</span>
           </span>

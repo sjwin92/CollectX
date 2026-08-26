@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Loader2, ShoppingBag } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Loader2, ShoppingBag, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SmartImage } from "@/components/common/SmartImage";
 import { useToast } from "@/hooks/use-toast";
@@ -10,7 +10,8 @@ import { createStoreCheckout, type StoreShelfItem } from "@/services/storeOrderS
 
 const fmtGbp = (n: number) => `£${n.toFixed(2)}`;
 
-/** One buyable store SKU on a storefront. "Buy now" → Stripe Checkout. */
+/** One buyable store SKU. "Buy now" → Stripe Checkout. On the marketplace
+ *  shelf it also shows the store name and a Featured pill when promoted. */
 const StoreShelfCard: React.FC<{ item: StoreShelfItem }> = ({ item }) => {
   const { toast } = useToast();
   const { user } = useUser();
@@ -41,7 +42,7 @@ const StoreShelfCard: React.FC<{ item: StoreShelfItem }> = ({ item }) => {
     : null;
 
   return (
-    <div className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card">
+    <div className={`group flex flex-col overflow-hidden rounded-xl border bg-card ${item.featured ? "border-gold/50 ring-1 ring-gold/20" : "border-border"}`}>
       <div className="relative aspect-[3/4] overflow-hidden bg-secondary">
         <SmartImage
           src={item.image_url ?? ""}
@@ -52,6 +53,11 @@ const StoreShelfCard: React.FC<{ item: StoreShelfItem }> = ({ item }) => {
         <span className={`absolute left-2 top-2 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${conditionTone(item.condition)}`}>
           {gradeLabel ?? item.condition.replace(/_/g, " ")}
         </span>
+        {item.featured && (
+          <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full border border-gold/40 bg-gold/15 px-2 py-0.5 text-[10px] font-semibold text-gold">
+            <Sparkles className="h-3 w-3" /> Featured
+          </span>
+        )}
       </div>
       <div className="flex flex-1 flex-col gap-2 p-3">
         <div className="min-w-0">
@@ -59,6 +65,15 @@ const StoreShelfCard: React.FC<{ item: StoreShelfItem }> = ({ item }) => {
           <p className="truncate text-xs text-muted-foreground">
             {item.set_name || "—"}{item.card_number ? ` · #${item.card_number}` : ""}
           </p>
+          {item.store_name && (
+            item.store_slug ? (
+              <Link to={`/store/${item.store_slug}`} className="truncate text-xs text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
+                {item.store_name}
+              </Link>
+            ) : (
+              <p className="truncate text-xs text-muted-foreground">{item.store_name}</p>
+            )
+          )}
         </div>
         <div className="mt-auto flex items-center justify-between gap-2">
           <span className="font-display text-lg font-extrabold text-gold">{fmtGbp(item.price_gbp)}</span>

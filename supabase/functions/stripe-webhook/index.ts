@@ -64,6 +64,26 @@ serve(async (req) => {
           break;
         }
 
+        // Promoted listing / storefront pin (CollectX for Business — Phase 2c).
+        if (session.metadata?.type === 'promotion') {
+          const promotionId = session.metadata.promotion_id;
+          if (!promotionId) {
+            console.error('promotion checkout.session.completed with no promotion_id', session.id);
+            break;
+          }
+          if (session.payment_status === 'paid') {
+            const paymentIntentId = typeof session.payment_intent === 'string'
+              ? session.payment_intent
+              : session.payment_intent?.id ?? null;
+            const { error } = await serviceClient.rpc('activate_store_promotion', {
+              _promotion_id: promotionId,
+              _stripe_payment_intent_id: paymentIntentId,
+            });
+            if (error) throw error;
+          }
+          break;
+        }
+
         // Store-SKU order (CollectX for Business — Phase 2b).
         if (session.metadata?.type === 'store_order') {
           const storeOrderId = session.metadata.store_order_id;
@@ -104,6 +124,13 @@ serve(async (req) => {
 
       case 'checkout.session.expired': {
         const session = event.data.object as Stripe.Checkout.Session;
+        if (session.metadata?.type === 'promotion') {
+          const promotionId = session.metadata.promotion_id;
+          if (!promotionId) break;
+          const { error } = await serviceClient.rpc('fail_store_promotion', { _promotion_id: promotionId });
+          if (error) throw error;
+          break;
+        }
         if (session.metadata?.type === 'store_order') {
           const storeOrderId = session.metadata.store_order_id;
           if (!storeOrderId) break;
@@ -120,6 +147,13 @@ serve(async (req) => {
 
       case 'payment_intent.payment_failed': {
         const intent = event.data.object as Stripe.PaymentIntent;
+        if (intent.metadata?.type === 'promotion') {
+          const promotionId = intent.metadata.promotion_id;
+          if (!promotionId) break;
+          const { error } = await serviceClient.rpc('fail_store_promotion', { _promotion_id: promotionId });
+          if (error) throw error;
+          break;
+        }
         if (intent.metadata?.type === 'store_order') {
           const storeOrderId = intent.metadata.store_order_id;
           if (!storeOrderId) break;

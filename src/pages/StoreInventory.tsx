@@ -1,14 +1,15 @@
-import React, { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, RefreshCw, Trash2, Upload, Store as StoreIcon, Plus } from "lucide-react";
+import { Loader2, RefreshCw, Trash2, Upload, Store as StoreIcon, Plus, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getMyStore } from "@/services/storeService";
+import { createPromotionCheckout, getMyPromotions, getPromotionPrices } from "@/services/storePromotionService";
 import {
   listInventory,
   getPriceRules,
@@ -29,6 +30,16 @@ const StoreInventory: React.FC = () => {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(false);
+  const [params, setParams] = useSearchParams();
+
+  useEffect(() => {
+    const p = params.get("promoted");
+    if (!p) return;
+    if (p === "1") toast({ title: "Promotion live", description: "Your featured listing is now showing in the marketplace." });
+    else if (p === "cancelled") toast({ title: "Checkout cancelled", description: "No payment was taken." });
+    setParams((prev) => { prev.delete("promoted"); return prev; }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
 
   const { data: store, isLoading: storeLoading } = useQuery({ queryKey: ["my-store"], queryFn: getMyStore });
   const { data: items = [], refetch, isFetching } = useQuery({
@@ -39,6 +50,16 @@ const StoreInventory: React.FC = () => {
   const { data: rules = [], refetch: refetchRules } = useQuery({
     queryKey: ["store-price-rules"],
     queryFn: getPriceRules,
+    enabled: !!store,
+  });
+  const { data: promos } = useQuery({
+    queryKey: ["my-promotions"],
+    queryFn: getMyPromotions,
+    enabled: !!store,
+  });
+  const { data: promoPrices } = useQuery({
+    queryKey: ["promotion-prices"],
+    queryFn: getPromotionPrices,
     enabled: !!store,
   });
 
@@ -172,7 +193,7 @@ const StoreInventory: React.FC = () => {
           </p>
         ) : (
           <div className="mt-3 overflow-x-auto rounded-xl border border-border">
-            <table className="w-full min-w-[720px] text-sm">
+            <table className="w-full min-w-[820px] text-sm">
               <thead className="bg-secondary text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2 text-left">Card</th>
@@ -182,12 +203,20 @@ const StoreInventory: React.FC = () => {
                   <th className="px-3 py-2 text-right">Price</th>
                   <th className="px-3 py-2 text-right">Market</th>
                   <th className="px-3 py-2 text-right">Margin</th>
+                  <th className="px-3 py-2 text-center">Promote</th>
                   <th className="px-3 py-2"></th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((it) => (
-                  <InvRow key={it.id} it={it} onChange={() => refetch()} toast={toast} />
+                  <InvRow
+                    key={it.id}
+                    it={it}
+                    onChange={() => refetch()}
+                    toast={toast}
+                    promoEndsAt={promos?.skus.has(it.id) ? promos.skus.get(it.id) ?? "pending" : null}
+                    featurePrice={promoPrices?.sku_feature_gbp ?? 2.99}
+                  />
                 ))}
               </tbody>
             </table>
@@ -198,12 +227,36 @@ const StoreInventory: React.FC = () => {
   );
 };
 
-const InvRow = ({ it, onChange, toast }: { it: InventoryItem; onChange: () => void; toast: ReturnType<typeof useToast>["toast"] }) => {
+const InvRow = ({
+  it,
+  onChange,
+  toast,
+  promoEndsAt,
+  featurePrice,
+}: {
+  it: InventoryItem;
+  onChange: () => void;
+  toast: ReturnType<typeof useToast>["toast"];
+  promoEndsAt: string | null;
+  featurePrice: number;
+}) => {
+  const [promoting, setPromoting] = useState(false);
   const margin =
     it.price_gbp != null && it.cost_gbp != null && Number(it.cost_gbp) > 0
       ? ((Number(it.price_gbp) - Number(it.cost_gbp)) / Number(it.cost_gbp)) * 100
       : null;
   const below = it.market_gbp != null && it.price_gbp != null && it.price_gbp < it.market_gbp * 0.9;
+
+  const promote = async () => {
+    setPromoting(true);
+    try {
+      const url = await createPromotionCheckout("sku_feature", it.id);
+      window.location.href = url;
+    } catch (e) {
+      toast({ variant: "destructive", title: "Couldn't start checkout", description: e instanceof Error ? e.message : "Try again." });
+      setPromoting(false);
+    }
+  };
 
   const save = async (patch: Parameters<typeof patchSku>[1]) => {
     try {
@@ -252,6 +305,24 @@ const InvRow = ({ it, onChange, toast }: { it: InventoryItem; onChange: () => vo
       <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{gbp(it.market_gbp)}</td>
       <td className={`px-3 py-2 text-right tabular-nums ${margin != null && margin < 0 ? "text-red-400" : "text-muted-foreground"}`}>
         {margin != null ? `${margin >= 0 ? "+" : ""}${margin.toFixed(0)}%` : "—"}
+      </td>
+      <td className="px-3 py-2 text-center">
+        {promoEndsAt ? (
+          <span className="inline-flex items-center gap-1 rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-[11px] font-semibold text-gold">
+            <Sparkles className="h-3 w-3" />
+            {promoEndsAt === "pending" ? "Pending" : `Ends ${new Date(promoEndsAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`}
+          </span>
+        ) : (
+          <button
+            onClick={promote}
+            disabled={promoting || !it.listed || it.price_gbp == null}
+            className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-semibold text-muted-foreground hover:border-gold/40 hover:text-gold disabled:opacity-40"
+            title={!it.listed || it.price_gbp == null ? "List and price the card first" : `Feature for 7 days · £${featurePrice.toFixed(2)}`}
+          >
+            {promoting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+            £{featurePrice.toFixed(2)}
+          </button>
+        )}
       </td>
       <td className="px-3 py-2 text-right">
         <button
