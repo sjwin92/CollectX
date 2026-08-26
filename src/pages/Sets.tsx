@@ -16,6 +16,8 @@ import FeaturedBadge from "@/components/marketplace/listing/FeaturedBadge";
 import { fixImageUrl, getSetImageFallbacks } from "@/services/api/cardImageService";
 
 
+const SETS_PER_PAGE = 20;
+
 const Sets = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [imageErrors, setImageErrors] = useState<Record<string, { logo: number; symbol: number }>>({});
@@ -57,29 +59,42 @@ const Sets = () => {
       printedTotal: set.printed_total ?? set.printedTotal,
       releaseDate: set.release_date ?? set.releaseDate,
     }));
+    // Newest → oldest by release date
     return processed.sort((a: any, b: any) => {
       const dateA = new Date(a.releaseDate || '1900-01-01');
       const dateB = new Date(b.releaseDate || '1900-01-01');
-      return dateA.getTime() - dateB.getTime();
+      return dateB.getTime() - dateA.getTime();
     });
   }, [localSets]);
 
-  const data = { data: combinedData, totalCount: combinedData.length };
-
   // Featured = the 4 most recently released sets (newest first)
   const featuredSets = React.useMemo(
-    () => [...combinedData].reverse().slice(0, 4),
+    () => combinedData.slice(0, 4),
     [combinedData]
   );
 
-  // Remaining sets for main grid (oldest → newest), excluding the featured ones
-  const featuredIds = new Set(featuredSets.map(s => s.id));
-  const remainingSets = combinedData.filter(s => !featuredIds.has(s.id));
+  // Remaining sets for main grid (newest → oldest), excluding the featured ones
+  const remainingSets = React.useMemo(() => {
+    const featuredIds = new Set(featuredSets.map(s => s.id));
+    return combinedData.filter(s => !featuredIds.has(s.id));
+  }, [combinedData, featuredSets]);
 
-  // Batch-fetch stored images for all visible sets in a single query
+  const totalPages = Math.max(1, Math.ceil(remainingSets.length / SETS_PER_PAGE));
+
+  // Clamp the page if the underlying set list shrinks (e.g. after a refetch)
+  React.useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
+
+  const pagedSets = React.useMemo(
+    () => remainingSets.slice((currentPage - 1) * SETS_PER_PAGE, currentPage * SETS_PER_PAGE),
+    [remainingSets, currentPage]
+  );
+
+  // Batch-fetch stored images for the sets visible on this page in a single query
   const allVisibleSetIds = useMemo(
-    () => remainingSets.map(s => s.id),
-    [remainingSets]
+    () => pagedSets.map(s => s.id),
+    [pagedSets]
   );
   const { data: batchSetImages = {} } = useQuery({
     queryKey: ['batchSetImages', allVisibleSetIds],
@@ -125,13 +140,13 @@ const Sets = () => {
   };
 
   const loadNextPage = () => {
-    setCurrentPage(prev => prev + 1);
+    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const loadPreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(prev => prev - 1);
-    }
+    setCurrentPage(prev => Math.max(prev - 1, 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   // Warm the local mirror by invoking the import edge function for every
@@ -308,7 +323,7 @@ const Sets = () => {
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {remainingSets.map(set => (
+              {pagedSets.map(set => (
                 <SetCard key={set.id} set={set} storedImages={batchSetImages[set.id]} />
               ))}
             </div>
@@ -322,12 +337,12 @@ const Sets = () => {
                 Previous Page
               </Button>
               <span className="text-muted-foreground">
-                Page {currentPage} of {Math.ceil((data?.totalCount || 0) / 20)}
+                Page {currentPage} of {totalPages}
               </span>
               <Button
                 variant="outline"
                 onClick={loadNextPage}
-                disabled={!data || currentPage >= Math.ceil(data.totalCount / 20)}
+                disabled={currentPage >= totalPages}
               >
                 Next Page
               </Button>
