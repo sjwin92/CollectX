@@ -237,17 +237,19 @@
   pointer-events: none;
 }
 
-/* Holo sheen sweep — .holo child inside a .group; sweeps on group hover */
+/* Holo sheen sweep — .holo child inside a .group; hidden at rest, sweeps
+   across once on group hover */
 .holo {
   position: absolute;
-  inset: -30% -60%;
-  opacity: 0.5;
+  inset: -40% -70%;
+  opacity: 0;
   mix-blend-mode: screen;
   pointer-events: none;
-  background: linear-gradient(115deg, transparent 42%, hsl(var(--primary) / 0.5) 49%, hsl(var(--gold) / 0.42) 52%, transparent 60%);
-  transition: transform 0.7s cubic-bezier(0.19, 1, 0.22, 1);
+  transform: translateX(-30%);
+  background: linear-gradient(115deg, transparent 44%, hsl(var(--primary) / 0.55) 49%, hsl(var(--gold) / 0.45) 52%, transparent 58%);
+  transition: transform 0.7s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.25s ease;
 }
-.group:hover .holo { transform: translateX(24%); }
+.group:hover .holo { opacity: 0.6; transform: translateX(30%); }
 
 /* Atmospheric glow — one restrained radial per hero area */
 .aura {

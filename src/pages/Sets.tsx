@@ -9,10 +9,10 @@ import SetCard from "@/components/pokemon/SetCard";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Star, ImageOff, Download } from "lucide-react";
+import { Plus, Star, Download, Layers, ChevronLeft, ChevronRight } from "lucide-react";
+import { useCollection } from "@/hooks/useCollection";
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import FeaturedBadge from "@/components/marketplace/listing/FeaturedBadge";
+import { format } from "date-fns";
 import { fixImageUrl, getSetImageFallbacks } from "@/services/api/cardImageService";
 
 
@@ -23,6 +23,20 @@ const Sets = () => {
   const [imageErrors, setImageErrors] = useState<Record<string, { logo: number; symbol: number }>>({});
   const [isImporting, setIsImporting] = useState(false);
   const { toast } = useToast();
+  const { collection } = useCollection();
+
+  // Owned card-ids per set, for the completion ring on each SetCard.
+  const ownedBySet = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    for (const card of collection) {
+      const sid = card.set?.id;
+      if (!sid) continue;
+      if (!m.has(sid)) m.set(sid, new Set());
+      m.get(sid)!.add(card.id);
+    }
+    return m;
+  }, [collection]);
+  const hasCollection = collection.length > 0;
 
   // Read sets from the local mirror (pokemon_sets). If the mirror is empty or
   // tiny, kick off the import-sets edge function once, then re-read.
@@ -207,105 +221,79 @@ const Sets = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <main className="container py-8 flex-1">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Pokémon Card Sets</h1>
-          <p className="text-muted-foreground mb-4">
-            Browse all Pokémon Trading Card Game sets, from the latest expansions to the classic Base Set.
+      <main className="relative container flex-1 pb-16 pt-24">
+        <div className="aura pointer-events-none absolute inset-x-0 top-8 mx-auto h-[360px] max-w-5xl" aria-hidden />
+        <div className="anim-rise relative mb-8">
+          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-primary">
+            <Layers className="h-3.5 w-3.5" />
+            Browse sets
+          </div>
+          <h1 className="font-display text-4xl font-extrabold leading-[1.02] md:text-[46px]">Every Pokémon TCG set</h1>
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
+            From the latest Scarlet &amp; Violet expansions back to Base Set. Track your completion and jump into any set's cards.
           </p>
-          <div className="bg-muted/50 p-4 rounded-lg border border-border mb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm">
-                <Plus className="h-4 w-4 text-primary" />
-                <span className="font-medium">Tip:</span>
-                <span>Hover over any set and click the + button to quickly add cards to your collection.</span>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleImportAllSets}
-                disabled={isImporting}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                {isImporting ? "Importing..." : "Import All Sets"}
-              </Button>
+          <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Plus className="h-4 w-4 text-primary" />
+              <span>Hover a set and hit <span className="font-semibold text-foreground">+</span> to quick-add its cards.</span>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              onClick={handleImportAllSets}
+              disabled={isImporting}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              {isImporting ? "Importing…" : "Import all sets"}
+            </Button>
           </div>
         </div>
 
         {/* Featured Sets Section */}
         {!isLoading && !isError && featuredSets.length > 0 && (
-          <section className="mb-12">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold mb-2 flex items-center">
-                  <Star className="h-5 w-5 text-amber-400 mr-2 fill-amber-400" />
-                  Featured Sets
-                </h2>
-                <p className="text-muted-foreground">
-                  Latest and most popular Pokémon card sets
-                </p>
-              </div>
+          <section className="anim-rise mb-12" style={{ animationDelay: '80ms' }}>
+            <div className="mb-4 flex items-center gap-2">
+              <Star className="h-5 w-5 fill-gold text-gold" />
+              <h2 className="font-display text-xl font-extrabold">Latest sets</h2>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredSets.map(set => {
-                // Get stored images for this set
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {featuredSets.map((set, i) => {
                 const logoUrl = getImageUrl(set.id, 'logo', set.images?.logo);
-                const symbolUrl = getImageUrl(set.id, 'symbol', set.images?.symbol);
-                
-                console.log(`Featured set ${set.id}: logo=${logoUrl}, symbol=${symbolUrl}`);
-                
                 return (
                   <Link key={set.id} to={`/pokemon-sets/${set.id}`} className="block h-full">
-                    <Card className="overflow-hidden h-full transition-all hover:shadow-lg hover:border-primary/50 relative group border-amber-400/50 shadow">
-                      <div className="absolute top-0 left-0 right-0">
-                        <FeaturedBadge />
-                      </div>
-                      <CardHeader className="pt-10">
+                    <article
+                      className="anim-rise group relative flex h-full flex-col overflow-hidden rounded-2xl border border-gold/30 bg-card shadow-[0_26px_54px_-24px_rgba(0,0,0,0.8)] hover-lift"
+                      style={{ animationDelay: `${120 + i * 70}ms` }}
+                    >
+                      <div className="relative flex h-[118px] items-center justify-center overflow-hidden bg-[radial-gradient(340px_130px_at_50%_124%,hsl(var(--gold)/0.16),transparent_70%)]">
                         {logoUrl ? (
-                          <div className="flex justify-center mb-2">
-                            <OptimizedImage 
-                              src={logoUrl} 
-                              alt={`${set.name} logo`}
-                              className="h-16 object-contain mx-auto"
-                              lazy={true}
-                              fallbackSrc="/placeholder.svg"
-                              onError={() => console.log(`Failed to load logo for ${set.id}: ${logoUrl}`)}
-                            />
-                          </div>
+                          <OptimizedImage
+                            src={logoUrl}
+                            alt={`${set.name} logo`}
+                            className="max-h-14 max-w-[80%] object-contain"
+                            lazy
+                            fallbackSrc="/placeholder.svg"
+                          />
                         ) : (
-                          <div className="flex flex-col items-center mb-2">
-                            <h3 className="text-lg font-semibold text-center">{set.name}</h3>
-                            <div className="text-muted-foreground flex items-center mt-1 text-xs">
-                              <ImageOff className="h-3 w-3 mr-1" />
-                              <span>Logo unavailable</span>
-                            </div>
-                          </div>
+                          <h3 className="px-4 text-center font-display text-lg font-extrabold">{set.name}</h3>
                         )}
-                      </CardHeader>
-                      <CardContent className="pb-4">
-                        <div className="flex justify-between items-center mt-2">
-                          <div className="flex items-center gap-2">
-                            {symbolUrl ? (
-                              <OptimizedImage 
-                                src={symbolUrl} 
-                                alt={`${set.name} symbol`}
-                                className="h-6 w-6 object-contain"
-                                lazy={true}
-                                fallbackSrc="/placeholder.svg"
-                              />
-                            ) : (
-                              <ImageOff className="h-4 w-4 text-muted-foreground" />
-                            )}
-                            <span className="text-sm font-medium">{set.series}</span>
-                          </div>
-                          <Button variant="outline" size="sm">
-                            View Cards
-                          </Button>
+                        <span className="holo" aria-hidden />
+                      </div>
+                      <div className="flex flex-1 flex-col p-4">
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <span className="h-3.5 w-3.5 rounded-[4px] border border-border bg-secondary" />
+                          {set.series}
                         </div>
-                      </CardContent>
-                    </Card>
+                        <div className="mt-2.5 flex items-center justify-between">
+                          <span className="font-display text-sm font-extrabold tabular-nums">{set.printedTotal} cards</span>
+                          <span className="rounded-full bg-gold/12 px-2 py-[3px] text-[10px] font-semibold text-gold">
+                            {set.releaseDate ? format(new Date(set.releaseDate), 'MMM yyyy') : '—'}
+                          </span>
+                        </div>
+                      </div>
+                    </article>
                   </Link>
                 );
               })}
@@ -313,8 +301,9 @@ const Sets = () => {
           </section>
         )}
 
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-4">All Pokémon Sets</h2>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="font-display text-xl font-extrabold">All sets</h2>
+          {!isLoading && !isError && <span className="text-sm text-muted-foreground">Page {currentPage} of {totalPages}</span>}
         </div>
 
         {isLoading ? (
@@ -327,29 +316,45 @@ const Sets = () => {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {pagedSets.map(set => (
-                <SetCard key={set.id} set={set} storedImages={batchSetImages[set.id]} />
-              ))}
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {pagedSets.map((set, i) => {
+                const owned = ownedBySet.get(set.id)?.size ?? 0;
+                const total = (set.printedTotal as number) || 0;
+                const completionPct =
+                  hasCollection && total > 0 ? Math.min(100, Math.round((owned / total) * 100)) : undefined;
+                return (
+                  <div
+                    key={set.id}
+                    className="anim-rise"
+                    style={{ animationDelay: `${Math.min(i, 8) * 50 + 120}ms` }}
+                  >
+                    <SetCard set={set} storedImages={batchSetImages[set.id]} completionPct={completionPct} />
+                  </div>
+                );
+              })}
             </div>
 
-            <div className="flex justify-between items-center mt-8">
+            <div className="mt-8 flex items-center justify-between">
               <Button
                 variant="outline"
+                className="rounded-full"
                 onClick={loadPreviousPage}
                 disabled={currentPage <= 1}
               >
-                Previous Page
+                <ChevronLeft className="mr-1.5 h-4 w-4" />
+                Previous
               </Button>
-              <span className="text-muted-foreground">
+              <span className="text-sm text-muted-foreground tabular-nums">
                 Page {currentPage} of {totalPages}
               </span>
               <Button
                 variant="outline"
+                className="rounded-full"
                 onClick={loadNextPage}
                 disabled={currentPage >= totalPages}
               >
-                Next Page
+                Next
+                <ChevronRight className="ml-1.5 h-4 w-4" />
               </Button>
             </div>
           </>
