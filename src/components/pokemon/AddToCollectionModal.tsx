@@ -44,17 +44,17 @@ const AddToCollectionModal = (props: AddToCollectionModalProps) => {
               printedTotal: set.printedTotal,
               total: set.total,
               legalities: set.legalities,
-              ptcgoCode: set.id, // Using set.id as a fallback 
-              releaseDate: set.releaseDate, 
+              ptcgoCode: set.id, // Using set.id as a fallback
+              releaseDate: set.releaseDate,
               updatedAt: new Date().toISOString(), // Current date as fallback
               images: {
-                symbol: set.images.symbol,
-                logo: set.images.logo
+                symbol: set.images?.symbol,
+                logo: set.images?.logo
               }
             },
             images: {
-              small: props.cardImage || set.images.logo || "",
-              large: props.cardImage || set.images.logo || "",
+              small: props.cardImage || set.images?.logo || "",
+              large: props.cardImage || set.images?.logo || "",
             },
             rarity: props.cardRarity || "Common",
             number: props.cardNumber || "",

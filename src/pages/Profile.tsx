@@ -17,16 +17,19 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { useUser } from "@/hooks/useUser";
+import { useCollection } from "@/hooks/useCollection";
+import { useCollectionValue } from "@/hooks/useCollectionValue";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import UserDashboard from "@/components/analytics/UserDashboard";
 import { getSellerStripeStatus, startSellerOnboarding, type SellerStripeStatus } from "@/services/supabaseMarketplaceService";
-import { 
+import {
   Star,
   Mail,
   Calendar,
-  Package, 
-  ArrowLeftRight, 
+  Wallet,
+  Package,
+  ArrowLeftRight,
   ShieldCheck,
   Award,
   Settings,
@@ -142,12 +145,12 @@ const Profile = () => {
     const rareCards = userCollection.filter(
       (c) => c.rarity && !NON_RARE.has(c.rarity.toLowerCase())
     ).length;
-    const estValue = userCollection.reduce((sum, c) => {
-      const parsed = parseFloat((c.estimatedValue || '').replace(/[^0-9.]/g, ''));
-      return sum + (Number.isFinite(parsed) ? parsed : 0);
-    }, 0);
-    return { tradableCards, rareCards, estValue };
+    return { tradableCards, rareCards };
   }, [userCollection]);
+
+  // Live portfolio value across the WHOLE collection (singles + sealed).
+  const { collection: fullCollection } = useCollection();
+  const portfolioValue = useCollectionValue(fullCollection);
 
   const setCompletion = React.useMemo(() => {
     const bySet = new Map<string, { name: string; owned: Set<string> }>();
@@ -325,8 +328,15 @@ const Profile = () => {
           </div>
 
           {/* Stat cards */}
-          <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
+          <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
             {[
+              {
+                k: "Portfolio value",
+                v: `£${portfolioValue.total.toLocaleString("en-GB", { maximumFractionDigits: 0 })}`,
+                icon: Wallet,
+                gold: true,
+                sub: "",
+              },
               { k: "Completed trades", v: String(displayData.stats.trades), icon: ArrowLeftRight, gold: false, sub: "" },
               {
                 k: "Rating",
@@ -496,8 +506,10 @@ const Profile = () => {
                           <span className="font-medium">{collectionStats.rareCards}</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">Est. Collection Value</span>
-                          <span className="font-medium">£{collectionStats.estValue.toFixed(2)}</span>
+                          <span className="text-muted-foreground">Portfolio value</span>
+                          <span className="font-medium tabular-nums">
+                            £{portfolioValue.total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
                         </div>
                       </div>
                     </GlassCard>

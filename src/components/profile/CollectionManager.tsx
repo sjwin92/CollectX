@@ -70,13 +70,19 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
 
   return (
     <>
+      {collection.length > 0 && (
+        <div className="mb-6">
+          <CollectionStats collection={collection} />
+        </div>
+      )}
+
       <GlassCard className="p-6 mb-6">
-      <CollectionHeader 
-        onAddCard={handleAddCard} 
-        onRefresh={refreshCollection} 
+      <CollectionHeader
+        onAddCard={handleAddCard}
+        onRefresh={refreshCollection}
       />
-      
-      <CollectionSearch 
+
+      <CollectionSearch
         searchQuery={searchQuery}
         showGradedOnly={showGradedOnly}
         onSearchChange={handleSearchChange}
@@ -101,12 +107,6 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
       
       {collection.length === 0 && (
         <EmptyCollection onAddCard={handleAddCard} />
-      )}
-      
-      {collection.length > 0 && (
-        <div className="mt-6">
-          <CollectionStats collection={collection} />
-        </div>
       )}
     </GlassCard>
 
