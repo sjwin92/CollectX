@@ -1,69 +1,54 @@
-# Welcome to your Lovable project
+# CollectX
 
-## Project info
+Pokémon trading-card platform: collection management, card-for-card trades, a
+cash marketplace (Stripe Connect), AI card grading (Claude vision), and
+want-list auto-match notifications.
 
-**URL**: https://lovable.dev/projects/92636543-83a2-4875-8652-d0834d8274b6
+## Stack
 
-## How can I edit this code?
+- **Frontend:** Vite + React 18 + TypeScript + Tailwind + shadcn/ui, TanStack Query, React Router
+- **Backend:** Supabase — Postgres + RLS, Edge Functions (Deno), Storage, Realtime
+- **Payments:** Stripe Connect (marketplace orders, seller payouts)
+- **Build/host:** [Lovable](https://lovable.dev) — the editor commits straight to `main`
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/92636543-83a2-4875-8652-d0834d8274b6) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Local development
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+npm install
+npm run dev        # Vite dev server on http://localhost:8080
+npm run build      # production build
+npx tsc --noEmit -p tsconfig.app.json   # typecheck (Vite build does not typecheck)
 ```
 
-**Edit a file directly in GitHub**
+`.env` holds the public `VITE_SUPABASE_*` values (publishable keys — safe to
+commit; row-level security protects the data). No backend or Stripe secrets are
+in the repo; those live in Supabase project config.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Database
 
-**Use GitHub Codespaces**
+The canonical database is the Supabase project **`collectx-prod`**
+(`yfzfyeoaisspqlziaufx`). Schema is managed by the migrations in
+`supabase/migrations/`.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```sh
+supabase link --project-ref yfzfyeoaisspqlziaufx
+supabase migration list        # local vs. applied
+supabase db push               # apply pending migrations
+```
 
-## What technologies are used for this project?
+> Note: the published `*.lovable.app` build currently points at an older
+> Lovable-managed database, not `collectx-prod`. Local dev and the repo config
+> use `collectx-prod`.
 
-This project is built with .
+## Layout
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/92636543-83a2-4875-8652-d0834d8274b6) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+```
+src/
+  pages/            route components
+  components/       feature + shared UI
+  services/         Supabase data access
+  hooks/  lib/      shared logic
+supabase/
+  functions/        edge functions (Stripe, grading, catalogue import, MCP)
+  migrations/        schema history
+```
