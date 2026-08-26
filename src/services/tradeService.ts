@@ -89,6 +89,7 @@ export const getTradeById = async (tradeId: string): Promise<TradeProposalWithCo
       userId: data.initiator_user_id,
       username: initiatorName,
       reputation: repTier(initiatorProfile?.reputation_score),
+      reputationScore: Number(initiatorProfile?.reputation_score) || 0,
       tradeCount: initiatorProfile?.total_trades || 0,
       successRate: initiatorProfile?.total_trades
         ? (initiatorProfile.successful_trades / initiatorProfile.total_trades) * 100
@@ -99,6 +100,7 @@ export const getTradeById = async (tradeId: string): Promise<TradeProposalWithCo
       userId: data.recipient_user_id,
       username: recipientName,
       reputation: repTier(recipientProfile?.reputation_score),
+      reputationScore: Number(recipientProfile?.reputation_score) || 0,
       tradeCount: recipientProfile?.total_trades || 0,
       successRate: recipientProfile?.total_trades
         ? (recipientProfile.successful_trades / recipientProfile.total_trades) * 100

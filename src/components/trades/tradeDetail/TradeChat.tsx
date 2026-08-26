@@ -82,10 +82,15 @@ export const TradeChat = ({ trade, tradeId, currentUserId, onMessageSent, onOpen
 
   return (
     <GlassCard>
-      <div className="p-4">
-        <h3 className="text-lg font-medium mb-4">Trade Chat</h3>
-        <ScrollArea className="h-[300px] mb-4">
-          <div className="space-y-2">
+      <div className="p-5">
+        <h3 className="mb-4 flex items-center gap-2 font-display text-base font-extrabold">
+          <SendHorizontal className="h-4 w-4 text-primary" /> Messages
+        </h3>
+        <ScrollArea className="mb-4 h-[300px] pr-2">
+          <div className="flex flex-col gap-2.5">
+            {trade.messages.length === 0 && (
+              <p className="py-8 text-center text-sm text-muted-foreground">No messages yet — say hello.</p>
+            )}
             {trade.messages.map((msg) => {
               const isMine = msg.userId === currentUserId;
               const otherName =
@@ -98,13 +103,13 @@ export const TradeChat = ({ trade, tradeId, currentUserId, onMessageSent, onOpen
               return (
                 <div
                   key={msg.id}
-                  className={`p-3 rounded-md ${
+                  className={`w-fit max-w-[78%] rounded-2xl border p-3 text-sm leading-relaxed ${
                     isMine
-                      ? "bg-primary/10 text-right ml-auto w-fit max-w-[75%]"
-                      : "bg-secondary/10 text-left mr-auto w-fit max-w-[75%]"
+                      ? "ml-auto rounded-br-md border-primary/30 bg-primary/12"
+                      : "mr-auto rounded-bl-md border-border bg-secondary"
                   }`}
                 >
-                  <div className="text-xs text-muted-foreground">
+                  <div className="mb-0.5 font-display text-[10px] font-bold text-muted-foreground">
                     {isMine ? "You" : otherName}
                   </div>
                   {msg.message && <div className="mb-2">{msg.message}</div>}
@@ -116,7 +121,7 @@ export const TradeChat = ({ trade, tradeId, currentUserId, onMessageSent, onOpen
                       <SmartImage src={msg.imageUrl} alt="Trade image" className="max-h-48 object-cover" />
                     </div>
                   )}
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-[10px] text-muted-foreground">
                     {format(new Date(msg.createdAt), "Pp")}
                   </div>
                 </div>
@@ -149,7 +154,7 @@ export const TradeChat = ({ trade, tradeId, currentUserId, onMessageSent, onOpen
             <Button
               variant="outline"
               size="icon"
-              className="h-10 w-10"
+              className="h-10 w-10 shrink-0 rounded-full"
               onClick={() => fileInputRef.current?.click()}
             >
               <Paperclip className="h-4 w-4" />
@@ -157,8 +162,8 @@ export const TradeChat = ({ trade, tradeId, currentUserId, onMessageSent, onOpen
           )}
 
           <Textarea
-            placeholder="Type your message..."
-            className="flex-1 resize-none"
+            placeholder="Type your message…"
+            className="min-h-10 flex-1 resize-none rounded-2xl"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={(e) => {
@@ -169,6 +174,8 @@ export const TradeChat = ({ trade, tradeId, currentUserId, onMessageSent, onOpen
             }}
           />
           <Button
+            size="icon"
+            className="h-10 w-10 shrink-0 rounded-full"
             onClick={handleSend}
             disabled={(!newMessage.trim() && !selectedImage) || isSending || isUploading}
           >

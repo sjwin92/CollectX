@@ -6,6 +6,8 @@ import { CardItemProps } from "@/components/cards/CardItem";
 import TradeListingImage from "./listing/TradeListingImage";
 import TradeListingFooter from "./listing/TradeListingFooter";
 import TraderTrustBadge from "@/components/common/TraderTrustBadge";
+import CardTypeBadge from "@/components/pokemon/CardTypeBadge";
+import type { CardTypeMeta } from "@/lib/cardTypeLabel";
 
 interface TradeListingProps {
   listing: {
@@ -25,9 +27,10 @@ interface TradeListingProps {
   };
   onProposeTrade: () => void;
   featured?: boolean;
+  cardMeta?: CardTypeMeta | null;
 }
 
-const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListingProps) => {
+const TradeListing = ({ listing, onProposeTrade, featured = false, cardMeta }: TradeListingProps) => {
   const navigate = useNavigate();
   const isSale = (listing.listingType ?? 'trade') === 'sale';
 
@@ -62,7 +65,10 @@ const TradeListing = ({ listing, onProposeTrade, featured = false }: TradeListin
         />
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <h3 className="font-display text-lg font-bold leading-tight">{listing.cardOffered.name}</h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-display text-lg font-bold leading-tight">{listing.cardOffered.name}</h3>
+            <CardTypeBadge meta={cardMeta} />
+          </div>
 
           <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
             <span>@{listing.username}</span>

@@ -32,6 +32,7 @@ export interface TradeParticipant {
   userId: string;
   username: string;
   reputation: UserReputation;
+  reputationScore: number;
   tradeCount: number;
   successRate: number;
   offeringCards: TradeCard[];

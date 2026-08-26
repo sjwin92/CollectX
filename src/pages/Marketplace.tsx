@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import { useToast } from "@/hooks/use-toast";
 import TradeListing from "@/components/marketplace/TradeListing";
+import { useCardTypeMeta } from "@/hooks/useCardTypeMeta";
 import {
   Plus,
   Search,
@@ -351,21 +352,7 @@ const Marketplace = () => {
             </GlassCard>
           )
         ) : filteredListings.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {filteredListings.map((listing, i) => (
-              <div
-                key={listing.id}
-                className="anim-rise"
-                style={{ animationDelay: `${Math.min(i, 8) * 60 + 180}ms` }}
-              >
-                <TradeListing
-                  listing={listing}
-                  onProposeTrade={() => handleProposeTrade(listing.id)}
-                  featured={!!listing.featured}
-                />
-              </div>
-            ))}
-          </div>
+          <ListingsGrid listings={filteredListings} onPropose={handleProposeTrade} />
         ) : (
           <GlassCard className="p-8 text-center">
             <PackageOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
@@ -406,6 +393,31 @@ const Marketplace = () => {
       </main>
 
       <Footer />
+    </div>
+  );
+};
+
+/** Renders the listings grid; loads card type metadata for every visible card in one query. */
+const ListingsGrid = ({
+  listings,
+  onPropose,
+}: {
+  listings: ListingType[];
+  onPropose: (id: string) => void;
+}) => {
+  const cardMeta = useCardTypeMeta(listings.map((l) => l.cardOffered.id));
+  return (
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      {listings.map((listing, i) => (
+        <div key={listing.id} className="anim-rise" style={{ animationDelay: `${Math.min(i, 8) * 60 + 180}ms` }}>
+          <TradeListing
+            listing={listing}
+            onProposeTrade={() => onPropose(listing.id)}
+            featured={!!listing.featured}
+            cardMeta={cardMeta.get(listing.cardOffered.id) ?? null}
+          />
+        </div>
+      ))}
     </div>
   );
 };

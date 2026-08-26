@@ -151,11 +151,13 @@ export const ShippingInfoCard = ({ trade, tradeId, currentUserId, onUpdated }: P
 
   return (
     <GlassCard className="mb-6">
-      <div className="p-4 space-y-5">
-        <h3 className="text-lg font-medium flex items-center gap-2"><Truck className="h-5 w-5" /> Shipping</h3>
+      <div className="space-y-5 p-5">
+        <h3 className="flex items-center gap-2 font-display text-base font-extrabold">
+          <Truck className="h-5 w-5 text-primary" /> Shipping
+        </h3>
 
         {/* My address (private) */}
-        <div className="rounded-md border p-3">
+        <div className="rounded-xl border border-border bg-secondary/30 p-4">
           <div className="text-sm font-medium mb-2 flex items-center gap-2">
             <MapPin className="h-4 w-4" /> Your delivery address (private)
           </div>
@@ -190,7 +192,7 @@ export const ShippingInfoCard = ({ trade, tradeId, currentUserId, onUpdated }: P
                 <Input id="country" value={address.country ?? ""} onChange={(e) => setAddress({ ...address, country: e.target.value })} />
               </div>
               <div className="sm:col-span-2">
-                <Button size="sm" onClick={saveAddress} disabled={savingAddress}>
+                <Button size="sm" className="rounded-full" onClick={saveAddress} disabled={savingAddress}>
                   {savingAddress ? <>Saving...<Loader2 className="ml-2 h-4 w-4 animate-spin" /></> : (myAddressQ.data ? "Update address" : "Save address")}
                 </Button>
               </div>
@@ -203,7 +205,7 @@ export const ShippingInfoCard = ({ trade, tradeId, currentUserId, onUpdated }: P
         </div>
 
         {/* Destination — shown only to the caller (they need it to ship) */}
-        <div className="rounded-md border p-3">
+        <div className="rounded-xl border border-border bg-secondary/30 p-4">
           <div className="text-sm font-medium mb-2 flex items-center gap-2">
             <MapPin className="h-4 w-4" /> Ship your parcel to
           </div>
@@ -222,11 +224,16 @@ export const ShippingInfoCard = ({ trade, tradeId, currentUserId, onUpdated }: P
         </div>
 
         {/* Your parcel */}
-        <div className="rounded-md border p-3">
+        <div className="rounded-xl border border-border bg-secondary/30 p-4">
           <div className="text-sm font-medium mb-2">Your parcel</div>
           {mine ? (
             <div className="text-sm space-y-1">
-              <div>Status: <span className="capitalize">{mine.status}</span></div>
+              <div className="flex items-center gap-2">
+                Status:
+                <span className={`inline-flex items-center rounded-full border px-2 py-[2px] text-xs font-semibold capitalize ${["shipped", "delivered"].includes(mine.status) ? "border-emerald-500/30 bg-emerald-500/12 text-emerald-300" : "border-border bg-secondary text-muted-foreground"}`}>
+                  {mine.status}
+                </span>
+              </div>
               <div>Carrier: {mine.carrier || "—"}</div>
               <div className="flex items-center gap-2">
                 Tracking: {mine.tracking_number || "—"}
@@ -251,7 +258,7 @@ export const ShippingInfoCard = ({ trade, tradeId, currentUserId, onUpdated }: P
                 <Label htmlFor="tracking">Tracking number</Label>
                 <Input id="tracking" value={tracking} onChange={(e) => setTracking(e.target.value)} />
               </div>
-              <Button size="sm" onClick={submitShipped} disabled={saving || !destinationReady}>
+              <Button size="sm" className="rounded-full" onClick={submitShipped} disabled={saving || !destinationReady}>
                 {saving ? <>Saving...<Loader2 className="ml-2 h-4 w-4 animate-spin" /></> : "Mark as shipped"}
               </Button>
               {!destinationReady && (
@@ -264,11 +271,16 @@ export const ShippingInfoCard = ({ trade, tradeId, currentUserId, onUpdated }: P
         </div>
 
         {/* Their parcel (safe fields only) */}
-        <div className="rounded-md border p-3">
+        <div className="rounded-xl border border-border bg-secondary/30 p-4">
           <div className="text-sm font-medium mb-2">Their parcel</div>
           {theirs ? (
             <div className="text-sm space-y-1">
-              <div>Status: <span className="capitalize">{theirs.status}</span></div>
+              <div className="flex items-center gap-2">
+                Status:
+                <span className={`inline-flex items-center rounded-full border px-2 py-[2px] text-xs font-semibold capitalize ${["shipped", "delivered"].includes(theirs.status) ? "border-emerald-500/30 bg-emerald-500/12 text-emerald-300" : "border-border bg-secondary text-muted-foreground"}`}>
+                  {theirs.status}
+                </span>
+              </div>
               <div>Carrier: {theirs.carrier || "—"}</div>
               <div className="flex items-center gap-2">
                 Tracking: {theirs.tracking_number || "—"}
