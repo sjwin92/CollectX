@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { SmartImage } from "@/components/common/SmartImage";
 import { Skeleton } from "@/components/ui/skeleton";
 import TraderTrustBadge from "@/components/common/TraderTrustBadge";
+import ReportContentButton from "@/components/common/ReportContentButton";
 import VerifiedStoreBadge from "@/components/marketplace/VerifiedStoreBadge";
 import { getActiveStoreMap } from "@/services/storeService";
 import CardTypeBadge from "@/components/pokemon/CardTypeBadge";
@@ -210,9 +211,12 @@ const ListingDetail = () => {
                     </span>
                   )}
                 </div>
-                <Link to={`/card/${cardId}`} className="text-xs text-primary hover:underline">
-                  View card
-                </Link>
+                <div className="flex items-center gap-3">
+                  <ReportContentButton contentType="listing" contentId={listing.id} asLink />
+                  <Link to={`/card/${cardId}`} className="text-xs text-primary hover:underline">
+                    View card
+                  </Link>
+                </div>
               </div>
 
               {listing.description && (

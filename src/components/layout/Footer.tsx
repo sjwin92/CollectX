@@ -54,6 +54,9 @@ const Footer = () => {
               <Link to="/buyer-protection" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Buyer Protection &amp; Disputes
               </Link>
+              <Link to="/prohibited-items" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Prohibited Items
+              </Link>
             </nav>
           </div>
         </div>

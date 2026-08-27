@@ -144,7 +144,11 @@ const Terms: React.FC = () => {
       </UL>
 
       <H2 id="prohibited">7. Prohibited items and conduct</H2>
-      <P>You must not use CollectX to list, trade, sell or promote:</P>
+      <P>
+        The <a className="underline" href="/prohibited-items">Prohibited Items &amp; Conduct</a> page
+        has the full list and is part of these terms. In summary, you must not use CollectX to list,
+        trade, sell or promote:
+      </P>
       <UL>
         <li>counterfeit, replica, proxy or unlicensed cards or sealed product;</li>
         <li>stolen goods or goods you cannot legally sell;</li>

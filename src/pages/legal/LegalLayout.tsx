@@ -27,6 +27,7 @@ const pages = [
   { to: "/terms", label: "Terms of Service" },
   { to: "/privacy", label: "Privacy Policy" },
   { to: "/buyer-protection", label: "Buyer Protection & Disputes" },
+  { to: "/prohibited-items", label: "Prohibited Items" },
 ];
 
 export const H2: React.FC<React.PropsWithChildren<{ id?: string }>> = ({ id, children }) => (
