@@ -56,6 +56,9 @@ const StoreInventory = lazy(() => import("./pages/StoreInventory"));
 const StoreBuylist = lazy(() => import("./pages/StoreBuylist"));
 const StorePlan = lazy(() => import("./pages/StorePlan"));
 const StorePublic = lazy(() => import("./pages/StorePublic"));
+const Terms = lazy(() => import("./pages/legal/Terms"));
+const Privacy = lazy(() => import("./pages/legal/Privacy"));
+const BuyerProtection = lazy(() => import("./pages/legal/BuyerProtection"));
 
 const RouteFallback = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -89,6 +92,9 @@ function App() {
                 <Route path="/products" element={<Products />} />
                 <Route path="/for-stores" element={<ForStores />} />
                 <Route path="/store/:slug" element={<StorePublic />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/buyer-protection" element={<BuyerProtection />} />
 
                 {/* Protected routes */}
                 <Route path="/trades" element={<ProtectedRoute><Trades /></ProtectedRoute>} />
