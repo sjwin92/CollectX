@@ -197,7 +197,7 @@ const Navbar = () => {
                       </PrefetchLink>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <PrefetchLink to="/collection-boxes">
+                      <PrefetchLink to="/collection?tab=boxes">
                         <Box className="mr-2 h-4 w-4" />
                         <span>Collection Boxes</span>
                       </PrefetchLink>

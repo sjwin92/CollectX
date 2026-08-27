@@ -17,10 +17,7 @@ const CollectionHeader = ({ onAddCard, onRefresh }: CollectionHeaderProps) => {
           <RefreshCw className="h-4 w-4 mr-2" />
           Refresh
         </Button>
-        <Button size="sm" onClick={() => {
-          console.log("Add Cards button clicked - navigating to search");
-          window.location.href = "/pokemon-cards";
-        }}>
+        <Button size="sm" onClick={onAddCard}>
           <Plus className="h-4 w-4 mr-2" />
           Add Cards
         </Button>

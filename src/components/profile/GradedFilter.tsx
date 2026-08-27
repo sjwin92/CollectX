@@ -1,39 +1,33 @@
-
 import React from "react";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Shield } from "lucide-react";
+import { BadgeCheck } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface GradedFilterProps {
   showGradedOnly: boolean;
   onGradedFilterChange: (checked: boolean) => void;
 }
 
+/**
+ * Quick filter for the collection grid — a single pill toggle that matches the
+ * grade chip shown on the cards themselves (same BadgeCheck icon + emerald
+ * accent), rather than a stray checkbox.
+ */
 const GradedFilter = ({ showGradedOnly, onGradedFilterChange }: GradedFilterProps) => {
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="graded-filter" 
-          checked={showGradedOnly}
-          onCheckedChange={(checked) => onGradedFilterChange(checked as boolean)}
-        />
-        <Label 
-          htmlFor="graded-filter" 
-          className="text-sm font-medium cursor-pointer flex items-center gap-1.5"
-        >
-          <Shield className="h-4 w-4" />
-          Graded
-        </Label>
-      </div>
-      
-      {showGradedOnly && (
-        <Badge variant="outline" className="bg-primary/10 text-primary text-xs">
-          Graded Only
-        </Badge>
+    <button
+      type="button"
+      aria-pressed={showGradedOnly}
+      onClick={() => onGradedFilterChange(!showGradedOnly)}
+      className={cn(
+        "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+        showGradedOnly
+          ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300"
+          : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground",
       )}
-    </div>
+    >
+      <BadgeCheck className="h-4 w-4" />
+      Graded only
+    </button>
   );
 };
 
