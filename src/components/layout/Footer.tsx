@@ -14,7 +14,7 @@ const Footer = () => {
               <span className="font-bold text-lg">CollectX</span>
             </Link>
             <p className="text-sm text-muted-foreground">
-              Card-for-card trading and collection management for Pokémon collectors.
+              Buy, sell and trade Pokémon cards. Collection tracking and camera grading built in.
             </p>
           </div>
 

@@ -236,10 +236,10 @@ const Marketplace = () => {
               Marketplace
             </div>
             <h1 className="font-display text-4xl font-extrabold leading-[1.02] md:text-[46px]">
-              Trade &amp; buy singles
+              Buy &amp; sell singles
             </h1>
             <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
-              Browse cards offered by collectors. Propose a card-for-card swap, buy outright, or list your own.
+              Cards from collectors and shops. Buy outright, make a trade offer, or list your own for sale.
             </p>
           </div>
           <Button

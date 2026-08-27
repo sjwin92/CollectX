@@ -84,14 +84,14 @@ const HeroCards = () => {
 
 const FEATURES = [
   {
-    icon: ArrowLeftRight,
-    title: "Card-for-card trades",
-    body: "Propose swaps from real collection cards. Server-validated, with in-trade messaging, tracking, and two-party receipt confirmation.",
+    icon: CircleDollarSign,
+    title: "Sell in minutes",
+    body: "List a card with a price and it's live to collectors right away. Payment is held in escrow and released to you once the buyer confirms it arrived.",
   },
   {
-    icon: CircleDollarSign,
-    title: "Buy & sell for cash",
-    body: "List singles for sale. Payment is held in escrow and released to the seller only once the buyer confirms the card arrived.",
+    icon: ArrowLeftRight,
+    title: "Or trade card-for-card",
+    body: "Prefer a swap? Propose card-for-card trades from your real collection — server-validated, with messaging, tracking and two-party receipt confirmation.",
   },
   {
     icon: ScanLine,
@@ -137,17 +137,17 @@ const Index = () => {
           <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
             <div className="anim-rise">
               <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-                Collection · Trading · Marketplace
+                Buy · Sell · Trade
               </p>
               <h1 className="font-display text-4xl font-extrabold leading-[1.03] md:text-[54px] md:leading-[1.02]">
-                Trade, sell and track
+                Buy &amp; sell
                 <br className="hidden sm:block" /> your{" "}
                 <span className="text-primary">Pokémon cards</span>
               </h1>
               <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground md:text-[17px]">
-                Manage your whole collection, swap card-for-card with other collectors, buy and
-                sell singles with escrow-protected payments, grade with your camera, and watch
-                your portfolio value move with the market.
+                List a card in minutes and buy singles from collectors and shops — with
+                escrow-protected payments so both sides are covered. Trade card-for-card, grade
+                with your camera, and track your collection's value.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Button
@@ -155,13 +155,13 @@ const Index = () => {
                   asChild
                   className="rounded-full px-6 shadow-[0_16px_36px_-14px_hsl(var(--primary)/0.7)]"
                 >
-                  <Link to={isSignedIn ? "/collection" : "/auth"}>
-                    {isSignedIn ? "Go to your collection" : "Get started"} <ArrowRight className="ml-2 h-4 w-4" />
+                  <Link to={isSignedIn ? "/marketplace" : "/auth"}>
+                    {isSignedIn ? "Sell a card" : "Start selling"} <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
                 <Button size="lg" variant="outline" asChild className="rounded-full px-6">
-                  <Link to={isSignedIn ? "/grade" : "/pokemons"}>
-                    {isSignedIn ? "Grade a card" : "Browse cards"}
+                  <Link to={isSignedIn ? "/marketplace" : "/pokemons"}>
+                    {isSignedIn ? "Browse the marketplace" : "Browse cards"}
                   </Link>
                 </Button>
                 <Button size="lg" variant="ghost" asChild className="rounded-full px-5">
@@ -192,7 +192,7 @@ const Index = () => {
               Everything a serious collector needs
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">
-              One place for the collection, the trades, the marketplace, and the numbers behind them.
+              One place to buy, sell, trade, grade and track — with the numbers behind them.
             </p>
           </div>
 
@@ -227,12 +227,12 @@ const Index = () => {
         <div className="aura pointer-events-none absolute left-1/2 top-1/2 h-[300px] w-[640px] -translate-x-1/2 -translate-y-1/2" />
         <div className="container relative text-center">
           <h2 className="font-display text-3xl font-extrabold md:text-[40px]">
-            {isSignedIn ? "Pick up where you left off" : "Start your collection"}
+            {isSignedIn ? "Pick up where you left off" : "List your first card"}
           </h2>
           <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground md:text-base">
             {isSignedIn
-              ? "Jump back into your collection, trades and the marketplace."
-              : "Add your cards, mark what's up for trade, and make your first move."}
+              ? "Jump back into the marketplace, your trades and your collection."
+              : "Add your cards, put one up for sale, and see what other collectors are selling."}
           </p>
           <Button
             size="lg"
