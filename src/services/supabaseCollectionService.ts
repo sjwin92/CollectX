@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { ExtendedCardItemProps } from '@/types/cardTypes';
 import { UploadedCardImage } from '@/services/cardImageUploadService';
+import { normalizeCondition } from '@/lib/cardCondition';
 
 export type SupabaseUserCard = Tables<'user_cards'>;
 type SupabaseUserCardInsert = TablesInsert<'user_cards'>;
@@ -72,6 +73,12 @@ export const addCardToCollection = async (newCard: ExtendedCardItemProps): Promi
   if (!user) throw new Error('User not authenticated');
 
   const productType = toDatabaseProductType(newCard.productType);
+  const isGraded = newCard.graded || false;
+  // Sealed products keep the literal "SEALED"; singles use the canonical
+  // condition vocabulary (see src/lib/cardCondition.ts). Matching on a
+  // non-normalised string is how duplicate rows crept in.
+  const condition = productType !== 'single' ? 'SEALED' : normalizeCondition(newCard.condition);
+  const gradingCompany = isGraded ? (newCard.gradingCompany || null) : null;
 
   const supabaseCard: SupabaseUserCardInsert = {
     user_id: user.id,
@@ -83,27 +90,33 @@ export const addCardToCollection = async (newCard: ExtendedCardItemProps): Promi
     rarity: newCard.rarity || null,
     card_image: newCard.imageUrl || null,
     quantity: newCard.quantity || 1,
-    condition: newCard.condition || 'near_mint',
-    is_graded: newCard.graded || false,
-    grading_company: newCard.gradingCompany || null,
-    grade_score: newCard.gradeScore || null,
+    condition,
+    is_graded: isGraded,
+    grading_company: gradingCompany,
+    grade_score: isGraded ? (newCard.gradeScore || null) : null,
     for_trade: newCard.forTrade || false,
     trade_value: parseOptionalNumber(newCard.estimatedValue),
     product_type: productType,
   };
 
-  const { data: existingCard, error: existingCardError } = await supabase
+  // Find an existing identical line to bump instead of inserting a new row.
+  // NOTE: PostgREST's `.eq(col, null)` never matches a NULL — must use
+  // `.is(col, null)`, otherwise every non-graded card looks "new".
+  let matchQuery = supabase
     .from('user_cards')
     .select('*')
     .eq('user_id', user.id)
     .eq('card_id', newCard.id)
-    .eq('condition', newCard.condition || 'near_mint')
-    .eq('is_graded', newCard.graded || false)
-    .eq('grading_company', newCard.gradingCompany || null)
-    .eq('product_type', productType)
-    .maybeSingle();
+    .eq('condition', condition)
+    .eq('is_graded', isGraded)
+    .eq('product_type', productType);
+  matchQuery = gradingCompany
+    ? matchQuery.eq('grading_company', gradingCompany)
+    : matchQuery.is('grading_company', null);
 
+  const { data: existingCards, error: existingCardError } = await matchQuery.order('created_at', { ascending: true });
   if (existingCardError) throw existingCardError;
+  const existingCard = existingCards?.[0] ?? null;
 
   let userCardId: string;
 
@@ -224,10 +237,16 @@ export const updateCardInCollection = async (
   } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
 
+  // Setting quantity to 0 (or below) removes the card entirely.
+  if (updates.quantity !== undefined && Number(updates.quantity) <= 0) {
+    await removeCardFromCollection(dbId);
+    return;
+  }
+
   const supabaseUpdates: SupabaseUserCardUpdate = {};
 
   if (updates.quantity !== undefined) supabaseUpdates.quantity = updates.quantity;
-  if (updates.condition !== undefined) supabaseUpdates.condition = updates.condition;
+  if (updates.condition !== undefined) supabaseUpdates.condition = normalizeCondition(updates.condition);
   if (updates.graded !== undefined) supabaseUpdates.is_graded = updates.graded;
   if (updates.gradingCompany !== undefined) supabaseUpdates.grading_company = updates.gradingCompany || null;
   if (updates.gradeScore !== undefined) supabaseUpdates.grade_score = updates.gradeScore || null;

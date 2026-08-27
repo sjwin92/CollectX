@@ -129,11 +129,12 @@ const EditCollectionCardModal: React.FC<EditCollectionCardModalProps> = ({
         tradePreferences: forTrade ? tradePreferences : undefined
       });
 
-      toast({
-        title: "Card updated!",
-        description: "Your collection card has been updated successfully."
-      });
-      
+      toast(
+        quantity === 0
+          ? { title: "Removed from collection", description: card.name }
+          : { title: "Card updated", description: "Your changes have been saved." }
+      );
+
       onUpdated();
       onClose();
     } catch (error) {
@@ -225,13 +226,16 @@ const EditCollectionCardModal: React.FC<EditCollectionCardModalProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="quantity">Quantity</Label>
-              <Input 
+              <Input
                 id="quantity"
-                type="number" 
-                value={quantity} 
-                onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-                min="1"
+                type="number"
+                value={quantity}
+                onChange={(e) => setQuantity(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                min="0"
               />
+              {quantity === 0 && (
+                <p className="text-xs text-destructive">Saving with 0 removes this card from your collection.</p>
+              )}
             </div>
 
             <div className="space-y-2">
