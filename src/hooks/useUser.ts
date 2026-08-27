@@ -8,6 +8,7 @@ export interface Profile {
   username: string | null;
   display_name: string | null;
   avatar_url: string | null;
+  avatar_config: Record<string, number> | null;
   bio: string | null;
   location: string | null;
   reputation_score: number;

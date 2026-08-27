@@ -10,12 +10,15 @@ import { Label } from "@/components/ui/label";
 import { useUser } from "@/hooks/useUser";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Camera, Save, User } from "lucide-react";
+import { Camera, Save, User, Sparkles } from "lucide-react";
+import AvatarBuilder from "@/components/profile/AvatarBuilder";
+import type { AvatarConfig } from "@/lib/pixelAvatar";
 
 const AccountSettings = () => {
   const { user, profile } = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [builderOpen, setBuilderOpen] = useState(false);
   
   const [formData, setFormData] = useState({
     display_name: profile?.display_name || "",
@@ -191,9 +194,18 @@ const AccountSettings = () => {
                 <div>
                   <h3 className="font-medium">Profile Picture</h3>
                   <p className="text-sm text-muted-foreground">
-                    {uploading ? 'Uploading...' : 'Click the camera icon to upload a new avatar'}
+                    {uploading ? 'Uploading...' : 'Upload a photo, or build a retro pixel avatar.'}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="mt-2 rounded-full"
+                    onClick={() => setBuilderOpen(true)}
+                  >
+                    <Sparkles className="mr-1.5 h-4 w-4" /> Design pixel avatar
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2">
                     JPG, PNG up to 5MB
                   </p>
                 </div>
@@ -254,6 +266,13 @@ const AccountSettings = () => {
           </GlassCard>
         </div>
       </main>
+
+      <AvatarBuilder
+        open={builderOpen}
+        onClose={() => setBuilderOpen(false)}
+        initial={(profile?.avatar_config as AvatarConfig | undefined) ?? null}
+        onSaved={(url) => setFormData((prev) => ({ ...prev, avatar_url: url }))}
+      />
 
       <Footer />
     </div>
