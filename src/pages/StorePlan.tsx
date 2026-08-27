@@ -5,7 +5,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Check, Store as StoreIcon, Sparkles, Users, Trash2 } from "lucide-react";
+import { Loader2, Check, Store as StoreIcon, Crown, Users, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getMyStore } from "@/services/storeService";
 import {
@@ -143,7 +143,7 @@ const StorePlan: React.FC = () => {
             <div key={p.id} className={`flex flex-col rounded-2xl border p-4 ${isCurrent ? "border-gold/50 ring-1 ring-gold/20" : "border-border"}`}>
               <div className="flex items-center justify-between">
                 <h3 className="font-display text-lg font-extrabold">{p.name}</h3>
-                {p.id === "pro" && <Sparkles className="h-4 w-4 text-gold" />}
+                {p.id === "pro" && <Crown className="h-4 w-4 text-gold" />}
               </div>
               <div className="mt-1 font-display text-2xl font-extrabold">£{p.price_gbp.toFixed(0)}<span className="text-sm font-semibold text-muted-foreground">/mo</span></div>
               <div className="mt-1 text-xs font-semibold text-gold">Seller commission {pct(effective)}</div>

@@ -5,7 +5,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, RefreshCw, Trash2, Upload, Store as StoreIcon, Plus, Sparkles } from "lucide-react";
+import { Loader2, RefreshCw, Trash2, Upload, Store as StoreIcon, Plus, Megaphone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getMyStore } from "@/services/storeService";
@@ -310,7 +310,7 @@ const InvRow = ({
       <td className="px-3 py-2 text-center">
         {promoEndsAt ? (
           <span className="inline-flex items-center gap-1 rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-[11px] font-semibold text-gold">
-            <Sparkles className="h-3 w-3" />
+            <Megaphone className="h-3 w-3" />
             {promoEndsAt === "pending" ? "Pending" : `Ends ${new Date(promoEndsAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`}
           </span>
         ) : (
@@ -320,7 +320,7 @@ const InvRow = ({
             className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-semibold text-muted-foreground hover:border-gold/40 hover:text-gold disabled:opacity-40"
             title={!it.listed || it.price_gbp == null ? "List and price the card first" : `Feature for 7 days · £${featurePrice.toFixed(2)}`}
           >
-            {promoting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+            {promoting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Megaphone className="h-3 w-3" />}
             £{featurePrice.toFixed(2)}
           </button>
         )}

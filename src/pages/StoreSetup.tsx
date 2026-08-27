@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Store, ExternalLink, Sparkles } from "lucide-react";
+import { Loader2, Store, ExternalLink, Megaphone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getMyStore, updateMyStore, activateStore } from "@/services/storeService";
 import { createPromotionCheckout, getMyPromotions, getPromotionPrices } from "@/services/storePromotionService";
@@ -191,13 +191,13 @@ const StoreSetup: React.FC = () => {
           {store.status === "active" && (
             promos?.storefrontPin ? (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-semibold text-gold">
-                <Sparkles className="h-3.5 w-3.5" /> Pinned · ends {new Date(promos.storefrontPin).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                <Megaphone className="h-3.5 w-3.5" /> Pinned · ends {new Date(promos.storefrontPin).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
               </span>
             ) : promos?.pendingStorefront ? (
               <span className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-muted-foreground">Pin checkout pending</span>
             ) : (
               <Button variant="outline" className="rounded-full" onClick={pinStorefront} disabled={pinning}>
-                {pinning ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Sparkles className="mr-1.5 h-4 w-4" /> Feature storefront · £{(promoPrices?.storefront_pin_gbp ?? 9.99).toFixed(2)}</>}
+                {pinning ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Megaphone className="mr-1.5 h-4 w-4" /> Feature storefront · £{(promoPrices?.storefront_pin_gbp ?? 9.99).toFixed(2)}</>}
               </Button>
             )
           )}

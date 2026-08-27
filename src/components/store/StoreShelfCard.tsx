@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2, ShoppingBag, Sparkles } from "lucide-react";
+import { Loader2, ShoppingBag, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SmartImage } from "@/components/common/SmartImage";
 import { useToast } from "@/hooks/use-toast";
@@ -55,7 +55,7 @@ const StoreShelfCard: React.FC<{ item: StoreShelfItem }> = ({ item }) => {
         </span>
         {item.featured && (
           <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full border border-gold/40 bg-gold/15 px-2 py-0.5 text-[10px] font-semibold text-gold">
-            <Sparkles className="h-3 w-3" /> Featured
+            <Megaphone className="h-3 w-3" /> Featured
           </span>
         )}
       </div>
