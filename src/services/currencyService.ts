@@ -6,9 +6,13 @@ interface CachedRate {
   timestamp: number;
 }
 
+// frankfurter.dev is the current host — api.frankfurter.app now 301-redirects
+// to it, and the cross-origin redirect breaks fetch()'s CORS check.
+const FX_URL = 'https://api.frankfurter.dev/v1/latest?base=USD&symbols=GBP';
+
 export const refreshUsdToGbpRate = async (): Promise<void> => {
   try {
-    const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=GBP');
+    const res = await fetch(FX_URL);
     if (!res.ok) return;
     const data = await res.json();
     const rate = data.rates?.GBP;
@@ -30,7 +34,7 @@ export const getUsdToGbpRate = (): number => {
   } catch {
     // ignore parse errors
   }
-  return 0.79;
+  return 0.74; // fallback only — refreshed from the FX API on load
 };
 
 export const usdToGbp = (usd: number): number =>
