@@ -19,6 +19,8 @@ import {
   type OrderAddress,
 } from "@/services/storeBuylistService";
 import { useBuylistOrderMutations } from "@/components/orders/useBuylistOrderMutations";
+import ShipmentForm from "@/components/orders/ShipmentForm";
+import ShipmentInfo from "@/components/orders/ShipmentInfo";
 
 const BuylistOrderDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -26,8 +28,6 @@ const BuylistOrderDetail = () => {
   const { toast } = useToast();
   const { user } = useUser();
   const [address, setAddress] = useState<OrderAddress>({});
-  const [tracking, setTracking] = useState("");
-  const [carrier, setCarrier] = useState("");
   const [disputeReason, setDisputeReason] = useState("");
   const [showDisputeForm, setShowDisputeForm] = useState(false);
   const [paying, setPaying] = useState(false);
@@ -149,10 +149,7 @@ const BuylistOrderDetail = () => {
               )}
 
               {shipment?.tracking_number && (
-                <div className="text-sm">
-                  <p className="font-medium">Shipment</p>
-                  <p className="text-muted-foreground">{shipment.carrier} · {shipment.tracking_number}</p>
-                </div>
+                <ShipmentInfo carrier={shipment.carrier} trackingNumber={shipment.tracking_number} />
               )}
             </CardContent>
           </Card>
@@ -189,12 +186,11 @@ const BuylistOrderDetail = () => {
           {canMarkShipped && (
             <Card>
               <CardHeader><CardTitle className="text-base">Mark as shipped</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <Input placeholder="Carrier (e.g. Royal Mail)" value={carrier} onChange={(e) => setCarrier(e.target.value)} />
-                <Input placeholder="Tracking number" value={tracking} onChange={(e) => setTracking(e.target.value)} />
-                <Button onClick={() => markShipped.mutate({ tracking, carrier })} disabled={markShipped.isPending || !tracking || !carrier}>
-                  {markShipped.isPending ? "Saving..." : "Mark as shipped"}
-                </Button>
+              <CardContent>
+                <ShipmentForm
+                  onSubmit={(tracking, carrier) => markShipped.mutate({ tracking, carrier })}
+                  isPending={markShipped.isPending}
+                />
               </CardContent>
             </Card>
           )}
