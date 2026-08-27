@@ -9,7 +9,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/useUser";
 import { createMarketplaceListing, getSellerStripeStatus, startSellerOnboarding } from "@/services/supabaseMarketplaceService";
-import { ExtendedCardItemWithDB, getTradableCards } from "@/services/supabaseCollectionService";
+import { ExtendedCardItemWithDB, getTradableCards, updateCardInCollection } from "@/services/supabaseCollectionService";
+import { CARD_CONDITIONS, normalizeCondition } from "@/lib/cardCondition";
 import { useQuery } from "@tanstack/react-query";
 import { SmartImage } from "@/components/common/SmartImage";
 
@@ -28,6 +29,7 @@ const CreateListingModal = ({
 }: CreateListingModalProps) => {
   const [internalSelectedCard, setInternalSelectedCard] = useState<ExtendedCardItemWithDB | null>(selectedCard);
   const [listingType, setListingType] = useState<'trade' | 'sale'>('trade');
+  const [condition, setCondition] = useState<string>("NM");
   const [askingPrice, setAskingPrice] = useState<string>("");
   const [tradePreferences, setTradePreferences] = useState<string>("");
   const [description, setDescription] = useState<string>("");
@@ -70,6 +72,10 @@ const CreateListingModal = ({
   };
 
   const currentCard = internalSelectedCard || selectedCard;
+
+  React.useEffect(() => {
+    if (currentCard) setCondition(normalizeCondition(currentCard.condition));
+  }, [currentCard]);
 
   const handleSubmit = async () => {
     if (!user) {
@@ -121,7 +127,14 @@ const CreateListingModal = ({
     setIsLoading(true);
 
     try {
-      await createMarketplaceListing(currentCard, {
+      // If the seller adjusted the condition, sync it onto the collection copy
+      // first — the listing snapshot reads from the user_cards row.
+      const cardDbId = (currentCard as ExtendedCardItemWithDB).dbId;
+      if (!currentCard.graded && cardDbId && normalizeCondition(currentCard.condition) !== condition) {
+        await updateCardInCollection(cardDbId, { condition });
+      }
+
+      await createMarketplaceListing({ ...currentCard, condition } as ExtendedCardItemWithDB, {
         listing_type: listingType,
         asking_price: listingType === 'sale' ? priceValue : undefined,
         trade_preferences: tradePreferences,
@@ -246,9 +259,7 @@ const CreateListingModal = ({
                 <p className="text-sm text-muted-foreground">
                   {currentCard.set?.name} • {currentCard.rarity}
                 </p>
-                <p className="text-sm">
-                  Condition: {currentCard.condition} • Qty: {currentCard.quantity}
-                </p>
+                <p className="text-sm">Qty: {currentCard.quantity}</p>
                 {currentCard.graded && (
                   <p className="text-sm">
                     {currentCard.gradingCompany} {currentCard.gradeScore}
@@ -271,6 +282,25 @@ const CreateListingModal = ({
                   <ToggleGroupItem value="sale" aria-label="Sell for cash">Sell for cash</ToggleGroupItem>
                 </ToggleGroup>
               </div>
+
+              {!currentCard.graded && (
+                <div className="space-y-2">
+                  <Label>Condition</Label>
+                  <Select value={condition} onValueChange={setCondition}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {CARD_CONDITIONS.map((c) => (
+                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {normalizeCondition(currentCard.condition) !== condition && (
+                    <p className="text-xs text-muted-foreground">
+                      This also updates the condition on your collection copy.
+                    </p>
+                  )}
+                </div>
+              )}
 
               {listingType === 'sale' ? (
                 <>

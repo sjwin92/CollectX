@@ -14,6 +14,7 @@ import { getMarketplaceStoreShelf } from "@/services/storeOrderService";
 import { useCardTypeMeta } from "@/hooks/useCardTypeMeta";
 import { useCardPrices } from "@/hooks/useCardPrices";
 import { useActiveStores } from "@/hooks/useActiveStores";
+import { CARD_CONDITIONS, normalizeCondition } from "@/lib/cardCondition";
 import {
   Plus,
   Search,
@@ -171,7 +172,7 @@ const Marketplace = () => {
           (activeCategory === 'trending' && (listing.interestedCount > 0 || listing.viewsCount > 0));
 
         const matchesCondition = selectedConditions.length === 0 ||
-          selectedConditions.includes(listing.cardOffered.condition);
+          selectedConditions.includes(normalizeCondition(listing.cardOffered.condition));
 
         return matchesSearch && matchesCategory && matchesCondition;
       })
@@ -273,14 +274,14 @@ const Marketplace = () => {
                 <DropdownMenuLabel>Filter by Condition</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  {["Mint", "Near Mint", "Excellent", "Good", "Played", "Poor"].map((condition) => (
-                    <DropdownMenuItem key={condition} className="flex items-center gap-2">
-                      <Checkbox 
-                        id={`condition-${condition}`} 
-                        checked={selectedConditions.includes(condition)}
-                        onCheckedChange={() => toggleConditionFilter(condition)}
+                  {CARD_CONDITIONS.map(({ value, label }) => (
+                    <DropdownMenuItem key={value} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`condition-${value}`}
+                        checked={selectedConditions.includes(value)}
+                        onCheckedChange={() => toggleConditionFilter(value)}
                       />
-                      <Label htmlFor={`condition-${condition}`}>{condition}</Label>
+                      <Label htmlFor={`condition-${value}`}>{label}</Label>
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuGroup>

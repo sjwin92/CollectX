@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import CardImageGallery from "@/components/pokemon/collection/CardImageGallery";
 import CardTypeBadge from "@/components/pokemon/CardTypeBadge";
 import type { CardTypeMeta } from "@/lib/cardTypeLabel";
+import { conditionLabel } from "@/lib/cardCondition";
 import { Button } from "@/components/ui/button";
 // Temporarily removing enhanced service to debug image issues
 // import { enhancedImageService } from "@/services/enhancedImageService";
@@ -176,7 +177,7 @@ const CardItem = ({
             
             {showCondition && (
               <Badge variant={conditionVariant()} size="sm">
-                {condition}
+                {conditionLabel(condition)}
               </Badge>
             )}
             

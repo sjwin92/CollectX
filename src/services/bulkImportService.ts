@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { addCardToCollection, type ExtendedCardItemWithDB } from "@/services/supabaseCollectionService";
 import { createMarketplaceListing } from "@/services/supabaseMarketplaceService";
 import { upsertSku } from "@/services/storeInventoryService";
+import { normalizeCondition } from "@/lib/cardCondition";
 
 export interface ParsedRow {
   line: number;
@@ -102,7 +103,7 @@ export function parseImportCsv(text: string): { rows: ParsedRow[]; errors: strin
       name,
       set_id: get("set_id").toLowerCase(),
       number: get("number"),
-      condition: get("condition") || "near_mint",
+      condition: normalizeCondition(get("condition") || "NM"),
       quantity: qty,
       cost: num("cost"),
       price: num("price"),
@@ -158,7 +159,8 @@ export async function runBulkImport(
 ): Promise<ImportSummary> {
   const resolved = await resolveCards(rows);
   const out: ImportRowResult[] = [];
-  let added = 0, listed = 0, skipped = 0, errors = 0;
+  let added = 0, listed = 0, errors = 0;
+  const skipped = 0;
   const target = opts.target ?? "collection";
 
   for (const r of rows) {

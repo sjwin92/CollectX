@@ -22,6 +22,7 @@ import {
   inventoryStats,
   type InventoryItem,
 } from "@/services/storeInventoryService";
+import { CARD_CONDITIONS } from "@/lib/cardCondition";
 
 const gbp = (n?: number | null) =>
   n == null ? "—" : `£${Number(n).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -352,7 +353,7 @@ const AddSku = ({ onAdded, defaultRuleId }: { onAdded: () => void; defaultRuleId
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [f, setF] = useState({ name: "", set_id: "", number: "", condition: "near_mint", quantity: "1", cost: "" });
+  const [f, setF] = useState({ name: "", set_id: "", number: "", condition: "NM", quantity: "1", cost: "" });
 
   const add = async () => {
     if (!f.name.trim()) return;
@@ -389,7 +390,7 @@ const AddSku = ({ onAdded, defaultRuleId }: { onAdded: () => void; defaultRuleId
         price_rule_id: defaultRuleId ?? null,
       });
       toast({ title: "Added to inventory", description: name });
-      setF({ name: "", set_id: "", number: "", condition: "near_mint", quantity: "1", cost: "" });
+      setF({ name: "", set_id: "", number: "", condition: "NM", quantity: "1", cost: "" });
       setOpen(false);
       onAdded();
     } catch (e) {
@@ -414,8 +415,8 @@ const AddSku = ({ onAdded, defaultRuleId }: { onAdded: () => void; defaultRuleId
         <Input placeholder="set id" value={f.set_id} onChange={(e) => setF({ ...f, set_id: e.target.value })} className="h-9" />
         <Input placeholder="no." value={f.number} onChange={(e) => setF({ ...f, number: e.target.value })} className="h-9" />
         <select value={f.condition} onChange={(e) => setF({ ...f, condition: e.target.value })} className="h-9 rounded-md border border-input bg-background px-2 text-sm">
-          {["near_mint", "lightly_played", "moderately_played", "heavily_played", "damaged"].map((c) => (
-            <option key={c} value={c}>{c.replace("_", " ")}</option>
+          {CARD_CONDITIONS.map((c) => (
+            <option key={c.value} value={c.value}>{c.label}</option>
           ))}
         </select>
         <Input type="number" placeholder="qty" value={f.quantity} onChange={(e) => setF({ ...f, quantity: e.target.value })} className="h-9" />

@@ -17,6 +17,7 @@ import {
   payBuylistOrder,
   type BuylistRule,
 } from "@/services/storeBuylistService";
+import { CARD_CONDITIONS } from "@/lib/cardCondition";
 
 const gbp = (n?: number | null) => (n == null ? "—" : `£${Number(n).toFixed(2)}`);
 const emptyForm = { label: "", set_id: "", card_id: "", rarity: "", condition: "", pct_of_market: "60", min_gbp: "0.50", max_gbp: "", daily_cap_gbp: "" };
@@ -171,8 +172,8 @@ const StoreBuylist: React.FC = () => {
           <Input placeholder="rarity (any)" value={form.rarity} onChange={(e) => setForm({ ...form, rarity: e.target.value })} className="h-9" />
           <select value={form.condition} onChange={(e) => setForm({ ...form, condition: e.target.value })} className="h-9 rounded-md border border-input bg-background px-2 text-sm">
             <option value="">any condition</option>
-            {["near_mint", "lightly_played", "moderately_played", "heavily_played", "damaged"].map((c) => (
-              <option key={c} value={c}>{c.replace(/_/g, " ")}</option>
+            {CARD_CONDITIONS.map((c) => (
+              <option key={c.value} value={c.value}>{c.label}</option>
             ))}
           </select>
           <label className="flex items-center gap-1 text-xs text-muted-foreground">% of market
