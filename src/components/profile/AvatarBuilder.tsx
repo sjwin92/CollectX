@@ -10,6 +10,7 @@ import {
   PALETTE,
   HAIR_STYLES,
   EYE_STYLES,
+  OUTFIT_STYLES,
   ACCESSORIES,
   drawAvatar,
   randomAvatarConfig,
@@ -172,7 +173,9 @@ const AvatarBuilder: React.FC<AvatarBuilderProps> = ({ open, onClose, initial, o
           <Chips label="Hair" options={HAIR_STYLES} value={cfg.hair} onChange={set("hair")} />
           <Swatches label="Hair colour" colors={PALETTE.hair} value={cfg.hairColor} onChange={set("hairColor")} />
           <Chips label="Eyes" options={EYE_STYLES} value={cfg.eyes} onChange={set("eyes")} />
-          <Swatches label="Outfit" colors={PALETTE.outfit} value={cfg.outfit} onChange={set("outfit")} />
+          <Swatches label="Eye colour" colors={PALETTE.eye} value={cfg.eyeColor ?? 0} onChange={set("eyeColor")} />
+          <Chips label="Outfit" options={OUTFIT_STYLES} value={cfg.outfitStyle ?? 0} onChange={set("outfitStyle")} />
+          <Swatches label="Outfit colour" colors={PALETTE.outfit} value={cfg.outfit} onChange={set("outfit")} />
           <Chips label="Accessory" options={ACCESSORIES} value={cfg.accessory} onChange={set("accessory")} />
         </div>
 

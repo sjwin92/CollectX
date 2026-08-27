@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useUser } from "@/hooks/useUser";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Camera, Save, User, Sparkles } from "lucide-react";
+import { Camera, Save, User, Gamepad2 } from "lucide-react";
 import AvatarBuilder from "@/components/profile/AvatarBuilder";
 import type { AvatarConfig } from "@/lib/pixelAvatar";
 
@@ -203,7 +203,7 @@ const AccountSettings = () => {
                     className="mt-2 rounded-full"
                     onClick={() => setBuilderOpen(true)}
                   >
-                    <Sparkles className="mr-1.5 h-4 w-4" /> Design pixel avatar
+                    <Gamepad2 className="mr-1.5 h-4 w-4" /> Design pixel avatar
                   </Button>
                   <p className="text-xs text-muted-foreground mt-2">
                     JPG, PNG up to 5MB
