@@ -9,7 +9,7 @@ import SetCard from "@/components/pokemon/SetCard";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Star, Download, Layers, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Star, Layers, ChevronLeft, ChevronRight } from "lucide-react";
 import { useCollection } from "@/hooks/useCollection";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
@@ -21,7 +21,6 @@ const SETS_PER_PAGE = 20;
 const Sets = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [imageErrors, setImageErrors] = useState<Record<string, { logo: number; symbol: number }>>({});
-  const [isImporting, setIsImporting] = useState(false);
   const { toast } = useToast();
   const { collection } = useCollection();
 
@@ -168,55 +167,6 @@ const Sets = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Warm the local mirror by invoking the import edge function for every
-  // currently-loaded set. Each call is gated by the 24h freshness check on
-  // the server so this is safe to run repeatedly.
-  const handleImportAllSets = async () => {
-    if (isImporting) return;
-    setIsImporting(true);
-    try {
-      toast({
-        title: "Starting import",
-        description: `Caching ${combinedData.length} sets locally — this runs in the background.`,
-      });
-
-      let imported = 0;
-      let skipped = 0;
-      let failed = 0;
-
-      // Run with a small concurrency limit so we don't hammer the edge runtime.
-      const ids = combinedData.map((s) => s.id);
-      const concurrency = 3;
-      for (let i = 0; i < ids.length; i += concurrency) {
-        const slice = ids.slice(i, i + concurrency);
-        const results = await Promise.allSettled(
-          slice.map((setId) =>
-            supabase.functions.invoke("import-set-cards", { body: { setId } }),
-          ),
-        );
-        for (const r of results) {
-          if (r.status === "rejected") failed++;
-          else if ((r.value as any)?.data?.skipped) skipped++;
-          else imported++;
-        }
-      }
-
-      toast({
-        title: "Import complete",
-        description: `Imported ${imported}, skipped ${skipped} (already fresh), failed ${failed}.`,
-      });
-    } catch (error) {
-      console.error("Import error:", error);
-      toast({
-        title: "Import failed",
-        description: "Failed to import Pokemon sets. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsImporting(false);
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -232,21 +182,9 @@ const Sets = () => {
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
             From the latest Scarlet &amp; Violet expansions back to Base Set. Track your completion and jump into any set's cards.
           </p>
-          <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Plus className="h-4 w-4 text-primary" />
-              <span>Hover a set and hit <span className="font-semibold text-foreground">+</span> to quick-add its cards.</span>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-full"
-              onClick={handleImportAllSets}
-              disabled={isImporting}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              {isImporting ? "Importing…" : "Import all sets"}
-            </Button>
+          <div className="mt-5 flex items-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+            <Plus className="h-4 w-4 shrink-0 text-primary" />
+            <span>Hover a set and hit <span className="font-semibold text-foreground">+</span> to quick-add its cards to your collection.</span>
           </div>
         </div>
 

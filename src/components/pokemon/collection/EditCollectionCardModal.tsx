@@ -40,6 +40,9 @@ const EditCollectionCardModal: React.FC<EditCollectionCardModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [removing, setRemoving] = useState(false);
+
+  // Sealed products (booster boxes, ETBs, …) have no card condition or grade.
+  const isSealed = !!card?.isSealed || card?.productType === 'other';
   const { toast } = useToast();
 
   useEffect(() => {
@@ -121,10 +124,10 @@ const EditCollectionCardModal: React.FC<EditCollectionCardModalProps> = ({
     try {
       await updateCardInCollection(card.dbId, {
         quantity,
-        condition,
-        graded: isGraded,
-        gradingCompany: isGraded ? gradingCompany : undefined,
-        gradeScore: isGraded ? gradeScore : undefined,
+        condition: isSealed ? 'SEALED' : condition,
+        graded: isSealed ? false : isGraded,
+        gradingCompany: !isSealed && isGraded ? gradingCompany : undefined,
+        gradeScore: !isSealed && isGraded ? gradeScore : undefined,
         forTrade,
         tradePreferences: forTrade ? tradePreferences : undefined
       });
@@ -223,7 +226,7 @@ const EditCollectionCardModal: React.FC<EditCollectionCardModalProps> = ({
           </div>
 
           {/* Form Fields */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className={isSealed ? "space-y-2" : "grid grid-cols-2 gap-4"}>
             <div className="space-y-2">
               <Label htmlFor="quantity">Quantity</Label>
               <Input
@@ -234,31 +237,36 @@ const EditCollectionCardModal: React.FC<EditCollectionCardModalProps> = ({
                 min="0"
               />
               {quantity === 0 && (
-                <p className="text-xs text-destructive">Saving with 0 removes this card from your collection.</p>
+                <p className="text-xs text-destructive">
+                  Saving with 0 removes this {isSealed ? "product" : "card"} from your collection.
+                </p>
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="condition">Condition</Label>
-              <Select value={condition} onValueChange={setCondition}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CARD_CONDITIONS.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {!isSealed && (
+              <div className="space-y-2">
+                <Label htmlFor="condition">Condition</Label>
+                <Select value={condition} onValueChange={setCondition}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CARD_CONDITIONS.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
-          {/* Grading */}
+          {/* Grading — cards only */}
+          {!isSealed && (
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="graded" 
-                checked={isGraded} 
+              <Checkbox
+                id="graded"
+                checked={isGraded}
                 onCheckedChange={(checked) => setIsGraded(checked === true)}
               />
               <Label htmlFor="graded">Graded Card</Label>
@@ -292,6 +300,7 @@ const EditCollectionCardModal: React.FC<EditCollectionCardModalProps> = ({
               </div>
             )}
           </div>
+          )}
 
           {/* Trading */}
           <div className="space-y-4">
@@ -319,7 +328,7 @@ const EditCollectionCardModal: React.FC<EditCollectionCardModalProps> = ({
 
           {/* Image Upload */}
           <div className="space-y-4">
-            <Label>Condition Photos ({images.length}/5)</Label>
+            <Label>{isSealed ? "Photos" : "Condition Photos"} ({images.length}/5)</Label>
             
             <div
               className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${

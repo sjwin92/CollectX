@@ -118,6 +118,8 @@ const CardItem = ({
     return value.replace(/\$/, "£").replace(/^([0-9.]+)$/, "£$1");
   };
 
+  const hasStoredValue = !!estimatedValue && Number(String(estimatedValue).replace(/[£$,]/g, "")) > 0;
+
   const CardContent = (
     <GlassCard 
       className={cn("overflow-hidden group h-full", className)}
@@ -202,13 +204,15 @@ const CardItem = ({
 
         {/* Price — live market when we have it, otherwise the stored value */}
         <div className="flex items-baseline gap-1.5">
-          <span className="text-sm font-semibold text-gold">
-            {marketPriceGbp != null && marketPriceGbp > 0
-              ? `£${marketPriceGbp.toFixed(2)}`
-              : formatCurrency(estimatedValue)}
-          </span>
-          {marketPriceGbp != null && marketPriceGbp > 0 && (
-            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">market</span>
+          {marketPriceGbp != null && marketPriceGbp > 0 ? (
+            <>
+              <span className="text-sm font-semibold text-gold">£{marketPriceGbp.toFixed(2)}</span>
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">market</span>
+            </>
+          ) : hasStoredValue ? (
+            <span className="text-sm font-semibold text-gold">{formatCurrency(estimatedValue)}</span>
+          ) : (
+            <span className="text-xs text-muted-foreground">No price yet</span>
           )}
         </div>
 

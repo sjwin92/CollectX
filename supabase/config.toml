@@ -24,6 +24,9 @@ verify_jwt = false
 [functions.refresh-card-prices]
 verify_jwt = false
 
+[functions.refresh-card-prices-tcgcsv]
+verify_jwt = false
+
 [functions.refresh-sealed-products]
 verify_jwt = false
 
