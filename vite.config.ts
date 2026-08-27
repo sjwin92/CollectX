@@ -20,9 +20,8 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
-    mcpPlugin(),
+    mode === 'development' && componentTagger(),
+    mode === 'development' && mcpPlugin(),
   ].filter(Boolean),
   resolve: {
     alias: {
