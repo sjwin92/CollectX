@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { marketPriceGbpLabel } from "@/lib/cardPrice";
 import { useCardTypeMeta } from "@/hooks/useCardTypeMeta";
+import { useCardPrices } from "@/hooks/useCardPrices";
 
 interface CardGridProps {
   setId?: string | null;
@@ -157,6 +158,7 @@ const CardGrid: React.FC<CardGridProps> = ({
   
   const displayCards = cards || loadedCards;
   const cardTypeMeta = useCardTypeMeta(displayCards.map((c) => c.id));
+  const cardPrices = useCardPrices(displayCards.map((c) => c.id));
 
   if (isLoading && displayCards.length === 0) {
     return (
@@ -201,6 +203,7 @@ const CardGrid: React.FC<CardGridProps> = ({
             number={card.number}
             set={card.set}
             typeMeta={cardTypeMeta.get(card.id) ?? null}
+            marketPriceGbp={cardPrices.get(card.id) ?? null}
             dbId={(card as any).dbId}
             quantity={(card as any).quantity}
             graded={(card as any).graded}

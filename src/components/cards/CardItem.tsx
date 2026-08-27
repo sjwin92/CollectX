@@ -2,14 +2,13 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
-import OptimizedImage from "@/components/ui/OptimizedImage";
 import { cn } from "@/lib/utils";
-import { Info, AlertTriangle, Check, RefreshCw, BadgeCheck, Repeat, Star, BookHeart, CircleDollarSign, Camera, Edit3, Trash2 } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { AlertTriangle, RefreshCw, BadgeCheck, Repeat, Edit3, Trash2 } from "lucide-react";
 import CardImageGallery from "@/components/pokemon/collection/CardImageGallery";
 import CardTypeBadge from "@/components/pokemon/CardTypeBadge";
 import type { CardTypeMeta } from "@/lib/cardTypeLabel";
 import { conditionLabel } from "@/lib/cardCondition";
+import { conditionTone } from "@/components/marketplace/listing/conditionTone";
 import { Button } from "@/components/ui/button";
 // Temporarily removing enhanced service to debug image issues
 // import { enhancedImageService } from "@/services/enhancedImageService";
@@ -41,6 +40,7 @@ export interface CardItemProps {
   onEdit?: () => void; // For editing collection cards
   onDelete?: () => void; // For removing a collection card
   typeMeta?: CardTypeMeta | null; // Pre-fetched type metadata (batch from CardGrid)
+  marketPriceGbp?: number | null; // Live market price (batch from CardGrid)
 }
 
 const CardItem = ({
@@ -65,7 +65,8 @@ const CardItem = ({
   dbId, // For showing user-uploaded images
   onEdit, // For editing collection cards
   onDelete, // For removing a collection card
-  typeMeta
+  typeMeta,
+  marketPriceGbp,
 }: CardItemProps) => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
@@ -133,38 +134,7 @@ const CardItem = ({
                 onLoad={handleImageLoad}
                 onError={handleImageError}
               />
-              
-              {/* Edit / remove buttons for collection cards */}
-              {dbId && (onEdit || onDelete) && (
-                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {onEdit && (
-                    <Button
-                      size="icon"
-                      variant="secondary"
-                      className="h-8 w-8"
-                      title="Edit card"
-                      onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                    >
-                      <Edit3 className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {onDelete && (
-                    <Button
-                      size={confirmDelete ? "sm" : "icon"}
-                      variant={confirmDelete ? "destructive" : "secondary"}
-                      className={confirmDelete ? "h-8 px-2 text-xs" : "h-8 w-8"}
-                      title="Remove from collection"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (confirmDelete) { onDelete(); setConfirmDelete(false); }
-                        else { setConfirmDelete(true); setTimeout(() => setConfirmDelete(false), 3000); }
-                      }}
-                    >
-                      {confirmDelete ? "Remove?" : <Trash2 className="h-4 w-4" />}
-                    </Button>
-                  )}
-                </div>
-              )}
+
               {imageStatus === "loading" && (
                 <div className="absolute inset-0 flex items-center justify-center bg-muted">
                   <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
@@ -187,121 +157,100 @@ const CardItem = ({
             </div>
           )}
           
-          <div className="absolute top-2 right-2 flex gap-1 flex-col items-end">
-            {quantity > 1 && (
-              <Badge variant="secondary" size="sm" className="mb-1">
-                <CircleDollarSign className="h-3 w-3 mr-1" />
-                {quantity}x
-              </Badge>
-            )}
-            
-            {showCondition && (
-              <Badge variant={conditionVariant()} size="sm">
-                {conditionLabel(condition)}
-              </Badge>
-            )}
-            
-            {graded && (
-              <Badge variant="success" size="sm" className="mt-1">
-                <BadgeCheck className="h-3 w-3 mr-1" />
-                {[gradingCompany, gradeScore].filter(Boolean).join(" ")}
-              </Badge>
-            )}
-            
-            {forTrade && (
-              <Badge variant="secondary" size="sm" className="mt-1">
-                <Repeat className="h-3 w-3 mr-1" />
-                For Trade
-              </Badge>
-            )}
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="bg-white/90 dark:bg-gray-800/90 rounded-full p-1 cursor-help mt-1">
-                    <Info className="h-3 w-3 text-primary" />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  <div className="text-xs space-y-1">
-                    <p><strong>Card:</strong> {name}</p>
-                    <p><strong>Rarity:</strong> {rarity}</p>
-                    {showCondition && <p><strong>Condition:</strong> {condition}</p>}
-                    <p><strong>Value:</strong> {formatCurrency(estimatedValue)}</p>
-                    {quantity > 1 && <p><strong>Quantity:</strong> {quantity}</p>}
-                    {set?.name && <p><strong>Set:</strong> {set.name}</p>}
-                    {number && <p><strong>Number:</strong> {number}</p>}
-                    {graded && <p><strong>Graded:</strong> {gradingCompany} {gradeScore}</p>}
-                    {forTrade && (
-                      <p>
-                        <strong>Trade For:</strong> {tradePreferences || "Open to offers"}
-                      </p>
-                    )}
-                    <p><strong>ID:</strong> {id}</p>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
         </div>
       </div>
-      
+
+      {/* Everything lives in the box under the art — the card image stays clean. */}
       <div className="space-y-2">
         <h3 className="font-medium text-sm line-clamp-2 leading-tight group-hover:text-primary transition-colors">
           {name}
         </h3>
-        
-        <div className="flex flex-wrap items-center justify-center gap-1">
+
+        <div className="flex flex-wrap items-center gap-1">
           {typeMeta && <CardTypeBadge meta={typeMeta} />}
           <Badge variant="outline" size="sm" className="shrink-0">
             {rarity}
           </Badge>
         </div>
-        
-        <div className="text-center">
-          <span className="text-sm font-semibold text-gold">{formatCurrency(estimatedValue)}</span>
-        </div>
-        
-        {/* Compact info row - only show if we have additional details */}
-        {(quantity > 1 || graded || forTrade) && (
-          <div className="flex flex-wrap items-center gap-1 min-h-[20px]">
-            {quantity > 1 && (
-              <span className="text-xs bg-secondary/50 px-1.5 py-0.5 rounded shrink-0" title="Quantity">
-                {quantity}x
+
+        {/* Condition / grade / qty / trade — chips, always in the box */}
+        {(showCondition || graded || quantity > 1 || forTrade) && (
+          <div className="flex flex-wrap items-center gap-1">
+            {showCondition && !graded && (
+              <span className={`rounded-full border px-1.5 py-0.5 text-[11px] font-medium ${conditionTone(condition)}`}>
+                {conditionLabel(condition)}
               </span>
             )}
-            
             {graded && (
-              <span className="text-xs bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 px-1.5 py-0.5 rounded flex items-center shrink-0" title="Graded">
-                <BadgeCheck className="h-2.5 w-2.5 mr-0.5" />
+              <span className="inline-flex items-center gap-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-300">
+                <BadgeCheck className="h-3 w-3" />
                 {[gradingCompany, gradeScore].filter(Boolean).join(" ")}
               </span>
             )}
-            
+            {quantity > 1 && (
+              <span className="rounded-full border border-border bg-secondary px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
+                ×{quantity}
+              </span>
+            )}
             {forTrade && (
-              <span className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 px-1.5 py-0.5 rounded flex items-center shrink-0" title="For Trade">
-                <Repeat className="h-2.5 w-2.5 mr-0.5" />
-                Trade
+              <span className="inline-flex items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary">
+                <Repeat className="h-3 w-3" /> Trade
               </span>
             )}
           </div>
         )}
-        
-        {/* Trade preferences - separate line to avoid overlap */}
+
+        {/* Price — live market when we have it, otherwise the stored value */}
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-sm font-semibold text-gold">
+            {marketPriceGbp != null && marketPriceGbp > 0
+              ? `£${marketPriceGbp.toFixed(2)}`
+              : formatCurrency(estimatedValue)}
+          </span>
+          {marketPriceGbp != null && marketPriceGbp > 0 && (
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">market</span>
+          )}
+        </div>
+
         {forTrade && tradePreferences && (
           <div className="text-xs text-muted-foreground line-clamp-1 leading-tight">
             <span className="font-medium">Want:</span> {tradePreferences}
           </div>
         )}
-        
-        {/* User uploaded condition photos */}
+
+        {/* Condition photos — view + upload inline */}
         {dbId && (
-          <div className="mt-2">
-            <CardImageGallery 
-              userCardId={dbId} 
-              cardName={name}
-              className="max-w-full"
-            />
+          <CardImageGallery userCardId={dbId} cardName={name} editable className="max-w-full" />
+        )}
+
+        {/* Collection actions — visible buttons, never over the art */}
+        {dbId && (onEdit || onDelete) && (
+          <div className="flex gap-1.5 pt-1">
+            {onEdit && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 flex-1 text-xs"
+                onClick={(e) => { e.stopPropagation(); e.preventDefault(); onEdit(); }}
+              >
+                <Edit3 className="mr-1 h-3.5 w-3.5" /> Edit
+              </Button>
+            )}
+            {onDelete && (
+              <Button
+                size="sm"
+                variant={confirmDelete ? "destructive" : "outline"}
+                className="h-7 flex-1 text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  if (confirmDelete) { onDelete(); setConfirmDelete(false); }
+                  else { setConfirmDelete(true); setTimeout(() => setConfirmDelete(false), 3000); }
+                }}
+              >
+                <Trash2 className="mr-1 h-3.5 w-3.5" /> {confirmDelete ? "Confirm" : "Remove"}
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -321,52 +270,6 @@ const CardItem = ({
       {CardContent}
     </Link>
   );
-
-  function conditionVariant(): "success" | "warning" | "danger" | "info" {
-    switch (condition.toLowerCase()) {
-      case "mint":
-      case "near mint":
-      case "nm":
-        return "success";
-      case "excellent":
-      case "good":
-      case "lp":
-      case "ex":
-        return "info";
-      case "played":
-      case "mp":
-        return "warning";
-      case "poor":
-      case "hp":
-      case "dmg":
-        return "danger";
-      default:
-        return "info";
-    }
-  }
-  
-  function getConditionTextColor(): string {
-    switch (condition.toLowerCase()) {
-      case "mint":
-      case "near mint":
-      case "nm":
-        return "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300";
-      case "excellent":
-      case "good":
-      case "lp":
-      case "ex":
-        return "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300";
-      case "played":
-      case "mp":
-        return "bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300";
-      case "poor":
-      case "hp":
-      case "dmg":
-        return "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300";
-      default:
-        return "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300";
-    }
-  }
 
   useEffect(() => {
     let timeoutId: number | undefined;
