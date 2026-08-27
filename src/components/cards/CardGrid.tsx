@@ -187,9 +187,9 @@ const CardGrid: React.FC<CardGridProps> = ({
     <div className="space-y-6">
       <div className={gridClasses}>
         {displayCards.map((card, index) => (
-          <CardItem 
-            key={card.id} 
-            id={card.id} 
+          <CardItem
+            key={(card as any).dbId || `${card.id}-${index}`}
+            id={card.id}
             name={card.name} 
             imageUrl={card.imageUrl} 
             rarity={card.rarity} 
@@ -208,6 +208,8 @@ const CardGrid: React.FC<CardGridProps> = ({
             gradeScore={(card as any).gradeScore}
             forTrade={(card as any).forTrade}
             tradePreferences={(card as any).tradePreferences}
+            onEdit={(card as any).onEdit}
+            onDelete={(card as any).onDelete}
           />
         ))}
       </div>

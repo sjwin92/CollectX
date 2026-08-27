@@ -13,7 +13,7 @@ import CollectionStats from "./CollectionStats";
 import { useCollection } from "@/hooks/useCollection";
 import { debugCollections } from "@/services/collectionService";
 import EditCollectionCardModal from "@/components/pokemon/collection/EditCollectionCardModal";
-import { ExtendedCardItemWithDB } from "@/services/supabaseCollectionService";
+import { ExtendedCardItemWithDB, removeCardFromCollection } from "@/services/supabaseCollectionService";
 
 interface CollectionManagerProps {
   collection?: ExtendedCardItemProps[];
@@ -68,6 +68,21 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
     setEditingCard(null);
   };
 
+  const handleDeleteCard = async (card: ExtendedCardItemWithDB) => {
+    if (!card.dbId) return;
+    try {
+      await removeCardFromCollection(card.dbId);
+      toast({ title: "Removed from collection", description: card.name });
+      loadCollectionFromStorage();
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Couldn't remove the card",
+        description: err instanceof Error ? err.message : "Please try again.",
+      });
+    }
+  };
+
   return (
     <>
       {collection.length > 0 && (
@@ -93,8 +108,9 @@ const CollectionManager = ({ collection: propCollection }: CollectionManagerProp
         <CardGrid 
           cards={filteredCards.map(card => ({
             ...card,
-            onEdit: () => handleEditCard(card)
-          }))} 
+            onEdit: () => handleEditCard(card),
+            onDelete: () => handleDeleteCard(card)
+          }))}
           columns={{ sm: 1, md: 2, lg: 3 }} 
           animated
         />

@@ -4,7 +4,7 @@ import GlassCard from "@/components/ui/custom/GlassCard";
 import Badge from "@/components/ui/custom/Badge";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import { cn } from "@/lib/utils";
-import { Info, AlertTriangle, Check, RefreshCw, BadgeCheck, Repeat, Star, BookHeart, CircleDollarSign, Camera, Edit3 } from "lucide-react";
+import { Info, AlertTriangle, Check, RefreshCw, BadgeCheck, Repeat, Star, BookHeart, CircleDollarSign, Camera, Edit3, Trash2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import CardImageGallery from "@/components/pokemon/collection/CardImageGallery";
 import CardTypeBadge from "@/components/pokemon/CardTypeBadge";
@@ -39,6 +39,7 @@ export interface CardItemProps {
   quantity?: number;
   dbId?: string; // For collection cards with user-uploaded images
   onEdit?: () => void; // For editing collection cards
+  onDelete?: () => void; // For removing a collection card
   typeMeta?: CardTypeMeta | null; // Pre-fetched type metadata (batch from CardGrid)
 }
 
@@ -63,8 +64,10 @@ const CardItem = ({
   quantity = 1,
   dbId, // For showing user-uploaded images
   onEdit, // For editing collection cards
+  onDelete, // For removing a collection card
   typeMeta
 }: CardItemProps) => {
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
   const [imageSrc, setImageSrc] = useState<string>("");
   
@@ -131,19 +134,36 @@ const CardItem = ({
                 onError={handleImageError}
               />
               
-              {/* Edit button for collection cards */}
-              {dbId && onEdit && (
-                <Button
-                  size="icon"
-                  variant="secondary"
-                  className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit();
-                  }}
-                >
-                  <Edit3 className="h-4 w-4" />
-                </Button>
+              {/* Edit / remove buttons for collection cards */}
+              {dbId && (onEdit || onDelete) && (
+                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {onEdit && (
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="h-8 w-8"
+                      title="Edit card"
+                      onClick={(e) => { e.stopPropagation(); onEdit(); }}
+                    >
+                      <Edit3 className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {onDelete && (
+                    <Button
+                      size={confirmDelete ? "sm" : "icon"}
+                      variant={confirmDelete ? "destructive" : "secondary"}
+                      className={confirmDelete ? "h-8 px-2 text-xs" : "h-8 w-8"}
+                      title="Remove from collection"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirmDelete) { onDelete(); setConfirmDelete(false); }
+                        else { setConfirmDelete(true); setTimeout(() => setConfirmDelete(false), 3000); }
+                      }}
+                    >
+                      {confirmDelete ? "Remove?" : <Trash2 className="h-4 w-4" />}
+                    </Button>
+                  )}
+                </div>
               )}
               {imageStatus === "loading" && (
                 <div className="absolute inset-0 flex items-center justify-center bg-muted">

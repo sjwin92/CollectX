@@ -7,9 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { ExtendedCardItemWithDB, updateCardInCollection } from '@/services/supabaseCollectionService';
-import { uploadUserCardImage, getUserCardImages } from '@/services/cardImageUploadService';
-import { Camera, Upload, X, Star } from 'lucide-react';
+import { ExtendedCardItemWithDB, updateCardInCollection, removeCardFromCollection } from '@/services/supabaseCollectionService';
+import { uploadUserCardImage, getUserCardImages, deleteCardImage, setPrimaryImage } from '@/services/cardImageUploadService';
+import { CARD_CONDITIONS, normalizeCondition } from '@/lib/cardCondition';
+import { Camera, Upload, X, Star, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { SmartImage } from '@/components/common/SmartImage';
 
@@ -37,12 +38,14 @@ const EditCollectionCardModal: React.FC<EditCollectionCardModalProps> = ({
   const [images, setImages] = useState<any[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     if (card) {
       setQuantity(card.quantity || 1);
-      setCondition(card.condition || 'NM');
+      setCondition(normalizeCondition(card.condition));
       setIsGraded(card.graded || false);
       setGradingCompany(card.gradingCompany || '');
       setGradeScore(card.gradeScore || '');
@@ -151,6 +154,46 @@ const EditCollectionCardModal: React.FC<EditCollectionCardModalProps> = ({
     handleImageUpload(e.dataTransfer.files);
   };
 
+  const handleRemoveCard = async () => {
+    if (!card?.dbId) return;
+    setRemoving(true);
+    try {
+      await removeCardFromCollection(card.dbId);
+      toast({ title: 'Removed from collection', description: card.name });
+      onUpdated();
+      onClose();
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: "Couldn't remove the card",
+        description: error instanceof Error ? error.message : 'Please try again.',
+      });
+    } finally {
+      setRemoving(false);
+      setConfirmRemove(false);
+    }
+  };
+
+  const handleDeleteImage = async (imageId: string) => {
+    if (!card?.dbId) return;
+    try {
+      await deleteCardImage(imageId);
+      await loadImages(card.dbId);
+    } catch (error) {
+      toast({ variant: 'destructive', title: "Couldn't delete photo", description: error instanceof Error ? error.message : 'Try again.' });
+    }
+  };
+
+  const handleSetPrimary = async (imageId: string) => {
+    if (!card?.dbId) return;
+    try {
+      await setPrimaryImage(imageId, card.dbId);
+      await loadImages(card.dbId);
+    } catch (error) {
+      toast({ variant: 'destructive', title: "Couldn't set primary photo", description: error instanceof Error ? error.message : 'Try again.' });
+    }
+  };
+
   if (!card) return null;
 
   return (
@@ -198,12 +241,9 @@ const EditCollectionCardModal: React.FC<EditCollectionCardModalProps> = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="M">Mint (M)</SelectItem>
-                  <SelectItem value="NM">Near Mint (NM)</SelectItem>
-                  <SelectItem value="LP">Lightly Played (LP)</SelectItem>
-                  <SelectItem value="MP">Moderately Played (MP)</SelectItem>
-                  <SelectItem value="HP">Heavily Played (HP)</SelectItem>
-                  <SelectItem value="D">Damaged (D)</SelectItem>
+                  {CARD_CONDITIONS.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -317,7 +357,7 @@ const EditCollectionCardModal: React.FC<EditCollectionCardModalProps> = ({
             {images.length > 0 && (
               <div className="grid grid-cols-3 gap-4">
                 {images.map((image) => (
-                  <Card key={image.id} className="relative overflow-hidden">
+                  <Card key={image.id} className="group relative overflow-hidden">
                     <CardContent className="p-0">
                       <div className="aspect-square relative">
                         <img
@@ -330,6 +370,25 @@ const EditCollectionCardModal: React.FC<EditCollectionCardModalProps> = ({
                             Primary
                           </div>
                         )}
+                        <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-black/70 p-1 opacity-0 transition-opacity group-hover:opacity-100">
+                          {!image.is_primary ? (
+                            <button
+                              type="button"
+                              onClick={() => handleSetPrimary(image.id)}
+                              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-white hover:bg-white/15"
+                            >
+                              <Star className="h-3 w-3" /> Primary
+                            </button>
+                          ) : <span />}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteImage(image.id)}
+                            className="rounded px-1.5 py-0.5 text-white hover:bg-red-500/40"
+                            aria-label="Delete photo"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -339,13 +398,24 @@ const EditCollectionCardModal: React.FC<EditCollectionCardModalProps> = ({
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={onClose}>
-              Cancel
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-4">
+            <Button
+              variant={confirmRemove ? 'destructive' : 'ghost'}
+              className={confirmRemove ? '' : 'text-muted-foreground hover:text-destructive'}
+              disabled={removing}
+              onClick={() => (confirmRemove ? handleRemoveCard() : setConfirmRemove(true))}
+            >
+              <Trash2 className="mr-1.5 h-4 w-4" />
+              {removing ? 'Removing…' : confirmRemove ? 'Confirm remove' : 'Remove from collection'}
             </Button>
-            <Button onClick={handleSave} disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : 'Save Changes'}
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={isSubmitting}>
+                {isSubmitting ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>
