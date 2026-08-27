@@ -67,7 +67,7 @@ serve(async (req) => {
       if (insertError) throw insertError;
     }
 
-    const siteUrl = Deno.env.get('SITE_URL') ?? 'http://localhost:5173';
+    const siteUrl = Deno.env.get('SITE_URL') ?? 'http://localhost:8080';
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
       refresh_url: `${siteUrl}/seller/onboarding-complete?refresh=true`,

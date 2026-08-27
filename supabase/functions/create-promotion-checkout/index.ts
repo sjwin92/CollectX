@@ -74,7 +74,7 @@ serve(async (req) => {
       });
     }
 
-    const siteUrl = Deno.env.get('SITE_URL') ?? 'http://localhost:5173';
+    const siteUrl = Deno.env.get('SITE_URL') ?? 'http://localhost:8080';
     const currency: string = promo.currency ?? 'gbp';
     const amount = Number(promo.amount_gbp);
     const label = kind === 'storefront_pin'

@@ -162,7 +162,7 @@ serve(async (req) => {
       throw orderError;
     }
 
-    const siteUrl = Deno.env.get('SITE_URL') ?? 'http://localhost:5173';
+    const siteUrl = Deno.env.get('SITE_URL') ?? 'http://localhost:8080';
 
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
       {

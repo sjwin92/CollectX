@@ -42,7 +42,7 @@ serve(async (req) => {
     }
     const user = userData.user;
 
-    const siteUrl = Deno.env.get('SITE_URL') ?? 'http://localhost:5173';
+    const siteUrl = Deno.env.get('SITE_URL') ?? 'http://localhost:8080';
 
     const stripe = getStripeClient();
     const session: Stripe.Checkout.Session = await stripe.checkout.sessions.create({

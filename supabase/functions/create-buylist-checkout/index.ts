@@ -79,7 +79,7 @@ serve(async (req) => {
       });
     }
 
-    const siteUrl = Deno.env.get('SITE_URL') ?? 'http://localhost:5173';
+    const siteUrl = Deno.env.get('SITE_URL') ?? 'http://localhost:8080';
     const currency: string = order.currency ?? 'gbp';
     const amount = Number(order.quote_amount);
 
