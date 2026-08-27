@@ -4,17 +4,21 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Sparkles } from "lucide-react";
+import { ScanLine, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import {
   getMyScanHistory,
   getScanImageUrl,
+  deleteScan,
   type CardGradingScan,
 } from "@/services/cardGradingService";
 
 const MyScans: React.FC = () => {
+  const { toast } = useToast();
   const [scans, setScans] = useState<CardGradingScan[]>([]);
   const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
     getMyScanHistory()
@@ -32,6 +36,22 @@ const MyScans: React.FC = () => {
       .finally(() => setIsLoading(false));
   }, []);
 
+  const remove = async (id: string) => {
+    try {
+      await deleteScan(id);
+      setScans((prev) => prev.filter((s) => s.id !== id));
+      toast({ title: "Scan deleted" });
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Couldn't delete scan",
+        description: e instanceof Error ? e.message : "Try again.",
+      });
+    } finally {
+      setConfirmId(null);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -40,10 +60,12 @@ const MyScans: React.FC = () => {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold">My Scans</h1>
-              <p className="text-sm text-muted-foreground mt-1">Your card grading history.</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Your card grading history — review past grades or clear out ones you don't need.
+              </p>
             </div>
             <Button asChild size="sm">
-              <Link to="/grade"><Sparkles className="mr-2 h-4 w-4" /> Grade a card</Link>
+              <Link to="/grade"><ScanLine className="mr-2 h-4 w-4" /> Grade a card</Link>
             </Button>
           </div>
 
@@ -56,7 +78,7 @@ const MyScans: React.FC = () => {
               <CardContent className="p-10 text-center space-y-3">
                 <p className="text-muted-foreground">You haven't graded any cards yet.</p>
                 <Button asChild>
-                  <Link to="/grade"><Sparkles className="mr-2 h-4 w-4" /> Grade your first card</Link>
+                  <Link to="/grade"><ScanLine className="mr-2 h-4 w-4" /> Grade your first card</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -69,7 +91,7 @@ const MyScans: React.FC = () => {
                       {thumbnails[scan.id] ? (
                         <img src={thumbnails[scan.id]} alt={scan.card_name ?? "Scanned card"} className="w-full h-full object-cover" />
                       ) : (
-                        <Sparkles className="h-5 w-5 text-muted-foreground" />
+                        <ScanLine className="h-5 w-5 text-muted-foreground" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -88,6 +110,26 @@ const MyScans: React.FC = () => {
                         <p className="text-xs text-muted-foreground">{Math.round(scan.confidence)}% confidence</p>
                       )}
                     </div>
+                    {confirmId === scan.id ? (
+                      <div className="flex flex-col gap-1 shrink-0">
+                        <Button size="sm" variant="destructive" className="h-7 px-2 text-xs" onClick={() => remove(scan.id)}>
+                          Delete
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setConfirmId(null)}>
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => setConfirmId(scan.id)}
+                        aria-label="Delete scan"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               ))}

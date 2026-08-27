@@ -7,14 +7,18 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Info } from "lucide-react";
+import { ScanLine, Info, Trash2, ArrowRight } from "lucide-react";
 import CardCaptureStep from "@/components/grading/CardCaptureStep";
 import {
   gradeCard,
   getScanQuota,
   createScanCreditCheckout,
+  getMyScanHistory,
+  getScanImageUrl,
+  deleteScan,
   GradeCardError,
   type CardGradeResult,
+  type CardGradingScan,
   type ScanQuota,
   type MeasuredCenteringInput,
   type CaptureQualityInput,
@@ -24,6 +28,132 @@ import type { StillMeasurement } from "@/lib/grading/scanTypes";
 type Step = 'front' | 'back' | 'analyzing' | 'result';
 
 const gradeToPct = (grade: number | null) => (grade == null ? 0 : Math.round(grade * 10));
+const fmtGrade = (v: number) => (v % 1 === 0 ? String(v) : v.toFixed(1));
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+// Companies we surface a predicted grade for, in the order collectors expect.
+const COMPANIES: { key: keyof NonNullable<CardGradeResult["predicted"]>; label: string }[] = [
+  { key: 'psa', label: 'PSA' },
+  { key: 'bgs', label: 'Beckett (BGS)' },
+  { key: 'cgc', label: 'CGC' },
+  { key: 'sgc', label: 'SGC' },
+  { key: 'tag', label: 'TAG' },
+];
+
+const RecentScans: React.FC<{ reloadKey: number }> = ({ reloadKey }) => {
+  const { toast } = useToast();
+  const [scans, setScans] = useState<CardGradingScan[]>([]);
+  const [thumbs, setThumbs] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+
+  const load = () => {
+    setLoading(true);
+    getMyScanHistory()
+      .then(async (rows) => {
+        setScans(rows);
+        const entries = await Promise.all(
+          rows.filter((s) => s.front_image_path).slice(0, 8).map(
+            async (s) => [s.id, await getScanImageUrl(s.front_image_path!)] as const,
+          ),
+        );
+        const map: Record<string, string> = {};
+        for (const [id, url] of entries) if (url) map[id] = url;
+        setThumbs(map);
+      })
+      .catch(() => setScans([]))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(load, [reloadKey]);
+
+  const remove = async (id: string) => {
+    try {
+      await deleteScan(id);
+      setScans((prev) => prev.filter((s) => s.id !== id));
+      toast({ title: "Scan deleted" });
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Couldn't delete scan",
+        description: e instanceof Error ? e.message : "Try again.",
+      });
+    } finally {
+      setConfirmId(null);
+    }
+  };
+
+  if (loading && scans.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-semibold">Previous scans</h2>
+        {scans.length > 0 && (
+          <Link to="/my-scans" className="text-sm text-primary hover:underline shrink-0 inline-flex items-center gap-1">
+            Manage all <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        )}
+      </div>
+
+      {scans.length === 0 ? (
+        <Card>
+          <CardContent className="p-6 text-center text-sm text-muted-foreground">
+            Your graded cards will show up here so you can look back over them.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-2">
+          {scans.slice(0, 5).map((scan) => (
+            <Card key={scan.id}>
+              <CardContent className="p-3 flex items-center gap-3">
+                <div className="w-10 h-14 rounded bg-muted overflow-hidden shrink-0 flex items-center justify-center">
+                  {thumbs[scan.id] ? (
+                    <img src={thumbs[scan.id]} alt={scan.card_name ?? "Scanned card"} className="w-full h-full object-cover" />
+                  ) : (
+                    <ScanLine className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate text-sm">{scan.card_name || "Untitled card"}</p>
+                  <p className="text-xs text-muted-foreground">{fmtDate(scan.created_at)}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-lg font-bold text-primary leading-none">
+                    {scan.overall_grade != null ? scan.overall_grade.toFixed(1) : '—'}
+                    <span className="text-xs text-muted-foreground">/10</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">{scan.condition_label ?? 'Unknown'}</p>
+                </div>
+                {confirmId === scan.id ? (
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <Button size="sm" variant="destructive" className="h-6 px-2 text-xs" onClick={() => remove(scan.id)}>
+                      Delete
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => setConfirmId(null)}>
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => setConfirmId(scan.id)}
+                    aria-label="Delete scan"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const GradeCard: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -36,6 +166,7 @@ const GradeCard: React.FC = () => {
   const [quota, setQuota] = useState<ScanQuota | null>(null);
   const [noCredits, setNoCredits] = useState(false);
   const [isBuying, setIsBuying] = useState(false);
+  const [scansReloadKey, setScansReloadKey] = useState(0);
 
   const loadQuota = () => getScanQuota().then(setQuota).catch(() => setQuota(null));
 
@@ -78,6 +209,7 @@ const GradeCard: React.FC = () => {
       setResult(gradeResult);
       setStep('result');
       loadQuota();
+      setScansReloadKey((k) => k + 1);
     } catch (error) {
       if (error instanceof GradeCardError && error.code === 'no_credits') {
         setNoCredits(true);
@@ -139,16 +271,14 @@ const GradeCard: React.FC = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-1 pt-24 pb-16">
-        <div className="container max-w-lg space-y-6">
+        <div className="container max-w-lg space-y-8">
           <div>
-            <div className="flex items-center justify-between gap-2">
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <Sparkles className="h-6 w-6 text-primary" /> Grade My Card
-              </h1>
-              <Link to="/my-scans" className="text-sm text-muted-foreground hover:underline shrink-0">My Scans</Link>
-            </div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <ScanLine className="h-6 w-6 text-primary" /> Grade a card
+            </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              AI pre-grading estimate — centering, corners, edges &amp; surface, mapped to a rough 1–10 scale.
+              A pre-grading estimate from your camera — centering, corners, edges &amp; surface,
+              mapped to a rough 1–10 scale and each major grading company.
             </p>
             {quota && (
               <p className="text-xs text-muted-foreground mt-2">
@@ -214,15 +344,13 @@ const GradeCard: React.FC = () => {
                       {result.confidence < 60 ? ' — add a back photo or better lighting for a more reliable read' : ''}
                     </p>
                   )}
-                  {result.predicted && (result.predicted.psa || result.predicted.bgs || result.predicted.cgc) && (
+                  {result.predicted && COMPANIES.some(({ key }) => result.predicted![key] != null) && (
                     <div className="mt-4 flex flex-wrap justify-center gap-2">
-                      {([['PSA', result.predicted.psa], ['BGS', result.predicted.bgs], ['CGC', result.predicted.cgc]] as const)
-                        .filter(([, v]) => v != null)
-                        .map(([co, v]) => (
-                          <span key={co} className="rounded-full border border-border bg-secondary px-3 py-1 text-xs font-semibold">
-                            {co} <span className="text-primary">{(v as number) % 1 === 0 ? v : (v as number).toFixed(1)}</span>
-                          </span>
-                        ))}
+                      {COMPANIES.filter(({ key }) => result.predicted![key] != null).map(({ key, label }) => (
+                        <span key={key} className="rounded-full border border-border bg-secondary px-3 py-1 text-xs font-semibold">
+                          {label} <span className="text-primary">{fmtGrade(result.predicted![key] as number)}</span>
+                        </span>
+                      ))}
                     </div>
                   )}
                 </CardContent>
@@ -278,6 +406,8 @@ const GradeCard: React.FC = () => {
               <Button variant="outline" onClick={startOver} className="w-full">Grade another card</Button>
             </div>
           )}
+
+          <RecentScans reloadKey={scansReloadKey} />
         </div>
       </main>
       <Footer />

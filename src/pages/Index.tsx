@@ -15,6 +15,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import LiveTradeFeed from "@/components/trades/LiveTradeFeed";
 import { SmartImage } from "@/components/common/SmartImage";
+import { useUser } from "@/hooks/useUser";
 
 /**
  * Hero card showcase — three real catalogue cards, tilted and floating, each
@@ -108,6 +109,7 @@ const FEATURES = [
 ];
 
 const Index = () => {
+  const { isSignedIn } = useUser();
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -146,12 +148,14 @@ const Index = () => {
                   asChild
                   className="rounded-full px-6 shadow-[0_16px_36px_-14px_hsl(var(--primary)/0.7)]"
                 >
-                  <Link to="/auth">
-                    Get started <ArrowRight className="ml-2 h-4 w-4" />
+                  <Link to={isSignedIn ? "/collection" : "/auth"}>
+                    {isSignedIn ? "Go to your collection" : "Get started"} <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
                 <Button size="lg" variant="outline" asChild className="rounded-full px-6">
-                  <Link to="/pokemons">Browse cards</Link>
+                  <Link to={isSignedIn ? "/grade" : "/pokemons"}>
+                    {isSignedIn ? "Grade a card" : "Browse cards"}
+                  </Link>
                 </Button>
                 <Button size="lg" variant="ghost" asChild className="rounded-full px-5">
                   <Link to="/pokemon-sets">
@@ -160,7 +164,9 @@ const Index = () => {
                 </Button>
               </div>
               <p className="mt-5 text-xs text-muted-foreground">
-                Free to join · Escrow-protected payments · Prices from TCGplayer
+                {isSignedIn
+                  ? "You're signed in · Escrow-protected payments · Prices from TCGplayer"
+                  : "Free to join · Escrow-protected payments · Prices from TCGplayer"}
               </p>
             </div>
 
@@ -213,17 +219,21 @@ const Index = () => {
       <section className="relative overflow-hidden border-t border-border bg-secondary/20 py-20 md:py-28">
         <div className="aura pointer-events-none absolute left-1/2 top-1/2 h-[300px] w-[640px] -translate-x-1/2 -translate-y-1/2" />
         <div className="container relative text-center">
-          <h2 className="font-display text-3xl font-extrabold md:text-[40px]">Start your collection</h2>
+          <h2 className="font-display text-3xl font-extrabold md:text-[40px]">
+            {isSignedIn ? "Pick up where you left off" : "Start your collection"}
+          </h2>
           <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground md:text-base">
-            Add your cards, mark what's up for trade, and make your first move.
+            {isSignedIn
+              ? "Jump back into your collection, trades and the marketplace."
+              : "Add your cards, mark what's up for trade, and make your first move."}
           </p>
           <Button
             size="lg"
             asChild
             className="mt-8 rounded-full px-7 shadow-[0_16px_36px_-14px_hsl(var(--primary)/0.7)]"
           >
-            <Link to="/auth">
-              Create your free account <ArrowRight className="ml-2 h-4 w-4" />
+            <Link to={isSignedIn ? "/collection" : "/auth"}>
+              {isSignedIn ? "Open your collection" : "Create your free account"} <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
         </div>

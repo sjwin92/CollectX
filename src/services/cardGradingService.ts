@@ -5,6 +5,8 @@ export interface PredictedGrades {
   psa: number | null;
   bgs: number | null;
   cgc: number | null;
+  sgc: number | null;
+  tag: number | null;
 }
 
 export interface CardGradeResult {
@@ -153,4 +155,16 @@ export const getScanImageUrl = async (path: string): Promise<string | null> => {
     .createSignedUrl(path, 3600);
   if (error) return null;
   return data.signedUrl;
+};
+
+/** Delete one of the current user's scans. RLS restricts this to the owner. */
+export const deleteScan = async (id: string): Promise<void> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+  const { error } = await supabase
+    .from('card_grading_scans')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id);
+  if (error) throw error;
 };

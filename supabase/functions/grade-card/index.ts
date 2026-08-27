@@ -18,7 +18,7 @@ const ANTHROPIC_MODEL = 'claude-sonnet-5';
 // response are persisted (see storage upload + DB insert below) specifically
 // so they can be used later as a labeled dataset to train our own in-house
 // grading model, rather than depending on an LLM call per scan forever.
-const GRADING_PROMPT = `You are assessing the physical condition of a trading card from photos, the same way a professional grading company (PSA/BGS/CGC) would.
+const GRADING_PROMPT = `You are assessing the physical condition of a trading card from photos, the same way a professional grading company (PSA, BGS/Beckett, CGC, SGC, TAG) would.
 
 Assess these factors independently, each on a 1-10 scale (10 = flawless):
 - centering: how well-centered the artwork is within the card border. Also estimate the left/right and top/bottom border ratios (e.g. "55/45").
@@ -28,12 +28,12 @@ Assess these factors independently, each on a 1-10 scale (10 = flawless):
 
 If only a front photo is provided, assess surface/corners/edges from the front only and note that in "notes". If a back photo is provided too, weigh it in as well (a real grade considers both sides).
 
-Then give your best estimate of the numeric grade each major company would most likely assign this card overall: predicted_psa (1-10, whole or .5), predicted_bgs (1-10, .5 steps), predicted_cgc (1-10, .5 steps). Use null for any you genuinely cannot estimate. Remember PSA gives one overall number, BGS is typically the lowest subgrade with some leeway, CGC sits between.
+Then give your best estimate of the numeric grade each major company would most likely assign this card overall, all on a 1-10 scale in .5 steps: predicted_psa (whole or .5), predicted_bgs (Beckett), predicted_cgc, predicted_sgc, predicted_tag. Use null for any you genuinely cannot estimate. Remember PSA gives one overall number, BGS/Beckett is typically the lowest subgrade with some leeway, CGC sits between, SGC tends to grade a touch stricter than PSA, and TAG is a computer-vision grade that is usually close to CGC.
 
 Also rate your own confidence in this assessment from 0-100. Be honest and conservative here, not reassuring — collectors specifically distrust AI grading tools that report a single confident-looking number with no sense of uncertainty attached. Lower your confidence for: a front-only submission (no back photo), poor lighting or glare obscuring part of the card, a blurry or low-resolution image, or a borderline case between two grades.
 
 Respond with ONLY a single JSON object, no markdown formatting, no other text, matching exactly this shape:
-{"centering": number, "centering_ratio_lr": string, "centering_ratio_tb": string, "corners": number, "edges": number, "surface": number, "predicted_psa": number, "predicted_bgs": number, "predicted_cgc": number, "confidence": number, "notes": string}`;
+{"centering": number, "centering_ratio_lr": string, "centering_ratio_tb": string, "corners": number, "edges": number, "surface": number, "predicted_psa": number, "predicted_bgs": number, "predicted_cgc": number, "predicted_sgc": number, "predicted_tag": number, "confidence": number, "notes": string}`;
 
 // Appended when the client sent a geometric centering measurement from the
 // on-device scanner — that number is ground truth, not something to re-guess.
@@ -248,6 +248,8 @@ serve(async (req) => {
       psa: clampGrade(grade.predicted_psa),
       bgs: clampGrade(grade.predicted_bgs),
       cgc: clampGrade(grade.predicted_cgc),
+      sgc: clampGrade(grade.predicted_sgc),
+      tag: clampGrade(grade.predicted_tag),
     };
 
     // Don't fully trust the model to self-regulate confidence — a front-only

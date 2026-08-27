@@ -73,6 +73,7 @@ const Navbar = () => {
   const protectedNavigationItems = [
     { name: "Home", path: "/", icon: <Home className="mr-2 h-4 w-4" /> },
     { name: "Collection", path: "/collection", icon: <Archive className="mr-2 h-4 w-4" /> },
+    { name: "Grade", path: "/grade", icon: <Camera className="mr-2 h-4 w-4" /> },
     { name: "Trades", path: "/trades", icon: <ArrowLeftRight className="mr-2 h-4 w-4" /> },
     { name: "Browse", path: "/pokemon-sets", icon: <Layers className="mr-2 h-4 w-4" /> },
     { name: "Marketplace", path: "/marketplace", icon: <ShoppingCart className="mr-2 h-4 w-4" /> },
