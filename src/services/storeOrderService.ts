@@ -179,6 +179,7 @@ export const confirmStoreOrderReceipt = async (orderId: string): Promise<void> =
 // ── Storefront: live SKUs a shopper can buy ──────────────────────────────
 export interface StoreShelfItem {
   id: string;
+  store_id: string;
   card_id: string;
   card_name: string;
   set_name: string | null;
@@ -204,6 +205,7 @@ const SHELF_COLS =
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const toShelfItem = (r: any): StoreShelfItem => ({
   id: r.id,
+  store_id: r.store_id,
   card_id: r.card_id,
   card_name: r.card_name,
   set_name: r.set_name,

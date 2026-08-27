@@ -41,6 +41,8 @@ const StoreShelfCard: React.FC<{ item: StoreShelfItem }> = ({ item }) => {
     ? `${item.grade_company ?? "Graded"}${item.grade_score != null ? ` ${item.grade_score}` : ""}`
     : null;
 
+  const isOwnStore = !!user && user.id === item.store_id;
+
   return (
     <div className={`group flex flex-col overflow-hidden rounded-xl border bg-card ${item.featured ? "border-gold/50 ring-1 ring-gold/20" : "border-border"}`}>
       <div className="relative aspect-[3/4] overflow-hidden bg-secondary">
@@ -63,7 +65,7 @@ const StoreShelfCard: React.FC<{ item: StoreShelfItem }> = ({ item }) => {
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{item.card_name}</p>
           <p className="truncate text-xs text-muted-foreground">
-            {item.set_name || "—"}{item.card_number ? ` · #${item.card_number}` : ""}
+            {[item.set_name, item.card_number ? `#${item.card_number}` : null].filter(Boolean).join(" · ") || " "}
           </p>
           {item.store_name && (
             item.store_slug ? (
@@ -75,11 +77,17 @@ const StoreShelfCard: React.FC<{ item: StoreShelfItem }> = ({ item }) => {
             )
           )}
         </div>
-        <div className="mt-auto flex items-center justify-between gap-2">
-          <span className="font-display text-lg font-extrabold text-gold">{fmtGbp(item.price_gbp)}</span>
-          <Button size="sm" className="rounded-full" onClick={buy} disabled={busy}>
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ShoppingBag className="mr-1.5 h-4 w-4" /> Buy now</>}
-          </Button>
+        <div className="mt-auto space-y-2">
+          <span className="block font-display text-lg font-extrabold text-gold">{fmtGbp(item.price_gbp)}</span>
+          {isOwnStore ? (
+            <span className="block rounded-full border border-border bg-secondary px-3 py-1.5 text-center text-xs font-medium text-muted-foreground">
+              Your store
+            </span>
+          ) : (
+            <Button size="sm" className="w-full rounded-full" onClick={buy} disabled={busy}>
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ShoppingBag className="mr-1.5 h-4 w-4" /> Buy now</>}
+            </Button>
+          )}
         </div>
         {item.available <= 3 && (
           <p className="text-[11px] text-amber-400">Only {item.available} left</p>

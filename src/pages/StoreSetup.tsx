@@ -7,22 +7,35 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Store, ExternalLink, Megaphone } from "lucide-react";
+import { Loader2, Store, ExternalLink, Megaphone, CreditCard, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getMyStore, updateMyStore, activateStore } from "@/services/storeService";
 import { createPromotionCheckout, getMyPromotions, getPromotionPrices } from "@/services/storePromotionService";
+import { getSellerStripeStatus, startSellerOnboarding } from "@/services/supabaseMarketplaceService";
 
 const StoreSetup: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
   const [pinning, setPinning] = useState(false);
+  const [connecting, setConnecting] = useState(false);
   const [form, setForm] = useState({ name: "", bio: "", logo_url: "", website: "", city: "" });
   const [params, setParams] = useSearchParams();
 
   const { data: store, isLoading, refetch } = useQuery({ queryKey: ["my-store"], queryFn: getMyStore });
   const { data: promos } = useQuery({ queryKey: ["my-promotions"], queryFn: getMyPromotions, enabled: !!store });
   const { data: promoPrices } = useQuery({ queryKey: ["promotion-prices"], queryFn: getPromotionPrices, enabled: !!store });
+  const { data: payoutStatus } = useQuery({ queryKey: ["seller-stripe-status"], queryFn: getSellerStripeStatus, enabled: !!store });
+
+  const connectPayouts = async () => {
+    setConnecting(true);
+    try {
+      window.location.href = await startSellerOnboarding();
+    } catch (err) {
+      toast({ variant: "destructive", title: "Couldn't start payout setup", description: err instanceof Error ? err.message : "Try again." });
+      setConnecting(false);
+    }
+  };
 
   useEffect(() => {
     const p = params.get("promoted");
@@ -140,6 +153,26 @@ const StoreSetup: React.FC = () => {
         </span>
       </div>
 
+      {payoutStatus && !payoutStatus.charges_enabled && (
+        <div className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
+          <CreditCard className="h-5 w-5 shrink-0 text-amber-400" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold">Connect payouts to get paid</p>
+            <p className="text-xs text-muted-foreground">
+              You can list stock now, but buyers can't check out until your Stripe account is connected.
+            </p>
+          </div>
+          <Button className="rounded-full" onClick={connectPayouts} disabled={connecting}>
+            {connecting ? <Loader2 className="h-4 w-4 animate-spin" /> : (payoutStatus.onboarding_status === "pending" || payoutStatus.onboarding_status === "restricted" ? "Finish payout setup" : "Connect payouts")}
+          </Button>
+        </div>
+      )}
+      {payoutStatus?.charges_enabled && (
+        <div className="mt-6 flex items-center gap-2 rounded-2xl border border-emerald-500/25 bg-emerald-500/5 p-3 text-sm text-emerald-400">
+          <CheckCircle2 className="h-4 w-4 shrink-0" /> Payouts connected — you're ready to sell.
+        </div>
+      )}
+
       <div className="mt-6 rounded-2xl border border-border bg-card p-6">
         <div className="grid gap-4">
           <F label="Store name">
@@ -208,8 +241,10 @@ const StoreSetup: React.FC = () => {
       </div>
 
       <p className="mt-4 text-xs text-muted-foreground">
-        List cards from your collection as sale listings for now — bulk import and inventory tools
-        are coming next. Payouts run through your connected Stripe account.
+        Add stock in <Link to="/store/inventory" className="text-primary hover:underline">Inventory</Link> (or
+        {" "}<Link to="/store/import" className="text-primary hover:underline">bulk-import a CSV</Link>), post standing
+        buy prices in <Link to="/store/buylist" className="text-primary hover:underline">Buylist</Link>. Sales are
+        held in escrow and paid out to your connected Stripe account once the buyer confirms delivery.
       </p>
     </Shell>
   );
