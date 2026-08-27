@@ -43,7 +43,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const handleAdd = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (busy || added) return;
+    if (busy) return;
     if (!user) {
       toast({ variant: "destructive", title: "Sign in required", description: "Sign in to track sealed products." });
       return;
@@ -63,6 +63,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         quantity: 1,
       } as never);
       setAdded(true);
+      setTimeout(() => setAdded(false), 1600); // transient — allow adding more copies
       toast({ title: "Added to collection", description: product.name });
     } catch (err) {
       toast({

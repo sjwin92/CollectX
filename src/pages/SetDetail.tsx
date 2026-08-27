@@ -5,7 +5,10 @@ import { useQuery } from "@tanstack/react-query";
 import { getSetById } from "@/services/api/pokemonSetsService";
 import { supabasePokemonService } from "@/services/supabasePokemonService";
 import { getSealedProductsForSet, toProductCard } from "@/services/api/sealedProductsService";
-import SetChecklistTile from "@/components/pokemon/collection/SetChecklistTile";
+import SetChecklistTile, { type ChecklistCard } from "@/components/pokemon/collection/SetChecklistTile";
+import QuickAddCardForm from "@/components/pokemon/collection/QuickAddCardForm";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import type { PokemonCard } from "@/services/pokemonTcgApi";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -23,6 +26,7 @@ const SetDetail = () => {
   const navigate = useNavigate();
   const [logoLoaded, setLogoLoaded] = React.useState(true);
   const [symbolLoaded, setSymbolLoaded] = React.useState(true);
+  const [quickAddCard, setQuickAddCard] = React.useState<ChecklistCard | null>(null);
 
   // Fire local set + stored images in parallel — both only need `id`
   const { data: localSet } = useQuery({
@@ -330,6 +334,7 @@ const SetDetail = () => {
                     quantity={owned?.quantity ?? 0}
                     dbId={owned?.dbId}
                     onChanged={loadCollectionFromStorage}
+                    onQuickAdd={setQuickAddCard}
                   />
                 );
               })}
@@ -357,7 +362,36 @@ const SetDetail = () => {
           </section>
         )}
       </main>
-      
+
+      <Dialog open={!!quickAddCard} onOpenChange={(o) => !o && setQuickAddCard(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Add {quickAddCard?.name}</DialogTitle>
+          </DialogHeader>
+          {quickAddCard && (
+            <QuickAddCardForm
+              card={{
+                id: quickAddCard.id,
+                name: quickAddCard.name,
+                number: quickAddCard.number || "",
+                rarity: quickAddCard.rarity || "Unknown",
+                images: { small: quickAddCard.imageUrl || "", large: quickAddCard.imageUrl || "" },
+                set: {
+                  id: quickAddCard.set?.id || set.id,
+                  name: quickAddCard.set?.name || set.name,
+                },
+                supertype: "Pokémon",
+                subtypes: [],
+              } as unknown as PokemonCard}
+              onClose={() => {
+                setQuickAddCard(null);
+                loadCollectionFromStorage();
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Footer />
     </div>
   );

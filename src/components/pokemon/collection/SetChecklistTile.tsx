@@ -5,7 +5,6 @@ import { SmartImage } from "@/components/common/SmartImage";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/useUser";
 import {
-  addCardToCollection,
   removeCardFromCollection,
   updateCardInCollection,
 } from "@/services/supabaseCollectionService";
@@ -25,13 +24,16 @@ interface Props {
   quantity: number;
   dbId?: string;
   onChanged: () => void;
+  /** Open the full add form (condition, photo, quantity, graded) for a card
+   *  that isn't in the collection yet. */
+  onQuickAdd: (card: ChecklistCard) => void;
 }
 
 /**
  * One tile in a Set-checklist grid. Tap the art to open the card; use the
  * inline − / + to add or remove it from your collection without leaving.
  */
-const SetChecklistTile: React.FC<Props> = ({ card, owned, quantity, dbId, onChanged }) => {
+const SetChecklistTile: React.FC<Props> = ({ card, owned, quantity, dbId, onChanged, onQuickAdd }) => {
   const { toast } = useToast();
   const { user } = useUser();
   const [busy, setBusy] = useState(false);
@@ -57,19 +59,16 @@ const SetChecklistTile: React.FC<Props> = ({ card, owned, quantity, dbId, onChan
     }
   };
 
-  const add = () =>
-    run(() =>
-      addCardToCollection({
-        id: card.id,
-        name: card.name,
-        imageUrl: card.imageUrl,
-        rarity: card.rarity || "Unknown",
-        condition: "near_mint",
-        number: card.number,
-        set: card.set,
-        quantity: 1,
-      } as never),
-    );
+  const add = () => {
+    if (!user) return requireAuth();
+    // First copy → full add form (condition, photo, quantity, graded).
+    // Already own it → quick +1.
+    if (owned && dbId) {
+      run(() => updateCardInCollection(dbId, { quantity: quantity + 1 }));
+    } else {
+      onQuickAdd(card);
+    }
+  };
 
   const remove = () =>
     run(() => {
