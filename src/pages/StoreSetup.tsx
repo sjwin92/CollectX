@@ -9,12 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Store, ExternalLink, Megaphone, CreditCard, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/hooks/useUser";
 import { getMyStore, updateMyStore, activateStore } from "@/services/storeService";
 import { createPromotionCheckout, getMyPromotions, getPromotionPrices } from "@/services/storePromotionService";
 import { getSellerStripeStatus, startSellerOnboarding } from "@/services/supabaseMarketplaceService";
 
 const StoreSetup: React.FC = () => {
   const { toast } = useToast();
+  const { user } = useUser();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
   const [pinning, setPinning] = useState(false);
@@ -96,6 +98,8 @@ const StoreSetup: React.FC = () => {
     );
   }
 
+  const isOwner = !!user && user.id === store.user_id;
+
   const save = async () => {
     setSaving(true);
     try {
@@ -153,7 +157,7 @@ const StoreSetup: React.FC = () => {
         </span>
       </div>
 
-      {payoutStatus && !payoutStatus.charges_enabled && (
+      {isOwner && payoutStatus && !payoutStatus.charges_enabled && (
         <div className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
           <CreditCard className="h-5 w-5 shrink-0 text-amber-400" />
           <div className="min-w-0 flex-1">

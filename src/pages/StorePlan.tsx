@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Check, Store as StoreIcon, Crown, Users, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/hooks/useUser";
 import { getMyStore } from "@/services/storeService";
 import {
   getBusinessPlans,
@@ -25,6 +26,7 @@ const ROLES: MemberRole[] = ["lister", "shipper"];
 
 const StorePlan: React.FC = () => {
   const { toast } = useToast();
+  const { user } = useUser();
   const [params, setParams] = useSearchParams();
   const [busy, setBusy] = useState<string | null>(null);
   const [newMember, setNewMember] = useState({ handle: "", role: "lister" as MemberRole });
@@ -61,6 +63,7 @@ const StorePlan: React.FC = () => {
 
   const active = sub && sub.status === "active";
   const standingPct = pct(store.commission_bps);
+  const isOwner = !!user && user.id === store.user_id;
 
   const subscribe = async (planId: string) => {
     setBusy(planId);
@@ -151,7 +154,7 @@ const StorePlan: React.FC = () => {
               <Button
                 className="mt-3 w-full rounded-full"
                 variant={isCurrent ? "secondary" : "default"}
-                disabled={isCurrent || busy === p.id}
+                disabled={!isOwner || isCurrent || busy === p.id}
                 onClick={() => subscribe(p.id)}
               >
                 {busy === p.id ? <Loader2 className="h-4 w-4 animate-spin" /> : isCurrent ? <><Check className="mr-1.5 h-4 w-4" /> Current</> : active ? "Switch" : "Subscribe"}
@@ -162,6 +165,7 @@ const StorePlan: React.FC = () => {
       </div>
       <p className="mt-2 text-xs text-muted-foreground">
         The plan rate applies while active; if your standing rate ({standingPct}) is already lower, you keep it.
+        {!isOwner && " Only the store owner can change the plan."}
       </p>
 
       {/* Team */}
@@ -180,32 +184,39 @@ const StorePlan: React.FC = () => {
                 {m.username && <div className="text-xs text-muted-foreground">@{m.username}</div>}
               </div>
               <div className="flex items-center gap-2">
-                <select
-                  value={m.role}
-                  onChange={async (e) => { await updateStoreMemberRole(m.user_id, e.target.value as MemberRole); refetchMembers(); }}
-                  className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-                >
-                  {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-                </select>
-                <button onClick={async () => { await removeStoreMember(m.user_id); refetchMembers(); }} className="text-muted-foreground hover:text-red-400" aria-label="Remove seat">
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                {isOwner ? (
+                  <>
+                    <select
+                      value={m.role}
+                      onChange={async (e) => { await updateStoreMemberRole(m.user_id, e.target.value as MemberRole); refetchMembers(); }}
+                      className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+                    >
+                      {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                    <button onClick={async () => { await removeStoreMember(m.user_id); refetchMembers(); }} className="text-muted-foreground hover:text-red-400" aria-label="Remove seat">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </>
+                ) : (
+                  <span className="rounded-full border border-border bg-secondary px-2 py-0.5 text-xs capitalize text-muted-foreground">{m.role}</span>
+                )}
               </div>
             </div>
           ))}
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Input placeholder="username" value={newMember.handle} onChange={(e) => setNewMember({ ...newMember, handle: e.target.value })} className="h-9 max-w-[200px]" />
-          <select value={newMember.role} onChange={(e) => setNewMember({ ...newMember, role: e.target.value as MemberRole })} className="h-9 rounded-md border border-input bg-background px-2 text-sm">
-            {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-          </select>
-          <Button size="sm" className="rounded-full" onClick={addMember} disabled={addingMember || !newMember.handle.trim()}>
-            {addingMember ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add seat"}
-          </Button>
-        </div>
-        <p className="mt-2 text-[11px] text-muted-foreground">
-          Note: seat permissions on inventory &amp; orders are rolling out — for now the roster is recorded and the owner acts.
-        </p>
+        {isOwner ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Input placeholder="username" value={newMember.handle} onChange={(e) => setNewMember({ ...newMember, handle: e.target.value })} className="h-9 max-w-[200px]" />
+            <select value={newMember.role} onChange={(e) => setNewMember({ ...newMember, role: e.target.value as MemberRole })} className="h-9 rounded-md border border-input bg-background px-2 text-sm">
+              {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+            </select>
+            <Button size="sm" className="rounded-full" onClick={addMember} disabled={addingMember || !newMember.handle.trim()}>
+              {addingMember ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add seat"}
+            </Button>
+          </div>
+        ) : (
+          <p className="mt-2 text-[11px] text-muted-foreground">Only the store owner can change the roster.</p>
+        )}
       </div>
     </Shell>
   );

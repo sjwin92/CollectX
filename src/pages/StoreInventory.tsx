@@ -48,11 +48,19 @@ const StoreInventory: React.FC = () => {
     queryFn: () => listInventory(search),
     enabled: !!store,
   });
-  const { data: rules = [], refetch: refetchRules } = useQuery({
+  const { data: rules = [], refetch: refetchRules, isFetched: rulesFetched } = useQuery({
     queryKey: ["store-price-rules"],
     queryFn: getPriceRules,
     enabled: !!store,
   });
+
+  // A freshly-approved store has no price rule yet. Seed the default one on
+  // arrival so "Add a card" always attaches a rule and "Reprice now" works.
+  useEffect(() => {
+    if (store && rulesFetched && rules.length === 0) {
+      ensureDefaultRule().then(() => refetchRules()).catch(() => undefined);
+    }
+  }, [store, rulesFetched, rules.length, refetchRules]);
   const { data: promos } = useQuery({
     queryKey: ["my-promotions"],
     queryFn: getMyPromotions,

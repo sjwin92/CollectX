@@ -79,19 +79,37 @@ async function repriceStore(
 ): Promise<{ storeId: string; repriced: number; skipped: number }> {
   const { data: rules } = await supabase
     .from("store_price_rules")
-    .select("id, pct_of_market, floor_gbp, never_below_cost")
+    .select("id, pct_of_market, floor_gbp, never_below_cost, is_default")
     .eq("store_id", storeId);
   const ruleById = new Map<string, Rule>();
-  for (const r of rules ?? []) ruleById.set(r.id, r as Rule);
+  let defaultRuleId: string | null = null;
+  for (const r of rules ?? []) {
+    ruleById.set(r.id, r as Rule);
+    if (r.is_default) defaultRuleId = r.id;
+  }
+  if (!defaultRuleId && (rules?.length ?? 0) > 0) defaultRuleId = rules![0].id;
 
+  // Reprice every SKU: rows with no rule (added before a rule existed, or via
+  // an import that didn't set one) fall back to the store's default rule.
   const { data: rows } = await supabase
     .from("store_inventory")
     .select("id, card_id, cost_gbp, price_rule_id")
-    .eq("store_id", storeId)
-    .not("price_rule_id", "is", null);
+    .eq("store_id", storeId);
 
   const inv = (rows ?? []) as Row[];
   if (inv.length === 0) return { storeId, repriced: 0, skipped: 0 };
+
+  // Back-fill the rule id on unattributed rows so future runs (and the UI) see it.
+  if (defaultRuleId) {
+    const orphans = inv.filter((r) => !r.price_rule_id || !ruleById.has(r.price_rule_id));
+    if (orphans.length) {
+      await supabase
+        .from("store_inventory")
+        .update({ price_rule_id: defaultRuleId })
+        .in("id", orphans.map((r) => r.id));
+      for (const r of orphans) r.price_rule_id = defaultRuleId;
+    }
+  }
 
   const cardIds = Array.from(new Set(inv.map((r) => r.card_id)));
   const priceByCard = new Map<string, number>();

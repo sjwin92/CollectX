@@ -5,6 +5,7 @@
 
 import { supabase as supabaseTyped } from "@/integrations/supabase/client";
 import type { OrderAddress, OrderShipment, OrderStatus } from "@/services/orderService";
+import { getActingStoreId } from "@/services/storeService";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const supabase = supabaseTyped as any;
@@ -104,22 +105,22 @@ const invokeError = async (error: { message: string; context?: unknown }): Promi
 
 // ── Store side: rule management ──────────────────────────────────────────
 export const listMyBuylistRules = async (): Promise<BuylistRule[]> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
+  const storeId = await getActingStoreId();
+  if (!storeId) return [];
   const { data, error } = await supabase
     .from("store_buylist")
     .select("*")
-    .eq("store_id", user.id)
+    .eq("store_id", storeId)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as BuylistRule[];
 };
 
 export const upsertBuylistRule = async (input: BuylistRuleInput): Promise<void> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not signed in");
+  const storeId = await getActingStoreId();
+  if (!storeId) throw new Error("No store account");
   const row = {
-    store_id: user.id,
+    store_id: storeId,
     label: input.label?.trim() || null,
     set_id: input.set_id?.trim().toLowerCase() || null,
     card_id: input.card_id?.trim() || null,

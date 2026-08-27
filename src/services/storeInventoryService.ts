@@ -4,6 +4,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { usdToGbp } from "@/services/currencyService";
 import { extractMarketPriceUsd } from "@/lib/cardPrice";
+import { getActingStoreId } from "@/services/storeService";
 
 export interface PriceRule {
   id: string;
@@ -62,9 +63,9 @@ export interface InventorySkuInput {
 }
 
 async function myStoreId(): Promise<string> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not signed in");
-  return user.id;
+  const id = await getActingStoreId();
+  if (!id) throw new Error("No store account");
+  return id;
 }
 
 // ── Price rules ──────────────────────────────────────────────────────────

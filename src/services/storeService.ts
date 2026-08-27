@@ -81,13 +81,25 @@ export async function getMyStoreApplication(): Promise<StoreApplication | null> 
   return (data as StoreApplication) ?? null;
 }
 
-export async function getMyStore(): Promise<StoreProfile | null> {
+/**
+ * The store the signed-in user acts for — their own, or (for a team member)
+ * the store they belong to. Null when they're neither.
+ */
+export async function getActingStoreId(): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
+  const { data, error } = await supabase.rpc("acting_store_id");
+  if (error) return null;
+  return (data as string | null) ?? null;
+}
+
+export async function getMyStore(): Promise<StoreProfile | null> {
+  const storeId = await getActingStoreId();
+  if (!storeId) return null;
   const { data, error } = await supabase
     .from("store_profiles")
     .select("*")
-    .eq("user_id", user.id)
+    .eq("user_id", storeId)
     .maybeSingle();
   if (error) return null;
   return (data as StoreProfile) ?? null;
