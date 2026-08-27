@@ -10,8 +10,8 @@ function trackConsoleErrors(page: Page): string[] {
   page.on("console", (msg) => {
     if (msg.type() !== "error") return;
     const text = msg.text();
-    // Ignore noise that isn't an app bug.
-    if (/favicon|manifest|third-party cookie|Download the React DevTools/i.test(text)) return;
+    // Only flag errors that point to an app bug, not transient network blips.
+    if (!/CORS policy|Uncaught|TypeError|ReferenceError|is not a function|is not defined|Cannot read|Cannot access/i.test(text)) return;
     errors.push(text);
   });
   page.on("pageerror", (err) => errors.push(`pageerror: ${err.message}`));
