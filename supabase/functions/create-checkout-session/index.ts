@@ -84,18 +84,10 @@ serve(async (req) => {
       });
     }
 
-    const { data: sellerAccount, error: sellerAccountError } = await serviceClient
-      .from('seller_stripe_accounts')
-      .select('charges_enabled')
-      .eq('user_id', listing.user_id)
-      .maybeSingle();
-    if (sellerAccountError) throw sellerAccountError;
-    if (!sellerAccount?.charges_enabled) {
-      return new Response(JSON.stringify({ error: 'Seller payouts are not enabled for this listing' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Seller payout onboarding is deferred: the buyer can pay now (funds are
+    // held on the platform account), and the seller is required to verify only
+    // before they mark the order shipped (see mark_order_shipped). If they
+    // never verify, the buyer can dispute the paid_held order for a refund.
 
     const { data: feeCfg, error: feeCfgError } = await serviceClient
       .from('marketplace_fee_config')

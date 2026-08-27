@@ -115,14 +115,8 @@ const CreateListingModal = ({
       return;
     }
 
-    if (listingType === 'sale' && !canSell) {
-      toast({
-        title: "Payouts not connected",
-        description: "Connect a payout account before listing a card for sale",
-        variant: "destructive"
-      });
-      return;
-    }
+    // Payout onboarding is deferred — a seller can list now and verify later,
+    // before they ship their first sale.
 
     setIsLoading(true);
 
@@ -305,17 +299,18 @@ const CreateListingModal = ({
               {listingType === 'sale' ? (
                 <>
                   {!isLoadingStripeStatus && !canSell && (
-                    <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 space-y-2">
-                      <p className="text-sm text-amber-200">
-                        Connect a payout account before you can list cards for sale. This is a one-time setup with our payment provider.
+                    <div className="rounded-lg border border-border bg-secondary/50 p-4 space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        You can list now. Before you ship your first sale you&rsquo;ll do a quick one-time payout check — about 2 minutes (name, address, bank details), individual or business. Do it now if you like:
                       </p>
                       <Button
                         type="button"
                         size="sm"
+                        variant="outline"
                         onClick={handleConnectPayouts}
                         disabled={isConnectingPayouts}
                       >
-                        {isConnectingPayouts ? "Redirecting..." : "Connect payouts"}
+                        {isConnectingPayouts ? "Redirecting..." : "Verify payouts now"}
                       </Button>
                     </div>
                   )}
@@ -373,7 +368,7 @@ const CreateListingModal = ({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!currentCard || isLoading || (listingType === 'sale' && !canSell)}
+            disabled={!currentCard || isLoading}
           >
             {isLoading ? "Creating..." : "Create Listing"}
           </Button>

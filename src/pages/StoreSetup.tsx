@@ -161,9 +161,9 @@ const StoreSetup: React.FC = () => {
         <div className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
           <CreditCard className="h-5 w-5 shrink-0 text-amber-400" />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold">Connect payouts to get paid</p>
+            <p className="text-sm font-semibold">One quick payout check before your first sale</p>
             <p className="text-xs text-muted-foreground">
-              You can list stock now, but buyers can't check out until your Stripe account is connected.
+              List your stock now. Before a buyer can check out we run a ~2-minute check with our payment provider (name, address, bank details) — done once. Individual or business, no company required.
             </p>
           </div>
           <Button className="rounded-full" onClick={connectPayouts} disabled={connecting}>
