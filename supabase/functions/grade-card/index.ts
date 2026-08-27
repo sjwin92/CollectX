@@ -105,11 +105,12 @@ async function callClaudeVision(
   back: ParsedDataUrl | null,
   promptSuffix = '',
 ) {
-  const content: Record<string, unknown>[] = [
-    { type: 'text', text: GRADING_PROMPT + promptSuffix },
-    { type: 'text', text: 'Front of card:' },
-    { type: 'image', source: { type: 'base64', media_type: front.mediaType, data: front.base64 } },
-  ];
+  // Per-request content: the dynamic centering note (never cached) then the
+  // card photos.
+  const content: Record<string, unknown>[] = [];
+  if (promptSuffix) content.push({ type: 'text', text: promptSuffix.trim() });
+  content.push({ type: 'text', text: 'Front of card:' });
+  content.push({ type: 'image', source: { type: 'base64', media_type: front.mediaType, data: front.base64 } });
   if (back) {
     content.push({ type: 'text', text: 'Back of card:' });
     content.push({ type: 'image', source: { type: 'base64', media_type: back.mediaType, data: back.base64 } });
@@ -125,6 +126,9 @@ async function callClaudeVision(
     body: JSON.stringify({
       model: ANTHROPIC_MODEL,
       max_tokens: 1024,
+      // The rubric is identical on every scan — cache it so we only pay full
+      // input rate for it once per 5-minute window, not per scan.
+      system: [{ type: 'text', text: GRADING_PROMPT, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content }],
     }),
   });
