@@ -16,3 +16,16 @@ verify_jwt = false
 # sweep above — verify_jwt is disabled so the cron path isn't rejected before
 # the function's own auth logic runs.
 verify_jwt = false
+
+# Data-refresh functions: idempotent price/catalogue upserts, no user data
+# exposed. Driven by a nightly pg_cron (net.http_post, no JWT) — see
+# 20260827160000_schedule_price_refreshers.sql. Still callable from the app
+# with the anon key for on-demand runs ("reprice now").
+[functions.refresh-card-prices]
+verify_jwt = false
+
+[functions.refresh-sealed-products]
+verify_jwt = false
+
+[functions.refresh-store-prices]
+verify_jwt = false
