@@ -20,12 +20,16 @@ import { useUser } from "@/hooks/useUser";
 /**
  * Hero card showcase — three real catalogue cards, tilted and floating, each
  * linking to its card page. Images come from the same card-image source the
- * rest of the app uses (pokemontcg.io). Swap the ids below to feature others.
+ * rest of the app uses (pokemontcg.io). The cards render ~194px wide, so we
+ * load the standard-res art (a few hundred KB) rather than `_hires` (several
+ * MB each — slow enough that they'd flash blank), and fall back to hires only
+ * if the standard file 404s. Swap the ids below to feature others.
  */
+const heroImg = (path: string) => `https://images.pokemontcg.io/${path}.png`;
 const HERO_CARDS = [
-  { id: "sv8pt5-161", name: "Umbreon ex", img: "https://images.pokemontcg.io/sv8pt5/161_hires.png", rot: -15, x: -172, y: 8, scale: 0.86, z: 1 },
-  { id: "me2-125", name: "Mega Charizard X ex", img: "https://images.pokemontcg.io/me2/125_hires.png", rot: -3, x: 0, y: -4, scale: 1.06, z: 3 },
-  { id: "sv4pt5-232", name: "Mew ex", img: "https://images.pokemontcg.io/sv4pt5/232_hires.png", rot: 14, x: 170, y: 14, scale: 0.86, z: 2 },
+  { id: "sv8pt5-161", path: "sv8pt5/161", name: "Umbreon ex", rot: -15, x: -172, y: 8, scale: 0.86, z: 1 },
+  { id: "me2-125", path: "me2/125", name: "Mega Charizard X ex", rot: -3, x: 0, y: -4, scale: 1.06, z: 3 },
+  { id: "sv4pt5-232", path: "sv4pt5/232", name: "Mew ex", rot: 14, x: 170, y: 14, scale: 0.86, z: 2 },
 ];
 
 const HeroCards = () => {
@@ -55,13 +59,16 @@ const HeroCards = () => {
           }}
         >
           <SmartImage
-            src={c.img}
+            src={heroImg(c.path)}
+            fallbackSrc={heroImg(`${c.path}_hires`)}
             alt={c.name}
+            priority
             wrapperClassName="block h-full w-full"
             className="h-full w-full object-contain"
             fallback={
-              <div className="flex h-full w-full items-center justify-center bg-secondary text-[11px] text-muted-foreground">
-                {c.name}
+              <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-primary/25 via-card to-card p-3 text-center">
+                <Layers className="h-6 w-6 text-primary/70" />
+                <span className="text-xs font-semibold leading-tight text-foreground/90">{c.name}</span>
               </div>
             }
           />
