@@ -183,7 +183,7 @@ const CardItem = ({
             {graded && (
               <Badge variant="success" size="sm" className="mt-1">
                 <BadgeCheck className="h-3 w-3 mr-1" />
-                {gradingCompany} {gradeScore}
+                {[gradingCompany, gradeScore].filter(Boolean).join(" ")}
               </Badge>
             )}
             
@@ -253,7 +253,7 @@ const CardItem = ({
             {graded && (
               <span className="text-xs bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 px-1.5 py-0.5 rounded flex items-center shrink-0" title="Graded">
                 <BadgeCheck className="h-2.5 w-2.5 mr-0.5" />
-                {gradeScore}
+                {[gradingCompany, gradeScore].filter(Boolean).join(" ")}
               </span>
             )}
             
