@@ -14,49 +14,61 @@ import {
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import LiveTradeFeed from "@/components/trades/LiveTradeFeed";
+import { SmartImage } from "@/components/common/SmartImage";
 
-/** Decorative holo-foil card trio — pure CSS, no real card art (copyright). */
-const HoloStack = () => {
-  const W = 168; // front card width in px
-  // back-left, back-right, front
-  const cards = [
-    { rot: -19, x: -168, y: -6, scale: 0.9, z: 1, from: "268 78% 62%", to: "224 92% 60%", dim: 0.92 },
-    { rot: 16, x: 166, y: 12, scale: 0.9, z: 1, from: "45 82% 62%", to: "16 92% 60%", dim: 0.92 },
-    { rot: -5, x: 0, y: 0, scale: 1.04, z: 2, from: "188 100% 54%", to: "268 76% 64%", dim: 1 },
-  ];
+/**
+ * Hero card showcase — three real catalogue cards, tilted and floating, each
+ * linking to its card page. Images come from the same card-image source the
+ * rest of the app uses (pokemontcg.io). Swap the ids below to feature others.
+ */
+const HERO_CARDS = [
+  { id: "sv8pt5-161", name: "Umbreon ex", img: "https://images.pokemontcg.io/sv8pt5/161_hires.png", rot: -15, x: -172, y: 8, scale: 0.86, z: 1 },
+  { id: "me2-125", name: "Mega Charizard X ex", img: "https://images.pokemontcg.io/me2/125_hires.png", rot: -3, x: 0, y: -4, scale: 1.06, z: 3 },
+  { id: "sv4pt5-232", name: "Mew ex", img: "https://images.pokemontcg.io/sv4pt5/232_hires.png", rot: 14, x: 170, y: 14, scale: 0.86, z: 2 },
+];
+
+const HeroCards = () => {
+  const W = 194; // front card width in px; real cards are ~63:88
   return (
-    <div className="animate-float relative mx-auto hidden h-[380px] w-full max-w-[520px] items-center justify-center lg:flex" aria-hidden>
+    <div className="animate-float relative mx-auto hidden h-[400px] w-full max-w-[580px] items-center justify-center lg:flex">
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          background: "radial-gradient(circle at 50% 46%, hsl(var(--primary) / 0.26), transparent 60%)",
-          filter: "blur(30px)",
+          background: "radial-gradient(circle at 50% 46%, hsl(var(--primary) / 0.28), transparent 62%)",
+          filter: "blur(34px)",
         }}
       />
-      {cards.map((c, i) => (
-        <div
-          key={i}
-          className="absolute left-1/2 top-1/2 rounded-[16px] border border-white/15 shadow-[0_40px_80px_-24px_rgba(0,0,0,0.85)]"
+      {HERO_CARDS.map((c) => (
+        <Link
+          key={c.id}
+          to={`/card/${c.id}`}
+          aria-label={c.name}
+          className="group absolute left-1/2 top-1/2 block overflow-hidden rounded-[5%] ring-1 ring-white/10 shadow-[0_44px_80px_-26px_rgba(0,0,0,0.9)] transition-transform duration-300 hover:z-10"
           style={{
             width: `${W}px`,
-            height: `${W * 1.4}px`,
+            height: `${Math.round((W * 88) / 63)}px`,
             marginLeft: `-${W / 2}px`,
-            marginTop: `-${(W * 1.4) / 2}px`,
+            marginTop: `-${Math.round((W * 88) / 63 / 2)}px`,
             transform: `translate(${c.x}px, ${c.y}px) rotate(${c.rot}deg) scale(${c.scale})`,
             zIndex: c.z,
-            animationDelay: `${i * 1.1}s`,
-            background: `linear-gradient(145deg, hsl(${c.from} / ${0.95 * c.dim}) 0%, hsl(${c.to} / ${0.5 * c.dim}) 55%, hsl(0 0% 8% / 0.92) 100%)`,
           }}
         >
-          <div
-            className="absolute inset-0 rounded-[16px] mix-blend-screen"
-            style={{ background: "linear-gradient(118deg, transparent 36%, hsl(0 0% 100% / 0.55) 46%, hsl(var(--gold) / 0.45) 50%, transparent 60%)" }}
+          <SmartImage
+            src={c.img}
+            alt={c.name}
+            wrapperClassName="block h-full w-full"
+            className="h-full w-full object-contain"
+            fallback={
+              <div className="flex h-full w-full items-center justify-center bg-secondary text-[11px] text-muted-foreground">
+                {c.name}
+              </div>
+            }
           />
-          <div className="absolute left-3 right-8 top-3 h-2 rounded-full bg-white/30" />
-          <div className="absolute inset-x-3 top-8 bottom-12 rounded-lg bg-black/15" />
-          <div className="absolute inset-x-3 bottom-3 h-7 rounded-lg bg-black/30 backdrop-blur-sm" />
-          <div className="absolute bottom-[18px] left-5 h-2 w-14 rounded-full bg-white/40" />
-        </div>
+          <span className="holo rounded-[5%]" />
+          <span className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-black/85 to-transparent px-2.5 pb-2 pt-6 text-[11px] font-semibold text-white opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+            {c.name}
+          </span>
+        </Link>
       ))}
     </div>
   );
@@ -153,7 +165,7 @@ const Index = () => {
             </div>
 
             <div className="anim-rise" style={{ animationDelay: "120ms" }}>
-              <HoloStack />
+              <HeroCards />
             </div>
           </div>
         </div>
