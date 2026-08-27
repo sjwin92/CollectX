@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import GlassCard from "@/components/ui/custom/GlassCard";
@@ -16,6 +17,7 @@ import type { AvatarConfig } from "@/lib/pixelAvatar";
 
 const AccountSettings = () => {
   const { user, profile } = useUser();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [builderOpen, setBuilderOpen] = useState(false);
@@ -127,6 +129,7 @@ const AccountSettings = () => {
         throw error;
       }
 
+      await queryClient.invalidateQueries({ queryKey: ['profile'] });
       toast.success('Profile updated successfully!');
     } catch (error) {
       console.error('Error updating profile:', error);

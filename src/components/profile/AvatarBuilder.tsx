@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Loader2, Shuffle } from "lucide-react";
@@ -86,6 +87,7 @@ const Chips = ({
 
 const AvatarBuilder: React.FC<AvatarBuilderProps> = ({ open, onClose, initial, onSaved }) => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [cfg, setCfg] = useState<AvatarConfig>(initial ?? DEFAULT_AVATAR);
   const [saving, setSaving] = useState(false);
@@ -136,6 +138,10 @@ const AvatarBuilder: React.FC<AvatarBuilderProps> = ({ open, onClose, initial, o
         .update({ avatar_url: url, avatar_config: cfg, updated_at: new Date().toISOString() })
         .eq("user_id", user.id);
       if (profErr) throw profErr;
+
+      // useUser()'s ["profile"] query is cached for 5 min — without this the
+      // navbar avatar keeps showing the old image until a hard reload.
+      await queryClient.invalidateQueries({ queryKey: ["profile"] });
 
       toast({ title: "Avatar saved" });
       onSaved(url);
