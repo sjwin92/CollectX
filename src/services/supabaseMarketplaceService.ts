@@ -69,7 +69,7 @@ export const createMarketplaceListing = async (
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
   if (!card.dbId) {
-    throw new Error('This card must exist in your collection (marked for trade) before you can list it.');
+    throw new Error('This card must be in your collection before you can list it.');
   }
 
   const listingType = listingData.listing_type ?? 'trade';

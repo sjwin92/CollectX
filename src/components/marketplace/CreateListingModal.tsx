@@ -9,7 +9,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/useUser";
 import { createMarketplaceListing, getSellerStripeStatus, startSellerOnboarding } from "@/services/supabaseMarketplaceService";
-import { ExtendedCardItemWithDB, getTradableCards, updateCardInCollection } from "@/services/supabaseCollectionService";
+import { ExtendedCardItemWithDB, getCollection, updateCardInCollection } from "@/services/supabaseCollectionService";
 import { CARD_CONDITIONS, normalizeCondition } from "@/lib/cardCondition";
 import { useQuery } from "@tanstack/react-query";
 import { SmartImage } from "@/components/common/SmartImage";
@@ -28,7 +28,7 @@ const CreateListingModal = ({
   onListingCreated
 }: CreateListingModalProps) => {
   const [internalSelectedCard, setInternalSelectedCard] = useState<ExtendedCardItemWithDB | null>(selectedCard);
-  const [listingType, setListingType] = useState<'trade' | 'sale'>('trade');
+  const [listingType, setListingType] = useState<'trade' | 'sale'>('sale');
   const [condition, setCondition] = useState<string>("NM");
   const [askingPrice, setAskingPrice] = useState<string>("");
   const [tradePreferences, setTradePreferences] = useState<string>("");
@@ -39,12 +39,13 @@ const CreateListingModal = ({
   const { toast } = useToast();
   const { user } = useUser();
 
-  // Get user's collection for card selection
-  const { data: userCards = [], isLoading: isLoadingCards } = useQuery({
-    queryKey: ['user-tradable-cards'],
-    queryFn: getTradableCards,
+  // Any card in the user's collection can be listed — for sale or for trade.
+  const { data: collectionCards = [], isLoading: isLoadingCards } = useQuery({
+    queryKey: ['collection'],
+    queryFn: getCollection,
     enabled: !!user && !selectedCard
   });
+  const userCards = collectionCards.filter((c) => !c.isSealed && (c.quantity ?? 1) >= 1);
 
   // Only needed once the user picks "Sell for cash" — checks whether they can
   // actually receive a payout yet.
@@ -144,7 +145,7 @@ const CreateListingModal = ({
       });
 
       // Reset form
-      setListingType('trade');
+      setListingType('sale');
       setAskingPrice("");
       setTradePreferences("");
       setDescription("");
@@ -174,9 +175,9 @@ const CreateListingModal = ({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create Marketplace Listing</DialogTitle>
+          <DialogTitle>Sell or trade a card</DialogTitle>
           <DialogDescription>
-            List your card for trade or sale in the marketplace
+            Set a price to sell it, or list it for trade.
           </DialogDescription>
         </DialogHeader>
 
@@ -189,9 +190,9 @@ const CreateListingModal = ({
               </div>
             ) : userCards.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-muted-foreground">No cards available for listing.</p>
+                <p className="text-muted-foreground">No cards to list yet.</p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Add cards to your collection and mark them as "for trade" to list them.
+                  Add cards to your collection, then come back to sell or trade them.
                 </p>
               </div>
             ) : (
@@ -272,8 +273,8 @@ const CreateListingModal = ({
                   onValueChange={(value) => value && setListingType(value as 'trade' | 'sale')}
                   className="justify-start"
                 >
-                  <ToggleGroupItem value="trade" aria-label="Trade">Trade</ToggleGroupItem>
                   <ToggleGroupItem value="sale" aria-label="Sell for cash">Sell for cash</ToggleGroupItem>
+                  <ToggleGroupItem value="trade" aria-label="Trade">Trade</ToggleGroupItem>
                 </ToggleGroup>
               </div>
 
