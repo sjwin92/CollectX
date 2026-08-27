@@ -10,9 +10,6 @@ import type { CardTypeMeta } from "@/lib/cardTypeLabel";
 import { conditionLabel } from "@/lib/cardCondition";
 import { conditionTone } from "@/components/marketplace/listing/conditionTone";
 import { Button } from "@/components/ui/button";
-// Temporarily removing enhanced service to debug image issues
-// import { enhancedImageService } from "@/services/enhancedImageService";
-// import { useImagePerformance } from "@/hooks/useImagePerformance";
 
 export interface CardItemProps {
   id: string;
@@ -71,38 +68,31 @@ const CardItem = ({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading");
   const [imageSrc, setImageSrc] = useState<string>("");
-  
+
   useEffect(() => {
-    // Direct, simple image loading without any service
     setImageStatus("loading");
-    
     if (imageUrl) {
-      console.log(`Loading image for card ${id}: ${imageUrl}`);
       setImageSrc(imageUrl);
     } else {
-      console.log(`No image URL provided for card ${id}`);
       setImageStatus("error");
     }
   }, [id, imageUrl]);
-  
-  const handleImageLoad = () => {
-    console.log(`Image loaded successfully: ${imageSrc}`);
-    setImageStatus("loaded");
-  };
 
-  const handleImageError = () => {
-    console.log(`Image failed to load: ${imageSrc}`);
-    setImageStatus("error");
-  };
-  
+  // Fall back to the error state if an image never finishes loading.
+  useEffect(() => {
+    if (imageStatus !== "loading") return;
+    const timeoutId = window.setTimeout(() => setImageStatus("error"), 8000);
+    return () => window.clearTimeout(timeoutId);
+  }, [imageStatus, imageSrc]);
+
+  const handleImageLoad = () => setImageStatus("loaded");
+  const handleImageError = () => setImageStatus("error");
+
   const retryImage = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     setImageStatus("loading");
-    
-    // Try the direct API URL as fallback
-    const directUrl = `https://images.pokemontcg.io/${id.replace('-', '/')}.png`;
-    console.log(`Retrying with direct URL: ${directUrl}`);
-    setImageSrc(directUrl);
+    // Try the direct catalogue URL as a fallback.
+    setImageSrc(`https://images.pokemontcg.io/${id.replace('-', '/')}.png`);
   };
 
   const formatCurrency = (value: string): string => {
@@ -274,23 +264,6 @@ const CardItem = ({
       {CardContent}
     </Link>
   );
-
-  useEffect(() => {
-    let timeoutId: number | undefined;
-    
-    if (imageStatus === "loading") {
-      timeoutId = window.setTimeout(() => {
-        if (imageStatus === "loading") {
-          console.log("Image loading timed out");
-          setImageStatus("error");
-        }
-      }, 5000);
-    }
-    
-    return () => {
-      if (timeoutId) window.clearTimeout(timeoutId);
-    };
-  }, [imageStatus]);
 };
 
 export default CardItem;

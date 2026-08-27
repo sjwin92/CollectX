@@ -85,21 +85,16 @@ serve(async (req) => {
       quantity: 1,
     }];
 
-    let session: Stripe.Checkout.Session;
-    try {
-      const stripe = getStripeClient();
-      session = await stripe.checkout.sessions.create({
-        mode: 'subscription',
-        customer_email: user.email ?? undefined,
-        line_items: lineItems,
-        metadata: { type: 'business_subscription', store_id: user.id, plan_id: plan.id },
-        subscription_data: { metadata: { store_id: user.id, plan_id: plan.id } },
-        success_url: `${siteUrl}/store/plan?sub=1`,
-        cancel_url: `${siteUrl}/store/plan?sub=cancelled`,
-      });
-    } catch (stripeError) {
-      throw stripeError;
-    }
+    const stripe = getStripeClient();
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      customer_email: user.email ?? undefined,
+      line_items: lineItems,
+      metadata: { type: 'business_subscription', store_id: user.id, plan_id: plan.id },
+      subscription_data: { metadata: { store_id: user.id, plan_id: plan.id } },
+      success_url: `${siteUrl}/store/plan?sub=1`,
+      cancel_url: `${siteUrl}/store/plan?sub=cancelled`,
+    });
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

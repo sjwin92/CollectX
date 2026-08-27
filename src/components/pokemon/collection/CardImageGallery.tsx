@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Camera, Eye, Star, Plus, Loader2 } from 'lucide-react';
+import { Camera, Eye, Star, Loader2, Upload } from 'lucide-react';
 import { getUserCardImages, uploadUserCardImage } from '@/services/cardImageUploadService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -26,6 +26,7 @@ const CardImageGallery: React.FC<CardImageGalleryProps> = ({
   const [selectedImage, setSelectedImage] = useState<any>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -72,24 +73,36 @@ const CardImageGallery: React.FC<CardImageGalleryProps> = ({
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+      if (cameraInputRef.current) cameraInputRef.current.value = '';
     }
   };
 
-  const uploadInput = editable ? (
-    <input
-      ref={fileInputRef}
-      type="file"
-      accept="image/*"
-      className="hidden"
-      onChange={(e) => { e.stopPropagation(); handleUpload(e.target.files); }}
-    />
+  // Two inputs: one opens the device camera directly (mobile), the other is a
+  // plain file picker. On desktop `capture` is ignored and both fall back to
+  // the file dialog, so nothing breaks.
+  const uploadInputs = editable ? (
+    <>
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => { e.stopPropagation(); handleUpload(e.target.files); }}
+      />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => { e.stopPropagation(); handleUpload(e.target.files); }}
+      />
+    </>
   ) : null;
 
-  const triggerUpload = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    fileInputRef.current?.click();
-  };
+  const stop = (e: React.MouseEvent) => { e.stopPropagation(); e.preventDefault(); };
+  const triggerCamera = (e: React.MouseEvent) => { stop(e); cameraInputRef.current?.click(); };
+  const triggerUpload = (e: React.MouseEvent) => { stop(e); fileInputRef.current?.click(); };
 
   if (loading) {
     return (
@@ -104,16 +117,27 @@ const CardImageGallery: React.FC<CardImageGalleryProps> = ({
     if (editable) {
       return (
         <>
-          {uploadInput}
-          <button
-            type="button"
-            onClick={triggerUpload}
-            disabled={uploading}
-            className={`flex w-full items-center gap-2 rounded-md border border-dashed border-border px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-60 ${className}`}
-          >
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
-            {uploading ? 'Uploading…' : 'Add a condition photo'}
-          </button>
+          {uploadInputs}
+          <div className={`flex gap-1.5 ${className}`}>
+            <button
+              type="button"
+              onClick={triggerCamera}
+              disabled={uploading}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-dashed border-border px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-60"
+            >
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+              {uploading ? 'Uploading…' : 'Take photo'}
+            </button>
+            <button
+              type="button"
+              onClick={triggerUpload}
+              disabled={uploading}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-dashed border-border px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-60"
+            >
+              <Upload className="h-4 w-4" />
+              Upload
+            </button>
+          </div>
         </>
       );
     }
@@ -129,7 +153,7 @@ const CardImageGallery: React.FC<CardImageGalleryProps> = ({
 
   return (
     <>
-      {uploadInput}
+      {uploadInputs}
       <div className={`space-y-2 ${className}`}>
         <div className="flex items-center gap-2">
           <Camera className="h-4 w-4 text-primary" />
@@ -137,15 +161,26 @@ const CardImageGallery: React.FC<CardImageGalleryProps> = ({
             {images.length} photo{images.length > 1 ? 's' : ''}
           </Badge>
           {editable && (
-            <button
-              type="button"
-              onClick={triggerUpload}
-              disabled={uploading}
-              className="ml-auto inline-flex items-center gap-0.5 text-xs text-primary hover:underline disabled:opacity-60"
-            >
-              {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-              Add
-            </button>
+            <div className="ml-auto flex items-center gap-2">
+              <button
+                type="button"
+                onClick={triggerCamera}
+                disabled={uploading}
+                className="inline-flex items-center gap-0.5 text-xs text-primary hover:underline disabled:opacity-60"
+              >
+                {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Camera className="h-3 w-3" />}
+                Take
+              </button>
+              <button
+                type="button"
+                onClick={triggerUpload}
+                disabled={uploading}
+                className="inline-flex items-center gap-0.5 text-xs text-primary hover:underline disabled:opacity-60"
+              >
+                <Upload className="h-3 w-3" />
+                Upload
+              </button>
+            </div>
           )}
         </div>
 
